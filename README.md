@@ -8,16 +8,16 @@ These are codes that we use in the lab to:
 ## [Arduino]
 
 Read an analog in to write in a digital out when voltage is above a threshold;
-  - This provide a way to control digital 5V devices (like a laser) with an 
+  - This provide a way to control digital 5V devices (like a laser) with an  
     analog device (like a soundboard)
 
 Write in a digital out after a serial command.
-  - This contains several different protocols, each can be started by a serial 
+  - This contains several different protocols, each can be started by a serial  
     command
 
 ## [Octave]
 
-  % These scripts may not fully work in Octave yet, I'm adapting them from 
+  % These scripts may not fully work in Octave yet, I'm adapting them from  
   % Matlab.
   
 Manipulate data recorded using INTAN RHA2000 software;
@@ -32,23 +32,23 @@ Generate sound and light stimulation pulses
 
 ## [Python]
 
-Generate sound signal to control an Arduino board using the computer's sound 
+Generate sound signal to control an Arduino board using the computer's sound  
 board;
-  - This code generates a stereo audio signal, where the signal of the right 
-    channel is a narrow-band white noise and of the left channel is a *almost* 
+  - This code generates a stereo audio signal, where the signal of the right  
+    channel is a narrow-band white noise and of the left channel is a *almost*  
     square pulse.
 
 Generate sound signal for acoustic noise trauma;
-  - This will generate a white noise and send the signal to the computer's sound 
+  - This will generate a white noise and send the signal to the computer's sound  
     board.
 
 Manipulate data recorded using OpenEphys-GUI;
-  - For now this is a modification to the Octave code that manipulates data 
+  - For now this is a modification to the Octave code that manipulates data  
     recorded using INTAN RHA2000 software.
 
 ___
-I'm Thawann Malfatti, PhD student from the Neurodynamics Lab of the Brain 
-Institute of the Federal University of Rio Grande do norte. Our team of "code 
+I'm Thawann Malfatti, PhD student from the Neurodynamics Lab of the Brain  
+Institute of the Federal University of Rio Grande do norte. Our team of "code  
 writers" is constituted by:
 
 Richardson Leão, MD, PhD;  

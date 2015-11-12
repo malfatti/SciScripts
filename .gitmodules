@@ -1,0 +1,3 @@
+[submodule "Python3/Deps/pyalsaaudio"]
+	path = Python3/Deps/pyalsaaudio
+	url = https://github.com/larsimmisch/pyalsaaudio

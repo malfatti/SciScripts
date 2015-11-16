@@ -3,7 +3,7 @@ Scripts written to control devices/run experiments/analyze data
 
 [Still uploading]
 
-These are codes that we use in the lab to:  
+These are codes we use in the lab to:  
 
 .  
 ├── Arduino  

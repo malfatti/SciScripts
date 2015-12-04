@@ -1,8 +1,6 @@
 # SciScripts
 Scripts written to control devices/run experiments/analyze data
 
-[Still uploading]
-
 These are codes we use in the lab to:  
 
 .  
@@ -54,15 +52,13 @@ These are codes we use in the lab to:
 │       └── These are functions needed for the other python scripts to work.  
 └── Python3  
     ├── AlsaControl  
-    │   ├── AcousticNoiseTrauma.py  
-    │	│     This will generate a white noise and send the signal to the  
-    │	│     computer's sound board.  
-    │   └── ControlSoundBoard.py  
-    │         This code generates a stereo audio signal, where the signal of  
-    │	      the right channel is a narrow-band white noise and of the left  
-    │         channel is *almost* a square pulse.  
-    ├── Deps  
-    │   └── These are functions needed for the other python scripts to work.  
+    │   └── AcousticNoiseTrauma.py  
+    │	      This will generate a white noise and send the signal to the  
+    │	      computer's sound board.  
+    ├── ControlSoundBoard.py  
+    │     This code generates a stereo audio signal, where the signal of  
+    │     the right channel is a narrow-band white noise and of the left  
+    │     channel is *almost* square pulses.  
     └── GenerateChaoticMelody.py  
 	  This is a code to generate chaotic fractal phase space trajectories  
 	  and map them in notes. The final output is a Lilypond code txt file.  

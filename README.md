@@ -17,6 +17,8 @@ These are codes we use in the lab to:
 │		  Write in a digital out after a serial command. This contains  
 │		  several different protocols, each can be started by a serial  
 │		  command.  
+│
+│
 ├── Octave  
 │   % These scripts may not fully work in Octave yet, I'm adapting them from  
 │   % Matlab.  
@@ -45,11 +47,15 @@ These are codes we use in the lab to:
 │       └── SoundStimGCampSingleChannel.m  
 │             Generate sound stimulation and read an analog in (spectrum power   
 │             meter) signal.  
+│
+│
 ├── Python2  
 │   % Sketch scripts to analyze data recorded in OpenEphysGUI with script  
 │   % ControlSoundBoard.py for stimulation.  
 │   └── Deps  
 │       └── These are functions needed for the other python scripts to work.  
+│
+│
 └── Python3  
     ├── AlsaControl  
     │   └── AcousticNoiseTrauma.py  

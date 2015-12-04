@@ -14,38 +14,44 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-const int LaserIn = 1;
-const int LaserOut =  12;
-const int SoundTTLIn = 5;
-const int SoundTTLOut = 8;
+const int SoundAndLaserTTLIn = 3;
+const int LaserOut =  13;
+const int SoundTTLOut = 12;
 
 void setup() {
   Serial.begin(19200);
+  analogReference(INTERNAL);
 
-  pinMode(LaserIn, INPUT);
+  pinMode(SoundAndLaserTTLIn, INPUT);
   pinMode(LaserOut, OUTPUT);
-  digitalWrite(LaserOut, LOW);
-
-  pinMode(SoundTTLIn, INPUT);
   pinMode(SoundTTLOut, OUTPUT);
+
+  digitalWrite(LaserOut, LOW);
   digitalWrite(SoundTTLOut, LOW);
 }
 
 void loop() {
 
-  int LaserInV = analogRead(LaserIn);
-  int SoundTTLInV = analogRead(SoundTTLIn);
+  int SoundAndLaserTTLInV = analogRead(SoundAndLaserTTLIn);
+  SoundAndLaserTTLInV = map(SoundAndLaserTTLInV, 0, 1023, 0, 255);
 
-  if (LaserInV > 160) {
-    digitalWrite(LaserOut, HIGH);
-  } else {
+  if (SoundAndLaserTTLInV < 12) {
     digitalWrite(LaserOut, LOW);
-  }
-
-  if (SoundTTLInV > 170) {
-    digitalWrite(SoundTTLOut, HIGH);
-  } else {
     digitalWrite(SoundTTLOut, LOW);
   }
+
+  if (SoundAndLaserTTLInV >= 14 && SoundAndLaserTTLInV < 30) {
+    digitalWrite(LaserOut, HIGH);
+  }
+
+  if (SoundAndLaserTTLInV > 160 && SoundAndLaserTTLInV < 185) {
+    digitalWrite(SoundTTLOut, HIGH);
+  }
+
+  if (SoundAndLaserTTLInV >= 253) {
+    digitalWrite(LaserOut, HIGH);
+    digitalWrite(SoundTTLOut, HIGH);
+  }
+
 
 }

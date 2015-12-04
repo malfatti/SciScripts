@@ -3,7 +3,7 @@ Scripts written to control devices/run experiments/analyze data
 
 These are codes we use in the lab to:  
 
-''' 
+```
 .  
 ├── Arduino  
 │   └── Sketchbooks  
@@ -69,7 +69,7 @@ These are codes we use in the lab to:
     └── GenerateChaoticMelody.py  
 	  This is a code to generate chaotic fractal phase space trajectories  
 	  and map them in notes. The final output is a Lilypond code txt file.  
-'''
+```
 
 
 ___

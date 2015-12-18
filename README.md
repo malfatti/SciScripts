@@ -70,8 +70,8 @@ These are codes we use in the lab to:
     │	  and map them in notes. The final output is a Lilypond code txt file.  
     │ 
     └── SoundBoard
-	├── AcousticNoiseTrauma.py
-	│     This will generate a white noise and send the signal to the  
+        ├── AcousticNoiseTrauma.py
+        │     This will generate a white noise and send the signal to the  
         │     computer's sound board. 
         ├── SoundAndLaserStimulation.py
         │      This will set and run sound and laser stimulation using 

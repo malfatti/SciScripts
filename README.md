@@ -74,8 +74,8 @@ These are codes we use in the lab to:
 	│     This will generate a white noise and send the signal to the  
         │     computer's sound board. 
         ├── SoundAndLaserStimulation.py
-	│      This will set and run sound and laser stimulation using 
-	│      Deps/ControlSoundBoard.py.  
+        │      This will set and run sound and laser stimulation using 
+        │      Deps/ControlSoundBoard.py.  
         └── SoundMeasurements.py
 	      This will run sound in several frequency ranges, each at several
 	      amplification factors (changing amplitude) through the 

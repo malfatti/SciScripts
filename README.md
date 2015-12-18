@@ -52,23 +52,36 @@ These are codes we use in the lab to:
 │  
 ├── Python2  
 │   % Sketch scripts to analyze data recorded in OpenEphysGUI with script  
-│   % ControlSoundBoard.py for stimulation.  
+│   % SoundAndLaserStimulation.py for stimulation.  
 │   └── Deps  
 │       └── These are functions needed for the other python scripts to work.  
 │  
 │  
 └── Python3  
-    ├── AlsaControl  
-    │   └── AcousticNoiseTrauma.py  
-    │	      This will generate a white noise and send the signal to the  
-    │	      computer's sound board.  
-    ├── ControlSoundBoard.py  
-    │     This code generates a stereo audio signal, where the signal of  
-    │     the right channel is a narrow-band white noise and of the left  
-    │     channel is *almost* square pulses.  
-    └── GenerateChaoticMelody.py  
-	  This is a code to generate chaotic fractal phase space trajectories  
-	  and map them in notes. The final output is a Lilypond code txt file.  
+    ├── Deps
+    │   ├── These are functions needed for the other python scripts to work.  
+    │	└── ControlSoundBoard.py
+    │         This code generates a stereo audio signal, where the signal of  
+    │         the right channel is a narrow-band white noise and of the left  
+    │         channel is *almost* square pulses.  
+    │
+    ├── GenerateChaoticMelody.py  
+    │ 	  This is a code to generate chaotic fractal phase space trajectories  
+    │	  and map them in notes. The final output is a Lilypond code txt file.  
+    │ 
+    └── SoundBoard
+	├── AcousticNoiseTrauma.py
+	│     This will generate a white noise and send the signal to the  
+        │     computer's sound board. 
+        ├── SoundAndLaserStimulation.py
+	│      This will set and run sound and laser stimulation using 
+	│      Deps/ControlSoundBoard.py.  
+        └── SoundMeasurements.py
+	      This will run sound in several frequency ranges, each at several
+	      amplification factors (changing amplitude) through the 
+	      soundboard's output and will record it through the soundboard's 
+	      input. After, it does RMS calculations for each frequency at each
+	      intensity.
 ```
 
 

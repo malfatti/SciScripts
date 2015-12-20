@@ -1,6 +1,6 @@
-[submodule "Python3/Deps/pyalsaaudio"]
-	path = Python3/Deps/pyalsaaudio
-	url = https://github.com/larsimmisch/pyalsaaudio
 [submodule "Python2/Deps/analysis-tools"]
 	path = Python2/Deps/analysis-tools
 	url = https://github.com/open-ephys/analysis-tools.git
+[submodule "Python3/Deps/pyaudio"]
+	path = Python3/Deps/pyaudio
+	url = https://github.com/jleb/pyaudio

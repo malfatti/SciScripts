@@ -117,7 +117,7 @@ print('Done. Saving data...')
 #PlayRec(Sound, SoundPulseNo, SoundAmpF, NoiseFrequency, Stimulation, Reading)
 
 
-#%% Save!!!
+## Save!!!
 Date = datetime.datetime.now()
 Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
 os.makedirs(Folder)
@@ -133,17 +133,17 @@ File.close()
 del(File)
 print('Done saving data.')
 
-Continue = input(''.join(['\n',
-'You can stop the program now and run analysis later. Do you want to run the ','\n',
-'analysis now?','\n',
-'[y/N]: ']))
-
-if Continue in ('y', 'Y', 'yes', 'Yes', 'YES'):
-    pass
-else:
-    How to stop the script?
-
-print('Test.')
+#Continue = input(''.join(['\n',
+#'You can stop the program now and run analysis later. Do you want to run the ','\n',
+#'analysis now?','\n',
+#'[y/N]: ']))
+#
+#if Continue in ('y', 'Y', 'yes', 'Yes', 'YES'):
+#    pass
+#else:
+#    How to stop the script?
+#
+#print('Test.')
 #%% Analysis
 
 ## If needed:

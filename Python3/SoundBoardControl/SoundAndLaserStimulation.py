@@ -79,29 +79,29 @@ LaserPauseBetweenStimBlocksDur = 5
 
 #%% Prepare sound stimulation
 Sound, SoundPauseBetweenStimBlocks, StartSound = \
-    ControlSoundBoard.GenSound(Rate, SoundPrePauseDur, SoundPulseDur, \
-                               SoundPostPauseDur, SoundPulseNo, \
-                               SoundStimBlockNo, \
-                               SoundPauseBetweenStimBlocksDur, SoundAmpF, \
+    ControlSoundBoard.GenSound(Rate, SoundPrePauseDur, SoundPulseDur, 
+                               SoundPostPauseDur, SoundPulseNo, 
+                               SoundStimBlockNo, 
+                               SoundPauseBetweenStimBlocksDur, SoundAmpF, 
                                NoiseFrequency, TTLAmpF)
 
 
 #%% Prepare laser stimulation
 Laser, LaserPauseBetweenStimBlocks, StartLaser = \
-    ControlSoundBoard.GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, \
-                               LaserPostPauseDur, LaserPulseNo, \
-                               LaserStimBlockNo, \
+    ControlSoundBoard.GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, 
+                               LaserPostPauseDur, LaserPulseNo, 
+                               LaserStimBlockNo, 
                                LaserPauseBetweenStimBlocksDur, TTLAmpF)
 
 
 #%% Prepare sound and laser simultaneous stimulation
 SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, StartSoundAndLaser = \
-    ControlSoundBoard.GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, \
-                                    SoundPostPauseDur, SoundPulseNo, \
-                                    SoundStimBlockNo, \
-                                    SoundPauseBetweenStimBlocksDur, SoundAmpF, \
-                                    NoiseFrequency, LaserPrePauseDur, \
-                                    LaserPulseDur, LaserPostPauseDur, \
+    ControlSoundBoard.GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, 
+                                    SoundPostPauseDur, SoundPulseNo, 
+                                    SoundStimBlockNo, 
+                                    SoundPauseBetweenStimBlocksDur, SoundAmpF, 
+                                    NoiseFrequency, LaserPrePauseDur, 
+                                    LaserPulseDur, LaserPostPauseDur, 
                                     LaserPauseBetweenStimBlocksDur, TTLAmpF)
 
 

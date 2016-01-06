@@ -57,7 +57,7 @@ SoundPulseNo = 200
 SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 5
-# Amplification factor (consider using values <= 1)
+# Amplification factor (consider using values <= 1). If using one value, keep it in a list.
 SoundAmpF = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
@@ -72,7 +72,7 @@ LaserPostPauseDur = 0.09
 # Amount of pulses per block
 LaserPulseNo = 200
 # Number of blocks
-LaserStimBlockNo = 3
+LaserStimBlockNo = 1
 # Duration of pause between blocks
 LaserPauseBetweenStimBlocksDur = 5
 

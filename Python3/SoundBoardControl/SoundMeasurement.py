@@ -32,7 +32,8 @@ Rate = 128000
 ## Sound
 # Silence before pulse
 SoundPrePauseDur = 0
-# Pulse duration
+# Pulse duration. Avoid using more than 0.05. If you need long pulses, use
+# SoundPulseDur = 0.05 and SoundPulseNo = DesiredDurationInSec/0.05
 SoundPulseDur = 0.01
 # Silence after pulse
 SoundPostPauseDur = 0
@@ -43,7 +44,9 @@ SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 0
 # Amplification factor (consider using values <= 1). If using one value, keep it in a list.
-SoundAmpF = [0.3, 0.2, 0.1]
+SoundAmpF = [0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 
+             0.15, 0.1, 0.08, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.008, 
+             0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
@@ -57,14 +60,20 @@ import ControlSoundBoard
 import datetime
 import math
 import os
+import pandas
 import pickle
 import pyaudio
+import matplotlib.pyplot as plt
+from scipy import signal
 
+Date = datetime.datetime.now()
+Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
+os.makedirs(Folder)
 
 ## Prepare dict w/ experimental setup
 DataInfo = [Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, 
             SoundPulseNo, SoundStimBlockNo, SoundPauseBetweenStimBlocksDur, 
-            SoundAmpF, NoiseFrequency, TTLAmpF]
+            SoundAmpF, NoiseFrequency, TTLAmpF, MicSens_dB, Folder]
 
 
 ## Prepare sound objects
@@ -100,7 +109,7 @@ Reading = q.open(format=pyaudio.paFloat32,
                      stream_callback=InCallBack)
 
 
-## Run!
+# Run!
 input('Press enter to start sound measurement.')
 print('Sound measurement running...')
 Reading.start_stream()
@@ -113,14 +122,9 @@ for Freq in range(len(NoiseFrequency)):
             InOn = False
             RecStop = True
 Reading.stop_stream()
-print('Done. Saving data...')
-#PlayRec(Sound, SoundPulseNo, SoundAmpF, NoiseFrequency, Stimulation, Reading)
-
+print('Done playing/recording. Saving data...')
 
 ## Save!!!
-Date = datetime.datetime.now()
-Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
-os.makedirs(Folder)
 
 File = open(Folder+'/'+'SoundRec.pckl', 'wb')
 pickle.dump(SoundRec, File)
@@ -131,44 +135,27 @@ File = open(Folder+'/'+'DataInfo.pckl', 'wb')
 pickle.dump(DataInfo, File)
 File.close()
 del(File)
-print('Done saving data.')
+print('Data saved.')
 
-#Continue = input(''.join(['\n',
-#'You can stop the program now and run analysis later. Do you want to run the ','\n',
-#'analysis now?','\n',
-#'[y/N]: ']))
-#
-#if Continue in ('y', 'Y', 'yes', 'Yes', 'YES'):
-#    pass
-#else:
-#    How to stop the script?
-#
-#print('Test.')
-#%% Analysis
+## Analysis
 
 ## If needed:
-#import datetime
-#import os
-#import pickle
-#import array
-#import math
-#import matplotlib.pyplot as plt
-#
-#File = open('SoundRec.pckl', 'rb')
+#File = open(Folder+'/'+'SoundRec.pckl', 'rb')
 #SoundRec = pickle.load(File)
 #File.close()
 #del(File)
 #
-#File = open('DataInfo.pckl', 'rb')
+#File = open(Folder+'/'+'DataInfo.pckl', 'rb')
 #DataInfo = pickle.load(File)
 #File.close()
 #del(File)
-#
-#Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, SoundPulseNo, \
-#    SoundStimBlockNo, SoundPauseBetweenStimBlocksDur, SoundAmpF, NoiseFrequency, \
-#    TTLAmpF = DataInfo
 
-RecordingData = [[0]*len(SoundRec[Freq])]*len(SoundRec)
+Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, SoundPulseNo, \
+    SoundStimBlockNo, SoundPauseBetweenStimBlocksDur, SoundAmpF, NoiseFrequency, \
+    TTLAmpF, MicSens_dB, Folder = DataInfo
+
+print('Calculating PSD, RMS and dBSLP...')
+RecordingData = [0]*len(SoundRec)
 Intensity = [0]*len(SoundRec)
 MicSens_VPa = 10**(MicSens_dB/20)
 
@@ -178,25 +165,112 @@ for Freq in range(len(SoundRec)):
     
     for AmpF in range(len(SoundRec[Freq])):
         Intensity[Freq][AmpF] = {}
-        print('Saving data for ', NoiseFrequency[Freq], ' at ', SoundAmpF[AmpF])
+        print('Saving data for ', NoiseFrequency[Freq], 
+              ' at ', SoundAmpF[AmpF])
         
-        RecordingData[Freq][AmpF] = array.array('f', b''.join(SoundRec[Freq][AmpF]))
-        DataSquare = [RecordingData[Freq][AmpF][_]**2 for _ in range(len(RecordingData[Freq][AmpF]))]
+        RecordingData[Freq][AmpF] = array.array('f', 
+                                                b''.join(SoundRec[Freq][AmpF]))
+        RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
+                                    round(Rate*0.05)-1:-1*(round(Rate*0.05))]
         
-        Intensity[Freq][AmpF]['RMS'] = (sum(DataSquare)/len(DataSquare))**.5
-        P = Intensity[Freq][AmpF]['RMS']/MicSens_VPa
-        Intensity[Freq][AmpF]['dB'] = 20*(math.log(P/0.00002, 10))
+        F, PxxSp = signal.welch(RecordingData[Freq][AmpF], Rate, 
+                                nperseg=1024, scaling='spectrum')
         
-        del(DataSquare, P)
+        Intensity[Freq][AmpF]['PSD'] = [F, PxxSp]
+        
+        Intensity[Freq][AmpF]['RMS'] = (sum(Intensity[Freq][AmpF]['PSD'][1])*
+                                        (Intensity[Freq][AmpF]['PSD'][0][1] -
+                                         Intensity[Freq][AmpF]['PSD'][0][0])
+                                         )**0.5
+        
+        Intensity[Freq][AmpF]['dB'] = 20*(math.log(
+                                    Intensity[Freq][AmpF]['RMS']/0.00002, 10))
+        
+        del(F, PxxSp)
 
 
-#%% Save again!
-File = open(Folder+'/'+'RecordingData.pckl', 'wb')
-pickle.dump(RecordingData, File)
+## Save analyzed data
+print('Saving analyzed data...')
+TexTable = pandas.DataFrame([[SoundAmpF[AmpF]] + 
+                             [Intensity[Freq][AmpF]['dB'] 
+                             for Freq in range(len(NoiseFrequency))] 
+                             for AmpF in range(len(SoundAmpF))])
+
+File = open(Folder+'/'+'IntensityTable.tex', 'w')
+File.write(r"""
+%% Configs =====
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{lmodern}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[font=small,labelfont=bf,justification=justified,singlelinecheck=false]{caption}
+
+\usepackage{indentfirst}
+
+\usepackage{siunitx}
+
+\usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+\titleformat{\chapter}{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
+
+\renewcommand{\rmdefault}{phv}
+\renewcommand{\sfdefault}{phv}
+
+%% Document ======
+\begin{document}
+
+\cleardoublepage
+\chapter{Sound measurements}
+\input{IntensityTable-Contents.tex}
+
+\end{document}
+""")
 File.close()
 del(File)
 
-File = open(Folder+'/'+'Intensity.pckl', 'wb')
-pickle.dump(Intensity, File)
+File = open(Folder+'/'+'IntensityTable-Contents.tex', 'w')
+File.write(TexTable.to_latex())
 File.close()
 del(File)
+
+Colors = ['r', 'g', 'b', 'm', 'k', 'c', 'y']
+
+plt.figure(1)
+for Freq in range(len(NoiseFrequency)):
+    plt.plot(SoundAmpF, 
+             [Intensity[Freq][_]['dB'] for _ in range(len(SoundAmpF))], 
+             label=str(NoiseFrequency[Freq]), color=Colors[Freq])
+plt.ylabel('Intensity [dBSPL]'); plt.xlabel('Sound amplification factor')
+plt.legend(loc='best', frameon=False)
+plt.locator_params(tight=True)
+plt.tick_params(direction='out')
+plt.axes().spines['right'].set_visible(False)
+plt.axes().spines['top'].set_visible(False)
+plt.axes().yaxis.set_ticks_position('left')
+plt.axes().xaxis.set_ticks_position('bottom')
+plt.show()
+#input('Press enter to save figure 1.')
+plt.savefig(Folder+'/'+'SoundMeasurement.pdf', transparent=True)
+
+
+F, ((A, B), (C, D)) = plt.subplots(2, 2)
+Axes = [A, B, C, D]
+for Freq in range(len(NoiseFrequency)):
+    for AmpF in range(len(SoundAmpF)):
+        Axes[Freq].semilogy(Intensity[Freq][AmpF]['PSD'][0], 
+                     Intensity[Freq][AmpF]['PSD'][1], 
+                     label=str(SoundAmpF[AmpF]), color=Colors[Freq])
+    Axes[Freq].set_xlim(left=5000, right=20000)
+    Axes[Freq].set_ylabel('Linear spectrum [V RMS]')
+    Axes[Freq].set_xlabel('Frequency [Hz]')
+    Axes[Freq].spines['right'].set_visible(False)
+    Axes[Freq].spines['top'].set_visible(False)
+    Axes[Freq].yaxis.set_ticks_position('left')
+    Axes[Freq].xaxis.set_ticks_position('bottom')
+    Axes[Freq].set_title(str(NoiseFrequency[Freq]))
+F.show()
+#input('Press enter to save figure 2.')
+F.savefig(Folder+'/'+'LinearSpectrum.pdf', transparent=True)

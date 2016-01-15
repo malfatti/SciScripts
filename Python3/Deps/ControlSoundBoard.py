@@ -47,14 +47,14 @@ def GenSound(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     SoundTTLUnit = [SoundTTLEl*TTLAmpF for SoundTTLEl in SoundTTLUnit]
     
     print('Generating sound pulse...')
-    SoundPulseFiltered = [0]*len(NoiseFrequency)
     SoundPrePause = [0] * round(Rate * SoundPrePauseDur)
     SoundPostPause = [0] * round(Rate * SoundPostPauseDur)
 
     # Preallocating memory
-    SoundUnit = [[[0]*len(SoundTTLUnit)]*len(SoundAmpF)]*len(NoiseFrequency)
-    SoundList = [[[0]*len(SoundTTLUnit*2)]*len(SoundAmpF)]*len(NoiseFrequency)
-    Sound = [[[0]*len(SoundTTLUnit*2)]*len(SoundAmpF)]*len(NoiseFrequency)
+    SoundPulseFiltered = [0]*len(NoiseFrequency)
+    SoundUnit = [0]*len(NoiseFrequency)
+    SoundList = [0]*len(NoiseFrequency)
+    Sound = [0]*len(NoiseFrequency)
     
     SoundNoise = [random.random() \
                   for _ in range(round(Rate*SoundPulseDur))]
@@ -71,6 +71,11 @@ def GenSound(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
         SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()
         SoundPulseFiltered[Freq][-1] = 0
         
+        # Preallocating memory
+        SoundUnit[Freq] = [0]*len(SoundAmpF)
+        SoundList[Freq] = [0]*len(SoundAmpF)
+        Sound[Freq] = [0]*len(SoundAmpF)
+        
         for AmpF in range(len(SoundAmpF)):
             print('Applying amplification factor:', SoundAmpF[AmpF], '...')
             SoundUnit[Freq][AmpF] = SoundPrePause + \
@@ -78,6 +83,10 @@ def GenSound(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
                                     SoundPostPause
             SoundUnit[Freq][AmpF] = [SoundEl*SoundAmpF[AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
+            
+            # Preallocating memory
+            SoundList[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
+            Sound[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))  
             
             print('Interleaving channels...')
             for _ in range(len(SoundUnit[Freq][AmpF])):
@@ -196,17 +205,16 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
                             for _ in range(len(SoundTTLUnit))]
     
     print('Generating sound pulse...')
-    SoundPulseFiltered = [0]*len(NoiseFrequency)
     SoundPrePause = [0] * round(Rate * SoundPrePauseDur)
     SoundPostPause = [0] * round(Rate * SoundPostPauseDur)
-    
-    # Preallocating memory
-    SoundUnit = [[[0]*len(SoundTTLUnit)]*len(SoundAmpF)]*len(NoiseFrequency)
-    SoundAndLaserList = [[[0]*len(SoundTTLUnit*2)]*len(SoundAmpF)]*len(NoiseFrequency)
-    SoundAndLaser = [[[0]*len(SoundTTLUnit*2)]*len(SoundAmpF)]*len(NoiseFrequency)
-    
     SoundNoise = [random.random() for _ in range(0, round(Rate*SoundPulseDur))]
     SoundPulse = [SoundNoise[ElI]*2-1 for ElI,ElV in enumerate(SoundNoise)]
+    
+    # Preallocating memory
+    SoundPulseFiltered = [0]*len(NoiseFrequency)
+    SoundUnit = [0]*len(NoiseFrequency)
+    SoundAndLaserList = [0]*len(NoiseFrequency)
+    SoundAndLaser = [0]*len(NoiseFrequency)
     
     for Freq in range(len(NoiseFrequency)):
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
@@ -218,9 +226,9 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
                                                          padlen=0)
         SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()
         SoundPulseFiltered[Freq][-1] = 0
-        
+
+        # Preallocating memory
         SoundUnit[Freq] = [0]*len(SoundAmpF)
-        
         SoundAndLaserList[Freq] = [0]*len(SoundAmpF)
         SoundAndLaser[Freq] = [0]*len(SoundAmpF)
     
@@ -232,6 +240,7 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
             SoundUnit[Freq][AmpF] = [SoundEl*SoundAmpF[AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
+            # Preallocating memory
             SoundAndLaserList[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
             SoundAndLaser[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
             
@@ -289,20 +298,19 @@ def GenSoundRec(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur,
     SoundTTLUnit = [SoundTTLEl*TTLAmpF for SoundTTLEl in SoundTTLUnit]
     
     print('Generating sound pulse...')
-    SoundPulseFiltered = [0]*len(NoiseFrequency)
     SoundPrePause = [0] * round(Rate * SoundPrePauseDur)
-    SoundPostPause = [0] * round(Rate * SoundPostPauseDur)
-
-    # Preallocating memory
-    SoundUnit = [[[0]*len(SoundTTLUnit)]*len(SoundAmpF)]*len(NoiseFrequency)
-    SoundList = [[[0]*len(SoundTTLUnit*2)]*len(SoundAmpF)]*len(NoiseFrequency)
-    Sound = [[[0]*len(SoundTTLUnit*2)]*len(SoundAmpF)]*len(NoiseFrequency)
-    SoundRec = [[[] for _1 in range(len(SoundAmpF))] 
-                for _2 in range(len(NoiseFrequency))]
+    SoundPostPause = [0] * round(Rate * SoundPostPauseDur)        
     
     SoundNoise = [random.random() 
                   for _ in range(round(Rate*SoundPulseDur))]
     SoundPulse = [SoundNoise[ElI]*2-1 for ElI,ElV in enumerate(SoundNoise)]
+    
+    # Preallocating memory
+    SoundPulseFiltered = [0]*len(NoiseFrequency)                                    
+    SoundUnit = [0]*len(NoiseFrequency)                                             
+    SoundList = [0]*len(NoiseFrequency)                                             
+    Sound = [0]*len(NoiseFrequency)                                                 
+    SoundRec = [0]*len(NoiseFrequency) 
     
     for Freq in range(len(NoiseFrequency)):
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
@@ -315,6 +323,12 @@ def GenSoundRec(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur,
         SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()
         SoundPulseFiltered[Freq][-1] = 0
         
+        # Preallocating memory
+        SoundUnit[Freq] = [0]*len(SoundAmpF)
+        SoundList[Freq] = [0]*len(SoundAmpF)
+        Sound[Freq] = [0]*len(SoundAmpF)
+        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF))]
+        
         for AmpF in range(len(SoundAmpF)):
             print('Applying amplification factor:', SoundAmpF[AmpF], '...')
             SoundUnit[Freq][AmpF] = (SoundPrePause + 
@@ -323,6 +337,10 @@ def GenSoundRec(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur,
                                     
             SoundUnit[Freq][AmpF] = [SoundEl*SoundAmpF[AmpF] 
                                      for SoundEl in SoundUnit[Freq][AmpF]]
+            
+            # Preallocating memory
+            SoundList[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
+            Sound[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
             
             print('Interleaving channels...')
             for _ in range(len(SoundUnit[Freq][AmpF])):

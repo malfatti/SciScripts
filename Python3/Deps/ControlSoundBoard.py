@@ -389,3 +389,36 @@ def ReduceStim(SObj):
         SObj[_] = SObj[_][_]
     
     return(SObj)
+
+
+def Microscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
+    import array
+    import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
+    import pyaudio
+
+    r = pyaudio.PyAudio()
+    
+    Plotting = r.open(format=pyaudio.paFloat32,
+                         channels=1,
+                         rate=Rate,
+                         input=True,
+                         output=False,
+                         frames_per_buffer=FramesPerBuf)
+                         #stream_callback=InCallBack)
+    
+    Fig = plt.figure()
+    Ax = plt.axes(xlim=XLim, ylim=YLim)
+    Plot, = Ax.plot([float('nan')]*(Rate//10), lw=1)
+    
+    def AnimInit():
+        Data = array.array('f', [])
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    def PltUp(n):
+        Data = array.array('f', Plotting.read(Rate//10))
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=16, blit=False)

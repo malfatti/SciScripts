@@ -162,6 +162,12 @@ Reading = q.open(format=pyaudio.paFloat32,
                      stream_callback=InCallBack)
 
 
+#%% Check sensor's signal
+XLim = (0, 12800)
+YLim = (-0.04, 0.04)
+ControlSoundBoard.Microscilloscope(Rate, XLim, YLim)
+
+
 #%% Run!!
 print('Preallocating memory and pseudo-randomizing the experiment...')
 
@@ -236,36 +242,3 @@ for Freq in range(len(NoiseFrequency)):
         SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
         SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
         SoundTTLs[Freq][Trial][SStart:SEnd] = [1]*len(range(SStart, SEnd))
-
-#%% RT
-import array
-import matplotlib.animation as animation
-import matplotlib.pyplot as plt
-import pyaudio
-
-Rate = 128000
-r = pyaudio.PyAudio()
-
-Plotting = r.open(format=pyaudio.paFloat32,
-                     channels=1,
-                     rate=Rate,
-                     input=True,
-                     output=False,
-                     frames_per_buffer=512)
-                     #stream_callback=InCallBack)
-
-Fig = plt.figure()
-Ax = plt.axes(xlim=(0, 12800), ylim=(-0.01, 0.01))
-Plot, = Ax.plot([float('nan')]*12800, lw=1)
-
-def AnimInit():
-    Data = array.array('f', [])
-    Plot.set_ydata(Data)
-    return Plot,
-
-def PltUp(n):
-    Data = array.array('f', Plotting.read(12800))
-    Plot.set_ydata(Data)
-    return Plot,
-
-Anim = animation.FuncAnimation(Fig, PltUp, frames=256, interval=2, blit=True)

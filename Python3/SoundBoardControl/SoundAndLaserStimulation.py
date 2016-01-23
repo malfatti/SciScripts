@@ -79,11 +79,10 @@ LaserPauseBetweenStimBlocksDur = 5
 
 #%% Prepare sound stimulation
 Sound, SoundPauseBetweenStimBlocks, StartSound = \
-    ControlSoundBoard.GenSound(Rate, SoundPrePauseDur, SoundPulseDur, 
-                               SoundPostPauseDur, SoundPulseNo, 
-                               SoundStimBlockNo, 
-                               SoundPauseBetweenStimBlocksDur, SoundAmpF, 
-                               NoiseFrequency, TTLAmpF)
+    ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
+                               NoiseFrequency, TTLAmpF, SoundPrePauseDur, 
+                               SoundPostPauseDur, SoundStimBlockNo, 
+                               SoundPauseBetweenStimBlocksDur)
 
 
 #%% Prepare laser stimulation

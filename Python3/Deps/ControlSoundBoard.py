@@ -33,9 +33,9 @@ import random
 import scipy.signal
 import threading
 
-def GenSound(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
-             SoundPulseNo, SoundStimBlockNo, SoundPauseBetweenStimBlocksDur, \
-             SoundAmpF, NoiseFrequency, TTLAmpF):
+def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
+             TTLAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0, 
+             SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0):
     
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
@@ -282,9 +282,9 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     return(SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, StartSoundAndLaser)
 
 
-def GenSoundRec(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, 
-                SoundPulseNo, SoundStimBlockNo, SoundPauseBetweenStimBlocksDur, 
-                SoundAmpF, NoiseFrequency, TTLAmpF):
+def GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
+                TTLAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0, 
+                SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0):
     # This will generate the sound pulses and the sound output objects.
     # Remember to create input objects and call them accordingly.
     
@@ -368,3 +368,24 @@ def GenSoundRec(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur,
 
     return(Sound, SoundPauseBetweenStimBlocks, SoundRec, Stimulation)
 
+
+def ReduceStim(SObj):
+    """This function will reduce a stimulus that have frequencies at several
+       AmpFs to a stimulus that has one AmpF per frequency, following the same
+       index for NoiseFrequency and SoundAmpF. For example:
+       
+           SoundAmpF = [1, 0.5]
+           NoiseFrequency = [[8000, 10000],[12000, 14000]]
+       
+           # create sound obj...
+       
+           Sound = ReduceStim(SObj)
+       
+       Sound will have NoiseFrequency[0] at SoundAmpF[0], NoiseFrequency[1] at 
+       SoundAmpF[1], etc. So, obviously, len(SoundAmpF) must be equal to 
+       len(NoiseFrequency)."""
+    
+    for _ in range(len(SObj)):
+        SObj[_] = SObj[_][_]
+    
+    return(SObj)

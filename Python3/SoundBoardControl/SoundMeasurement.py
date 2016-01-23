@@ -22,7 +22,7 @@ amplification factor. In our setup, we use this to calibrate the audio
 equipment.
 """
 
-#%% Set parameters of the experiment
+## Set parameters of the experiment
 
 """==========#==========#==========#=========="""
 Rate = 128000
@@ -30,19 +30,11 @@ Rate = 128000
 ## Fill all durations in SECONDS! If
 
 ## Sound
-# Silence before pulse
-SoundPrePauseDur = 0
 # Pulse duration. Avoid using more than 0.05. If you need long pulses, use
 # SoundPulseDur = 0.05 and SoundPulseNo = DesiredDurationInSec/0.05
 SoundPulseDur = 0.01
-# Silence after pulse
-SoundPostPauseDur = 0
 # Amount of pulses per block
 SoundPulseNo = 300
-# Number of blocks
-SoundStimBlockNo = 1
-# Duration of pause between blocks
-SoundPauseBetweenStimBlocksDur = 0
 # Amplification factor (consider using values <= 1). If using one value, keep it in a list.
 SoundAmpF = [0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 
              0.15, 0.1, 0.08, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.008, 
@@ -71,17 +63,13 @@ Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
 os.makedirs(Folder)
 
 ## Prepare dict w/ experimental setup
-DataInfo = [Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, 
-            SoundPulseNo, SoundStimBlockNo, SoundPauseBetweenStimBlocksDur, 
-            SoundAmpF, NoiseFrequency, TTLAmpF, MicSens_dB, Folder]
+DataInfo = [Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
+            TTLAmpF, MicSens_dB, Folder]
 
 
 ## Prepare sound objects
 Sound, SoundPauseBetweenStimBlocks, SoundRec, Stimulation = \
-    ControlSoundBoard.GenSoundRec(Rate, SoundPrePauseDur, SoundPulseDur, 
-                                  SoundPostPauseDur, SoundPulseNo, 
-                                  SoundStimBlockNo, 
-                                  SoundPauseBetweenStimBlocksDur, SoundAmpF, 
+    ControlSoundBoard.GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
                                   NoiseFrequency, TTLAmpF)
 
 # Define input objects
@@ -149,10 +137,9 @@ print('Data saved.')
 #DataInfo = pickle.load(File)
 #File.close()
 #del(File)
-
-Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, SoundPulseNo, \
-    SoundStimBlockNo, SoundPauseBetweenStimBlocksDur, SoundAmpF, NoiseFrequency, \
-    TTLAmpF, MicSens_dB, Folder = DataInfo
+#
+#Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, \
+#NoiseFrequency, TTLAmpF, MicSens_dB, Folder = DataInfo
 
 print('Calculating PSD, RMS and dBSLP...')
 RecordingData = [0]*len(SoundRec)

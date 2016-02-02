@@ -22,7 +22,7 @@ amplification factor. In our setup, we use this to calibrate the audio
 equipment.
 """
 
-## Set parameters of the experiment
+#%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
 Rate = 128000
@@ -97,7 +97,7 @@ Reading = q.open(format=pyaudio.paFloat32,
                      stream_callback=InCallBack)
 
 
-# Run!
+## Run!
 input('Press enter to start sound measurement.')
 print('Sound measurement running...')
 Reading.start_stream()

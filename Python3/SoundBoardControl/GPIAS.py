@@ -164,8 +164,8 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 #%% Check sensor's signal
 XLim = (0, 12800)
-YLim = (-0.04, 0.04)
-ControlSoundBoard.Microscilloscope(Rate, XLim, YLim)
+YLim = (-0.003, 0.003)
+ControlSoundBoard.Microscilloscope(Rate, XLim, YLim, FramesPerBuf=6400)
 
 
 #%% Run!!
@@ -227,12 +227,12 @@ for Freq in range(len(SoundRec)):
         RecordingData[Freq][Trial] = array.array('f', 
                                                 b''.join(SoundRec[Freq][Trial]))
     
-#        passband = [50/(Rate/2), 300/(Rate/2)]
-        f2, f1 = scipy.signal.butter(4, 300/(Rate/2), 'lowpass')
-        RecordingData[Freq][Trial] = scipy.signal.filtfilt(f2, f1, RecordingData[Freq][Trial], 
-                                                           padtype='odd', 
-                                                           padlen=0)
-        del(f1,f2)
+##        passband = [50/(Rate/2), 300/(Rate/2)]
+#        f2, f1 = scipy.signal.butter(4, 300/(Rate/2), 'lowpass')
+#        RecordingData[Freq][Trial] = scipy.signal.filtfilt(f2, f1, RecordingData[Freq][Trial], 
+#                                                           padtype='odd', 
+#                                                           padlen=0)
+#        del(f1,f2)
 
 SoundTTLs = [0]*len(SoundRec); SoundTTLs[0] = [0]*len(SoundRec[0])
 for Freq in range(len(NoiseFrequency)):

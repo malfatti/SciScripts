@@ -42,23 +42,43 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse amplification factors for each frequency tested
-SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
-SoundPulseAmpF = [1, 0.9, 0.8, 0.7]
+SoundBackgroundAmpF = [0.03, 0.025, 0.025, 0.025, 0.0125]
+SoundPulseAmpF = [3, 2.9, 2.85, 2.9, 2.425]
 
+SoundBackgroundAmpF = [0.025, 0.025]
+SoundPulseAmpF = [2.85, 2.9]
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000]]#, [12000, 14000], [14000, 16000]]
+#NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], 
+#                  [14000, 16000], [8000, 16000]]
+NoiseFrequency = [[12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
-NoOfTrials = 2
+NoOfTrials = 5
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
 """==========#==========#==========#=========="""
 
 import array
+import datetime
 import ControlSoundBoard
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+#import numpy
+import os
+import pickle
 import pyaudio
 import random
+from scipy import signal
+
+Date = datetime.datetime.now()
+Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS'])
+os.makedirs(Folder)
+
+DataInfo = [Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, 
+            SoundLoudPulseDur, SoundBackgroundAfterPulseDur, 
+            SoundBetweenStimDur, SoundBackgroundAmpF, SoundPulseAmpF, 
+            NoiseFrequency, NoOfTrials, TTLAmpF, Folder]
 
 print('Creating SoundBackground...')
 #SoundPulseDur = 0.05
@@ -163,9 +183,36 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 
 #%% Check sensor's signal
-XLim = (0, 12800)
-YLim = (-0.003, 0.003)
-ControlSoundBoard.Microscilloscope(Rate, XLim, YLim, FramesPerBuf=6400)
+TimeFrame = Rate//10
+XLim = (0, TimeFrame)
+YLim = (-0.001, 0.001)
+FramesPerBuf = 512
+
+r = pyaudio.PyAudio()
+
+Plotting = r.open(format=pyaudio.paFloat32,
+                     channels=1,
+                     rate=Rate,
+                     input=True,
+                     output=False,
+                     frames_per_buffer=FramesPerBuf)
+                     #stream_callback=InCallBack)
+
+Fig = plt.figure()
+Ax = plt.axes(xlim=XLim, ylim=YLim)
+Plot, = Ax.plot([float('nan')]*(TimeFrame), lw=1)
+
+def AnimInit():
+    Data = array.array('f', [])
+    Plot.set_ydata(Data)
+    return Plot,
+
+def PltUp(n):
+    Data = array.array('f', Plotting.read(TimeFrame))
+    Plot.set_ydata(Data)
+    return Plot,
+
+Anim = animation.FuncAnimation(Fig, PltUp, frames=TimeFrame, interval=10, blit=False)
 
 
 #%% Run!!
@@ -215,9 +262,20 @@ for Freq in range(len(Freqs)):
         Stimulation.write(SoundBackgroundAfterPulse[RealFreq])
         InOn = False; RecStop = True
         Reading.stop_stream()
-print('Done.')
+
 
 #%% Analysis
+
+## Load data:
+FileName = '20160126145418-GPIAS.pckl'
+File = open(FileName, 'rb')
+DataInfo, SoundRec, RecordingData, SoundTTLs = pickle.load(File)
+Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, 
+SoundLoudPulseDur, SoundBackgroundAfterPulseDur, SoundBetweenStimDur, 
+SoundBackgroundAmpF, SoundPulseAmpF, NoiseFrequency, NoOfTrials, TTLAmpF, 
+Folder = DataInfo
+
+
 RecordingData = [0]*len(SoundRec)
 
 for Freq in range(len(SoundRec)):   
@@ -226,19 +284,45 @@ for Freq in range(len(SoundRec)):
     for Trial in range(len(SoundRec[Freq])):
         RecordingData[Freq][Trial] = array.array('f', 
                                                 b''.join(SoundRec[Freq][Trial]))
-    
-##        passband = [50/(Rate/2), 300/(Rate/2)]
-#        f2, f1 = scipy.signal.butter(4, 300/(Rate/2), 'lowpass')
-#        RecordingData[Freq][Trial] = scipy.signal.filtfilt(f2, f1, RecordingData[Freq][Trial], 
-#                                                           padtype='odd', 
-#                                                           padlen=0)
-#        del(f1,f2)
 
-SoundTTLs = [0]*len(SoundRec); SoundTTLs[0] = [0]*len(SoundRec[0])
+#f2, f1 = signal.butter(1, 1/(Rate/2), btype='highpass')
+#aa = signal.filtfilt(f2, f1, RecordingData[1][0], padlen=0)
+#del(f1,f2)
+#
+#f2, f1 = signal.butter(3, 300/(Rate/2), btype='lowpass')
+#bb = signal.filtfilt(f2, f1, aa, padlen=0)
+#del(f1,f2)
+#
+#cc = signal.savgol_filter(bb, 6665, 3)
+#
+#plt.plot(aa); plt.plot(bb); plt.plot(cc); plt.plot(SoundTTLs[1][0])
+#aa = RecordingData[0][0]
+#f2, f1 = signal.butter(1, 1/(Rate/2), btype='highpass', analog=True)
+#g2, g1 = signal.butter(3, 300/(Rate/2), btype='lowpass', analog=True)
+#h2, h1 = signal.butter(4, 1/(Rate/2), btype='highpass')
+#bb = signal.filtfilt(f2, f1, aa, padtype='odd', padlen=0)
+#cc = signal.filtfilt(g2, g1, bb, padtype='odd', padlen=0)
+#dd = signal.filtfilt(h2, h1, cc, padtype='odd', padlen=0)
+
+
+SoundTTLs = [0]*len(SoundRec)
 for Freq in range(len(NoiseFrequency)):
+    SoundTTLs[Freq] = [0]*len(SoundRec[0])
     for Trial in range(NoOfTrials*2):
         SoundTTLs[Freq][Trial] = [float('nan')]*((len(SoundRec[Freq][Trial])*
-                                                  len(SoundRec[Freq][Trial][0]))//4)
+                                  len(SoundRec[Freq][Trial][0]))//4)
         SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
         SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [1]*len(range(SStart, SEnd))
+        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])]*len(range(SStart, SEnd))
+
+#def smooth(y, box_pts):
+#    box = numpy.ones(box_pts)/box_pts
+#    y_smooth = numpy.convolve(y, box, mode='same')
+#    return y_smooth
+
+print('Done. Saving data...')
+File = open(Folder+'/'+Folder+'.pckl', 'wb')
+pickle.dump([DataInfo, SoundRec, RecordingData, SoundTTLs], File)
+File.close()
+del(File)
+print('Data saved.')

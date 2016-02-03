@@ -6,8 +6,9 @@ void setup() {
   analogReference(INTERNAL);
 }
 
+
 void loop() {
   
   Data = analogRead(AI0);
-  Serial.println(Data);
+  Serial.print(Data);
 }

@@ -21,17 +21,19 @@ amplification factor. In our setup, we use this to calibrate the audio
 equipment.
 """
 
-## Set parameters of the experiment
+#%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
 Rate = 128000
 
 # Amplification factors. Set the same in the DAQ.
-SoundAmpF = [0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2,
-             0.15, 0.1, 0.08, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.008,
-             0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0]
+SoundAmpF =  [2, 1.75, 1.5, 1.25, 1, 0.9, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 
+              0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.08, 0.06, 0.04, 
+              0.03, 0.02, 0.015, 0.01, 0.008, 0.006, 0.005, 0.004, 0.003, 
+              0.002, 0.001, 0]
 # Noise frequency. Set the same in the DAQ.
-NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], 
+                  [14000, 16000], [16000, 18000]]
 # Time to record in seconds.
 TimeRec = 2
 # Mic sensitivity, from mic datasheet, in dB re V/Pa.
@@ -66,23 +68,21 @@ Reading = q.open(format=pyaudio.paFloat32,
                      output=False)
 
 Port = serial.tools.list_ports.comports()
-Arduino = serial.Serial(Port, 19200)
+Arduino = serial.Serial(Port[-1][0], 19200)
 
 # Preallocate memory
-Time =  Rate * TimeRec
+Time =  Rate * (TimeRec+1)
 
 SoundRec = [[]*_ for _ in range(len(NoiseFrequency))]
 for Freq in range(len(NoiseFrequency)):
     SoundRec[Freq] = [[]*_ for _ in range(len(SoundAmpF))]
 
-# Run!
-input('Press enter to start sound measurement.')
+#%% Run!
 print('Sound measurement running...')
 for Freq in range(len(NoiseFrequency)):
     for AmpF in range(len(SoundAmpF)):
         Arduino.write(b'A')
         SoundRec[Freq][AmpF] = Reading.read(Time)
-        Arduino.write(b'a')
 print('Done playing/recording. Saving data...')
 
 ## Save!!!
@@ -98,7 +98,7 @@ File.close()
 del(File)
 print('Data saved.')
 
-## Analysis
+#%% Analysis
 
 ## If needed:
 #File = open(Folder+'/'+'SoundRec.pckl', 'rb')
@@ -128,10 +128,9 @@ for Freq in range(len(SoundRec)):
         print('Saving data for ', NoiseFrequency[Freq], 
               ' at ', SoundAmpF[AmpF])
         
-        RecordingData[Freq][AmpF] = array.array('f', 
-                                                b''.join(SoundRec[Freq][AmpF]))
+        RecordingData[Freq][AmpF] = array.array('f', SoundRec[Freq][AmpF])
         RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
-                                    round(Rate*0.05)-1:-1*(round(Rate*0.05))]
+                                    round(Rate*0.1)-1:round(Rate*0.1)+Rate]
         
         F, PxxSp = signal.welch(RecordingData[Freq][AmpF], Rate, 
                                 nperseg=1024, scaling='spectrum')
@@ -215,7 +214,7 @@ plt.show()
 #input('Press enter to save figure 1.')
 plt.savefig(Folder+'/'+'SoundMeasurement.pdf', transparent=True)
 
-
+#%%
 F, ((A, B), (C, D)) = plt.subplots(2, 2)
 Axes = [A, B, C, D]
 for Freq in range(len(NoiseFrequency)):

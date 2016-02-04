@@ -15,17 +15,10 @@
     You should have received a copy of the GNU General Public License           
     along with this program.  If not, see <http://www.gnu.org/licenses/>.       
 
-This is a simple script to generate pulses and send to the soundboard and to
-an Arduino board. Basically it generates sound pulses, sound square pulses, 
-and laser square pulses. The square pulses will be sent to the left channel 
-and the sound pulses will be sent to the right channel. In our current setup, 
-we have an arduino uno set to read an analog pin and when the voltage is 
-within a range, it turns on a digital port (Check 
-ControlArduinoWithSoundBoard.ino code). This way, you have control of one 
-sound channel, one laser and "separate" TTLs for both.
-"""
+This is a script that define functions allowing the use of a computer's sound
+board as an analog I/O board.
 
-#%% Set parameters of the experiment
+"""
 
 import array
 import pyaudio
@@ -36,6 +29,8 @@ import threading
 def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
              TTLAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0, 
              SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0):
+    """ Generate sound pulses in one channel and TTLs in the other channel 
+    (Check ControlArduinoWithSoundBoard.ino code)."""
     
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
@@ -129,6 +124,8 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
 def GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
              LaserPulseNo, LaserStimBlockNo, LaserPauseBetweenStimBlocksDur, \
              TTLAmpF):
+    """ Generate square pulses in one channel that works as TTL for laser 
+    (Check ControlArduinoWithSoundBoard.ino code)."""
            
     print('Generating laser pulse...')
     LaserPulse = [0.2] * round(LaserPulseDur * Rate)
@@ -181,6 +178,8 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
                   SoundPauseBetweenStimBlocksDur, SoundAmpF, NoiseFrequency, \
                   LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
                   LaserPauseBetweenStimBlocksDur, TTLAmpF):
+    """ Generate sound pulses in one channel and TTLs for sound and laser in 
+    the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
            
     print('Generating laser pulse...')
     LaserPulse = [0.2] * round(LaserPulseDur * Rate)
@@ -285,8 +284,8 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
 def GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
                 TTLAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0, 
                 SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0):
-    # This will generate the sound pulses and the sound output objects.
-    # Remember to create input objects and call them accordingly.
+    """ This will generate the sound pulses and the sound output objects.
+    Remember to create input objects and call them accordingly. """
     
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
@@ -392,6 +391,9 @@ def ReduceStim(SObj):
 
 
 def Microscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
+    """ Read data from sound board input and plot it until the windows is 
+    closed. """
+    
     import array
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt

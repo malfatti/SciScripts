@@ -15,38 +15,40 @@
     You should have received a copy of the GNU General Public License           
     along with this program.  If not, see <http://www.gnu.org/licenses/>.       
 
-This is a script to generate sound stimulation for gap-prepulse inhibition of 
-the acoustic startle reflex (GPIAS). It also records data from a sensor plugged 
-in the sound board input.
+This is a script to define functions allowing Arduino/Python integration.
 """
-#%%
+
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import serial
 import serial.tools.list_ports
 
-BaudRate = 19200
-XLim = (0, BaudRate//50)
-YLim = (-10, 50)
-FramesPerBuf = BaudRate//50
 
-Port = serial.tools.list_ports.comports()
-Arduino = serial.Serial(Port[-1][0], 19200)
+def CreateObj(BaudRate):
+    Port = serial.tools.list_ports.comports()
+    Arduino = serial.Serial(Port[-1][0], BaudRate)
+    
+    return(Arduino)
 
-Fig = plt.figure()
-Ax = plt.axes(xlim=XLim, ylim=YLim)
-Plot, = Ax.plot([float('nan')]*FramesPerBuf, lw=1)
-
-def AnimInit():
-    Data = []
-    Plot.set_ydata(Data)
-    return Plot,
-
-def PltUp(n):
-    Data = []
-    for Frame in range(FramesPerBuf):
-        Data.append(Arduino.read())
-    Plot.set_ydata(Data)
-    return Plot,
-
-Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)
+def Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf=384):
+    
+    Port = serial.tools.list_ports.comports()
+    Arduino = serial.Serial(Port[-1][0], 19200)
+    
+    Fig = plt.figure()
+    Ax = plt.axes(xlim=XLim, ylim=YLim)
+    Plot, = Ax.plot([float('nan')]*FramesPerBuf, lw=1)
+    
+    def AnimInit():
+        Data = []
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    def PltUp(n):
+        Data = []
+        for Frame in range(FramesPerBuf):
+            Data.append(Arduino.read())
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)

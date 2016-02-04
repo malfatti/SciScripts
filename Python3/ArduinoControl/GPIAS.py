@@ -16,14 +16,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.       
 
 This is a script to generate sound stimulation for gap-prepulse inhibition of 
-the acoustic startle reflex (GPIAS). It also records data from a sensor plugged 
-in the sound board input.
+the acoustic startle reflex (GPIAS) and record data from a sensor plugged in 
+an Arduino board.
 """
 
 #%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
 Rate = 128000
+BaudRate = 19200
 
 ## Fill all durations in SECONDS!
 
@@ -163,10 +164,10 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 
 #%% Check sensor's signal
-XLim = (0, 12800)
-YLim = (-0.003, 0.003)
-FramesPerBuf = 512
-ControlSoundBoard.Microscilloscope(Rate, XLim, YLim)
+XLim = (0, BaudRate//50)
+YLim = (-10, 50)
+FramesPerBuf = BaudRate//50
+ControlArduino.Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf)
 
 
 #%% Run!!

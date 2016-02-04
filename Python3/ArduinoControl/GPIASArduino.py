@@ -16,14 +16,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.       
 
 This is a script to generate sound stimulation for gap-prepulse inhibition of 
-the acoustic startle reflex (GPIAS). It also records data from a sensor plugged 
-in the sound board input.
+the acoustic startle reflex (GPIAS) and record data from a sensor plugged in 
+an Arduino board.
 """
 
 #%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
 Rate = 128000
+BaudRate = 19200
 
 ## Fill all durations in SECONDS!
 
@@ -56,9 +57,11 @@ TTLAmpF = 1
 """==========#==========#==========#=========="""
 
 import array
+import ControlArduino
 import ControlSoundBoard
 import pyaudio
 import random
+from threading import Thread
 
 print('Creating SoundBackground...')
 #SoundPulseDur = 0.05
@@ -132,7 +135,7 @@ del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundBetweenStim = ControlSoundBoard.ReduceStim(SoundBetweenStim)
 
 
-print('Generating sound objects...')
+print('Generating sound and arduino objects...')
 p = pyaudio.PyAudio()
 Stimulation = p.open(format=pyaudio.paFloat32,
                      channels=2,
@@ -140,33 +143,53 @@ Stimulation = p.open(format=pyaudio.paFloat32,
                      input=False,
                      output=True)
 
-q = pyaudio.PyAudio()
-InOn = False
-RecStop = False
-def InCallBack(in_data, frame_count, time_info, status):
-    if InOn:
-        global SoundRec
-        SoundRec[RealFreq][RealTrial].append(in_data)
-        
-    if RecStop:
-        InFlag = pyaudio.paComplete
-    else:
-        InFlag = pyaudio.paContinue
-    return(None, InFlag)
+Arduino = ControlArduino.CreateObj(BaudRate)
 
-Reading = q.open(format=pyaudio.paFloat32,
-                     channels=1,
-                     rate=Rate,
-                     input=True,
-                     output=False,
-                     stream_callback=InCallBack)
+#class ClArduino(threading.Thread):
+#    def __init__(self):
+#        threading.Thread.__init__(self)
+#        self.iterations = 0
+#        self.daemon = True  # OK for main to exit even if instance is still running
+#        self.paused = True  # start out paused
+#        self.state = threading.Condition()
+#        
+#    def run(self):
+#        while True:
+#            PiezoRec[Freq][Trial].append(Arduino.read())
+#    
+#    def pause(self):
+#        with self.state:
+#            self.paused = True  # make self block and wait
+#    
+#    def resume(self):
+#        with self.state:
+#            self.paused = False
+#            self.state.notify()  # unblock self if waiting
+#    
+#    def stop(self):
+#        with self.state:
+#            self.stopped = True
+
+class ClArduino(Thread):
+    def run(self):
+        while True:
+            PiezoRec[ReadFreq][RealTrial].append(ord(Arduino.read()))
+    
+    def pause(self):
+        self.paused = True
+    
+    def resume(self):
+        self.paused = False
+    
+    def stop(self):
+        self.stopped = True
 
 
 #%% Check sensor's signal
-XLim = (0, 12800)
-YLim = (-0.003, 0.003)
-FramesPerBuf = 512
-ControlSoundBoard.Microscilloscope(Rate, XLim, YLim)
+XLim = (0, BaudRate//50)
+YLim = (-10, 50)
+FramesPerBuf = BaudRate//50
+ControlArduino.Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf)
 
 
 #%% Run!!
@@ -175,16 +198,13 @@ print('Preallocating memory and pseudo-randomizing the experiment...')
 Freqs = [In for In, El in enumerate(NoiseFrequency)]*NoOfTrials
 random.shuffle(Freqs)
 
-SoundRec = [[] for _ in range(len(NoiseFrequency))]
-for _ in range(len(SoundRec)):
-    SoundRec[_] = [[] for _ in range(NoOfTrials*2)]
+PiezoRec = [[] for _ in range(len(NoiseFrequency))]
+for _ in range(len(PiezoRec)):
+    PiezoRec[_] = [[] for _ in range(NoOfTrials*2)]
 
 FakeTTLs = [[] for _ in range(len(NoiseFrequency))]
-for Freq in range(len(FakeTTLs)):
-    FakeTTLs[Freq] = [[] for _ in range(NoOfTrials*2)]
-    
-    for Trial in range(len(FakeTTLs[Freq])):
-        FakeTTLs[Freq][Trial] = [[], []]
+for _ in range(len(FakeTTLs)):
+    FakeTTLs[_] = [[] for _ in range(NoOfTrials*2)]
 
 FreqSlot = [0]*(len(NoiseFrequency)*NoOfTrials*2)
 for FE in range(len(Freqs)):
@@ -217,6 +237,14 @@ for Freq in range(len(Freqs)):
         InOn = False; RecStop = True
         Reading.stop_stream()
 print('Done.')
+
+ClArduino().start(); ClArduino().pause()
+for Freq in range(len(NoiseFrequency)):
+    for Trial in range(NoOfTrials):
+        ClArduino().resume()
+        Stimulation.write(SoundBackground[Freq])
+        ClArduino().pause()
+ClArduino().stop()
 
 #%% Analysis
 RecordingData = [0]*len(SoundRec)

@@ -33,7 +33,7 @@ def CreateObj(BaudRate):
 def Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf=384):
     
     Port = serial.tools.list_ports.comports()
-    Arduino = serial.Serial(Port[-1][0], 19200)
+    Arduino = serial.Serial(Port[-1][0], BaudRate)
     
     Fig = plt.figure()
     Ax = plt.axes(xlim=XLim, ylim=YLim)
@@ -50,5 +50,38 @@ def Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf=384):
             Data.append(Arduino.read())
         Plot.set_ydata(Data)
         return Plot,
+    
+    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)
+
+
+def CheckPiezoAndTTL(BaudRate, XLim, YLim, FramesPerBuf=64):
+    
+    Port = serial.tools.list_ports.comports()
+    Arduino = serial.Serial(Port[-1][0], BaudRate)
+    
+    Fig = plt.figure()
+    Ax = plt.axes(xlim=XLim, ylim=YLim)
+    
+    Plots = [[], []]
+    Plots[0] = Ax.plot([float('nan')]*FramesPerBuf, lw=1)[0]
+    Plots[1] = Ax.plot([float('nan')]*FramesPerBuf, lw=1)[0]
+    
+    def AnimInit():
+        for Plot in Plots:
+            Plot.set_ydata([])
+        return Plots
+    
+    def PltUp(n):
+        Data = [[0]*FramesPerBuf, [0]*FramesPerBuf]
+        for Frame in range(FramesPerBuf):
+            Temp = Arduino.readline().decode(); Temp = Temp.split()
+            if len(Temp) is not 2:
+                Temp = [0, 0]
+            Data[0][Frame] = Temp[0]; Data[1][Frame] = Temp[1]
+        
+        for Index, Plot in enumerate(Plots):
+            Plot.set_ydata(Data[Index])
+        
+        return tuple(Plots)
     
     Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)

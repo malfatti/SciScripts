@@ -24,7 +24,7 @@ an Arduino board.
 
 """==========#==========#==========#=========="""
 Rate = 128000
-BaudRate = 19200
+BaudRate = 115200
 
 ## Fill all durations in SECONDS!
 
@@ -47,21 +47,37 @@ SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
 SoundPulseAmpF = [1, 0.9, 0.8, 0.7]
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000]]#, [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000]]#, [10000, 12000], [12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
-NoOfTrials = 2
+NoOfTrials = 1
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 1
+TTLAmpF = 0
 """==========#==========#==========#=========="""
 
 import array
+import datetime
 import ControlArduino
 import ControlSoundBoard
+import matplotlib.pyplot as plt
+import os
+import pickle
 import pyaudio
 import random
 from threading import Thread
+
+Date = datetime.datetime.now()
+Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
+os.makedirs(Folder)
+
+## Prepare dict w/ experimental setup
+DataInfo = [Rate, BaudRate, SoundBackgroundDur, SoundGapDur, 
+            SoundBackgroundPrePulseDur, SoundLoudPulseDur, 
+            SoundBackgroundAfterPulseDur, SoundBetweenStimDur, 
+            SoundBackgroundAmpF, SoundPulseAmpF, NoiseFrequency, 
+            NoiseFrequency, TTLAmpF, Folder]
+
 
 print('Creating SoundBackground...')
 #SoundPulseDur = 0.05
@@ -82,7 +98,8 @@ SoundPulseDur = SoundGapDur
 SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
-                                        SoundAmpF, NoiseFrequency, TTLAmpF)[0]
+                                         SoundAmpF, NoiseFrequency, 
+                                         TTLAmpF=1)[0]
 SoundGap[0] = ControlSoundBoard.ReduceStim(SoundGap[0])
 SoundGap[1] = [0]*(round(Rate*SoundGapDur)*2)
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
@@ -97,7 +114,8 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundPrePulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
-                                                     NoiseFrequency, TTLAmpF)[0]
+                                                     NoiseFrequency, 
+                                                     TTLAmpF)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundBackgroundPrePulse = ControlSoundBoard.ReduceStim(SoundBackgroundPrePulse)
 
@@ -108,7 +126,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundPulseAmpF
 SoundLoudPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
                                             SoundAmpF, NoiseFrequency, 
-                                            TTLAmpF)[0]
+                                            TTLAmpF=1)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundLoudPulse = ControlSoundBoard.ReduceStim(SoundLoudPulse)
 
@@ -119,7 +137,8 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundAfterPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
-                                                     NoiseFrequency, TTLAmpF)[0]
+                                                     NoiseFrequency, 
+                                                     TTLAmpF)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundBackgroundAfterPulse = ControlSoundBoard.ReduceStim(SoundBackgroundAfterPulse)
 
@@ -130,7 +149,8 @@ SoundPulseNo = round(SoundBetweenStimDur[1]/0.05)
 SoundAmpF = SoundBackgroundAmpF
 SoundBetweenStim = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                  SoundPulseNo, SoundAmpF, 
-                                                 NoiseFrequency, TTLAmpF)[0]
+                                                 NoiseFrequency, 
+                                                 TTLAmpF)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundBetweenStim = ControlSoundBoard.ReduceStim(SoundBetweenStim)
 
@@ -173,7 +193,11 @@ Arduino = ControlArduino.CreateObj(BaudRate)
 class ClArduino(Thread):
     def run(self):
         while True:
-            PiezoRec[ReadFreq][RealTrial].append(ord(Arduino.read()))
+            Data = Arduino.readline(); Data = Data.split()
+            if len(Data) is not 2:
+                Data = [b'0', b'0']
+            PiezoRec[RealFreq][RealTrial].append(Data[0])
+            TTLs[RealFreq][RealTrial].append(Data[1])
     
     def pause(self):
         self.paused = True
@@ -183,13 +207,6 @@ class ClArduino(Thread):
     
     def stop(self):
         self.stopped = True
-
-
-#%% Check sensor's signal
-XLim = (0, BaudRate//50)
-YLim = (-10, 50)
-FramesPerBuf = BaudRate//50
-ControlArduino.Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf)
 
 
 #%% Run!!
@@ -202,9 +219,9 @@ PiezoRec = [[] for _ in range(len(NoiseFrequency))]
 for _ in range(len(PiezoRec)):
     PiezoRec[_] = [[] for _ in range(NoOfTrials*2)]
 
-FakeTTLs = [[] for _ in range(len(NoiseFrequency))]
-for _ in range(len(FakeTTLs)):
-    FakeTTLs[_] = [[] for _ in range(NoOfTrials*2)]
+TTLs = [[] for _ in range(len(NoiseFrequency))]
+for _ in range(len(TTLs)):
+    TTLs[_] = [[] for _ in range(NoOfTrials*2)]
 
 FreqSlot = [0]*(len(NoiseFrequency)*NoOfTrials*2)
 for FE in range(len(Freqs)):
@@ -212,6 +229,7 @@ for FE in range(len(Freqs)):
     FreqSlot[FE*2+1] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2+1
 
 # Play!!
+ClArduino().start(); ClArduino().pause()
 for Freq in range(len(Freqs)):
     Trials = [0, 1]
     random.shuffle(Trials)
@@ -225,49 +243,41 @@ for Freq in range(len(Freqs)):
         for Pulse in range(NoOfPulses):
             Stimulation.write(SoundBetweenStim[RealFreq])
         
-        Reading.start_stream()
-        RecStop = False; InOn = True
+        Arduino.flush()
+        ClArduino().resume()
         Stimulation.write(SoundBackground[RealFreq])
         Stimulation.write(SoundGap[Trial][RealFreq])
         Stimulation.write(SoundBackgroundPrePulse[RealFreq])
-        FakeTTLs[RealFreq][RealTrial][0] = len(SoundRec[RealFreq][RealTrial])
         Stimulation.write(SoundLoudPulse[RealFreq])
-        FakeTTLs[RealFreq][RealTrial][1] = len(SoundRec[RealFreq][RealTrial])
         Stimulation.write(SoundBackgroundAfterPulse[RealFreq])
-        InOn = False; RecStop = True
-        Reading.stop_stream()
-print('Done.')
-
-ClArduino().start(); ClArduino().pause()
-for Freq in range(len(NoiseFrequency)):
-    for Trial in range(NoOfTrials):
-        ClArduino().resume()
-        Stimulation.write(SoundBackground[Freq])
         ClArduino().pause()
 ClArduino().stop()
+print('Done.')
+
+
+File = open(Folder+'/'+'PiezoRec.pckl', 'wb')
+pickle.dump(PiezoRec, File)
+File.close()
+del(File)
+
+File = open(Folder+'/'+'TTLs.pckl', 'wb')
+pickle.dump(TTLs, File)
+File.close()
+del(File)
+
+File = open(Folder+'/'+'DataInfo.pckl', 'wb')
+pickle.dump(DataInfo, File)
+File.close()
+del(File)
+print('Data saved.')
+
 
 #%% Analysis
-RecordingData = [0]*len(SoundRec)
+RecordingData = [0]*len(PiezoRec)
 
-for Freq in range(len(SoundRec)):   
-    RecordingData[Freq] = [0]*len(SoundRec[Freq])
+for Freq in range(len(PiezoRec)):   
+    RecordingData[Freq] = [0]*len(PiezoRec[Freq])
     
-    for Trial in range(len(SoundRec[Freq])):
-        RecordingData[Freq][Trial] = array.array('f', 
-                                                b''.join(SoundRec[Freq][Trial]))
+    for Trial in range(len(PiezoRec[Freq])):
+        RecordingData[Freq][Trial] = [ord(PiezoRec[Freq][Trial][_]) for _ in range(len(PiezoRec[Freq][Trial]))]
     
-##        passband = [50/(Rate/2), 300/(Rate/2)]
-#        f2, f1 = scipy.signal.butter(4, 300/(Rate/2), 'lowpass')
-#        RecordingData[Freq][Trial] = scipy.signal.filtfilt(f2, f1, RecordingData[Freq][Trial], 
-#                                                           padtype='odd', 
-#                                                           padlen=0)
-#        del(f1,f2)
-
-SoundTTLs = [0]*len(SoundRec); SoundTTLs[0] = [0]*len(SoundRec[0])
-for Freq in range(len(NoiseFrequency)):
-    for Trial in range(NoOfTrials*2):
-        SoundTTLs[Freq][Trial] = [float('nan')]*((len(SoundRec[Freq][Trial])*
-                                                  len(SoundRec[Freq][Trial][0]))//4)
-        SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [1]*len(range(SStart, SEnd))

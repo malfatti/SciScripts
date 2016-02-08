@@ -44,15 +44,16 @@ SoundBetweenStimDur = [10, 20]
 
 # Background and pulse amplification factors for each frequency tested
 SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
-SoundPulseAmpF = [1, 0.9, 0.8, 0.7]
+SoundPulseAmpF = [3, 2.5, 2.5, 2]
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
-NoiseFrequency = [[8000, 10000]]#, [10000, 12000], [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000]]#, [12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 1
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
+# P.S. for myself: check SoundTTL/LaserTTL relation 
 TTLAmpF = 0
 """==========#==========#==========#=========="""
 
@@ -68,7 +69,7 @@ import random
 from threading import Thread
 
 Date = datetime.datetime.now()
-Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
+Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS'])
 os.makedirs(Folder)
 
 ## Prepare dict w/ experimental setup
@@ -193,9 +194,9 @@ Arduino = ControlArduino.CreateObj(BaudRate)
 class ClArduino(Thread):
     def run(self):
         while True:
-            Data = Arduino.readline(); Data = Data.split()
-            if len(Data) is not 2:
-                Data = [b'0', b'0']
+            Data = []
+            while len(Data) != 2:
+                Data = Arduino.readline(); Data = Data.split()
             PiezoRec[RealFreq][RealTrial].append(Data[0])
             TTLs[RealFreq][RealTrial].append(Data[1])
     
@@ -235,6 +236,7 @@ for Freq in range(len(Freqs)):
     random.shuffle(Trials)
     
     for Trial in Trials:
+        Arduino.flush()
         RealFreq = Freqs[Freq]; RealTrial = FreqSlot[Freq*2+Trial]
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         NoOfPulses = round(SBSDur/0.05)
@@ -243,7 +245,6 @@ for Freq in range(len(Freqs)):
         for Pulse in range(NoOfPulses):
             Stimulation.write(SoundBetweenStim[RealFreq])
         
-        Arduino.flush()
         ClArduino().resume()
         Stimulation.write(SoundBackground[RealFreq])
         Stimulation.write(SoundGap[Trial][RealFreq])
@@ -273,11 +274,56 @@ print('Data saved.')
 
 
 #%% Analysis
-RecordingData = [0]*len(PiezoRec)
 
+## If needed:
+#import pickle
+#
+#File = open(Folder+'/'+'PiezoRec.pckl', 'rb')
+#PiezoRec = pickle.load(File)
+#File.close()
+#del(File)
+#
+#File = open(Folder+'/'+'TTLs.pckl', 'rb')
+#TTLs = pickle.load(File)
+#File.close()
+#del(File)
+#
+#File = open(Folder+'/'+'DataInfo.pckl', 'rb')
+#DataInfo = pickle.load(File)
+#File.close()
+#del(File)
+#
+#Rate, BaudRate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, \
+#SoundLoudPulseDur, SoundBackgroundAfterPulseDur, SoundBetweenStimDur, \
+#SoundBackgroundAmpF, SoundPulseAmpF, NoiseFrequency, NoiseFrequency, TTLAmpF, \
+#Folder = DataInfo
+
+
+RecordingData = [0]*len(PiezoRec)
 for Freq in range(len(PiezoRec)):   
     RecordingData[Freq] = [0]*len(PiezoRec[Freq])
     
     for Trial in range(len(PiezoRec[Freq])):
-        RecordingData[Freq][Trial] = [ord(PiezoRec[Freq][Trial][_]) for _ in range(len(PiezoRec[Freq][Trial]))]
+        RecordingData[Freq][Trial] = [0]*len(PiezoRec[Freq][Trial])
+        
+        for _ in range(len(PiezoRec[Freq][Trial])):
+            try:
+                RecordingData[Freq][Trial][_] = int(PiezoRec[Freq][Trial][_])
+            except ValueError:
+                print('Error: ', PiezoRec[Freq][Trial][_])
+                RecordingData[Freq][Trial][_] = 0
+
+TTLsData = [0]*len(TTLs)
+for Freq in range(len(TTLs)):   
+    TTLsData[Freq] = [0]*len(TTLs[Freq])
     
+    for Trial in range(len(TTLs[Freq])):
+        TTLsData[Freq][Trial] = [0]*len(TTLs[Freq][Trial])
+        
+        for _ in range(len(TTLs[Freq][Trial])):
+            try:
+                TTLsData[Freq][Trial][_] = int(TTLs[Freq][Trial][_])
+            except ValueError:
+                print('Error: ', TTLs[Freq][Trial][_])
+                TTLsData[Freq][Trial][_] = 0
+print('Done analyzing data.')

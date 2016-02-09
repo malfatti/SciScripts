@@ -23,6 +23,8 @@ an Arduino board.
 #%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
+AnimalName = 'TestingSensor'
+
 Rate = 128000
 BaudRate = 115200
 
@@ -62,23 +64,25 @@ import datetime
 import ControlArduino
 import ControlSoundBoard
 import matplotlib.pyplot as plt
-import os
-import pickle
+import shelve
 import pyaudio
 import random
 from threading import Thread
 
 Date = datetime.datetime.now()
-Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS'])
-os.makedirs(Folder)
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName])
 
 ## Prepare dict w/ experimental setup
-DataInfo = [Rate, BaudRate, SoundBackgroundDur, SoundGapDur, 
-            SoundBackgroundPrePulseDur, SoundLoudPulseDur, 
-            SoundBackgroundAfterPulseDur, SoundBetweenStimDur, 
-            SoundBackgroundAmpF, SoundPulseAmpF, NoiseFrequency, 
-            NoiseFrequency, TTLAmpF, Folder]
-
+DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
+                                       'BaudRate', 'SoundBackgroundDur', 
+                                       'SoundGapDur', 
+                                       'SoundBackgroundPrePulseDur', 
+                                       'SoundLoudPulseDur', 
+                                       'SoundBackgroundAfterPulseDur', 
+                                       'SoundBetweenStimDur', 
+                                       'SoundBackgroundAmpF', 'SoundPulseAmpF', 
+                                       'NoiseFrequency', 'NoOfTrials', 
+                                       'TTLAmpF', 'FileName'])
 
 print('Creating SoundBackground...')
 #SoundPulseDur = 0.05
@@ -105,7 +109,6 @@ SoundGap[0] = ControlSoundBoard.ReduceStim(SoundGap[0])
 SoundGap[1] = [0]*(round(Rate*SoundGapDur)*2)
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
 SoundGap[1] = [SoundGap[1]]*len(SoundGap[0])
-
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 
@@ -165,31 +168,6 @@ Stimulation = p.open(format=pyaudio.paFloat32,
                      output=True)
 
 Arduino = ControlArduino.CreateObj(BaudRate)
-
-#class ClArduino(threading.Thread):
-#    def __init__(self):
-#        threading.Thread.__init__(self)
-#        self.iterations = 0
-#        self.daemon = True  # OK for main to exit even if instance is still running
-#        self.paused = True  # start out paused
-#        self.state = threading.Condition()
-#        
-#    def run(self):
-#        while True:
-#            PiezoRec[Freq][Trial].append(Arduino.read())
-#    
-#    def pause(self):
-#        with self.state:
-#            self.paused = True  # make self block and wait
-#    
-#    def resume(self):
-#        with self.state:
-#            self.paused = False
-#            self.state.notify()  # unblock self if waiting
-#    
-#    def stop(self):
-#        with self.state:
-#            self.stopped = True
 
 class ClArduino(Thread):
     def run(self):
@@ -255,49 +233,31 @@ for Freq in range(len(Freqs)):
 ClArduino().stop()
 print('Done.')
 
+with shelve.open(FileName) as Shelve:
+    Shelve['Piezo'] = PiezoRec
+    Shelve['TTLs'] = TTLs
+    Shelve['DataInfo'] = DataInfo
 
-File = open(Folder+'/'+'PiezoRec.pckl', 'wb')
-pickle.dump(PiezoRec, File)
-File.close()
-del(File)
 
-File = open(Folder+'/'+'TTLs.pckl', 'wb')
-pickle.dump(TTLs, File)
-File.close()
-del(File)
-
-File = open(Folder+'/'+'DataInfo.pckl', 'wb')
-pickle.dump(DataInfo, File)
-File.close()
-del(File)
 print('Data saved.')
 
 
 #%% Analysis
 
 ## If needed:
-#import pickle
+#import shelve
+#import matplotlib.pyplot as plt
 #
-#File = open(Folder+'/'+'PiezoRec.pckl', 'rb')
-#PiezoRec = pickle.load(File)
-#File.close()
-#del(File)
+#FileName = '20160209105940-TestingSensor'
 #
-#File = open(Folder+'/'+'TTLs.pckl', 'rb')
-#TTLs = pickle.load(File)
-#File.close()
-#del(File)
+#with shelve.open(FileName) as Shelve:
+#    PiezoRec = Shelve['Piezo']
+#    TTLs = Shelve['TTLs']
+#    DataInfo = Shelve['DataInfo']
 #
-#File = open(Folder+'/'+'DataInfo.pckl', 'rb')
-#DataInfo = pickle.load(File)
-#File.close()
-#del(File)
-#
-#Rate, BaudRate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, \
-#SoundLoudPulseDur, SoundBackgroundAfterPulseDur, SoundBetweenStimDur, \
-#SoundBackgroundAmpF, SoundPulseAmpF, NoiseFrequency, NoiseFrequency, TTLAmpF, \
-#Folder = DataInfo
-
+#for Key, Value in DataInfo.items():
+#    exec(str(Key) + '=' + 'Value')
+#del(Key, Value)
 
 RecordingData = [0]*len(PiezoRec)
 for Freq in range(len(PiezoRec)):   
@@ -325,5 +285,11 @@ for Freq in range(len(TTLs)):
                 TTLsData[Freq][Trial][_] = int(TTLs[Freq][Trial][_])
             except ValueError:
                 print('Error: ', TTLs[Freq][Trial][_])
+                TTLsData[Freq][Trial][_] = 0
+        
+        for _ in range(len(TTLsData[Freq][Trial])):
+            if 15 < TTLsData[Freq][Trial][_] < 70:
+                pass
+            else:
                 TTLsData[Freq][Trial][_] = 0
 print('Done analyzing data.')

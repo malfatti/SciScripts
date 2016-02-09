@@ -166,7 +166,7 @@ Reading = q.open(format=pyaudio.paFloat32,
 XLim = (0, 12800)
 YLim = (-0.003, 0.003)
 FramesPerBuf = 512
-ControlSoundBoard.Microscilloscope(Rate, XLim, YLim)
+ControlSoundBoard.MicrOscilloscope(Rate, XLim, YLim)
 
 
 #%% Run!!

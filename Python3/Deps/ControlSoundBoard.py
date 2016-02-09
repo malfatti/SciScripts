@@ -390,7 +390,7 @@ def ReduceStim(SObj):
     return(SObj)
 
 
-def Microscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
+def MicrOscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
     """ Read data from sound board input and plot it until the windows is 
     closed. """
     
@@ -424,3 +424,43 @@ def Microscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
         return Plot,
     
     Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=16, blit=False)
+
+
+def MicrOscilloscopeRec(Rate, XLim, YLim, FramesPerBuf=512):
+    """ Read data from sound board input, record it to a video and plot it 
+    until the windows is closed (with a delay). """
+    
+    import array
+    import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
+    import pyaudio
+
+    r = pyaudio.PyAudio()
+    
+    Plotting = r.open(format=pyaudio.paFloat32,
+                         channels=1,
+                         rate=Rate,
+                         input=True,
+                         output=False,
+                         frames_per_buffer=FramesPerBuf)
+                         #stream_callback=InCallBack)
+    
+    Writers = animation.writers['ffmpeg']
+    Writer = Writers(fps=15, metadata=dict(artist='Me'))
+    
+    Fig = plt.figure()
+    Ax = plt.axes(xlim=XLim, ylim=YLim)
+    Plot, = Ax.plot([float('nan')]*(Rate//10), lw=1)
+    
+    def AnimInit():
+        Data = array.array('f', [])
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    def PltUp(n):
+        Data = array.array('f', Plotting.read(Rate//10))
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=16, blit=False)
+    Anim.save('MicrOscilloscope.mp4', writer=Writer)

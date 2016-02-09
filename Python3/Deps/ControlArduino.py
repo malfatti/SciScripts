@@ -30,14 +30,14 @@ def CreateObj(BaudRate):
     
     return(Arduino)
 
-def Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf=384):
+def ArduinOscilloscope(BaudRate, XLim, YLim, FramesPerBuf=384):
     
     Port = serial.tools.list_ports.comports()
     Arduino = serial.Serial(Port[-1][0], BaudRate)
     
     Fig = plt.figure()
     Ax = plt.axes(xlim=XLim, ylim=YLim)
-    Plot, = Ax.plot([float('nan')]*FramesPerBuf, lw=1)
+    Plot = Ax.plot([float('nan')]*FramesPerBuf, lw=1)[0]
     
     def AnimInit():
         Data = []
@@ -54,7 +54,7 @@ def Arduinoscilloscope(BaudRate, XLim, YLim, FramesPerBuf=384):
     Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)
 
 
-def CheckPiezoAndTTL(BaudRate, XLim, YLim, FramesPerBuf=64):
+def CheckPiezoAndTTL(BaudRate, XLim, YLim, FramesPerBuf=128):
     
     Port = serial.tools.list_ports.comports()
     Arduino = serial.Serial(Port[-1][0], BaudRate)

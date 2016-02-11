@@ -49,10 +49,10 @@ SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
 SoundPulseAmpF = [3, 2.5, 2.5, 2]
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000]]#, [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000]]#, [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
-NoOfTrials = 1
+NoOfTrials = 2
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 # P.S. for myself: check SoundTTL/LaserTTL relation 
@@ -104,7 +104,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
                                          SoundAmpF, NoiseFrequency, 
-                                         TTLAmpF=1)[0]
+                                         TTLAmpF=0.1)[0]
 SoundGap[0] = ControlSoundBoard.ReduceStim(SoundGap[0])
 SoundGap[1] = [0]*(round(Rate*SoundGapDur)*2)
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
@@ -130,7 +130,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundPulseAmpF
 SoundLoudPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
                                             SoundAmpF, NoiseFrequency, 
-                                            TTLAmpF=1)[0]
+                                            TTLAmpF=0.1)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundLoudPulse = ControlSoundBoard.ReduceStim(SoundLoudPulse)
 
@@ -218,10 +218,12 @@ for Freq in range(len(Freqs)):
         RealFreq = Freqs[Freq]; RealTrial = FreqSlot[Freq*2+Trial]
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         NoOfPulses = round(SBSDur/0.05)
-        print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(Trial)) 
         
         for Pulse in range(NoOfPulses):
             Stimulation.write(SoundBetweenStim[RealFreq])
+        
+        print('Played ', str(NoiseFrequency[RealFreq]), ' trial ', str(RealTrial))
+        print('Saved in PiezoRec[', str(RealFreq), '][', str(RealTrial), ']')
         
         ClArduino().resume()
         Stimulation.write(SoundBackground[RealFreq])
@@ -229,7 +231,7 @@ for Freq in range(len(Freqs)):
         Stimulation.write(SoundBackgroundPrePulse[RealFreq])
         Stimulation.write(SoundLoudPulse[RealFreq])
         Stimulation.write(SoundBackgroundAfterPulse[RealFreq])
-        ClArduino().pause()
+        ClArduino().pause() 
 ClArduino().stop()
 print('Done.')
 
@@ -268,7 +270,7 @@ for Freq in range(len(PiezoRec)):
         
         for _ in range(len(PiezoRec[Freq][Trial])):
             try:
-                RecordingData[Freq][Trial][_] = int(PiezoRec[Freq][Trial][_])
+                RecordingData[Freq][Trial][_] = int(PiezoRec[Freq][Trial][_])-425
             except ValueError:
                 print('Error: ', PiezoRec[Freq][Trial][_])
                 RecordingData[Freq][Trial][_] = 0

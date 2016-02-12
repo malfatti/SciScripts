@@ -23,7 +23,7 @@ an Arduino board.
 #%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
-AnimalName = 'TestingSensor'
+AnimalName = '1OE'
 
 Rate = 128000
 BaudRate = 115200
@@ -49,13 +49,12 @@ SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
 SoundPulseAmpF = [3, 2.5, 2.5, 2]
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000]]#, [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 2
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-# P.S. for myself: check SoundTTL/LaserTTL relation 
 TTLAmpF = 0
 """==========#==========#==========#=========="""
 
@@ -216,14 +215,12 @@ for Freq in range(len(Freqs)):
     for Trial in Trials:
         Arduino.flush()
         RealFreq = Freqs[Freq]; RealTrial = FreqSlot[Freq*2+Trial]
+        print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(RealTrial))
+        
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         NoOfPulses = round(SBSDur/0.05)
-        
         for Pulse in range(NoOfPulses):
             Stimulation.write(SoundBetweenStim[RealFreq])
-        
-        print('Played ', str(NoiseFrequency[RealFreq]), ' trial ', str(RealTrial))
-        print('Saved in PiezoRec[', str(RealFreq), '][', str(RealTrial), ']')
         
         ClArduino().resume()
         Stimulation.write(SoundBackground[RealFreq])
@@ -270,9 +267,13 @@ for Freq in range(len(PiezoRec)):
         
         for _ in range(len(PiezoRec[Freq][Trial])):
             try:
-                RecordingData[Freq][Trial][_] = int(PiezoRec[Freq][Trial][_])-425
+                RecordingData[Freq][Trial][_] = int(PiezoRec[Freq][Trial][_])-417
             except ValueError:
                 print('Error: ', PiezoRec[Freq][Trial][_])
+                RecordingData[Freq][Trial][_] = 0
+        
+        for _ in range(len(RecordingData[Freq][Trial])):
+            if RecordingData[Freq][Trial][_] > 1000:
                 RecordingData[Freq][Trial][_] = 0
 
 TTLsData = [0]*len(TTLs)
@@ -290,7 +291,7 @@ for Freq in range(len(TTLs)):
                 TTLsData[Freq][Trial][_] = 0
         
         for _ in range(len(TTLsData[Freq][Trial])):
-            if 15 < TTLsData[Freq][Trial][_] < 70:
+            if 60 < TTLsData[Freq][Trial][_] < 130:
                 pass
             else:
                 TTLsData[Freq][Trial][_] = 0

@@ -16,20 +16,42 @@
 
 Arduino will read serial inputs and print them in serial,separated by tabs
 and lines.
+
+The code to increase sampling rate to 38.5KHz (by setting prescale to 16) 
+is from jmknapp. Source:
+http://forum.arduino.cc/index.php?topic=6549.0
 */
 
+// defines for setting and clearing register bits
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
+
+// code:
 const int Piezo = A0;
-const int PiezoTTL = A3;
+const int TTLs = A3;
 
 void setup() {
+  // set prescale to 16
+  sbi(ADCSRA,ADPS2) ;
+  cbi(ADCSRA,ADPS1) ;
+  cbi(ADCSRA,ADPS0) ;
+
   Serial.begin(115200);
   analogReference(INTERNAL);
 }
 
 
 void loop() {
-  Serial.print(analogRead(Piezo));
+  int PiezoV = analogRead(Piezo);
+  //delay(1);
+  int TTLsV = analogRead(TTLs);
+  
+  Serial.print(PiezoV);
   Serial.print("\t");
-  Serial.print(analogRead(PiezoTTL));
+  Serial.print(TTLsV);
   Serial.println();
 }

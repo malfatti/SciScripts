@@ -31,7 +31,7 @@ Sumarizing the commands:
  P = 1s light pulse
  O = On
  o = Off
- */
+*/
 
 const int LaserPin =  13;
 const int LaserTTLPin =  12;

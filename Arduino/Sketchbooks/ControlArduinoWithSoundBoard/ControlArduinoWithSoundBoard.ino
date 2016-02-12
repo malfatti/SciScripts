@@ -13,6 +13,9 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Arduino will read an analog in and, depending on the voltage, it will turn on a
+digital port, or both. This provides 5V TTLs even if you have analog small voltage.
 */
 const int SoundAndLaserTTLIn = 3;
 const int LaserOut =  13;

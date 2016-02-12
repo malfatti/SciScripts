@@ -15,13 +15,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.       
 
 In this program, Arduino will read serial input and, depending on the value, 
-it will turn on or off a digital pin. We use this to sinchronize DAQs in 
-different computers.
+it will turn on and off (5ms delay) a digital pin. We use this to sinchronize 
+DAQs in different computers.
 
 Sumarizing the commands:
 A = turn D13 on
-
- */
+*/
 
 const int Pin13 =  13;
 
@@ -44,9 +43,8 @@ void loop() {
 
   if (ch == 'A') {
       digitalWrite(Pin13, HIGH);
-  }
-  
-  if (ch == 'a') {
+      delay(2)
       digitalWrite(Pin13, LOW);
   }
+
 }

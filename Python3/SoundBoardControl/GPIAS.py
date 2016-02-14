@@ -23,6 +23,8 @@ in the sound board input.
 #%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
+AnimalName = '1ODE'
+
 Rate = 128000
 
 ## Fill all durations in SECONDS!
@@ -46,19 +48,36 @@ SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
 SoundPulseAmpF = [1, 0.9, 0.8, 0.7]
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000]]#, [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
-NoOfTrials = 2
+NoOfTrials = 5
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 """==========#==========#==========#=========="""
 
 import array
+import datetime
 import ControlSoundBoard
 import pyaudio
 import random
+import shelve
+
+Date = datetime.datetime.now()
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName])
+
+## Prepare dict w/ experimental setup
+DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
+                                       'SoundBackgroundDur', 
+                                       'SoundGapDur', 
+                                       'SoundBackgroundPrePulseDur', 
+                                       'SoundLoudPulseDur', 
+                                       'SoundBackgroundAfterPulseDur', 
+                                       'SoundBetweenStimDur', 
+                                       'SoundBackgroundAmpF', 'SoundPulseAmpF', 
+                                       'NoiseFrequency', 'NoOfTrials', 
+                                       'TTLAmpF', 'FileName'])
 
 print('Creating SoundBackground...')
 #SoundPulseDur = 0.05
@@ -164,7 +183,7 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 
 #%% Check sensor's signal
-XLim = (0, 12800)
+XLim = (0, Rate//10)
 YLim = (-0.003, 0.003)
 FramesPerBuf = 512
 ControlSoundBoard.MicrOscilloscope(Rate, XLim, YLim)
@@ -219,6 +238,13 @@ for Freq in range(len(Freqs)):
         Reading.stop_stream()
 print('Done.')
 
+with shelve.open(FileName) as Shelve:
+    Shelve['SoundRec'] = SoundRec
+    Shelve['FakeTTLs'] = FakeTTLs
+    Shelve['DataInfo'] = DataInfo
+
+print('Data saved.')
+
 #%% Analysis
 RecordingData = [0]*len(SoundRec)
 
@@ -236,11 +262,12 @@ for Freq in range(len(SoundRec)):
 #                                                           padlen=0)
 #        del(f1,f2)
 
-SoundTTLs = [0]*len(SoundRec); SoundTTLs[0] = [0]*len(SoundRec[0])
+SoundTTLs = [0]*len(SoundRec)
 for Freq in range(len(NoiseFrequency)):
+    SoundTTLs[Freq] = [0]*len(SoundRec[Freq])
     for Trial in range(NoOfTrials*2):
         SoundTTLs[Freq][Trial] = [float('nan')]*((len(SoundRec[Freq][Trial])*
                                                   len(SoundRec[Freq][Trial][0]))//4)
         SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
         SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [1]*len(range(SStart, SEnd))
+        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])*1.5]*len(range(SStart, SEnd))

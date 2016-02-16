@@ -45,7 +45,8 @@ SoundBetweenStimDur = [10, 20]
 
 # Background and pulse amplification factors for each frequency tested
 SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
-SoundPulseAmpF = [1, 0.9, 0.8, 0.7]
+#SoundPulseAmpF = [1, 0.9, 0.8, 0.7]    # Real pulse
+SoundPulseAmpF = [0.05, 0.05, 0.05, 0.05]    # Small pulse, for habituation
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
 NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
@@ -246,6 +247,21 @@ with shelve.open(FileName) as Shelve:
 print('Data saved.')
 
 #%% Analysis
+
+#import shelve
+#import matplotlib.pyplot as plt
+#
+#FileName = '20160214120627-1ODE'
+#
+#with shelve.open(FileName) as Shelve:
+#    SoundRec = Shelve['SoundRec']
+#    FakeTTLs = Shelve['FakeTTLs']
+#    DataInfo = Shelve['DataInfo']
+#
+#for Key, Value in DataInfo.items():
+#    exec(str(Key) + '=' + 'Value')
+#del(Key, Value)
+
 RecordingData = [0]*len(SoundRec)
 
 for Freq in range(len(SoundRec)):   

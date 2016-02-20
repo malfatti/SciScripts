@@ -81,8 +81,6 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'TTLAmpF', 'FileName'])
 
 print('Creating SoundBackground...')
-#SoundPulseDur = 0.05
-#SoundPulseNo = round(SoundBackgroundDur/0.05)
 SoundPulseDur = SoundBackgroundDur
 SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
@@ -100,7 +98,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
                                         SoundAmpF, NoiseFrequency, 
-                                        TTLAmpF=0.1)[0]
+                                        TTLAmpF=1)[0]
 SoundGap[0] = ControlSoundBoard.ReduceStim(SoundGap[0])
 SoundGap[1] = [0]*(round(Rate*SoundGapDur)*2)
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
@@ -126,7 +124,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundPulseAmpF
 SoundLoudPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
                                             SoundAmpF, NoiseFrequency, 
-                                            TTLAmpF=0.1)[0]
+                                            TTLAmpF=1)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundLoudPulse = ControlSoundBoard.ReduceStim(SoundLoudPulse)
 
@@ -143,13 +141,13 @@ SoundBackgroundAfterPulse = ControlSoundBoard.ReduceStim(SoundBackgroundAfterPul
 
 
 print('Creating SoundBetweenStimDur...')
-SoundPulseDur = 0.05
-SoundPulseNo = round(SoundBetweenStimDur[1]/0.05)
+SBSUnitDur = 0.5
+SoundPulseNo = round(SoundBetweenStimDur[1]/SBSUnitDur)
 SoundAmpF = SoundBackgroundAmpF
 SoundBetweenStim = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                  SoundPulseNo, SoundAmpF, 
                                                  NoiseFrequency, TTLAmpF)[0]
-del(SoundPulseDur, SoundPulseNo, SoundAmpF)
+del(SoundPulseNo, SoundAmpF)
 SoundBetweenStim = ControlSoundBoard.ReduceStim(SoundBetweenStim)
 
 
@@ -220,7 +218,7 @@ for Freq in range(len(Freqs)):
     for Trial in Trials:
         RealFreq = Freqs[Freq]; RealTrial = FreqSlot[Freq*2+Trial]
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
-        NoOfPulses = round(SBSDur/0.05)
+        NoOfPulses = round(SBSDur/SBSUnitDur)
         print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(Trial)) 
         
         for Pulse in range(NoOfPulses):
@@ -247,9 +245,8 @@ with shelve.open(FileName) as Shelve:
 print('Data saved.')
 
 #%% Analysis
+#
 
-#import shelve
-#import matplotlib.pyplot as plt
 #
 #FileName = '20160214120627-1ODE'
 #
@@ -262,28 +259,40 @@ print('Data saved.')
 #    exec(str(Key) + '=' + 'Value')
 #del(Key, Value)
 
-RecordingData = [0]*len(SoundRec)
 
-for Freq in range(len(SoundRec)):   
-    RecordingData[Freq] = [0]*len(SoundRec[Freq])
-    
-    for Trial in range(len(SoundRec[Freq])):
-        RecordingData[Freq][Trial] = array.array('f', 
-                                                b''.join(SoundRec[Freq][Trial]))
-    
-##        passband = [50/(Rate/2), 300/(Rate/2)]
-#        f2, f1 = scipy.signal.butter(4, 300/(Rate/2), 'lowpass')
-#        RecordingData[Freq][Trial] = scipy.signal.filtfilt(f2, f1, RecordingData[Freq][Trial], 
-#                                                           padtype='odd', 
-#                                                           padlen=0)
-#        del(f1,f2)
+import array
+import matplotlib.pyplot as plt
+import numpy as np
+import shelve
+from scipy import signal
 
 SoundTTLs = [0]*len(SoundRec)
 for Freq in range(len(NoiseFrequency)):
     SoundTTLs[Freq] = [0]*len(SoundRec[Freq])
+    
     for Trial in range(NoOfTrials*2):
         SoundTTLs[Freq][Trial] = [float('nan')]*((len(SoundRec[Freq][Trial])*
                                                   len(SoundRec[Freq][Trial][0]))//4)
         SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
         SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])*1.5]*len(range(SStart, SEnd))
+        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(SoundRec[Freq][Trial])*1.5]*len(range(SStart, SEnd))
+
+
+RecordingData = [0]*len(SoundRec)
+for Freq in range(len(NoiseFrequency)):
+    RecordingData[Freq] = [0]*len(SoundRec[Freq])
+    
+    for Trial in range(NoOfTrials*2):
+        RecordingData[Freq][Trial] = array.array('f', 
+                                                b''.join(SoundRec[Freq][Trial]))
+        
+        RecordingData[Freq][Trial] = abs(signal.hilbert(RecordingData[Freq][Trial]))
+        passband = [3/(Rate/2), 300/(Rate/2)]
+        f2, f1 = signal.butter(1, passband, 'bandpass')
+        RecordingData[Freq][Trial] = signal.filtfilt(f2, f1, 
+                                         RecordingData[Freq][Trial], 
+                                         padtype='odd', padlen=0)
+    
+    for Trial in range(NoOfTrials-1):
+        RecordingData[Freq][0] = (np.array(RecordingData[Freq][0]) + np.array(RecordingData[Freq][Trial2])) / 2
+        RecordingData[Freq][1] = 

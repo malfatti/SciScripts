@@ -335,7 +335,9 @@ NotesReadable = [NoteCode(int(NREl)) for NREl in NotesIndexCode]
 DurationsReadable = [DurationCode(int(DREl)) for DREl in DurationsIndexCode]
 IntensitiesReadable = [IntensityCode(int(IREl)) for IREl in IntensitiesIndexCode]
 
-MelodyRaw = [NRVal+DurationsReadable[NoteIndex]+chr(92)+IntensitiesReadable[NoteIndex] for NoteIndex,NRVal in enumerate(NotesReadable)]
+MelodyRaw = [NRVal+DurationsReadable[NoteIndex]+chr(92)+
+             IntensitiesReadable[NoteIndex] for NoteIndex,NRVal in 
+                                                enumerate(NotesReadable)]
 
 ## Writing the text file
 

@@ -23,7 +23,7 @@ in the sound board input.
 #%% Set parameters of the experiment
 
 """==========#==========#==========#=========="""
-AnimalName = '1ODE'
+AnimalName = 'TestSetup01'
 
 Rate = 128000
 
@@ -45,11 +45,12 @@ SoundBetweenStimDur = [10, 20]
 
 # Background and pulse amplification factors for each frequency tested
 SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
-#SoundPulseAmpF = [1, 0.9, 0.8, 0.7]    # Real pulse
-SoundPulseAmpF = [0.05, 0.05, 0.05, 0.05]    # Small pulse, for habituation
+SoundPulseAmpF = [1, 0.9, 0.8, 0.7]    # Real pulse
+#SoundPulseAmpF = [0.05, 0.05, 0.05, 0.05]    # Small pulse, for habituation
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000], 
+                  [12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 5
@@ -61,12 +62,14 @@ TTLAmpF = 0
 import array
 import datetime
 import ControlSoundBoard
+import matplotlib.pyplot as plt
 import pyaudio
 import random
 import shelve
+from scipy import signal
 
 Date = datetime.datetime.now()
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName])
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS-', AnimalName])
 
 ## Prepare dict w/ experimental setup
 DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
@@ -141,13 +144,13 @@ SoundBackgroundAfterPulse = ControlSoundBoard.ReduceStim(SoundBackgroundAfterPul
 
 
 print('Creating SoundBetweenStimDur...')
-SBSUnitDur = 0.5
+SBSUnitDur = 0.5; SoundPulseDur = SBSUnitDur
 SoundPulseNo = round(SoundBetweenStimDur[1]/SBSUnitDur)
 SoundAmpF = SoundBackgroundAmpF
 SoundBetweenStim = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                  SoundPulseNo, SoundAmpF, 
                                                  NoiseFrequency, TTLAmpF)[0]
-del(SoundPulseNo, SoundAmpF)
+del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 SoundBetweenStim = ControlSoundBoard.ReduceStim(SoundBetweenStim)
 
 
@@ -246,9 +249,12 @@ print('Data saved.')
 
 #%% Analysis
 #
-
+#import array
+#import matplotlib.pyplot as plt
+#import shelve
+#from scipy import signal
 #
-#FileName = '20160214120627-1ODE'
+#FileName = '20160220112122-GPIAS-1ODE'
 #
 #with shelve.open(FileName) as Shelve:
 #    SoundRec = Shelve['SoundRec']
@@ -259,16 +265,10 @@ print('Data saved.')
 #    exec(str(Key) + '=' + 'Value')
 #del(Key, Value)
 
+NoGapId = list(range(0, NoOfTrials*2, 2))
+GapId = list(range(1, NoOfTrials*2, 2))
 
-import array
-import matplotlib.pyplot as plt
-import numpy as np
-import shelve
-from scipy import signal
-
-
-RecordingData = [0]*len(SoundRec)
-SoundTTLs = [0]*len(SoundRec)
+RecordingData = [0]*len(SoundRec); SoundTTLs = [0]*len(SoundRec)
 for Freq in range(len(NoiseFrequency)):
     RecordingData[Freq] = [0]*len(SoundRec[Freq])
     SoundTTLs[Freq] = [0]*len(SoundRec[Freq])
@@ -282,13 +282,11 @@ for Freq in range(len(NoiseFrequency)):
 
         RecordingData[Freq][Trial] = array.array('f', 
                                                 b''.join(SoundRec[Freq][Trial]))
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])
-                                               *1.5]*len(range(SStart, SEnd))
+        
         
         RecordingData[Freq][Trial] = RecordingData[Freq][Trial][
-                                        SStart-(0.05*Rate):SStart+(0.190*Rate)]
-        SoundTTLs[Freq][Trial] = SoundTTLs[Freq][Trial][SStart-(0.05*Rate):
-                                                        SStart+(0.190*Rate)]
+                                        int(SStart-(0.05*Rate)):
+                                            int(SStart+(0.190*Rate))]
         
         RecordingData[Freq][Trial] = abs(signal.hilbert(
                                                 RecordingData[Freq][Trial]))
@@ -297,7 +295,42 @@ for Freq in range(len(NoiseFrequency)):
         RecordingData[Freq][Trial] = signal.filtfilt(f2, f1, 
                                          RecordingData[Freq][Trial], 
                                          padtype='odd', padlen=0)
+        
+        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])
+                                               *1.5]*len(range(SStart, SEnd))
+        SoundTTLs[Freq][Trial] = SoundTTLs[Freq][Trial][int(SStart-(0.05*Rate)):
+                                                        int(SStart+(0.190*Rate))]
+
+    NoGapAll = [RecordingData[Freq][_] for _ in NoGapId]
+    GapAll = [RecordingData[Freq][_] for _ in GapId]
+    NoGapSum = list(map(sum, zip(*NoGapAll)))
+    GapSum = list(map(sum, zip(*GapAll)))
     
-    for Trial in range(NoOfTrials-1):
-        RecordingData[Freq][0] = 
-        RecordingData[Freq][1] =
+    RecordingData[Freq] = [0, 0]
+    RecordingData[Freq][0] = [_/NoOfTrials for _ in NoGapSum]
+    RecordingData[Freq][1] = [_/NoOfTrials for _ in GapSum]
+    RecordingData[Freq][0] = signal.savgol_filter(RecordingData[Freq][0], 5, 2, mode='nearest')
+    RecordingData[Freq][1] = signal.savgol_filter(RecordingData[Freq][1], 5, 2, mode='nearest')
+    del(NoGapAll, GapAll, NoGapSum, GapSum)
+
+
+#for Freq in range(len(NoiseFrequency)):
+#    plt.figure(Freq+1)
+#    plt.plot(RecordingData[Freq][0], label='No gap')
+#    plt.plot(RecordingData[Freq][1], label='Gap')
+#    plt.plot(SoundTTLs[Freq][0], label='Sound pulse', color='black')
+#    
+#    plt.ylabel('Voltage [V]'); plt.xlabel('Time [ms]')
+#    plt.legend(loc='best', frameon=False)
+#    plt.locator_params(tight=True)
+#    plt.tick_params(direction='out')
+#    plt.axes().spines['right'].set_visible(False)
+#    plt.axes().spines['top'].set_visible(False)
+#    plt.axes().yaxis.set_ticks_position('left')
+#    plt.axes().xaxis.set_ticks_position('bottom')
+#    plt.show()
+#    input('Press enter to save figure: ')
+#    FigName = FileName + '-' + str(NoiseFrequency[Freq][0]) + '_' + \
+#              str(NoiseFrequency[Freq][1]) + '.pdf'
+#    plt.savefig(FileName+'.pdf', transparent=True)
+#    print('Figure ' + str(Freq+1) + ' saved.')

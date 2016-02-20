@@ -275,18 +275,23 @@ for Freq in range(len(NoiseFrequency)):
     
     for Trial in range(NoOfTrials*2):
         SoundTTLs[Freq][Trial] = [float('nan')]*((len(SoundRec[Freq][Trial])*
-                                                  len(SoundRec[Freq][Trial][0]))//4)
+                                                  len(SoundRec[Freq][Trial][0]))
+                                                  //4)
         SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
         SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
 
         RecordingData[Freq][Trial] = array.array('f', 
                                                 b''.join(SoundRec[Freq][Trial]))
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])*1.5]*len(range(SStart, SEnd))
+        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])
+                                               *1.5]*len(range(SStart, SEnd))
         
-        RecordingData[Freq][Trial] = RecordingData[Freq][Trial][SStart-(0.05*Rate):SStart+(0.190*Rate)]
-        SoundTTLs[Freq][Trial] = SoundTTLs[Freq][Trial][SStart-(0.05*Rate):SStart+(0.190*Rate)]
+        RecordingData[Freq][Trial] = RecordingData[Freq][Trial][
+                                        SStart-(0.05*Rate):SStart+(0.190*Rate)]
+        SoundTTLs[Freq][Trial] = SoundTTLs[Freq][Trial][SStart-(0.05*Rate):
+                                                        SStart+(0.190*Rate)]
         
-        RecordingData[Freq][Trial] = abs(signal.hilbert(RecordingData[Freq][Trial]))
+        RecordingData[Freq][Trial] = abs(signal.hilbert(
+                                                RecordingData[Freq][Trial]))
         passband = [3/(Rate/2), 300/(Rate/2)]
         f2, f1 = signal.butter(1, passband, 'bandpass')
         RecordingData[Freq][Trial] = signal.filtfilt(f2, f1, 

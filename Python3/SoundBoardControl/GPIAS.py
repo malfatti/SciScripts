@@ -266,8 +266,11 @@ import numpy as np
 import shelve
 from scipy import signal
 
+
+RecordingData = [0]*len(SoundRec)
 SoundTTLs = [0]*len(SoundRec)
 for Freq in range(len(NoiseFrequency)):
+    RecordingData[Freq] = [0]*len(SoundRec[Freq])
     SoundTTLs[Freq] = [0]*len(SoundRec[Freq])
     
     for Trial in range(NoOfTrials*2):
@@ -275,16 +278,13 @@ for Freq in range(len(NoiseFrequency)):
                                                   len(SoundRec[Freq][Trial][0]))//4)
         SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
         SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(SoundRec[Freq][Trial])*1.5]*len(range(SStart, SEnd))
 
-
-RecordingData = [0]*len(SoundRec)
-for Freq in range(len(NoiseFrequency)):
-    RecordingData[Freq] = [0]*len(SoundRec[Freq])
-    
-    for Trial in range(NoOfTrials*2):
         RecordingData[Freq][Trial] = array.array('f', 
                                                 b''.join(SoundRec[Freq][Trial]))
+        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])*1.5]*len(range(SStart, SEnd))
+        
+        RecordingData[Freq][Trial] = RecordingData[Freq][Trial][SStart-(0.05*Rate):SStart+(0.190*Rate)]
+        SoundTTLs[Freq][Trial] = SoundTTLs[Freq][Trial][SStart-(0.05*Rate):SStart+(0.190*Rate)]
         
         RecordingData[Freq][Trial] = abs(signal.hilbert(RecordingData[Freq][Trial]))
         passband = [3/(Rate/2), 300/(Rate/2)]
@@ -294,5 +294,5 @@ for Freq in range(len(NoiseFrequency)):
                                          padtype='odd', padlen=0)
     
     for Trial in range(NoOfTrials-1):
-        RecordingData[Freq][0] = (np.array(RecordingData[Freq][0]) + np.array(RecordingData[Freq][Trial2])) / 2
-        RecordingData[Freq][1] = 
+        RecordingData[Freq][0] = 
+        RecordingData[Freq][1] =

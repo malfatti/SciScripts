@@ -24,7 +24,6 @@ equipment.
 
 #%% Set parameters of the experiment
 
-"""==========#==========#==========#=========="""
 Rate = 128000
 
 ## Fill all durations in SECONDS! If
@@ -45,7 +44,7 @@ NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
 TTLAmpF = 1
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
 MicSens_dB = -47.46
-"""==========#==========#==========#=========="""
+#==========#==========#==========#==========#
 
 import array
 import ControlSoundBoard

@@ -22,7 +22,8 @@ in the sound board input.
 
 #%% Set parameters of the experiment
 
-AnimalName = 'TestSetup01'
+AnimalName = 'TestSetup02'
+
 Rate = 128000
 
 ## Fill all durations in SECONDS!
@@ -160,51 +161,12 @@ Stimulation = p.open(format=pyaudio.paFloat32,
                      input=False,
                      output=True)
 
-q = pyaudio.PyAudio()
-InOn = False
-RecStop = False
-def InCallBack(in_data, frame_count, time_info, status):
-    if InOn:
-        global SoundRec
-        SoundRec[RealFreq][RealTrial].append(in_data)
-        
-    if RecStop:
-        InFlag = pyaudio.paComplete
-    else:
-        InFlag = pyaudio.paContinue
-    return(None, InFlag)
-
-Reading = q.open(format=pyaudio.paFloat32,
-                     channels=1,
-                     rate=Rate,
-                     input=True,
-                     output=False,
-                     stream_callback=InCallBack)
-
-
-#%% Check sensor's signal
-XLim = (0, Rate//10)
-YLim = (-0.003, 0.003)
-FramesPerBuf = 512
-ControlSoundBoard.MicrOscilloscope(Rate, XLim, YLim)
-
 
 #%% Run!!
 print('Preallocating memory and pseudo-randomizing the experiment...')
 
 Freqs = [In for In, El in enumerate(NoiseFrequency)]*NoOfTrials
 random.shuffle(Freqs)
-
-SoundRec = [[] for _ in range(len(NoiseFrequency))]
-for _ in range(len(SoundRec)):
-    SoundRec[_] = [[] for _ in range(NoOfTrials*2)]
-
-FakeTTLs = [[] for _ in range(len(NoiseFrequency))]
-for Freq in range(len(FakeTTLs)):
-    FakeTTLs[Freq] = [[] for _ in range(NoOfTrials*2)]
-    
-    for Trial in range(len(FakeTTLs[Freq])):
-        FakeTTLs[Freq][Trial] = [[], []]
 
 FreqSlot = [0]*(len(NoiseFrequency)*NoOfTrials*2)
 for FE in range(len(Freqs)):
@@ -225,110 +187,14 @@ for Freq in range(len(Freqs)):
         for Pulse in range(NoOfPulses):
             Stimulation.write(SoundBetweenStim[RealFreq])
         
-        Reading.start_stream()
-        RecStop = False; InOn = True
         Stimulation.write(SoundBackground[RealFreq])
         Stimulation.write(SoundGap[Trial][RealFreq])
         Stimulation.write(SoundBackgroundPrePulse[RealFreq])
-        FakeTTLs[RealFreq][RealTrial][0] = len(SoundRec[RealFreq][RealTrial])
         Stimulation.write(SoundLoudPulse[RealFreq])
-        FakeTTLs[RealFreq][RealTrial][1] = len(SoundRec[RealFreq][RealTrial])
         Stimulation.write(SoundBackgroundAfterPulse[RealFreq])
-        InOn = False; RecStop = True
-        Reading.stop_stream()
 print('Done.')
 
-with shelve.open(FileName) as Shelve:
-    Shelve['SoundRec'] = SoundRec
-    Shelve['FakeTTLs'] = FakeTTLs
-    Shelve['DataInfo'] = DataInfo
+#with shelve.open(FileName) as Shelve:
+#    Shelve['DataInfo'] = DataInfo
 
 print('Data saved.')
-
-#%% Analysis
-#
-#import array
-#import matplotlib.pyplot as plt
-#import shelve
-#from scipy import signal
-#
-#FileName = '20160220112122-GPIAS-1ODE'
-#
-#with shelve.open(FileName) as Shelve:
-#    SoundRec = Shelve['SoundRec']
-#    FakeTTLs = Shelve['FakeTTLs']
-#    DataInfo = Shelve['DataInfo']
-#
-#for Key, Value in DataInfo.items():
-#    exec(str(Key) + '=' + 'Value')
-#del(Key, Value)
-
-NoGapId = list(range(0, NoOfTrials*2, 2))
-GapId = list(range(1, NoOfTrials*2, 2))
-
-RecordingData = [0]*len(SoundRec); SoundTTLs = [0]*len(SoundRec)
-for Freq in range(len(NoiseFrequency)):
-    RecordingData[Freq] = [0]*len(SoundRec[Freq])
-    SoundTTLs[Freq] = [0]*len(SoundRec[Freq])
-    
-    for Trial in range(NoOfTrials*2):
-        SoundTTLs[Freq][Trial] = [float('nan')]*((len(SoundRec[Freq][Trial])*
-                                                  len(SoundRec[Freq][Trial][0]))
-                                                  //4)
-        SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
-
-        RecordingData[Freq][Trial] = array.array('f', 
-                                                b''.join(SoundRec[Freq][Trial]))
-        
-        
-        RecordingData[Freq][Trial] = RecordingData[Freq][Trial][
-                                        int(SStart-(0.05*Rate)):
-                                            int(SStart+(0.190*Rate))]
-        
-        RecordingData[Freq][Trial] = abs(signal.hilbert(
-                                                RecordingData[Freq][Trial]))
-        passband = [3/(Rate/2), 300/(Rate/2)]
-        f2, f1 = signal.butter(1, passband, 'bandpass')
-        RecordingData[Freq][Trial] = signal.filtfilt(f2, f1, 
-                                         RecordingData[Freq][Trial], 
-                                         padtype='odd', padlen=0)
-        
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])
-                                               *1.5]*len(range(SStart, SEnd))
-        SoundTTLs[Freq][Trial] = SoundTTLs[Freq][Trial][int(SStart-(0.05*Rate)):
-                                                        int(SStart+(0.190*Rate))]
-
-    NoGapAll = [RecordingData[Freq][_] for _ in NoGapId]
-    GapAll = [RecordingData[Freq][_] for _ in GapId]
-    NoGapSum = list(map(sum, zip(*NoGapAll)))
-    GapSum = list(map(sum, zip(*GapAll)))
-    
-    RecordingData[Freq] = [0, 0]
-    RecordingData[Freq][0] = [_/NoOfTrials for _ in NoGapSum]
-    RecordingData[Freq][1] = [_/NoOfTrials for _ in GapSum]
-    RecordingData[Freq][0] = signal.savgol_filter(RecordingData[Freq][0], 5, 2, mode='nearest')
-    RecordingData[Freq][1] = signal.savgol_filter(RecordingData[Freq][1], 5, 2, mode='nearest')
-    del(NoGapAll, GapAll, NoGapSum, GapSum)
-
-
-#for Freq in range(len(NoiseFrequency)):
-#    plt.figure(Freq+1)
-#    plt.plot(RecordingData[Freq][0], label='No gap')
-#    plt.plot(RecordingData[Freq][1], label='Gap')
-#    plt.plot(SoundTTLs[Freq][0], label='Sound pulse', color='black')
-#    
-#    plt.ylabel('Voltage [V]'); plt.xlabel('Time [ms]')
-#    plt.legend(loc='best', frameon=False)
-#    plt.locator_params(tight=True)
-#    plt.tick_params(direction='out')
-#    plt.axes().spines['right'].set_visible(False)
-#    plt.axes().spines['top'].set_visible(False)
-#    plt.axes().yaxis.set_ticks_position('left')
-#    plt.axes().xaxis.set_ticks_position('bottom')
-#    plt.show()
-#    input('Press enter to save figure: ')
-#    FigName = FileName + '-' + str(NoiseFrequency[Freq][0]) + '_' + \
-#              str(NoiseFrequency[Freq][1]) + '.pdf'
-#    plt.savefig(FileName+'.pdf', transparent=True)
-#    print('Figure ' + str(Freq+1) + ' saved.')

@@ -27,49 +27,24 @@ Leão, PhD.
 """
 #%% Set up everything
 
-import alsaaudio
-import array
-#import numpy
-import random
-import scipy.signal
-
-#==========#==========#==========#==========#
-#==========#==========#==========#==========#
 Rate = 128000
-SoundPulseDur = 60 * 70 # in SECONDS!
-NoiseFrequency = [10000, 14000]
+SoundDur = 60 * 70 # in SECONDS!
+NoiseFrequency = [[10000, 14000]]
+SoundAmpF = [0.8]
+TTLAmpF = 0
 #==========#==========#==========#==========#
-#==========#==========#==========#==========#
+
+import ControlSoundBoard
+
+SoundPulseDur = 0.5
+SoundPulseNo = round(SoundDur/SoundPulseDur)
 
 # Generate sound stimulus
+Sound, SoundPauseBetweenStimBlocks, StartSound = ControlSoundBoard.GenSound(
+                                                    Rate, SoundPulseDur, 
+                                                    SoundPulseNo, SoundAmpF, 
+                                                    NoiseFrequency, TTLAmpF)
 
-SoundNoise = [random.random() for _ in range(0, round(Rate))]
-SoundPulse = [SoundNoise[ElI]*2-1 for ElI,ElV in enumerate(SoundNoise)]
-
-passband = [NoiseFrequency[i]/(Rate/2) for i,j in enumerate(NoiseFrequency)]
-f2, f1 = scipy.signal.butter(4, passband, 'bandpass')
-SoundPulseFiltered = scipy.signal.filtfilt(f2, f1, SoundPulse, padtype='odd', padlen=0)
-SoundPulseFiltered = SoundPulseFiltered.tolist()
-SoundPulseFiltered[-1] = 0
-
-Sound = array.array('f')                                                        
-Sound.fromlist(SoundPulseFiltered)
-
-
-## Generate sound objects
-
-SoundStim = alsaaudio.PCM(alsaaudio.PCM_PLAYBACK)
-SoundStim.setchannels(1)
-SoundStim.setrate(Rate)
-SoundStim.setformat(alsaaudio.PCM_FORMAT_S32_LE)
-SoundStim.setperiodsize(128)
-
-# Test:
-#SoundStim.write(Sound))
-#import matplotlib.pyplot as plt
-#plt.plot(Sound)
-
-#%% Run
-for _ in range(SoundPulseDur):
-    SoundStim.write(Sound)
-
+#%% Run!!
+""" To stop, close the console :) """
+StartSound().start()

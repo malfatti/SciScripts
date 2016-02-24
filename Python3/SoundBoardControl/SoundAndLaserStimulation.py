@@ -34,9 +34,6 @@ own settings.
 """
 #%% Set Parameters
 
-import ControlSoundBoard
-
-#==========#==========#==========#==========#
 Rate = 128000
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
@@ -75,7 +72,9 @@ LaserPulseNo = 200
 LaserStimBlockNo = 1
 # Duration of pause between blocks
 LaserPauseBetweenStimBlocksDur = 5
+#==========#==========#==========#==========#
 
+import ControlSoundBoard
 
 #%% Prepare sound stimulation
 Sound, SoundPauseBetweenStimBlocks, StartSound = \

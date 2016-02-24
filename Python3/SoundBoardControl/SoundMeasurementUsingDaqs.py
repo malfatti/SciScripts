@@ -23,7 +23,6 @@ equipment.
 
 #%% Set parameters of the experiment
 
-"""==========#==========#==========#=========="""
 Rate = 128000
 
 # Amplification factors. Set the same in the DAQ.
@@ -38,7 +37,7 @@ NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000],
 TimeRec = 2
 # Mic sensitivity, from mic datasheet, in dB re V/Pa.
 MicSens_dB = -47.46
-"""==========#==========#==========#=========="""
+#==========#==========#==========#==========#
 
 import array
 #import ControlSoundBoard

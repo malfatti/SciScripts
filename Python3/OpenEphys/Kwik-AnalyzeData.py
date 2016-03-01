@@ -20,9 +20,13 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 """
 #%% Set experiment details
 
+# Channels
 LFPCh = [1, 16]
 BrokenCh = []
-FilterData = True
+
+# ABR
+ABRLength = 12    # in ms
+ABRTTLCh = 1
 #==========#==========#==========#==========#
 
 import glob
@@ -34,16 +38,60 @@ Channels = [_ for _ in list(range(16)) if _ not in BrokenCh]
 
 
 ## Remove date from folder name
+RenameFolders = input('Rename folders (BE CAREFUL)? [y/N] ')
+if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
+    DirList = glob.glob('KwikFiles/*'); DirList.sort()
+    for FolderName in DirList:
+        NewFolderName = ''.join([FolderName[:10], FolderName[21:]])
+        NewFolderName = NewFolderName.replace("-", "")
+        os.rename(FolderName, NewFolderName)
+        print(FolderName, ' moved to ', NewFolderName)
+    del(RenameFolders, DirList, FolderName, NewFolderName)
+
+
+## Create folders
+os.makedirs('Figs', exist_ok=True)    # Figs folder
+
+
+## ABR traces
 DirList = glob.glob('KwikFiles/*'); DirList.sort()
-for FolderName in DirList:
-    NewFolderName = ''.join([FolderName[11:]])
-    NewFolderName = NewFolderName.replace("-", "")
-    os.rename(FolderName, NewFolderName)
-    print(FolderName, ' moved to ', NewFolderName)
-
-
-
-DirList = glob.glob('OpenEphysFiles/*'); DirList.sort()
-
-Raw = Kwik.load()
-Rate = Data['info']['sample_rate']
+for RecFolder in DirList:
+    FilesList = glob.glob(''.join([RecFolder, '/*'])); FilesList.sort()
+    for File in FilesList:
+        if '.kwd' in File:
+            try:
+                Raw = Kwik.load(File)
+            except OSError:
+                    print('File ', File, " is corrupted :'(")
+            
+        elif '.kwe' in File:
+            try:
+                Events = Kwik.load(File)
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+            
+        elif '.kwik' in File:
+            try:
+                Events = Kwik.load(File)
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+            
+        elif '.kwx' in File:
+            try:
+                Spks = Kwik.load(File)
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+    
+    if 'Raw' not in globals():
+        print('.kwd file is corrupted. Skipping dataset...')
+        continue
+    
+    if 'Events' not in globals():
+        print('.kwe/.kwik file is corrupted. Skipping dataset...')
+        continue
+    
+    print('Data from ', RecFolder, ' loaded.')
+    
+    Rate = Raw['info']['sample_rate']
+    NoOfSamples = int(ABRLength*Rate*(10**-3))
+    

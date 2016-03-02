@@ -33,7 +33,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-
+AnimalName = 'TestSetup01'
 Rate = 128000
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
@@ -75,9 +75,44 @@ LaserPauseBetweenStimBlocksDur = 5
 #==========#==========#==========#==========#
 
 import ControlSoundBoard
+import datetime
+import pyaudio
+import shelve
+
+with shelve.open(
+    '/home/cerebro/Malfatti/Data/Test/20160126114004-SoundMeasurement/SoundIntensity'
+    ) as Shelve:
+    SoundIntensity = Shelve['SoundIntensity']
+
+Date = datetime.datetime.now()
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundStim'])
+
+DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 
+                                       'SoundPrePauseDur', 'SoundPulseDur', 
+                                       'SoundPostPauseDur', 'SoundPulseNo', 
+                                       'SoundStimBlockNo', 
+                                       'SoundPauseBetweenStimBlocksDur', 
+                                       'SoundAmpF', 'NoiseFrequency', 
+                                       'LaserPrePauseDur', 'LaserPulseDur', 
+                                       'LaserPostPauseDur', 'LaserPulseNo',
+                                       'LaserStimBlockNo', 
+                                       'LaserPauseBetweenStimBlocksDur', 
+                                       'FileName'])
+
+with shelve.open(FileName) as Shelve:
+    Shelve['DataInfo'] = DataInfo
+del(Date, FileName, DataInfo)
+
+p = pyaudio.PyAudio()
+Stimulation = p.open(format=pyaudio.paFloat32,
+                channels=2,
+                rate=Rate,
+                output=True)
+
 
 #%% Prepare sound stimulation
-Sound, SoundPauseBetweenStimBlocks, StartSound = \
+Sound, SoundPauseBetweenStimBlocks, _ = \
     ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
                                NoiseFrequency, TTLAmpF, SoundPrePauseDur, 
                                SoundPostPauseDur, SoundStimBlockNo, 
@@ -85,7 +120,7 @@ Sound, SoundPauseBetweenStimBlocks, StartSound = \
 
 
 #%% Prepare laser stimulation
-Laser, LaserPauseBetweenStimBlocks, StartLaser = \
+Laser, LaserPauseBetweenStimBlocks, _ = \
     ControlSoundBoard.GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, 
                                LaserPostPauseDur, LaserPulseNo, 
                                LaserStimBlockNo, 
@@ -93,7 +128,7 @@ Laser, LaserPauseBetweenStimBlocks, StartLaser = \
 
 
 #%% Prepare sound and laser simultaneous stimulation
-SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, StartSoundAndLaser = \
+SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
     ControlSoundBoard.GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, 
                                     SoundPostPauseDur, SoundPulseNo, 
                                     SoundStimBlockNo, 
@@ -104,13 +139,70 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, StartSoundAndLaser = \
 
 
 #%% Run sound
-StartSound().start()
+Freq = 0; AmpF = 0
 
+NoiseFreq = NoiseFrequency[Freq]; SoundAmp = SoundAmpF[AmpF]
+for OneBlock in range(SoundStimBlockNo):
+    for OnePulse in range(SoundPulseNo):
+        Stimulation.write(Sound[Freq][AmpF])
+    
+    Stimulation.write(SoundPauseBetweenStimBlocks)
+
+print('Done. Saving info...')
+Date = datetime.datetime.now()
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundStim-', str(NoiseFreq[0]), '_', str(NoiseFreq[1]), 
+                    '-', str(SoundIntensity[Freq][str(SoundAmpF[AmpF])])[:5], 
+                    'dB'])
+
+ExpInfo = dict((Name, eval(Name)) for Name in ['SoundAmp', 'NoiseFreq', 
+                                               'FileName'])
+
+with shelve.open(FileName) as Shelve:
+    Shelve['ExpInfo'] = ExpInfo
+del(Date, FileName, ExpInfo)
+print('Saved.')
 
 #%% Run laser
-StartLaser().start()
+for OneBlock in range(LaserStimBlockNo):
+    for OnePulse in range(LaserPulseNo):
+        Stimulation.write(Laser)
+    
+    Stimulation.write(LaserPauseBetweenStimBlocks)
+
+print('Done. No need to save experiment info.')
 
 
 #%% Run sound and laser
-StartSoundAndLaser().start()
+Freq = 0; AmpF = 0
 
+NoiseFreq = NoiseFrequency[Freq]; SoundAmp = SoundAmpF[AmpF]
+for AmpF in range(len(SoundAmpF)):
+    for OneBlock in range(SoundStimBlockNo):
+        for OnePulse in range(SoundPulseNo):
+            Stimulation.write(SoundAndLaser[Freq][AmpF])
+
+        Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
+
+ExpInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 
+                                       'SoundPrePauseDur', 'SoundPulseDur', 
+                                       'SoundPostPauseDur', 'SoundPulseNo', 
+                                       'SoundStimBlockNo', 
+                                       'SoundPauseBetweenStimBlocksDur', 
+                                       'SoundAmp', 'NoiseFreq', 
+                                       'LaserPrePauseDur', 'LaserPulseDur', 
+                                       'LaserPostPauseDur', 'LaserPulseNo',
+                                       'LaserStimBlockNo', 
+                                       'LaserPauseBetweenStimBlocksDur', 
+                                       'FileName'])
+
+print('Done. Saving info...')
+Date = datetime.datetime.now()
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundAndLaserStim-', str(NoiseFreq[0]), '_', 
+                    str(NoiseFreq[1]), '-', 
+                    str(SoundIntensity[Freq][str(SoundAmpF[AmpF])])[:5], 'dB'])
+
+with shelve.open(FileName) as Shelve:
+    Shelve['ExpInfo'] = ExpInfo
+del(Date, FileName, ExpInfo)

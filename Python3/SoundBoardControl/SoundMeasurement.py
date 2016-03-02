@@ -127,18 +127,18 @@ print('Data saved.')
 ## Analysis
 
 ## If needed:
-#File = open(Folder+'/'+'SoundRec.pckl', 'rb')
-#SoundRec = pickle.load(File)
-#File.close()
-#del(File)
-#
-#File = open(Folder+'/'+'DataInfo.pckl', 'rb')
-#DataInfo = pickle.load(File)
-#File.close()
-#del(File)
-#
-#Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, \
-#NoiseFrequency, TTLAmpF, MicSens_dB, Folder = DataInfo
+File = open('SoundRec.pckl', 'rb')
+SoundRec = pickle.load(File)
+File.close()
+del(File)
+
+File = open('DataInfo.pckl', 'rb')
+DataInfo = pickle.load(File)
+File.close()
+del(File)
+
+Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, \
+NoiseFrequency, TTLAmpF, MicSens_dB, Folder = DataInfo
 
 print('Calculating PSD, RMS and dBSLP...')
 RecordingData = [0]*len(SoundRec)

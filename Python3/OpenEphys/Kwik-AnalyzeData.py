@@ -20,18 +20,34 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 """
 #%% Set experiment details
 
+FileName = '20160302190255-TestSetup01-SoundStim'
+
 # Channels
-LFPCh = [1, 16]
 BrokenCh = []
 
 # ABR
-ABRLength = 12    # in ms
-ABRTTLCh = 1
+ABRCh = [1, 16]         # [RightChannel, LeftChannel], if order matters
+ABRTimeBeforeTTL = 0    # in ms
+ABRTimeAfterTTL = 12    # in ms
+ABRTTLCh = 1            # TTL ch for ABR
+
 #==========#==========#==========#==========#
 
 import glob
 import Kwik
+import matplotlib.pyplot as plt
+import numpy as np
 import os
+import shelve
+from scipy import signal
+
+
+with shelve.open(FileName) as Shelve:
+    DataInfo = Shelve['DataInfo']
+
+for Key, Value in DataInfo.items():
+    exec(str(Key) + '=' + 'Value')
+del(Key, Value)
 
 BrokenCh = [_ - 1 for _ in BrokenCh]
 Channels = [_ for _ in list(range(16)) if _ not in BrokenCh]
@@ -54,31 +70,39 @@ os.makedirs('Figs', exist_ok=True)    # Figs folder
 
 
 ## ABR traces
+DirList = {}
+for Freq in NoiseFrequency:
+    
 DirList = glob.glob('KwikFiles/*'); DirList.sort()
 for RecFolder in DirList:
-    FilesList = glob.glob(''.join([RecFolder, '/*'])); FilesList.sort()
+    FilesList = glob.glob(''.join([RecFolder, '/*']))
+    Files = {}
     for File in FilesList:
         if '.kwd' in File:
             try:
                 Raw = Kwik.load(File)
+                Files['kwd'] = File
             except OSError:
                     print('File ', File, " is corrupted :'(")
             
         elif '.kwe' in File:
             try:
                 Events = Kwik.load(File)
+                Files['kwe'] = File
             except OSError:
                 print('File ', File, " is corrupted :'(")
             
         elif '.kwik' in File:
             try:
                 Events = Kwik.load(File)
+                Files['kwik'] = File
             except OSError:
                 print('File ', File, " is corrupted :'(")
             
         elif '.kwx' in File:
             try:
                 Spks = Kwik.load(File)
+                Files['kwx'] = File
             except OSError:
                 print('File ', File, " is corrupted :'(")
     
@@ -92,6 +116,48 @@ for RecFolder in DirList:
     
     print('Data from ', RecFolder, ' loaded.')
     
+    # Getting data...
     Rate = Raw['info']['sample_rate']
-    NoOfSamples = int(ABRLength*Rate*(10**-3))
+    NoOfSamplesBefore = int((ABRTimeBeforeTTL*Rate)*10**-3)
+    NoOfSamplesAfter = int((ABRTimeAfterTTL*Rate)*10**-3)
+    NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+    XValues = (range(NoOfSamples)/Rate)*10**3
     
+    EventID = Events['TTLs']['user_data']['eventID']
+    EventCh = Events['TTLs']['user_data']['event_channels']
+    EventSample = Events['TTLs']['time_samples']
+
+    TTLChs = np.nonzero(np.bincount(EventCh))[0]
+    TTLNo = {_: sum(np.squeeze(EventCh) == _) for _ in TTLChs}
+    TTLTimes = {_: Kwik.get_rising_edge_times(Files['kwe'], _) for _ in TTLChs}
+    
+    rABR = [[0]*NoOfSamples]*TTLNo[ABRTTLCh-1]; lABR = rABR[:]
+    
+    for TTL in range(TTLNo[ABRTTLCh-1]):
+        TTLLoc = int(TTLTimes[ABRTTLCh-1][TTL])
+        rABR[TTL] = [float(Raw['data'][TTLLoc-NoOfSamplesBefore:
+                                       TTLLoc+NoOfSamplesAfter, ABRCh[0]-1][_]) 
+                     for _ in range(NoOfSamples)]
+        lABR[TTL] = [float(Raw['data'][TTLLoc-NoOfSamplesBefore:
+                                       TTLLoc+NoOfSamplesAfter, ABRCh[1]-1][_]) 
+                     for _ in range(NoOfSamples)]
+        
+        passband = [300/(Rate/2), 3000/(Rate/2)]
+        f2, f1 = signal.butter(4, passband, 'bandpass')
+        rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
+        lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
+    
+    plt.figure()
+    plt.plot(XValues, np.mean(rABR[:62], axis=0), color='r', label='Right')
+    plt.plot(XValues, np.mean(lABR[:62], axis=0), color='b', label='Left')
+    plt.ylabel('Voltage [µV]'); plt.xlabel('Time [ms]')
+    plt.legend(loc='best', frameon=False)
+    plt.locator_params(tight=True)
+    plt.tick_params(direction='out')
+    plt.axes().spines['right'].set_visible(False)
+    plt.axes().spines['top'].set_visible(False)
+    plt.axes().yaxis.set_ticks_position('left')
+    plt.axes().xaxis.set_ticks_position('bottom')
+    plt.show()
+    #input('Press enter to save figure 1.')
+    plt.savefig('Figs/', RecFolder[10:], '-ABR.pdf', transparent=True)

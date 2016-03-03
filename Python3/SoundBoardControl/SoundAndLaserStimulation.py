@@ -36,6 +36,9 @@ own settings.
 AnimalName = 'TestSetup01'
 Rate = 128000
 
+CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
+                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
+                  'SoundIntensity'
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
 
@@ -55,7 +58,7 @@ SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 5
 # Amplification factor (consider using values <= 1). If using one value, keep it in a list.
-SoundAmpF = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+SoundAmpF = [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
 
@@ -79,9 +82,7 @@ import datetime
 import pyaudio
 import shelve
 
-with shelve.open(
-    '/home/cerebro/Malfatti/Data/Test/20160126114004-SoundMeasurement/SoundIntensity'
-    ) as Shelve:
+with shelve.open(CalibrationFile) as Shelve:
     SoundIntensity = Shelve['SoundIntensity']
 
 Date = datetime.datetime.now()
@@ -139,24 +140,24 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 
 #%% Run sound
-Freq = 0; AmpF = 0
+Date = datetime.datetime.now()
 
+Freq = 0; AmpF = 0
 NoiseFreq = NoiseFrequency[Freq]; SoundAmp = SoundAmpF[AmpF]
-for OneBlock in range(SoundStimBlockNo):
-    for OnePulse in range(SoundPulseNo):
+for Block in range(SoundStimBlockNo):
+    for Pulse in range(SoundPulseNo):
         Stimulation.write(Sound[Freq][AmpF])
     
     Stimulation.write(SoundPauseBetweenStimBlocks)
 
 print('Done. Saving info...')
-Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundStim-', str(NoiseFreq[0]), '_', str(NoiseFreq[1]), 
                     '-', str(SoundIntensity[Freq][str(SoundAmpF[AmpF])])[:5], 
                     'dB'])
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['SoundAmp', 'NoiseFreq', 
-                                               'FileName'])
+ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'AmpF', 'SoundAmp', 
+                                               'NoiseFreq', 'FileName'])
 
 with shelve.open(FileName) as Shelve:
     Shelve['ExpInfo'] = ExpInfo
@@ -164,8 +165,8 @@ del(Date, FileName, ExpInfo)
 print('Saved.')
 
 #%% Run laser
-for OneBlock in range(LaserStimBlockNo):
-    for OnePulse in range(LaserPulseNo):
+for Block in range(LaserStimBlockNo):
+    for Pulse in range(LaserPulseNo):
         Stimulation.write(Laser)
     
     Stimulation.write(LaserPauseBetweenStimBlocks)
@@ -174,30 +175,20 @@ print('Done. No need to save experiment info.')
 
 
 #%% Run sound and laser
+Date = datetime.datetime.now()
+
 Freq = 0; AmpF = 0
-
 NoiseFreq = NoiseFrequency[Freq]; SoundAmp = SoundAmpF[AmpF]
-for AmpF in range(len(SoundAmpF)):
-    for OneBlock in range(SoundStimBlockNo):
-        for OnePulse in range(SoundPulseNo):
-            Stimulation.write(SoundAndLaser[Freq][AmpF])
+for Block in range(SoundStimBlockNo):
+    for Pulse in range(SoundPulseNo):
+        Stimulation.write(SoundAndLaser[Freq][AmpF])
 
-        Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
+    Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 
-                                       'SoundPrePauseDur', 'SoundPulseDur', 
-                                       'SoundPostPauseDur', 'SoundPulseNo', 
-                                       'SoundStimBlockNo', 
-                                       'SoundPauseBetweenStimBlocksDur', 
-                                       'SoundAmp', 'NoiseFreq', 
-                                       'LaserPrePauseDur', 'LaserPulseDur', 
-                                       'LaserPostPauseDur', 'LaserPulseNo',
-                                       'LaserStimBlockNo', 
-                                       'LaserPauseBetweenStimBlocksDur', 
-                                       'FileName'])
+ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'AmpF', 'SoundAmp', 
+                                               'NoiseFreq', 'FileName'])
 
 print('Done. Saving info...')
-Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundAndLaserStim-', str(NoiseFreq[0]), '_', 
                     str(NoiseFreq[1]), '-', 

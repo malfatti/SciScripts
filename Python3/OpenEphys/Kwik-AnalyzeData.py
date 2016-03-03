@@ -22,9 +22,6 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 
 FileName = '20160302190255-TestSetup01-SoundStim'
 
-# Channels
-BrokenCh = []
-
 # ABR
 ABRCh = [1, 16]         # [RightChannel, LeftChannel], if order matters
 ABRTimeBeforeTTL = 0    # in ms
@@ -49,9 +46,6 @@ for Key, Value in DataInfo.items():
     exec(str(Key) + '=' + 'Value')
 del(Key, Value)
 
-BrokenCh = [_ - 1 for _ in BrokenCh]
-Channels = [_ for _ in list(range(16)) if _ not in BrokenCh]
-
 
 ## Remove date from folder name
 RenameFolders = input('Rename folders (BE CAREFUL)? [y/N] ')
@@ -70,9 +64,15 @@ os.makedirs('Figs', exist_ok=True)    # Figs folder
 
 
 ## ABR traces
-DirList = {}
-for Freq in NoiseFrequency:
-    
+ABRs = [[], []]
+ABRs[0] = [[0] for _ in range(len(NoiseFrequency))]
+ABRs[1] = [[0] for _ in range(len(NoiseFrequency))]
+for Freq in range(len(NoiseFrequency)):
+    ABRs[0][Freq] = [[[0]] for _ in range(len(SoundAmpF))]
+    ABRs[1][Freq] = [[[0]] for _ in range(len(SoundAmpF))]
+del(Freq)
+
+
 DirList = glob.glob('KwikFiles/*'); DirList.sort()
 for RecFolder in DirList:
     FilesList = glob.glob(''.join([RecFolder, '/*']))
@@ -105,6 +105,15 @@ for RecFolder in DirList:
                 Files['kwx'] = File
             except OSError:
                 print('File ', File, " is corrupted :'(")
+        
+        elif '.db' in File:
+            with shelve.open(File) as Shelve:
+                ExpInfo = Shelve['ExpInfo']
+            
+            Files['db'] = File
+            for Key, Value in ExpInfo.items():
+                exec(str(Key) + '=' + 'Value')
+            del(Key, Value)
     
     if 'Raw' not in globals():
         print('.kwd file is corrupted. Skipping dataset...')
@@ -147,17 +156,22 @@ for RecFolder in DirList:
         rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
         lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
     
-    plt.figure()
-    plt.plot(XValues, np.mean(rABR[:62], axis=0), color='r', label='Right')
-    plt.plot(XValues, np.mean(lABR[:62], axis=0), color='b', label='Left')
-    plt.ylabel('Voltage [µV]'); plt.xlabel('Time [ms]')
-    plt.legend(loc='best', frameon=False)
-    plt.locator_params(tight=True)
-    plt.tick_params(direction='out')
-    plt.axes().spines['right'].set_visible(False)
-    plt.axes().spines['top'].set_visible(False)
-    plt.axes().yaxis.set_ticks_position('left')
-    plt.axes().xaxis.set_ticks_position('bottom')
-    plt.show()
-    #input('Press enter to save figure 1.')
-    plt.savefig('Figs/', RecFolder[10:], '-ABR.pdf', transparent=True)
+    ABRs[0][Freq][AmpF][len(ABRs[0][Freq][AmpF])-1] = np.mean(rABR, axis=0)
+    ABRs[1][Freq][AmpF][len(ABRs[0][Freq][AmpF])-1] = np.mean(lABR, axis=0)
+    ABRs[0][Freq][AmpF].append(0); ABRs[1][Freq][AmpF].append(0)
+
+
+plt.figure()
+plt.plot(XValues, np.mean(rABR[:62], axis=0), color='r', label='Right')
+plt.plot(XValues, np.mean(lABR[:62], axis=0), color='b', label='Left')
+plt.ylabel('Voltage [µV]'); plt.xlabel('Time [ms]')
+plt.legend(loc='best', frameon=False)
+plt.locator_params(tight=True)
+plt.tick_params(direction='out')
+plt.axes().spines['right'].set_visible(False)
+plt.axes().spines['top'].set_visible(False)
+plt.axes().yaxis.set_ticks_position('left')
+plt.axes().xaxis.set_ticks_position('bottom')
+plt.show()
+#input('Press enter to save figure 1.')
+plt.savefig('Figs/', RecFolder[10:], '-ABR.pdf', transparent=True)

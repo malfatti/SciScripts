@@ -50,11 +50,11 @@ import array
 import ControlSoundBoard
 import datetime
 import math
+import matplotlib.pyplot as plt
 import os
 import pandas
-import pickle
 import pyaudio
-import matplotlib.pyplot as plt
+import shelve
 from scipy import signal
 
 Date = datetime.datetime.now()
@@ -62,9 +62,10 @@ Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
 os.makedirs(Folder)
 
 ## Prepare dict w/ experimental setup
-DataInfo = [Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
-            TTLAmpF, MicSens_dB, Folder]
-
+DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur', 
+                                                'SoundPulseNo', 'SoundAmpF', 
+                                                'NoiseFrequency', 'TTLAmpF', 
+                                                'MicSens_dB', 'Folder']
 
 ## Prepare sound objects
 Sound, SoundPauseBetweenStimBlocks, SoundRec, Stimulation = \
@@ -112,33 +113,24 @@ Reading.stop_stream()
 print('Done playing/recording. Saving data...')
 
 ## Save!!!
+with shelve.open(Folder + '/' + Folder) as Shelve:
+    Shelve['SoundRec'] = SoundRec
+    Shelve['DataInfo'] = DataInfo
 
-File = open(Folder+'/'+'SoundRec.pckl', 'wb')
-pickle.dump(SoundRec, File)
-File.close()
-del(File)
-
-File = open(Folder+'/'+'DataInfo.pckl', 'wb')
-pickle.dump(DataInfo, File)
-File.close()
-del(File)
 print('Data saved.')
 
 ## Analysis
 
 ## If needed:
-File = open('SoundRec.pckl', 'rb')
-SoundRec = pickle.load(File)
-File.close()
-del(File)
-
-File = open('DataInfo.pckl', 'rb')
-DataInfo = pickle.load(File)
-File.close()
-del(File)
-
-Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, \
-NoiseFrequency, TTLAmpF, MicSens_dB, Folder = DataInfo
+#
+#Folder = '20160125114052-SoundMeasurement'
+#with shelve.open(Folder + '/' + Folder) as Shelve:
+#    SoundRec = Shelve['SoundRec']
+#    DataInfo = Shelve['DataInfo']
+#
+#for Key, Value in DataInfo.items():
+#    exec(str(Key) + '=' + 'Value')
+#del(Key, Value)
 
 print('Calculating PSD, RMS and dBSLP...')
 RecordingData = [0]*len(SoundRec)
@@ -174,9 +166,16 @@ for Freq in range(len(SoundRec)):
         
         del(F, PxxSp)
 
-
+SoundIntensity = [[0] for _ in range(len(NoiseFrequency))]
+for Freq in range(len(NoiseFrequency)):
+    SoundIntensity[Freq] = {str(SoundAmpF[_]): Intensity[Freq][_]['dB'] 
+                            for _ in range(len(SoundAmpF))}
+                                
 ## Save analyzed data
 print('Saving analyzed data...')
+with shelve.open(Folder + '/SoundIntensity') as Shelve:
+    Shelve['SoundIntensity'] = SoundIntensity
+
 TexTable = pandas.DataFrame([[SoundAmpF[AmpF]] + 
                              [Intensity[Freq][AmpF]['dB'] 
                              for Freq in range(len(NoiseFrequency))] 

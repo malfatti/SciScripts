@@ -36,9 +36,12 @@ own settings.
 AnimalName = 'TestSetup01'
 Rate = 128000
 
-CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
-                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
-                  'SoundIntensity'
+CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+                  '20160126114004-SoundMeasurement/SoundIntensity'
+#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
+#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
+#                  'SoundIntensity'
+
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
 

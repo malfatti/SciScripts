@@ -20,7 +20,7 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 """
 #%% Set experiment details
 
-FileName = '20160302190255-TestSetup01-SoundStim'
+FileName = '20160303101319-TestSetup01-SoundStim'
 
 # ABR
 ABRCh = [1, 16]         # [RightChannel, LeftChannel], if order matters
@@ -59,11 +59,9 @@ if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
     del(RenameFolders, DirList, FolderName, NewFolderName)
 
 
-## Create folders
-os.makedirs('Figs', exist_ok=True)    # Figs folder
-
-
 ## ABR traces
+
+print('Preallocate memory...')
 ABRs = [[], []]
 ABRs[0] = [[0] for _ in range(len(NoiseFrequency))]
 ABRs[1] = [[0] for _ in range(len(NoiseFrequency))]
@@ -72,9 +70,12 @@ for Freq in range(len(NoiseFrequency)):
     ABRs[1][Freq] = [[[0]] for _ in range(len(SoundAmpF))]
 del(Freq)
 
-
+print('set paths...')
+os.makedirs('Figs', exist_ok=True)    # Figs folder
 DirList = glob.glob('KwikFiles/*'); DirList.sort()
+
 for RecFolder in DirList:
+    print('Load files...')
     FilesList = glob.glob(''.join([RecFolder, '/*']))
     Files = {}
     for File in FilesList:
@@ -106,8 +107,8 @@ for RecFolder in DirList:
             except OSError:
                 print('File ', File, " is corrupted :'(")
         
-        elif '.db' in File:
-            with shelve.open(File) as Shelve:
+        elif 'dB.db' in File:
+            with shelve.open(File[:-3]) as Shelve:
                 ExpInfo = Shelve['ExpInfo']
             
             Files['db'] = File
@@ -115,6 +116,7 @@ for RecFolder in DirList:
                 exec(str(Key) + '=' + 'Value')
             del(Key, Value)
     
+    print('Check if files are ok...')
     if 'Raw' not in globals():
         print('.kwd file is corrupted. Skipping dataset...')
         continue
@@ -125,13 +127,18 @@ for RecFolder in DirList:
     
     print('Data from ', RecFolder, ' loaded.')
     
-    # Getting data...
+    print('Get rate and calculate No of samples...')
     Rate = Raw['info']['sample_rate']
     NoOfSamplesBefore = int((ABRTimeBeforeTTL*Rate)*10**-3)
     NoOfSamplesAfter = int((ABRTimeAfterTTL*Rate)*10**-3)
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
     XValues = (range(NoOfSamples)/Rate)*10**3
     
+    print('Set filter...')
+    passband = [300/(Rate/2), 3000/(Rate/2)]
+    f2, f1 = signal.butter(4, passband, 'bandpass')
+    
+    print('Get TTL data...')
     EventID = Events['TTLs']['user_data']['eventID']
     EventCh = Events['TTLs']['user_data']['event_channels']
     EventSample = Events['TTLs']['time_samples']
@@ -142,36 +149,50 @@ for RecFolder in DirList:
     
     rABR = [[0]*NoOfSamples]*TTLNo[ABRTTLCh-1]; lABR = rABR[:]
     
+    print('Slicing and filtering ABRs...')
     for TTL in range(TTLNo[ABRTTLCh-1]):
         TTLLoc = int(TTLTimes[ABRTTLCh-1][TTL])
-        rABR[TTL] = [float(Raw['data'][TTLLoc-NoOfSamplesBefore:
-                                       TTLLoc+NoOfSamplesAfter, ABRCh[0]-1][_]) 
-                     for _ in range(NoOfSamples)]
-        lABR[TTL] = [float(Raw['data'][TTLLoc-NoOfSamplesBefore:
-                                       TTLLoc+NoOfSamplesAfter, ABRCh[1]-1][_]) 
-                     for _ in range(NoOfSamples)]
+        Start = TTLLoc-NoOfSamplesBefore
+        End = TTLLoc+NoOfSamplesAfter
         
-        passband = [300/(Rate/2), 3000/(Rate/2)]
-        f2, f1 = signal.butter(4, passband, 'bandpass')
+        rData = Raw['data'][Start:End, ABRCh[0]-1]
+        lData = Raw['data'][Start:End, ABRCh[1]-1]
+        
+        rABR[TTL] = [float(rData[_]) for _ in range(NoOfSamples)]
+        lABR[TTL] = [float(lData[_]) for _ in range(NoOfSamples)]
+        
         rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
         lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
+        
+        del(TTLLoc, Start, End, rData, lData)
     
+    print('Saving ABRs...')
     ABRs[0][Freq][AmpF][len(ABRs[0][Freq][AmpF])-1] = np.mean(rABR, axis=0)
     ABRs[1][Freq][AmpF][len(ABRs[0][Freq][AmpF])-1] = np.mean(lABR, axis=0)
     ABRs[0][Freq][AmpF].append(0); ABRs[1][Freq][AmpF].append(0)
 
+print('Done. Plotting...')
 
-plt.figure()
-plt.plot(XValues, np.mean(rABR[:62], axis=0), color='r', label='Right')
-plt.plot(XValues, np.mean(lABR[:62], axis=0), color='b', label='Left')
-plt.ylabel('Voltage [µV]'); plt.xlabel('Time [ms]')
-plt.legend(loc='best', frameon=False)
-plt.locator_params(tight=True)
-plt.tick_params(direction='out')
-plt.axes().spines['right'].set_visible(False)
-plt.axes().spines['top'].set_visible(False)
-plt.axes().yaxis.set_ticks_position('left')
-plt.axes().xaxis.set_ticks_position('bottom')
-plt.show()
-#input('Press enter to save figure 1.')
-plt.savefig('Figs/', RecFolder[10:], '-ABR.pdf', transparent=True)
+for Trial in range(len(ABRs[0][0][0])-1):
+    Fig, Axes = plt.subplots(len(NoiseFrequency), 2, sharex=True, figsize=(12, 12))
+    BigAx = Fig.add_subplot(111)
+    BigAx.set_axis_bgcolor('none')
+    BigAx.spines['top'].set_color('none'); BigAx.spines['bottom'].set_color('none')
+    BigAx.spines['left'].set_color('none'); BigAx.spines['right'].set_color('none')
+    BigAx.tick_params(labelcolor='none', top='off', 
+                      bottom='off', left='off', right='off')
+    BigAx.set_xlabel('Time [ms]')
+    BigAx.set_ylabel('Voltage [µv]')
+    
+    for Ear in range(2):
+        for Freq in range(len(NoiseFrequency)):
+            for AmpF in range(len(SoundAmpF)):
+                if Ear == 0:
+                    Axes[Freq][Ear].plot(XValues, 
+                                         ABRs[Ear][Freq][AmpF][Trial], 
+                                         color='r')
+                else:
+                    Axes[Freq][Ear].plot(XValues, 
+                                         ABRs[Ear][Freq][AmpF][Trial], 
+                                         color='b')
+

@@ -65,7 +65,7 @@ os.makedirs(Folder)
 DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur', 
                                                 'SoundPulseNo', 'SoundAmpF', 
                                                 'NoiseFrequency', 'TTLAmpF', 
-                                                'MicSens_dB', 'Folder']
+                                                'MicSens_dB', 'Folder'])
 
 ## Prepare sound objects
 Sound, SoundPauseBetweenStimBlocks, SoundRec, Stimulation = \

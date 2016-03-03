@@ -28,7 +28,7 @@ Sumarizing the commands:
  G = Full green laser stim + sound TTL (5 blocks)
  g = Single green laser stim + sound TTL block
 
- P = 1s light pulse
+ P = 5ms light pulse
  O = On
  o = Off
 */
@@ -38,7 +38,7 @@ const int LaserTTLPin =  12;
 const int SoundTTLPin =  8;
 
 void setup() {
-  Serial.begin(19200);
+  Serial.begin(38400);
   pinMode(LaserPin, OUTPUT);
   pinMode(LaserTTLPin, OUTPUT);
   pinMode(SoundTTLPin, OUTPUT);
@@ -236,7 +236,7 @@ void loop() {
   if (ch == 'P') {
     digitalWrite(LaserPin, HIGH);
     digitalWrite(LaserTTLPin, HIGH);
-    delay(1000);
+    delay(5);
     digitalWrite(LaserPin, LOW);
     digitalWrite(LaserTTLPin, LOW);
   }

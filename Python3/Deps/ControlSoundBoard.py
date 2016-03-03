@@ -35,7 +35,13 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
-    SoundTTLPulse = [0.6] * round(SoundPulseDur * Rate)
+    if SoundPulseDur < 0.01:
+        SoundTTLPulse = [0.6] * round(SoundPulseDur * Rate)
+    else:
+        Middle = [0]*round((SoundPulseDur-0.01) * Rate)
+        Border = [0.6] * round(0.005 * Rate)
+        SoundTTLPulse = Border + Middle + Border
+    
     SoundTTLPulse[-1] = 0
     
     SoundTTLUnit = SoundTTLPrePause + SoundTTLPulse + SoundTTLPostPause

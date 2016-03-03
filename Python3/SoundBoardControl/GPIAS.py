@@ -99,9 +99,10 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
                                         SoundAmpF, NoiseFrequency, 
-                                        TTLAmpF=1)[0]
+                                        TTLAmpF)[0]
 SoundGap[0] = ControlSoundBoard.ReduceStim(SoundGap[0])
-SoundGap[1] = [0]*(round(Rate*SoundGapDur)*2)
+SoundGap[1] = [0, 0.6]*round(Rate*SoundGapDur)
+SoundGap[1][-1] = 0
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
 SoundGap[1] = [SoundGap[1]]*len(SoundGap[0])
 

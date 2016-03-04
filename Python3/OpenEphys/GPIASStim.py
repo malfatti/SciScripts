@@ -200,6 +200,7 @@ print('Done.')
 with shelve.open(FileName) as Shelve:
     Shelve['DataInfo'] = DataInfo
     Shelve['Freqs'] = Freqs
+    Shelve['FreqSlot'] = FreqSlot
     Shelve['Trials'] = Trials
 
 print('Data saved.')

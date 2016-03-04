@@ -21,11 +21,12 @@
 FileName = '20160303170842-GPIAS-TestSetup02'
 
 PiezoCh = 1
-TimeBeforeTTL = 0.05    # in ms
-TimeAfterTTL = 0.19     # in ms
-FilterLow = 300         # High-pass frequency for bandpass filter
-FilterHigh = 3000       # Low-pass frequency
-FilterOrder = 4         # butter order
+GPIASTTLCh = 1
+TimeBeforeTTL = 50    # in ms
+TimeAfterTTL = 190    # in ms
+FilterLow = 300       # High-pass frequency for bandpass filter
+FilterHigh = 3000     # Low-pass frequency
+FilterOrder = 4       # butter order
 
 
 import glob
@@ -40,6 +41,7 @@ from scipy import signal
 with shelve.open(FileName) as Shelve:
     DataInfo = Shelve['DataInfo']
     Freqs = Shelve['Freqs']
+    FreqSlot = Shelve['FreqSlot']
     Trials = Shelve['Trials']
 
 for Key, Value in DataInfo.items():
@@ -47,9 +49,14 @@ for Key, Value in DataInfo.items():
 del(Key, Value)
 
 print('Preallocate memory...')
-GPIASs = [[] for _ in range(len(NoiseFrequency))]
+GPIASs = [[0] for _ in range(len(NoiseFrequency))]
 for Freq in range(len(NoiseFrequency)):
-    GPIASs[Freq] = [[], []]
+    GPIASs[Freq] = [[0], [0]]
+
+Gap = [[0] for _ in range(len(NoiseFrequency))]
+for Freq in range(len(NoiseFrequency)):
+    Gap[Freq] = [[0] for _ in range(NoOfTrials*2)]
+NoGap = Gap[:]
 
 print('set paths...')
 os.makedirs('Figs', exist_ok=True)    # Figs folder
@@ -92,6 +99,19 @@ for RecFolder in DirList:
     
     print('Data from ', RecFolder, ' loaded.')
     
+    print('Get TTL data...')
+    EventID = Events['TTLs']['user_data']['eventID']
+    EventCh = Events['TTLs']['user_data']['event_channels']
+    EventRec = Events['TTLs']['recording']
+    EventSample = Events['TTLs']['time_samples']
+
+    TTLChs = np.nonzero(np.bincount(EventCh))[0]
+    TTLNo = {_: sum(np.squeeze(EventCh) == _) for _ in TTLChs}
+    TTLTimesRise = {_: Kwik.get_rising_edge_times(Files['kwe'], _)
+                    for _ in TTLChs}
+    TTLTimesFall = {_: Kwik.get_falling_edge_times(Files['kwe'], _) 
+                    for _ in TTLChs}
+    
     for Rec in range(len(Raw['data'])):
         Rate = Raw['info'][str(Rec)]['sample_rate']
         NoOfSamplesBefore = int((TimeBeforeTTL*Rate)*10**-3)
@@ -103,15 +123,18 @@ for RecFolder in DirList:
         passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
         f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
         
-        print('Get TTL data...')
-        EventID = Events['TTLs']['user_data']['eventID']
-        EventCh = Events['TTLs']['user_data']['event_channels']
-        EventSample = Events['TTLs']['time_samples']
-    
-        TTLChs = np.nonzero(np.bincount(EventCh))[0]
-        TTLNo = {_: sum(np.squeeze(EventCh) == _) for _ in TTLChs}
-        TTLTimes = {_: Kwik.get_rising_edge_times(Files['kwe'], _) for _ in TTLChs}
+        print('Find TTL...')
+        TTLLoc = [TTLTimesRise[GPIASTTLCh-1][_] 
+               for _ in range(len(TTLTimesRise[GPIASTTLCh-1])) 
+               if EventRec[_] == Rec]
+        Start = TTLLoc-NoOfSamplesBefore
+        End = TTLLoc+NoOfSamplesAfter
         
-        rABR = [[0]*NoOfSamples]*TTLNo[ABRTTLCh-1]; lABR = rABR[:]
-    
-        Raw['data'][str(Rec)][:,PiezoCh-1]
+        print('Slicing and filtering...')
+        gData = Raw['data'][str(Rec)][Start:End,PiezoCh-1]        
+        gData = [float(gData[_]) for _ in range(NoOfSamples)]
+        gData = abs(signal.hilbert(gData))
+        gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
+        
+        
+        del(TTLLoc, Start, End, rData, lData)

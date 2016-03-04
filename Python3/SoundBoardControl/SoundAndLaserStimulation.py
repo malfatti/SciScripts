@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-    Copyright (C) 2015  T. Malfatti                                             
-                                                                                
-    This program is free software: you can redistribute it and/or modify        
-    it under the terms of the GNU General Public License as published by        
-    the Free Software Foundation, either version 3 of the License, or           
-    (at your option) any later version.                                         
-                                                                                
-    This program is distributed in the hope that it will be useful,             
-    but WITHOUT ANY WARRANTY; without even the implied warranty of              
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               
-    GNU General Public License for more details.                                
-                                                                                
-    You should have received a copy of the GNU General Public License           
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.       
+    Copyright (C) 2015  T. Malfatti
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 This is a script to generate pulses and send to the soundboard, and then to a 
 sound amplifier and an Arduino board. Basically it generates sound pulses, 
@@ -24,7 +24,8 @@ pin and when the voltage is within a range, it turns on a digital port (Check
 ControlArduinoWithSoundBoard.ino code). This way, you can control one sound 
 channel, one laser and "separate" TTLs for both.
 
-The first cell will set the experiment parameters. 
+The first cell will set the experiment parameters.
+
 The second, third and fourth cells create audio objects for sound playback and 
 set some attributes of it. Then, threads are created so .write() commands can 
 run on its own thread.

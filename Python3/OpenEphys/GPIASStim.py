@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-    Copyright (C) 2015  T. Malfatti                                             
-                                                                                
-    This program is free software: you can redistribute it and/or modify        
-    it under the terms of the GNU General Public License as published by        
-    the Free Software Foundation, either version 3 of the License, or           
-    (at your option) any later version.                                         
-                                                                                
-    This program is distributed in the hope that it will be useful,             
-    but WITHOUT ANY WARRANTY; without even the implied warranty of              
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               
-    GNU General Public License for more details.                                
-                                                                                
-    You should have received a copy of the GNU General Public License           
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.       
+    Copyright (C) 2015  T. Malfatti
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 This is a script to generate sound stimulation for gap-prepulse inhibition of 
 the acoustic startle reflex (GPIAS).
@@ -169,7 +169,8 @@ Arduino = ControlArduino.CreateObj(BaudRate)
 print('Preallocating memory and pseudo-randomizing the experiment...')
 
 Freqs = [In for In, El in enumerate(NoiseFrequency)]*NoOfTrials
-random.shuffle(Freqs)
+Trials = [0]*len(Freqs) + [1]*len(Freqs)
+random.shuffle(Freqs); random.shuffle(Trials)
 
 FreqSlot = [0]*(len(NoiseFrequency)*NoOfTrials*2)
 for FE in range(len(Freqs)):
@@ -177,12 +178,9 @@ for FE in range(len(Freqs)):
     FreqSlot[FE*2+1] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2+1
 
 # Play!!
-for Freq in range(len(Freqs)):
-    Trials = [0, 1]
-    random.shuffle(Trials)
-    
-    for Trial in Trials:
-        RealFreq = Freqs[Freq]; RealTrial = FreqSlot[Freq*2+Trial]
+for Freq in range(len(Freqs)):    
+    for Trial in [0, 1]:
+        RealFreq = Freqs[Freq]
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         NoOfPulses = round(SBSDur/SBSUnitDur)
         print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(Trial)) 
@@ -192,7 +190,7 @@ for Freq in range(len(Freqs)):
         
         Arduino.write(b'P')
         Stimulation.write(SoundBackground[RealFreq])
-        Stimulation.write(SoundGap[Trial][RealFreq])
+        Stimulation.write(SoundGap[Trials[(Freq*2)+Trial]][RealFreq])
         Stimulation.write(SoundBackgroundPrePulse[RealFreq])
         Stimulation.write(SoundLoudPulse[RealFreq])
         Stimulation.write(SoundBackgroundAfterPulse[RealFreq])
@@ -202,6 +200,6 @@ print('Done.')
 with shelve.open(FileName) as Shelve:
     Shelve['DataInfo'] = DataInfo
     Shelve['Freqs'] = Freqs
-    Shelve['FreqSlot'] = FreqSlot
+    Shelve['Trials'] = Trials
 
 print('Data saved.')

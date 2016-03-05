@@ -72,7 +72,7 @@ Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS-', AnimalName])
 
 ## Prepare dict w/ experimental setup
-DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
+DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate'
                                        'SoundBackgroundDur', 
                                        'SoundGapDur', 
                                        'SoundBackgroundPrePulseDur', 
@@ -169,13 +169,17 @@ Arduino = ControlArduino.CreateObj(BaudRate)
 print('Preallocating memory and pseudo-randomizing the experiment...')
 
 Freqs = [In for In, El in enumerate(NoiseFrequency)]*NoOfTrials
-Trials = [0]*len(Freqs) + [1]*len(Freqs)
-random.shuffle(Freqs); random.shuffle(Trials)
+random.shuffle(Freqs); 
 
-FreqSlot = [0]*(len(NoiseFrequency)*NoOfTrials*2)
+Trials = [[0] for _ in range(len(Freqs)*2)]
+FreqSlot = [[0] for _ in range(len(Freqs)*2)]
 for FE in range(len(Freqs)):
     FreqSlot[FE*2] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2
     FreqSlot[FE*2+1] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2+1
+    
+    Trial = [0, 1]; random.shuffle(Trial)
+    Trials[FE*2] = Trial[0]
+    Trials[FE*2+1] = Trial[1]
 
 # Play!!
 for Freq in range(len(Freqs)):    

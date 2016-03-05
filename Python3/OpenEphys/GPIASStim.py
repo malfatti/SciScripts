@@ -72,7 +72,7 @@ Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS-', AnimalName])
 
 ## Prepare dict w/ experimental setup
-DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate'
+DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate',
                                        'SoundBackgroundDur', 
                                        'SoundGapDur', 
                                        'SoundBackgroundPrePulseDur', 
@@ -171,40 +171,45 @@ print('Preallocating memory and pseudo-randomizing the experiment...')
 Freqs = [In for In, El in enumerate(NoiseFrequency)]*NoOfTrials
 random.shuffle(Freqs); 
 
-Trials = [[0] for _ in range(len(Freqs)*2)]
 FreqSlot = [[0] for _ in range(len(Freqs)*2)]
 for FE in range(len(Freqs)):
     FreqSlot[FE*2] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2
     FreqSlot[FE*2+1] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2+1
-    
-    Trial = [0, 1]; random.shuffle(Trial)
-    Trials[FE*2] = Trial[0]
-    Trials[FE*2+1] = Trial[1]
+
+FreqOrder = [[0]]
 
 # Play!!
-for Freq in range(len(Freqs)):    
-    for Trial in [0, 1]:
-        RealFreq = Freqs[Freq]
+for Freq in range(len(Freqs)):
+    Trials = [0, 1]
+    random.shuffle(Trials)
+    
+    for Trial in Trials:
+        RealFreq = Freqs[Freq]; RealTrial = FreqSlot[Freq*2+Trial]
+        print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(Trial))
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         NoOfPulses = round(SBSDur/SBSUnitDur)
-        print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(Trial)) 
+        FreqOrder[len(FreqOrder)-1] = [RealFreq, RealTrial]
+        FreqOrder.append([0])
         
         for Pulse in range(NoOfPulses):
             Stimulation.write(SoundBetweenStim[RealFreq])
         
         Arduino.write(b'P')
         Stimulation.write(SoundBackground[RealFreq])
-        Stimulation.write(SoundGap[Trials[(Freq*2)+Trial]][RealFreq])
+        Stimulation.write(SoundGap[Trial][RealFreq])
         Stimulation.write(SoundBackgroundPrePulse[RealFreq])
+        Arduino.write(b'a')
         Stimulation.write(SoundLoudPulse[RealFreq])
+        Arduino.write(b'z')
         Stimulation.write(SoundBackgroundAfterPulse[RealFreq])
         Arduino.write(b'P')
+FreqOrder.remove([0])
 print('Done.')
 
 with shelve.open(FileName) as Shelve:
     Shelve['DataInfo'] = DataInfo
     Shelve['Freqs'] = Freqs
+    Shelve['FreqOrder'] = FreqOrder
     Shelve['FreqSlot'] = FreqSlot
-    Shelve['Trials'] = Trials
 
 print('Data saved.')

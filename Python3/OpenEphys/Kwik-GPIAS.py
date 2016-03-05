@@ -18,7 +18,7 @@
 """
 #%% Set experiment details
 
-FileName = '20160303170842-GPIAS-TestSetup02'
+FileName = '20160305105342-GPIAS-TestSetup02'
 
 PiezoCh = 1
 GPIASTTLCh = 1
@@ -41,8 +41,8 @@ from scipy import signal
 with shelve.open(FileName) as Shelve:
     DataInfo = Shelve['DataInfo']
     Freqs = Shelve['Freqs']
+    FreqOrder = Shelve['FreqOrder']
     FreqSlot = Shelve['FreqSlot']
-    Trials = Shelve['Trials']
 
 for Key, Value in DataInfo.items():
     exec(str(Key) + '=' + 'Value')
@@ -106,7 +106,7 @@ for RecFolder in DirList:
     EventSample = Events['TTLs']['time_samples']
 
     TTLChs = np.nonzero(np.bincount(EventCh))[0]
-    TTLNo = {_: sum(np.squeeze(EventCh) == _) for _ in TTLChs}
+    TTLNo = {_: (sum(np.squeeze(EventCh) == _))//2 for _ in TTLChs}
     TTLTimesRise = {_: Kwik.get_rising_edge_times(Files['kwe'], _)
                     for _ in TTLChs}
     TTLTimesFall = {_: Kwik.get_falling_edge_times(Files['kwe'], _) 
@@ -114,8 +114,11 @@ for RecFolder in DirList:
     
     for Rec in range(len(Raw['data'])):
         Rate = Raw['info'][str(Rec)]['sample_rate']
-        NoOfSamplesBefore = int((TimeBeforeTTL*Rate)*10**-3)
-        NoOfSamplesAfter = int((TimeAfterTTL*Rate)*10**-3)
+#        RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
+#                   for _ in range(len(Raw['timestamps'][str(Rec)]))]
+#        
+        NoOfSamplesBefore = int(round((TimeBeforeTTL*Rate)*10**-3))
+        NoOfSamplesAfter = int(round((TimeAfterTTL*Rate)*10**-3))
         NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
         XValues = (range(NoOfSamples)/Rate)*10**3
         
@@ -124,17 +127,29 @@ for RecFolder in DirList:
         f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
         
         print('Find TTL...')
-        TTLLoc = [TTLTimesRise[GPIASTTLCh-1][_] 
-               for _ in range(len(TTLTimesRise[GPIASTTLCh-1])) 
-               if EventRec[_] == Rec]
+        TTLLoc = [int(round(TTLTimesRise[GPIASTTLCh-1][_]*Rate))
+                  for _ in range(len(TTLTimesRise[GPIASTTLCh-1])) 
+                  if EventRec[_] == Rec]
+#        TTLLoc = TTLLoc[0] + (NoOfSamplesBefore+NoOfSamplesAfter)
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
         
         print('Slicing and filtering...')
-        gData = Raw['data'][str(Rec)][Start:End,PiezoCh-1]        
-        gData = [float(gData[_]) for _ in range(NoOfSamples)]
-        gData = abs(signal.hilbert(gData))
-        gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
+        Freq = FreqOrder[Rec][0]; Trial = FreqOrder[Rec][1]
+        Gap[Freq][Trial] = Raw['data'][str(Rec)][Start:End,PiezoCh-1]        
+        Gap[Freq][Trial] = [float(Gap[Freq][Trial][_]) 
+                            for _ in range(NoOfSamples)]
+        Gap[Freq][Trial] = abs(signal.hilbert(Gap[Freq][Trial]))
+        Gap[Freq][Trial] = signal.filtfilt(f2, f1, Gap[Freq][Trial], 
+                                           padtype='odd', padlen=0)
+    
+    for Freq in range(len(NoiseFrequency)):
+        NoGapAll = [Gap[Freq][_] for _ in range(len(Gap[Freq])) if _%2 == 0]
+        GapAll = [Gap[Freq][_] for _ in range(len(Gap[Freq])) if _%2 != 0]
+    
+    NoGapSum = list(map(sum, zip(*NoGapAll)))
+    GapSum = list(map(sum, zip(*GapAll)))
         
         
-        del(TTLLoc, Start, End, rData, lData)
+        
+        del(TTLLoc, Start, End, Freq, Trial)

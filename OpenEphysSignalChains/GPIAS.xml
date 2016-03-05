@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>3 Mar 2016 17:10:12</DATE>
+    <DATE>5 Mar 2016 10:46:38</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabInVivo</MACHINE>
   </INFO>
@@ -59,7 +59,7 @@
       <EVENTCHANNEL name="13" number="13"/>
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.0976697113114399773"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.2048456838797458879"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"
@@ -108,7 +108,7 @@
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
       <EDITOR isCollapsed="0" displayName="Record Control">
-        <PARAMETERS Type="RecordControlEditor" Channel="1" Mode="1" Edge="1"/>
+        <PARAMETERS Type="RecordControlEditor" Channel="9" Mode="2" Edge="1"/>
       </EDITOR>
     </PROCESSOR>
     <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" NodeId="101">

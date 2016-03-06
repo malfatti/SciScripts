@@ -107,16 +107,16 @@ for RecFolder in DirList:
 
     TTLChs = np.nonzero(np.bincount(EventCh))[0]
     TTLNo = {_: (sum(np.squeeze(EventCh) == _))//2 for _ in TTLChs}
-    TTLTimesRise = {_: Kwik.get_rising_edge_times(Files['kwe'], _)
-                    for _ in TTLChs}
-    TTLTimesFall = {_: Kwik.get_falling_edge_times(Files['kwe'], _) 
-                    for _ in TTLChs}
+#    TTLTimesRise = {_: Kwik.get_rising_edge_times(Files['kwe'], _)
+#                    for _ in TTLChs}
+#    TTLTimesFall = {_: Kwik.get_falling_edge_times(Files['kwe'], _) 
+#                    for _ in TTLChs}
     
     for Rec in range(len(Raw['data'])):
         Rate = Raw['info'][str(Rec)]['sample_rate']
-#        RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
-#                   for _ in range(len(Raw['timestamps'][str(Rec)]))]
-#        
+        RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
+                   for _ in range(len(Raw['timestamps'][str(Rec)]))]
+        
         NoOfSamplesBefore = int(round((TimeBeforeTTL*Rate)*10**-3))
         NoOfSamplesAfter = int(round((TimeAfterTTL*Rate)*10**-3))
         NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
@@ -127,12 +127,17 @@ for RecFolder in DirList:
         f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
         
         print('Find TTL...')
-        TTLLoc = [int(round(TTLTimesRise[GPIASTTLCh-1][_]*Rate))
-                  for _ in range(len(TTLTimesRise[GPIASTTLCh-1])) 
-                  if EventRec[_] == Rec]
+        TTLLoc = [EventSample[_] for _ in range(len(EventID)) 
+                  if EventCh[_] == GPIASTTLCh-1 and EventRec[_] == Rec]
+#        TTLLoc = [int(round(TTLTimesRise[GPIASTTLCh-1][_]*Rate))
+#                  for _ in range(len(TTLTimesRise[GPIASTTLCh-1])) 
+#                  if EventRec[_] == Rec]
 #        TTLLoc = TTLLoc[0] + (NoOfSamplesBefore+NoOfSamplesAfter)
-        Start = TTLLoc-NoOfSamplesBefore
-        End = TTLLoc+NoOfSamplesAfter
+        Start = int(round(TTLLoc[0]-NoOfSamplesBefore))
+        End = int(round(TTLLoc[1]+NoOfSamplesAfter))
+        
+        Start = RawTime.index(Start)
+        End = RawTime.index(End)
         
         print('Slicing and filtering...')
         Freq = FreqOrder[Rec][0]; Trial = FreqOrder[Rec][1]

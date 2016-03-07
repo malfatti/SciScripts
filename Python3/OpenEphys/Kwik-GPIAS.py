@@ -18,12 +18,12 @@
 """
 #%% Set experiment details
 
-FileName = '20160305105342-GPIAS-TestSetup02'
+FileName = '20160307150648-GPIAS-TestSetup02'
 
 PiezoCh = 1
 GPIASTTLCh = 1
 TimeBeforeTTL = 50    # in ms
-TimeAfterTTL = 190    # in ms
+TimeAfterTTL = 200    # in ms
 FilterLow = 300       # High-pass frequency for bandpass filter
 FilterHigh = 3000     # Low-pass frequency
 FilterOrder = 4       # butter order
@@ -49,14 +49,13 @@ for Key, Value in DataInfo.items():
 del(Key, Value)
 
 print('Preallocate memory...')
-GPIASs = [[0] for _ in range(len(NoiseFrequency))]
+GPIAS = [[0] for _ in range(len(NoiseFrequency))]
 for Freq in range(len(NoiseFrequency)):
-    GPIASs[Freq] = [[0], [0]]
+    GPIAS[Freq] = [[0] for _ in range(NoOfTrials*2)]
 
-Gap = [[0] for _ in range(len(NoiseFrequency))]
+AllTTLs = [[0] for _ in range(len(NoiseFrequency))]
 for Freq in range(len(NoiseFrequency)):
-    Gap[Freq] = [[0] for _ in range(NoOfTrials*2)]
-NoGap = Gap[:]
+    AllTTLs[Freq] = [[0] for _ in range(NoOfTrials*2)]
 
 print('set paths...')
 os.makedirs('Figs', exist_ok=True)    # Figs folder
@@ -141,20 +140,61 @@ for RecFolder in DirList:
         
         print('Slicing and filtering...')
         Freq = FreqOrder[Rec][0]; Trial = FreqOrder[Rec][1]
-        Gap[Freq][Trial] = Raw['data'][str(Rec)][Start:End,PiezoCh-1]        
-        Gap[Freq][Trial] = [float(Gap[Freq][Trial][_]) 
+        
+        GPIAS[Freq][Trial] = Raw['data'][str(Rec)][Start:End,PiezoCh-1]        
+        GPIAS[Freq][Trial] = [float(GPIAS[Freq][Trial][_]) 
                             for _ in range(NoOfSamples)]
-        Gap[Freq][Trial] = abs(signal.hilbert(Gap[Freq][Trial]))
-        Gap[Freq][Trial] = signal.filtfilt(f2, f1, Gap[Freq][Trial], 
+        GPIAS[Freq][Trial] = abs(signal.hilbert(GPIAS[Freq][Trial]))
+        GPIAS[Freq][Trial] = signal.filtfilt(f2, f1, GPIAS[Freq][Trial], 
                                            padtype='odd', padlen=0)
-    
-    for Freq in range(len(NoiseFrequency)):
-        NoGapAll = [Gap[Freq][_] for _ in range(len(Gap[Freq])) if _%2 == 0]
-        GapAll = [Gap[Freq][_] for _ in range(len(Gap[Freq])) if _%2 != 0]
-    
-    NoGapSum = list(map(sum, zip(*NoGapAll)))
-    GapSum = list(map(sum, zip(*GapAll)))
         
-        
+        AllTTLs[Freq][Trial] = [RawTime.index(TTLLoc[0])-Start, 
+                                RawTime.index(TTLLoc[1])-RawTime.index(TTLLoc[0])]
         
         del(TTLLoc, Start, End, Freq, Trial)
+    
+    for Freq in range(len(NoiseFrequency)):
+        NoGapAll = [GPIAS[Freq][_] for _ in range(len(GPIAS[Freq])) if _%2 == 0]
+        GapAll = [GPIAS[Freq][_] for _ in range(len(GPIAS[Freq])) if _%2 != 0]
+        NoGapSum = list(map(sum, zip(*NoGapAll)))
+        GapSum = list(map(sum, zip(*GapAll)))
+        
+        GPIAS[Freq] = [0, 0]
+        GPIAS[Freq][0] = [_/NoOfTrials for _ in NoGapSum]
+        GPIAS[Freq][1] = [_/NoOfTrials for _ in GapSum]
+        GPIAS[Freq][0] = signal.savgol_filter(GPIAS[Freq][0], 5, 2, mode='nearest')
+        GPIAS[Freq][1] = signal.savgol_filter(GPIAS[Freq][1], 5, 2, mode='nearest')
+        
+        TTLNoGapAll = [AllTTLs[Freq][_] for _ in range(len(AllTTLs[Freq])) if _%2 == 0]
+        TTLGapAll = [AllTTLs[Freq][_] for _ in range(len(AllTTLs[Freq])) if _%2 != 0]
+        TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
+        TTLGapSum = list(map(sum, zip(*TTLGapAll)))
+        
+        AllTTLs[Freq] = [0, 0]
+        AllTTLs[Freq][0] = [int(round(_/NoOfTrials)) for _ in TTLNoGapSum]
+        AllTTLs[Freq][1] = [int(round(_/NoOfTrials)) for _ in TTLGapSum]
+        
+        del(NoGapAll, GapAll, NoGapSum, GapSum)
+        del(TTLNoGapAll, TTLGapAll, TTLNoGapSum, TTLGapSum)
+                
+    print('Plotting...')
+    for Freq in range(len(NoiseFrequency)):
+        plt.figure(Freq)
+        plt.plot(XValues, GPIAS[Freq][0], color='r', label='No Gap')
+        plt.plot(XValues, GPIAS[Freq][1], color='b', label='Gap')
+        plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
+                    color='r', alpha=0.5, lw=0, label='Sound pulse (No gap)')
+        plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
+                    color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
+        plt.ylabel('Voltage [mV]'); plt.xlabel('Time [ms]')
+        plt.legend(loc='best', frameon=False)
+        plt.locator_params(tight=True)
+        plt.tick_params(direction='out')
+        plt.axes().spines['right'].set_visible(False)
+        plt.axes().spines['top'].set_visible(False)
+        plt.axes().yaxis.set_ticks_position('left')
+        plt.axes().xaxis.set_ticks_position('bottom')
+        plt.savefig('Figs/' + AnimalName + '-' + RecFolder[10:] + '-' + 
+                    str(NoiseFrequency[Freq][0]) + '_' + 
+                    str(NoiseFrequency[Freq][1]), transparent=True)
+    print('Done.')

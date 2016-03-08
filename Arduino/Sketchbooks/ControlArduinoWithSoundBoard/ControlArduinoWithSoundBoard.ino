@@ -17,12 +17,12 @@
 Arduino will read an analog in and, depending on the voltage, it will turn on a
 digital port, or both. This provides 5V TTLs even if you have analog small voltage.
 */
-const int SoundAndLaserTTLIn = 3;
-const int LaserOut =  13;
-const int SoundTTLOut = 12;
+const int SoundAndLaserTTLIn = 1;
+const int LaserOut =  2;
+const int SoundTTLOut = 4;
 
 void setup() {
-  Serial.begin(19200);
+  Serial.begin(38400);
   analogReference(INTERNAL);
 
   pinMode(SoundAndLaserTTLIn, INPUT);
@@ -38,20 +38,22 @@ void loop() {
   int SoundAndLaserTTLInV = analogRead(SoundAndLaserTTLIn);
   SoundAndLaserTTLInV = map(SoundAndLaserTTLInV, 0, 1023, 0, 255);
 
-  if (SoundAndLaserTTLInV < 12) {
+  if (SoundAndLaserTTLInV < 30) {
     digitalWrite(LaserOut, LOW);
     digitalWrite(SoundTTLOut, LOW);
   }
 
-  if (SoundAndLaserTTLInV >= 14 && SoundAndLaserTTLInV < 30) {
+  if (SoundAndLaserTTLInV >= 55 && SoundAndLaserTTLInV < 85) {
     digitalWrite(LaserOut, HIGH);
+    digitalWrite(SoundTTLOut, LOW);
   }
 
   if (SoundAndLaserTTLInV > 160 && SoundAndLaserTTLInV < 185) {
+    digitalWrite(LaserOut, LOW);
     digitalWrite(SoundTTLOut, HIGH);
   }
 
-  if (SoundAndLaserTTLInV >= 253) {
+  if (SoundAndLaserTTLInV >= 240) {
     digitalWrite(LaserOut, HIGH);
     digitalWrite(SoundTTLOut, HIGH);
   }

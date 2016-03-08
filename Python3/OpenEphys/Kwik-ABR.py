@@ -84,7 +84,7 @@ for RecFolder in DirList:
     for File in FilesList:
         if '.kwd' in File:
             try:
-                Raw = Kwik.load(File)
+                Raw = Kwik.load(File, 'all')
                 Files['kwd'] = File
             except OSError:
                     print('File ', File, " is corrupted :'(")

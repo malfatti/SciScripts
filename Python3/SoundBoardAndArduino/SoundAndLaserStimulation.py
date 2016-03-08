@@ -38,11 +38,11 @@ AnimalName = 'TestSetup01'
 Rate = 128000
 BaudRate = 38400
 
-CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160126114004-SoundMeasurement/SoundIntensity'
-#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
-#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
-#                  'SoundIntensity'
+#CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+#                  '20160126114004-SoundMeasurement/SoundIntensity'
+CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
+                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
+                  'SoundIntensity'
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
@@ -148,30 +148,58 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 
 #%% Run sound
-Arduino.write(b'P')
-for Freq in range(len(NoiseFrequency)):
-    for AmpF in range(len(SoundAmpF)):
-        for OneBlock in range(SoundStimBlockNo):
-            for OnePulse in range(SoundPulseNo):
-                Stimulation.write(Sound[Freq][AmpF])
-    
-            Stimulation.write(SoundPauseBetweenStimBlocks)
-Arduino.write(b'P')
+Date = datetime.datetime.now()
 
+Freq = 0
+for AmpF in range(len(SoundAmpF)):
+    Arduino.write(b'P')
+    for OneBlock in range(SoundStimBlockNo):
+        for OnePulse in range(SoundPulseNo):
+            Stimulation.write(Sound[Freq][AmpF])
 
-#%% Run laser
+        Stimulation.write(SoundPauseBetweenStimBlocks)
+    Arduino.write(b'P')
+
+print('Done. Saving info...')
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundStim-', str(NoiseFrequency[Freq][0]), '_', 
+                    str(NoiseFrequency[Freq][1])])
+
+ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'FileName'])
+
+with shelve.open(FileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
+del(Date, FileName, ExpInfo, Shelve)
+print('Saved.')
+
+#%% Run laser 55 85
+Arduino.write(b'P')
 for OneBlock in range(LaserStimBlockNo):
     for OnePulse in range(LaserPulseNo):
         Stimulation.write(Laser)
     
     Stimulation.write(LaserPauseBetweenStimBlocks)
+Arduino.write(b'P')
 
 
-#%% Run sound and laser
-for Freq in range(len(NoiseFrequency)):
-    for AmpF in range(len(SoundAmpF)):
-        for OneBlock in range(SoundStimBlockNo):
-            for OnePulse in range(SoundPulseNo):
-                Stimulation.write(SoundAndLaser[Freq][AmpF])
-    
-            Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
+#%% Run sound and laser 
+Date = datetime.datetime.now()
+
+Freq=0
+for AmpF in range(len(SoundAmpF)):
+    Arduino.write(b'P')
+    for OneBlock in range(SoundStimBlockNo):
+        for OnePulse in range(SoundPulseNo):
+            Stimulation.write(SoundAndLaser[Freq][AmpF])
+
+        Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
+    Arduino.write(b'P')
+
+print('Done. Saving info...')
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundAndLaserStim-', str(NoiseFrequency[Freq][0]), '_', 
+                    str(NoiseFrequency[Freq][1])])
+
+ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'FileName'])
+
+with shelve.open(FileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
+del(Date, FileName, ExpInfo, Shelve)

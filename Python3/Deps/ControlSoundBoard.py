@@ -36,7 +36,7 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
     if SoundPulseDur < 0.01:
-        SoundTTLPulse = [0.6] * round(SoundPulseDur * Rate)
+        SoundTTLPulse = [0.4] * round(SoundPulseDur * Rate)
     else:
         Middle = [0]*round((SoundPulseDur-0.01) * Rate)
         Border = [0.6] * round(0.005 * Rate)
@@ -199,7 +199,7 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
-    SoundTTLPulse = [0.6] * round(SoundPulseDur * Rate)
+    SoundTTLPulse = [0.4] * round(SoundPulseDur * Rate)
     SoundTTLPulse[-1] = 0
     
     SoundTTLUnit = SoundTTLPrePause + SoundTTLPulse + SoundTTLPostPause

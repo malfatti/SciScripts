@@ -30,7 +30,7 @@ const int Delay = 10;
 
 void setup() {
   Serial.begin(38400);
-  //analogReference(INTERNAL);
+  analogReference(INTERNAL);
 
   pinMode(inPin, INPUT);
   for (int Pin = 0; Pin < PinNo; Pin++) {
@@ -39,35 +39,19 @@ void setup() {
   }
 
   char ch = 0;
+  int inPinV = 0;
 }
 
 void loop() {
-
-  char ch;
+  char ch = 0;
+  int inPinV = 0;
 
   while (ch == 0) {
-    ch = analogRead(inPin);
-    ch = map(ch, 0, 1023, 0, 255);
-
-    if (ch < 12) {
-      digitalWrite(Pins[0], LOW);
-      digitalWrite(Pins[1], LOW);
-    }
-
-    if (ch >= 14 && ch < 30) {
-      digitalWrite(Pins[0], HIGH);
-    }
-
-    if (ch >= 5 && ch < 1000) {
-      digitalWrite(Pins[1], HIGH);
-    }
-
-    if (ch >= 253) {
-      digitalWrite(Pins[0], HIGH);
-      digitalWrite(Pins[1], HIGH);
-    }
-
     ch = Serial.read();
+    inPinV = analogRead(inPin);
+    if (inPinV > 10) {
+      ch = -1;
+    }
   }
 
   if (ch == 'A') {
@@ -78,9 +62,9 @@ void loop() {
 
   if (ch == 'a') {
     digitalWrite(Pins[0], HIGH);
-  }
-
-  if (ch == 'z') {
+    while (ch != 'z') {
+      ch = Serial.read();
+    }
     digitalWrite(Pins[0], LOW);
   }
 
@@ -93,9 +77,9 @@ void loop() {
 
   if (ch == 'b') {
     digitalWrite(Pins[1], HIGH);
-  }
-
-  if (ch == 'y') {
+    while (ch != 'y') {
+      ch = Serial.read();
+    }
     digitalWrite(Pins[1], LOW);
   }
 
@@ -107,9 +91,9 @@ void loop() {
 
   if (ch == 'c') {
     digitalWrite(Pins[2], HIGH);
-  }
-
-  if (ch == 'x') {
+    while (ch != 'x') {
+      ch = Serial.read();
+    }
     digitalWrite(Pins[2], LOW);
   }
 
@@ -121,9 +105,9 @@ void loop() {
 
   if (ch == 'd') {
     digitalWrite(Pins[3], HIGH);
-  }
-
-  if (ch == 'w') {
+    while (ch != 'w') {
+      ch = Serial.read();
+    }
     digitalWrite(Pins[3], LOW);
   }
 
@@ -135,9 +119,9 @@ void loop() {
 
   if (ch == 'e') {
     digitalWrite(Pins[4], HIGH);
-  }
-
-  if (ch == 'v') {
+    while (ch != 'v') {
+      ch = Serial.read();
+    }
     digitalWrite(Pins[4], LOW);
   }
 
@@ -145,6 +129,28 @@ void loop() {
     digitalWrite(Pins[5], HIGH);
     delay(Delay);
     digitalWrite(Pins[5], LOW);
+  }
+  
+  inPinV = map(inPinV, 0, 1023, 0, 255);
+
+  if (inPinV >= 0 && inPinV < 30) {
+    digitalWrite(Pins[0], LOW);
+    digitalWrite(Pins[1], LOW);
+  }
+
+  if (inPinV >= 55 && inPinV < 85) {
+    digitalWrite(Pins[0], LOW);
+    digitalWrite(Pins[1], HIGH);
+  }
+
+  if (inPinV >= 160 && inPinV < 185) {
+    digitalWrite(Pins[0], HIGH);
+    digitalWrite(Pins[1], LOW);
+  }
+
+  if (inPinV >= 240) {
+    digitalWrite(Pins[0], HIGH);
+    digitalWrite(Pins[1], HIGH);
   }
 
 }

@@ -26,7 +26,7 @@
 const int inPin = 1;
 const int Pins[6] = {2, 4, 7, 8, 12, 13};
 const int PinNo = 6;
-const int Delay = 10;
+const int Delay = 20;
 
 void setup() {
   Serial.begin(38400);
@@ -138,17 +138,17 @@ void loop() {
     digitalWrite(Pins[1], LOW);
   }
 
-  if (inPinV >= 55 && inPinV < 85) {
+  if (inPinV >= 50 && inPinV < 80) {
     digitalWrite(Pins[0], LOW);
     digitalWrite(Pins[1], HIGH);
   }
 
-  if (inPinV >= 160 && inPinV < 185) {
+  if (inPinV >= 135 && inPinV < 160) {
     digitalWrite(Pins[0], HIGH);
     digitalWrite(Pins[1], LOW);
   }
 
-  if (inPinV >= 240) {
+  if (inPinV >= 200) {
     digitalWrite(Pins[0], HIGH);
     digitalWrite(Pins[1], HIGH);
   }

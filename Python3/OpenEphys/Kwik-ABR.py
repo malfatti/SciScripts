@@ -20,7 +20,7 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 """
 #%% Set experiment details
 
-FileName = '20160303170842-GPIAS-TestSetup02'
+FileName = '20160308170928-TestABR01-SoundStim'
 
 # ABR
 ABRCh = [1, 16]         # [RightChannel, LeftChannel], if order matters
@@ -121,10 +121,18 @@ for RecFolder in DirList:
     
     print('Data from ', RecFolder, ' loaded.')
     
-    print('Get rate and calculate No of samples...')
-    Rate = Raw['info']['sample_rate']
-    NoOfSamplesBefore = int((ABRTimeBeforeTTL*Rate)*10**-3)
-    NoOfSamplesAfter = int((ABRTimeAfterTTL*Rate)*10**-3)
+    print('Get TTL data...')
+    EventID = Events['TTLs']['user_data']['eventID']
+    EventCh = Events['TTLs']['user_data']['event_channels']
+    EventRec = Events['TTLs']['recording']
+    EventSample = Events['TTLs']['time_samples']
+
+    TTLChs = np.nonzero(np.bincount(EventCh))[0]
+    TTLNo = {_: (sum(np.squeeze(EventCh) == _))//2 for _ in TTLChs}
+    
+    Rate = Raw['info']['0']['sample_rate']
+    NoOfSamplesBefore = int(round((ABRTimeBeforeTTL*Rate)*10**-3))
+    NoOfSamplesAfter = int(round((ABRTimeAfterTTL*Rate)*10**-3))
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
     XValues = (range(NoOfSamples)/Rate)*10**3
     
@@ -132,33 +140,29 @@ for RecFolder in DirList:
     passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
     f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
     
-    print('Get TTL data...')
-    EventID = Events['TTLs']['user_data']['eventID']
-    EventCh = Events['TTLs']['user_data']['event_channels']
-    EventSample = Events['TTLs']['time_samples']
-
-    TTLChs = np.nonzero(np.bincount(EventCh))[0]
-    TTLNo = {_: sum(np.squeeze(EventCh) == _) for _ in TTLChs}
-    TTLTimes = {_: Kwik.get_rising_edge_times(Files['kwe'], _) for _ in TTLChs}
-    
-    rABR = [[0]*NoOfSamples]*TTLNo[ABRTTLCh-1]; lABR = rABR[:]
-    
-    print('Slicing and filtering ABRs...')
-    for TTL in range(TTLNo[ABRTTLCh-1]):
-        TTLLoc = int(round(TTLTimes[ABRTTLCh-1][TTL]*Rate))
-        Start = TTLLoc-NoOfSamplesBefore
-        End = TTLLoc+NoOfSamplesAfter
+    for Rec in range(len(Raw['data'])):
+        RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
+                   for _ in range(len(Raw['timestamps'][str(Rec)]))]
         
-        rData = Raw['data'][Start:End, ABRCh[0]-1]
-        lData = Raw['data'][Start:End, ABRCh[1]-1]
+        rABR = [[0 for _ in range(NoOfSamples)] for _ in range(TTLNo[ABRTTLCh-1])]
+        lABR = [[0 for _ in range(NoOfSamples)] for _ in range(TTLNo[ABRTTLCh-1])]
         
-        rABR[TTL] = [float(rData[_]) for _ in range(NoOfSamples)]
-        lABR[TTL] = [float(lData[_]) for _ in range(NoOfSamples)]
-        
-        rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
-        lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
-        
-        del(TTLLoc, Start, End, rData, lData)
+        print('Slicing and filtering ABRs...')
+        for TTL in range(TTLNo[ABRTTLCh-1]):
+            TTLLoc = int(round(TTLTimes[ABRTTLCh-1][TTL]*Rate))
+            Start = TTLLoc-NoOfSamplesBefore
+            End = TTLLoc+NoOfSamplesAfter
+            
+            rData = Raw['data'][Start:End, ABRCh[0]-1]
+            lData = Raw['data'][Start:End, ABRCh[1]-1]
+            
+            rABR[TTL] = [float(rData[_]) for _ in range(NoOfSamples)]
+            lABR[TTL] = [float(lData[_]) for _ in range(NoOfSamples)]
+            
+            rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
+            lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
+            
+            del(TTLLoc, Start, End, rData, lData)
     
     print('Saving ABRs...')
     ABRs[0][Freq][AmpF][len(ABRs[0][Freq][AmpF])-1] = np.mean(rABR, axis=0)

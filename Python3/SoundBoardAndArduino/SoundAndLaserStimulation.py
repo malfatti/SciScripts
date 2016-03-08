@@ -34,15 +34,15 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'TestSetup01'
+AnimalName = 'TestABR01'
 Rate = 128000
 BaudRate = 38400
 
 #CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
 #                  '20160126114004-SoundMeasurement/SoundIntensity'
-CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
-                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
-                  'SoundIntensity'
+#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
+#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
+#                  'SoundIntensity'
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
@@ -87,9 +87,9 @@ import ControlSoundBoard
 import datetime
 import pyaudio
 import shelve
-
-with shelve.open(CalibrationFile) as Shelve:
-    SoundIntensity = Shelve['SoundIntensity']
+#
+#with shelve.open(CalibrationFile) as Shelve:
+#    SoundIntensity = Shelve['SoundIntensity']
 
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
@@ -147,18 +147,17 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
                                     LaserPauseBetweenStimBlocksDur, TTLAmpF)
 
 
-#%% Run sound
+#%% Run sound 135-160
 Date = datetime.datetime.now()
 
 Freq = 0
 for AmpF in range(len(SoundAmpF)):
     Arduino.write(b'P')
-    for OneBlock in range(SoundStimBlockNo):
-        for OnePulse in range(SoundPulseNo):
-            Stimulation.write(Sound[Freq][AmpF])
-
-        Stimulation.write(SoundPauseBetweenStimBlocks)
+    for OnePulse in range(SoundPulseNo):
+        Stimulation.write(Sound[Freq][AmpF])
+    
     Arduino.write(b'P')
+    Stimulation.write(SoundPauseBetweenStimBlocks)
 
 print('Done. Saving info...')
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
@@ -171,7 +170,7 @@ with shelve.open(FileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
 del(Date, FileName, ExpInfo, Shelve)
 print('Saved.')
 
-#%% Run laser 55 85
+#%% Run laser 45 85
 Arduino.write(b'P')
 for OneBlock in range(LaserStimBlockNo):
     for OnePulse in range(LaserPulseNo):
@@ -181,7 +180,7 @@ for OneBlock in range(LaserStimBlockNo):
 Arduino.write(b'P')
 
 
-#%% Run sound and laser 
+#%% Run sound and laser >200
 Date = datetime.datetime.now()
 
 Freq=0

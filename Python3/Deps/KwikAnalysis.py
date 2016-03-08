@@ -26,7 +26,7 @@ import shelve
 from scipy import signal
 
 def RemoveDateFromFolderName():
-    RenameFolders = input('Rename folders (BE CAREFUL)? [y/N] ')
+    RenameFolders = input('Rename folders in KwikFiles/* (BE CAREFUL)? [y/N] ')
     if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
         DirList = glob.glob('KwikFiles/*'); DirList.sort()
         for FolderName in DirList:

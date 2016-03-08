@@ -145,7 +145,7 @@ for RecFolder in DirList:
     
     print('Slicing and filtering ABRs...')
     for TTL in range(TTLNo[ABRTTLCh-1]):
-        TTLLoc = int(TTLTimes[ABRTTLCh-1][TTL]*Rate)
+        TTLLoc = int(round(TTLTimes[ABRTTLCh-1][TTL]*Rate))
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
         

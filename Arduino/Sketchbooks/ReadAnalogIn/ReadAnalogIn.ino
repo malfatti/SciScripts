@@ -1,9 +1,9 @@
-int analogPin = 3;
+int analogPin = 1;
 int val = 0;
 
 void setup()
 {
-  Serial.begin(19200);
+  Serial.begin(38400);
   analogReference(INTERNAL);
 }
 

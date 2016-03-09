@@ -38,8 +38,8 @@ AnimalName = 'TestABR01'
 Rate = 128000
 BaudRate = 38400
 
-#CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-#                  '20160126114004-SoundMeasurement/SoundIntensity'
+CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+                  '20160126114004-SoundMeasurement/SoundIntensity'
 #CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
 #                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
 #                  'SoundIntensity'
@@ -87,9 +87,9 @@ import ControlSoundBoard
 import datetime
 import pyaudio
 import shelve
-#
-#with shelve.open(CalibrationFile) as Shelve:
-#    SoundIntensity = Shelve['SoundIntensity']
+
+with shelve.open(CalibrationFile) as Shelve:
+    SoundIntensity = Shelve['SoundIntensity']
 
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
@@ -109,6 +109,7 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName',
 
 with shelve.open(FileName) as Shelve:
     Shelve['DataInfo'] = DataInfo
+    Shelve['SoundIntensity'] = SoundIntensity
 del(Date, FileName, DataInfo)
 
 p = pyaudio.PyAudio()

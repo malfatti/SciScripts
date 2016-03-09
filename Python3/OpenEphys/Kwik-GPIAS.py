@@ -18,17 +18,36 @@
 """
 #%% Set experiment details
 
-FileName = '20160307150648-GPIAS-TestSetup02'
+FileName = '20160305105342-GPIAS-TestSetup02'
 
 PiezoCh = 1
 GPIASTTLCh = 1
-TimeBeforeTTL = 50    # in ms
-TimeAfterTTL = 200    # in ms
-FilterLow = 300       # High-pass frequency for bandpass filter
-FilterHigh = 3000     # Low-pass frequency
-FilterOrder = 4       # butter order
+GPIASTimeBeforeTTL = 50    # in ms
+GPIASTimeAfterTTL = 150    # in ms
+FilterLow = 3       # High-pass frequency for bandpass filter
+FilterHigh = 300     # Low-pass frequency
+FilterOrder = 3       # butter order
+
+import KwikAnalysis
+import shelve
 
 
+with shelve.open(FileName) as Shelve:
+    DataInfo = Shelve['DataInfo']
+    Freqs = Shelve['Freqs']
+    FreqOrder = Shelve['FreqOrder']
+    FreqSlot = Shelve['FreqSlot']
+
+for Key, Value in DataInfo.items():
+    exec(str(Key) + '=' + 'Value')
+del(Key, Value)
+
+KwikAnalysis.GPIAS(DataInfo['AnimalName'], DataInfo['NoiseFrequency'], 
+                   FreqOrder, DataInfo['NoOfTrials'], GPIASTimeBeforeTTL, 
+                   GPIASTimeAfterTTL, FilterLow, FilterHigh, FilterOrder, 
+                   GPIASTTLCh, PiezoCh)
+
+######################
 import glob
 import Kwik
 import matplotlib.pyplot as plt
@@ -183,9 +202,9 @@ for RecFolder in DirList:
         plt.plot(XValues, GPIAS[Freq][0], color='r', label='No Gap')
         plt.plot(XValues, GPIAS[Freq][1], color='b', label='Gap')
         plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
-                    color='r', alpha=0.5, lw=0, label='Sound pulse (No gap)')
-        plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
-                    color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
+                    color='r', alpha=0.5, lw=0, label='Sound pulse')
+#        plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
+#                    color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
         plt.ylabel('Voltage [mV]'); plt.xlabel('Time [ms]')
         plt.legend(loc='best', frameon=False)
         plt.locator_params(tight=True)

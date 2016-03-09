@@ -33,6 +33,20 @@ FilterOrder = 4         # butter order
 
 #==========#==========#==========#==========#
 
+import KwikAnalysis
+import shelve
+
+with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
+for Key, Value in DataInfo.items():
+    exec(str(Key) + '=' + 'Value')
+del(Shelve, Key, Value)
+
+ABRs, XValues = KwikAnalysis.ABR(FileName, NoiseFrequency, SoundAmpF, ABRCh, 
+                                 ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
+                                 FilterLow, FilterHigh, FilterOrder)
+KwikAnalysis.PlotABR(ABRs, XValues, FileName, NoiseFrequency, SoundAmpF)
+
+#######
 import glob
 import Kwik
 import matplotlib.pyplot as plt
@@ -42,12 +56,10 @@ import shelve
 from scipy import signal
 
 
-with shelve.open(FileName) as Shelve:
-    DataInfo = Shelve['DataInfo']
-
+with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
 for Key, Value in DataInfo.items():
     exec(str(Key) + '=' + 'Value')
-del(Key, Value)
+del(Shelve, Key, Value)
 
 
 ## Remove date from folder name
@@ -103,19 +115,18 @@ for RecFolder in DirList:
             except OSError:
                 print('File ', File, " is corrupted :'(")
             
-        elif '.kwx' in File:
-            try:
-                Spks = Kwik.load(File)
-                Files['kwx'] = File
-            except OSError:
-                print('File ', File, " is corrupted :'(")
+        elif '.db' in File:
+            with shelve.open(File[:-3]) as Shelve: ExpInfo = Shelve['ExpInfo']
+            for Key, Value in ExpInfo.items():
+                exec(str(Key) + '=' + 'Value')
+            del(Shelve, Key, Value)
     
     print('Check if files are ok...')
-    if 'Raw' not in globals():
+    if 'Raw' not in locals():
         print('.kwd file is corrupted. Skipping dataset...')
         continue
     
-    if 'Events' not in globals():
+    if 'Events' not in locals():
         print('.kwe/.kwik file is corrupted. Skipping dataset...')
         continue
     
@@ -128,7 +139,13 @@ for RecFolder in DirList:
     EventSample = Events['TTLs']['time_samples']
 
     TTLChs = np.nonzero(np.bincount(EventCh))[0]
-    TTLNo = {_: (sum(np.squeeze(EventCh) == _))//2 for _ in TTLChs}
+    TTLRecs = np.nonzero(np.bincount(EventRec))[0]
+    TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
+                         if EventRec[_] == _Rec 
+                         and EventCh[_] ==  ABRTTLCh-1 
+                         and EventID[_] == 1]
+                  for _Rec in TTLRecs}
+    
     
     Rate = Raw['info']['0']['sample_rate']
     NoOfSamplesBefore = int(round((ABRTimeBeforeTTL*Rate)*10**-3))
@@ -144,17 +161,21 @@ for RecFolder in DirList:
         RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
                    for _ in range(len(Raw['timestamps'][str(Rec)]))]
         
-        rABR = [[0 for _ in range(NoOfSamples)] for _ in range(TTLNo[ABRTTLCh-1])]
-        lABR = [[0 for _ in range(NoOfSamples)] for _ in range(TTLNo[ABRTTLCh-1])]
+        rABR = [[0 for _ in range(NoOfSamples)] 
+                for _ in range(len(TTLsPerRec[Rec]))]
+        lABR = [[0 for _ in range(NoOfSamples)] 
+                for _ in range(len(TTLsPerRec[Rec]))]
         
         print('Slicing and filtering ABRs...')
-        for TTL in range(TTLNo[ABRTTLCh-1]):
-            TTLLoc = int(round(TTLTimes[ABRTTLCh-1][TTL]*Rate))
-            Start = TTLLoc-NoOfSamplesBefore
-            End = TTLLoc+NoOfSamplesAfter
+        for TTL in range(len(TTLsPerRec[Rec])):
+            TTLLoc = TTLsPerRec[Rec][TTL]
+            Start = int(round(TTLLoc-NoOfSamplesBefore))
+            End = int(round(TTLLoc+NoOfSamplesAfter))
+            Start = RawTime.index(Start)
+            End = RawTime.index(End)
             
-            rData = Raw['data'][Start:End, ABRCh[0]-1]
-            lData = Raw['data'][Start:End, ABRCh[1]-1]
+            rData = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
+            lData = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
             
             rABR[TTL] = [float(rData[_]) for _ in range(NoOfSamples)]
             lABR[TTL] = [float(lData[_]) for _ in range(NoOfSamples)]
@@ -164,23 +185,47 @@ for RecFolder in DirList:
             
             del(TTLLoc, Start, End, rData, lData)
     
-    print('Saving ABRs...')
-    ABRs[0][Freq][AmpF][len(ABRs[0][Freq][AmpF])-1] = np.mean(rABR, axis=0)
-    ABRs[1][Freq][AmpF][len(ABRs[0][Freq][AmpF])-1] = np.mean(lABR, axis=0)
-    ABRs[0][Freq][AmpF].append(0); ABRs[1][Freq][AmpF].append(0)
+        print('Saving ABRs...')
+        ABRs[0][Freq][Rec][len(ABRs[0][Freq][Rec])-1] = np.mean(rABR, axis=0)
+        ABRs[1][Freq][Rec][len(ABRs[1][Freq][Rec])-1] = np.mean(lABR, axis=0)
+        ABRs[0][Freq][Rec].append(0); ABRs[1][Freq][Rec].append(0)
 
-print('Done. Plotting...')
 
-for Trial in range(len(ABRs[0][0][0])-1):
-    Fig, Axes = plt.subplots(len(NoiseFrequency), 2, sharex=True, figsize=(12, 12))
-    BigAx = Fig.add_subplot(111)
-    BigAx.set_axis_bgcolor('none')
-    BigAx.spines['top'].set_color('none'); BigAx.spines['bottom'].set_color('none')
-    BigAx.spines['left'].set_color('none'); BigAx.spines['right'].set_color('none')
-    BigAx.tick_params(labelcolor='none', top='off', 
-                      bottom='off', left='off', right='off')
-    BigAx.set_xlabel('Time [ms]')
-    BigAx.set_ylabel('Voltage [µv]')
+# Remove extra zero
+for Freq in range(len(ABRs[0])):
+    for Rec in range(len(ABRs[0][Freq])):    
+        del(ABRs[0][Freq][Rec][-1])
+        del(ABRs[1][Freq][Rec][-1])
+
+print('Saving data to ABRs.db...')
+with shelve.open('ABRs') as Shelve:
+    Shelve['ABRs'] = ABRs
+    Shelve['DataInfo'] = DataInfo
+    Shelve['XValues'] = XValues
+print('Done.')
+
+
+print('Plotting...')
+with shelve.open(FileName) as Shelve: SoundIntensity = Shelve['SoundIntensity']
+
+Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
+Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
+          for _ in range(len(SoundAmpF))]
+
+for Trial in range(len(ABRs[0][0][0])):
+    Fig, Axes = plt.subplots(len(NoiseFrequency), 2, sharex=True, 
+                             figsize=(12, 12))
+#    BigAx = Fig.add_subplot(111)
+#    BigAx.set_axis_bgcolor('none')
+#    BigAx.spines['top'].set_color('none')
+#    BigAx.spines['bottom'].set_color('none')
+#    BigAx.spines['left'].set_color('none')
+#    BigAx.spines['right'].set_color('none')
+#    BigAx.tick_params(labelcolor='none', top='off', 
+#                      bottom='off', left='off', right='off')
+#    BigAx.set_xlabel('Time [ms]')
+#    BigAx.set_ylabel('Voltage [µV]')
+#    BigAx.set_title('Auditory brainstem responses')
     
     for Ear in range(2):
         for Freq in range(len(NoiseFrequency)):
@@ -188,9 +233,25 @@ for Trial in range(len(ABRs[0][0][0])-1):
                 if Ear == 0:
                     Axes[Freq][Ear].plot(XValues, 
                                          ABRs[Ear][Freq][AmpF][Trial], 
-                                         color='r')
+                                         color=Colors[AmpF][Ear], 
+                                         label=str(round(SoundIntensity[Freq]
+                                                     [str(SoundAmpF[AmpF])]))
+                                               + ' dB')
                 else:
                     Axes[Freq][Ear].plot(XValues, 
                                          ABRs[Ear][Freq][AmpF][Trial], 
-                                         color='b')
-
+                                         color=Colors[AmpF][Ear],
+                                         label=str(round(SoundIntensity[Freq]
+                                                     [str(SoundAmpF[AmpF])]))
+                                               + ' dB')
+                
+                Axes[Freq][Ear].legend(loc='best', frameon=False)
+                Axes[Freq][Ear].spines['right'].set_visible(False)
+                Axes[Freq][Ear].spines['top'].set_visible(False)
+                Axes[Freq][Ear].yaxis.set_ticks_position('left')
+                Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
+                Axes[Freq][Ear].set_title(str(NoiseFrequency[Freq]))
+                Axes[Freq][Ear].set_ylabel('voltage [µV]')
+#                Axes[Freq][Ear].tick_params(direction='out')
+    Axes[-1][0].set_xlabel('time [ms]'); Axes[-1][1].set_xlabel('Time [ms]')
+    Fig.tight_layout()

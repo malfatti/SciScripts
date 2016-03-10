@@ -20,9 +20,6 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 """
 #%% Set experiment details
 
-FileName = '20160308170928-TestABR01-SoundStim'
-
-# ABR
 ABRCh = [1, 16]         # [RightChannel, LeftChannel], if order matters
 ABRTimeBeforeTTL = 0    # in ms
 ABRTimeAfterTTL = 12    # in ms
@@ -33,18 +30,17 @@ FilterOrder = 4         # butter order
 
 #==========#==========#==========#==========#
 
+import glob
 import KwikAnalysis
 import shelve
 
-with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
-for Key, Value in DataInfo.items():
-    exec(str(Key) + '=' + 'Value')
-del(Shelve, Key, Value)
+FileName = glob.glob('*.db'); FileName = FileName[0][:-3]
 
-ABRs, XValues = KwikAnalysis.ABR(FileName, NoiseFrequency, SoundAmpF, ABRCh, 
-                                 ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
-                                 FilterLow, FilterHigh, FilterOrder)
-KwikAnalysis.PlotABR(ABRs, XValues, FileName, NoiseFrequency, SoundAmpF)
+KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
+                 FilterLow, FilterHigh, FilterOrder)
+
+FileName = glob.glob('*ABRs.db'); FileName = FileName[0][:-3]
+KwikAnalysis.PlotABR(FileName)
 
 #######
 import glob

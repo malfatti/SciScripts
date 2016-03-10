@@ -36,17 +36,27 @@ def RemoveDateFromFolderName():
             print(FolderName, ' moved to ', NewFolderName)
         del(RenameFolders, DirList, FolderName, NewFolderName)
 
+def OrganizeShelves():
+    Shelves = glob.glob('*00.db'); Shelves.sort()
+    Folders = glob.glob('KwikFiles/*'); Folders.sort()
+    for _ in range(len(Shelves)):
+        os.rename(Shelves[_], Folders[_]+'/'+Shelves[_])
+        print(Shelves[_], 'moved to ', Folders[_]+'/'+Shelves[_])
+    
+    
 
-def ABR(FileName, NoiseFrequency, SoundAmpF, ABRCh=[1, 16], ABRTimeBeforeTTL=0, 
-        ABRTimeAfterTTL=12, ABRTTLCh=1, FilterLow=300, FilterHigh=3000, 
-        FilterOrder=4):
+def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
+        ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4):
+    
+    with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
+    
     print('Preallocate memory...')
     ABRs = [[], []]
-    ABRs[0] = [[0] for _ in range(len(NoiseFrequency))]
-    ABRs[1] = [[0] for _ in range(len(NoiseFrequency))]
-    for Freq in range(len(NoiseFrequency)):
-        ABRs[0][Freq] = [[[0]] for _ in range(len(SoundAmpF))]
-        ABRs[1][Freq] = [[[0]] for _ in range(len(SoundAmpF))]
+    ABRs[0] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+    ABRs[1] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+    for Freq in range(len(DataInfo['NoiseFrequency'])):
+        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF']))]
+        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF']))]
     del(Freq)
     
     print('set paths...')
@@ -82,7 +92,6 @@ def ABR(FileName, NoiseFrequency, SoundAmpF, ABRCh=[1, 16], ABRTimeBeforeTTL=0,
             elif '.db' in File:
                 with shelve.open(File[:-3]) as Shelve: 
                     ExpInfo = Shelve['ExpInfo']
-                locals().update(ExpInfo)
         
         print('Check if files are ok...')
         if 'Raw' not in locals():
@@ -111,8 +120,12 @@ def ABR(FileName, NoiseFrequency, SoundAmpF, ABRCh=[1, 16], ABRTimeBeforeTTL=0,
         
         
         Rate = Raw['info']['0']['sample_rate']
-        NoOfSamplesBefore = int(round((ABRTimeBeforeTTL*Rate)*10**-3))
-        NoOfSamplesAfter = int(round((ABRTimeAfterTTL*Rate)*10**-3))
+#        NoOfSamplesBefore = int(round((ABRTimeBeforeTTL*Rate)*10**-3))
+#        NoOfSamplesAfter = int(round((ABRTimeAfterTTL*Rate)*10**-3))
+#        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+#        XValues = (range(NoOfSamples)/Rate)*10**3
+        NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
+        NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
         NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
         XValues = (range(NoOfSamples)/Rate)*10**3
         
@@ -131,11 +144,16 @@ def ABR(FileName, NoiseFrequency, SoundAmpF, ABRCh=[1, 16], ABRTimeBeforeTTL=0,
             
             print('Slicing and filtering ABRs...')
             for TTL in range(len(TTLsPerRec[Rec])):
-                TTLLoc = TTLsPerRec[Rec][TTL]
-                Start = int(round(TTLLoc-NoOfSamplesBefore))
-                End = int(round(TTLLoc+NoOfSamplesAfter))
-                Start = RawTime.index(Start)
-                End = RawTime.index(End)
+                TTLLoc = int(TTLsPerRec[Rec][TTL])
+                Start = TTLLoc-NoOfSamplesBefore
+                End = TTLLoc+NoOfSamplesAfter
+                try:
+                    Start = RawTime.index(Start)
+                    End = RawTime.index(End)
+                except ValueError:
+                    print('ValueError: Timestamp is messed up in Freq', 
+                          str(ExpInfo['Freq']), ' AmpF ', str(Rec), ' :(')
+                    break
                 
                 rData = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
                 lData = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
@@ -149,65 +167,80 @@ def ABR(FileName, NoiseFrequency, SoundAmpF, ABRCh=[1, 16], ABRTimeBeforeTTL=0,
                 del(TTLLoc, Start, End, rData, lData)
         
             print('Saving ABRs...')
-            ABRs[0][Freq][Rec][len(ABRs[0][Freq][Rec])-1] = np.mean(rABR, axis=0)
-            ABRs[1][Freq][Rec][len(ABRs[1][Freq][Rec])-1] = np.mean(lABR, axis=0)
-            ABRs[0][Freq][Rec].append(0); ABRs[1][Freq][Rec].append(0)
+            if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Freq']][Rec]:
+                ABRs[0][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']] = [np.mean(rABR, axis=0)]
+                ABRs[1][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']] = [np.mean(lABR, axis=0)]
+            else:
+                ABRs[0][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']].append(np.mean(rABR, axis=0))
+                ABRs[1][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']].append(np.mean(lABR, axis=0))
     
-    
-    # Remove extra zero
-    for Freq in range(len(ABRs[0])):
-        for Rec in range(len(ABRs[0][Freq])):    
-            del(ABRs[0][Freq][Rec][-1])
-            del(ABRs[1][Freq][Rec][-1])
-    
-    print('Saving data to ABRs.db...')
-    with shelve.open('ABRs') as Shelve:
+    # Extracting number of trials
+#    DataInfo['NoOfTrials'] = []
+#    for Key in ABRs[0][ExpInfo['Freq']][Rec]:
+#        DataInfo['NoOfTrials'].append(len(ABRs[0][ExpInfo['Freq']][Rec][Key]))
+#    
+    FileName = DataInfo['AnimalName'] + '-ABRs'
+    print('Saving data to ' + FileName)
+    with shelve.open(FileName) as Shelve:
         Shelve['ABRs'] = ABRs
         Shelve['XValues'] = XValues
-    print('Done.')
+        Shelve['DataInfo'] = DataInfo
     
-    return(ABRs, XValues)
+    print('Done.')
+    return(None)
 
 
-def PlotABR(AnimalName, ABRs, XValues, FileName, NoiseFrequency, SoundAmpF):
+def PlotABR(FileName):
     print('Plotting...')
-    with shelve.open(FileName) as Shelve: SoundIntensity = Shelve['SoundIntensity']
+    with shelve.open(FileName) as Shelve:
+        ABRs = Shelve['ABRs']
+        XValues = Shelve['XValues']
+        DataInfo = Shelve['DataInfo']
     
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
-              for _ in range(len(SoundAmpF))]
+              for _ in range(len(DataInfo['SoundAmpF']))]
     
-    for Trial in range(len(ABRs[0][0][0])):
-        Fig, Axes = plt.subplots(len(NoiseFrequency), 2, sharex=True, 
-                                 figsize=(12, 12))
-
-        for Ear in range(2):
-            for Freq in range(len(NoiseFrequency)):
-                for AmpF in range(len(SoundAmpF)):
-                    if Ear == 0:
-                        Axes[Freq][Ear].plot(XValues, 
-                                             ABRs[Ear][Freq][AmpF][Trial], 
-                                             color=Colors[AmpF][Ear], 
-                                             label=str(round(SoundIntensity[Freq]
-                                                         [str(SoundAmpF[AmpF])]))
-                                                   + ' dB')
-                    else:
-                        Axes[Freq][Ear].plot(XValues, 
-                                             ABRs[Ear][Freq][AmpF][Trial], 
-                                             color=Colors[AmpF][Ear],
-                                             label=str(round(SoundIntensity[Freq]
-                                                         [str(SoundAmpF[AmpF])]))
-                                                   + ' dB')
-                    
-                    Axes[Freq][Ear].legend(loc='best', frameon=False)
-                    Axes[Freq][Ear].spines['right'].set_visible(False)
-                    Axes[Freq][Ear].spines['top'].set_visible(False)
-                    Axes[Freq][Ear].yaxis.set_ticks_position('left')
-                    Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
-                    Axes[Freq][Ear].set_title(str(NoiseFrequency[Freq]))
-                    Axes[Freq][Ear].set_ylabel('voltage [µV]')
-        Axes[-1][0].set_xlabel('time [ms]'); Axes[-1][1].set_xlabel('Time [ms]')
-        Fig.tight_layout()
+    Keys = list(ABRs[0][0][0].keys())
+    for Key in Keys:
+        for Trial in range(len(ABRs[0][0][0][Key])):
+            Fig, Axes = plt.subplots(len(DataInfo['NoiseFrequency']), 2, 
+                                         sharex=True, figsize=(12, 12))
+    
+            for Ear in range(2):
+                for Freq in range(len(DataInfo['NoiseFrequency'])):
+                    for AmpF in range(len(DataInfo['SoundAmpF'])):
+                        AmpStr = str(DataInfo['SoundAmpF'][AmpF])
+                        if Ear == 0:
+                            Axes[Freq][Ear].plot(
+                                XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
+                                color=Colors[AmpF][Ear], 
+                                label=str(round(
+                                       DataInfo['SoundIntensity'][Freq][AmpStr]
+                                      )) + ' dB')
+                        else:
+                            Axes[Freq][Ear].plot(
+                                XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
+                                color=Colors[AmpF][Ear], 
+                                label=str(round(
+                                       DataInfo['SoundIntensity'][Freq][AmpStr]
+                                      )) + ' dB')
+                        
+                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
+                        Axes[Freq][Ear].spines['right'].set_visible(False)
+                        Axes[Freq][Ear].spines['top'].set_visible(False)
+                        Axes[Freq][Ear].yaxis.set_ticks_position('left')
+                        Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
+                        Axes[Freq][Ear].set_title(str(DataInfo['NoiseFrequency'][Freq]))
+                        Axes[Freq][Ear].set_ylabel('voltage [µV]')
+            Axes[-1][0].set_xlabel('time [ms]'); Axes[-1][1].set_xlabel('time [ms]')
+            Fig.suptitle(Key + ' DV, trial ' + str(Trial+1))
+            Fig.tight_layout()
+            Fig.subplots_adjust(top=0.95)
+            Fig.savefig('Figs/' + FileName + '-DV' +  Key + '-Trial' + 
+                        str(Trial) + str(DataInfo['NoiseFrequency'][Freq][0]) 
+                        + '_' + str(DataInfo['NoiseFrequency'][Freq][1]) 
+                        + '.svg', format='svg')
 
 
 def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
@@ -261,18 +294,20 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
             print('.kwe/.kwik file is corrupted. Skipping dataset...')
             continue
         
+        if 'DataInfo' not in locals():
+            print('No data info. Skipping dataset...')
+            continue
+        
         print('Data from ', RecFolder, ' loaded.')
         
         print('Preallocate memory...')
-        GPIASTemp = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
         for Freq in range(len(DataInfo['NoiseFrequency'])):
-            GPIASTemp[Freq] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
-        GPIAS[len(GPIAS)-1] = [GPIASTemp]
+            GPIAS[Freq] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
         
-        AllTTLsTemp = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+        AllTTLs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
         for Freq in range(len(DataInfo['NoiseFrequency'])):
-            AllTTLsTemp[Freq] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
-        AllTTLs[len(AllTTLs)-1] = [AllTTLsTemp]
+            AllTTLs[Freq] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
         
         print('Get TTL data...')
         EventID = Events['TTLs']['user_data']['eventID']
@@ -314,13 +349,13 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
             gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
             
             Freq = FreqOrder[Rec][0]; Trial = FreqOrder[Rec][1]
-            AllTTLs[len(AllTTLs)-1][Freq][Trial] = [TTLStart, TTLEnd]
-            GPIAS[len(GPIAS)-1][Freq][Trial] = gData[:]
+            GPIAS[Freq][Trial] = gData[:]
+            AllTTLs[Freq][Trial] = [TTLStart, TTLEnd]
             
             del(TTLLoc, Start, End, TTLStart, TTLEnd, Freq, Trial, gData)
         
         for Freq in range(len(DataInfo['NoiseFrequency'])):
-            gData = GPIAS[len(GPIAS)-1][Freq][:]
+            gData = GPIAS[Freq][:]
             NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
             GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
             NoGapSum = list(map(sum, zip(*NoGapAll)))
@@ -331,9 +366,9 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
             gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
             gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
             gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
-            GPIAS[len(GPIAS)-1][Freq] = gData[:]
+            GPIAS[Freq] = gData[:]
             
-            tData = AllTTLs[len(AllTTLs)-1][Freq][:]
+            tData = AllTTLs[Freq][:]
             TTLNoGapAll = [tData[_] for _ in range(len(tData)) if _%2 == 0]
             TTLGapAll = [tData[_] for _ in range(len(tData)) if _%2 != 0]
             TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
@@ -342,60 +377,53 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
             tData = [0, 0]
             tData[0] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLNoGapSum]
             tData[1] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLGapSum]
-            AllTTLs[len(AllTTLs)-1][Freq] = tData[:]
+            AllTTLs[Freq] = tData[:]
             
             del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
-            del(TTLNoGapAll, TTLGapAll, TTLNoGapSum, TTLGapSum)
+            del(TTLNoGapAll, TTLGapAll, TTLNoGapSum, TTLGapSum, tData)
             
-        
-        print('Saving data to ' + DataInfo['AnimalName'] + '-GPIAS-' + 
-              RecFolder[10:])
-        with shelve.open('GPIAS') as Shelve:
+        FileName = DataInfo['AnimalName'] + '-GPIAS-' + RecFolder[10:]
+        print('Saving data to ' + FileName)
+        with shelve.open(FileName) as Shelve:
             Shelve['GPIAS'] = GPIAS
             Shelve['AllTTLs'] = AllTTLs
             Shelve['XValues'] = XValues
             Shelve['RecFolder'] = RecFolder
+            Shelve['DataInfo'] = DataInfo
         print('Done.')
-        GPIAS.append(0)
-        AllTTLs.append(0)
     
-    del(GPIAS[-1], AllTTLs[-1])
     print('Finished.')
+    return(None)
 
-    return(GPIAS, AllTTLs, XValues)
 
-def PlotGPIAS(AnimalName, NoiseFrequency):
-    if 'GPIAS' not in globals():
-        if os.path.isfile('GPIAS.db'):
-            print('Loading data from GPIAS.db ...')
-            with shelve.open('GPIAS') as Shelve:
-                GPIAS = Shelve['GPIAS']
-                AllTTLs = Shelve['AllTTLs']
-                XValues = Shelve['XValues']
-        else:
-            print('Data not found')
-            return None
-    else:
-        global GPIAS, XValues
-    
-    print('Plotting...')
-    for Freq in range(len(NoiseFrequency)):
-        plt.figure(Freq)
-        plt.plot(XValues, GPIAS[Freq][0], color='r', label='No Gap')
-        plt.plot(XValues, GPIAS[Freq][1], color='b', label='Gap')
-        plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
-                    color='k', alpha=0.5, lw=0, label='Sound pulse')
-    #        plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
-    #                    color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
-        plt.ylabel('Voltage [mV]'); plt.xlabel('Time [ms]')
-        plt.legend(loc='best', frameon=False)
-        plt.locator_params(tight=True)
-        plt.tick_params(direction='out')
-        plt.axes().spines['right'].set_visible(False)
-        plt.axes().spines['top'].set_visible(False)
-        plt.axes().yaxis.set_ticks_position('left')
-        plt.axes().xaxis.set_ticks_position('bottom')
-        plt.savefig('Figs/' + AnimalName + '-GPIAS-' + RecFolder[10:] + 
-                    '-' + str(NoiseFrequency[Freq][0]) + '_' + 
-                    str(NoiseFrequency[Freq][1]), transparent=True)
-    print('Done.')
+def PlotGPIAS(FileList):
+    for File in FileList:
+        print('Loading data from GPIAS.db ...')
+        with shelve.open(File[:-3]) as Shelve:
+            GPIAS = Shelve['GPIAS']
+            AllTTLs = Shelve['AllTTLs']
+            XValues = Shelve['XValues']
+            DataInfo = Shelve['DataInfo']
+        
+        print('Plotting...')
+        for Freq in range(len(DataInfo['NoiseFrequency'])):
+            plt.figure(Freq)
+            plt.plot(XValues, GPIAS[Freq][0], color='r', label='No Gap')
+            plt.plot(XValues, GPIAS[Freq][1], color='b', label='Gap')
+            plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
+                        color='k', alpha=0.5, lw=0, label='Sound pulse')
+#            plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
+#                        color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
+            plt.ylabel('voltage [mV]'); plt.xlabel('time [ms]')
+            plt.legend(loc='best', frameon=False)
+            plt.locator_params(tight=True)
+            plt.axes().spines['right'].set_visible(False)
+            plt.axes().spines['top'].set_visible(False)
+            plt.axes().yaxis.set_ticks_position('left')
+            plt.axes().xaxis.set_ticks_position('bottom')
+            plt.savefig('Figs/' + File[:-3] + '-' + 
+                        str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + 
+                        str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg', 
+                        format='svg')
+        print('Done.')
+

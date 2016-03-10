@@ -18,8 +18,6 @@
 """
 #%% Set experiment details
 
-FileName = '20160305105342-GPIAS-TestSetup02'
-
 PiezoCh = 1
 GPIASTTLCh = 1
 GPIASTimeBeforeTTL = 50    # in ms
@@ -29,23 +27,14 @@ FilterHigh = 300     # Low-pass frequency
 FilterOrder = 3       # butter order
 
 import KwikAnalysis
-import shelve
+import glob
 
+FileList = glob.glob('*.db'); FileList.sort()
 
-with shelve.open(FileName) as Shelve:
-    DataInfo = Shelve['DataInfo']
-    Freqs = Shelve['Freqs']
-    FreqOrder = Shelve['FreqOrder']
-    FreqSlot = Shelve['FreqSlot']
+KwikAnalysis.GPIAS(GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterLow, 
+                   FilterHigh, FilterOrder, GPIASTTLCh, PiezoCh)
+KwikAnalysis.PlotGPIAS(FileList)
 
-for Key, Value in DataInfo.items():
-    exec(str(Key) + '=' + 'Value')
-del(Key, Value)
-
-KwikAnalysis.GPIAS(DataInfo['AnimalName'], DataInfo['NoiseFrequency'], 
-                   FreqOrder, DataInfo['NoOfTrials'], GPIASTimeBeforeTTL, 
-                   GPIASTimeAfterTTL, FilterLow, FilterHigh, FilterOrder, 
-                   GPIASTTLCh, PiezoCh)
 
 ######################
 import glob
@@ -205,7 +194,7 @@ for RecFolder in DirList:
                     color='r', alpha=0.5, lw=0, label='Sound pulse')
 #        plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
 #                    color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
-        plt.ylabel('Voltage [mV]'); plt.xlabel('Time [ms]')
+        plt.ylabel('voltage [mV]'); plt.xlabel('time [ms]')
         plt.legend(loc='best', frameon=False)
         plt.locator_params(tight=True)
         plt.tick_params(direction='out')

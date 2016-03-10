@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'TestABR01'
+AnimalName = 'TestABR02'
 Rate = 128000
 BaudRate = 38400
 
@@ -105,11 +105,10 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName',
                                        'LaserPostPauseDur', 'LaserPulseNo',
                                        'LaserStimBlockNo', 
                                        'LaserPauseBetweenStimBlocksDur', 
-                                       'FileName'])
+                                       'SoundIntensity', 'FileName'])
 
 with shelve.open(FileName) as Shelve:
     Shelve['DataInfo'] = DataInfo
-    Shelve['SoundIntensity'] = SoundIntensity
 del(Date, FileName, DataInfo)
 
 p = pyaudio.PyAudio()
@@ -151,7 +150,11 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 #%% Run sound 135-160
 Date = datetime.datetime.now()
 
-Freq = 0
+Freq = input('Choose Freq index: ')
+DVCoord = input('Choose DVCoord (in µm): '); 
+Freq = int(Freq)
+
+print('Running...')
 for AmpF in range(len(SoundAmpF)):
     Arduino.write(b'P')
     for OnePulse in range(SoundPulseNo):
@@ -161,17 +164,20 @@ for AmpF in range(len(SoundAmpF)):
     Stimulation.write(SoundPauseBetweenStimBlocks)
 
 print('Done. Saving info...')
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                    '-SoundStim-', str(NoiseFrequency[Freq][0]), '_', 
-                    str(NoiseFrequency[Freq][1])])
+ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-SoundStim-' \
+              + DVCoord + '-' + str(NoiseFrequency[Freq][0]) + '_' \
+              + str(NoiseFrequency[Freq][1])
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'FileName'])
+ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName', 
+                                               'DVCoord'])
 
-with shelve.open(FileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
-del(Date, FileName, ExpInfo, Shelve)
+with shelve.open(ExpFileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
+del(Date, ExpFileName, ExpInfo, Shelve)
 print('Saved.')
+print('Played Freq ' + str(Freq) + ' at ' + DVCoord + 'µm DV')
 
 #%% Run laser 45 85
+print('Running...')
 Arduino.write(b'P')
 for OneBlock in range(LaserStimBlockNo):
     for OnePulse in range(LaserPulseNo):
@@ -179,6 +185,7 @@ for OneBlock in range(LaserStimBlockNo):
     
     Stimulation.write(LaserPauseBetweenStimBlocks)
 Arduino.write(b'P')
+print('Done.')
 
 
 #%% Run sound and laser >200

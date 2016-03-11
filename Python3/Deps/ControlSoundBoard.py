@@ -21,6 +21,7 @@ board as an analog I/O board.
 """
 
 import array
+import math
 import pyaudio
 import shelve
 import random
@@ -303,20 +304,17 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
 def SoundCalOut(Rate=128000):
     """ Generate square pulses in one channel that works as TTL for laser 
     (Check ControlArduinoWithSoundBoard.ino code)."""
-    PulseDur = 0.005; PostPauseDur = 0.095
+    Freq = 100; Time = 0.1
     
     print('Generating laser pulse...')
-    Pulse = [1] * round(PulseDur * Rate)
+    Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) for _ in range(round(Rate*Time))]
     Pulse[-1] = 0
     
-    PostPause = [0] * round(PostPauseDur * Rate)
-    Unit = Pulse + PostPause
-    
     print('Interleaving channels...')
-    List = [0]*(2*len(Unit))
-    for _ in range(len(Unit)):
+    List = [0]*(2*len(Pulse))
+    for _ in range(len(Pulse)):
         List[_ *2] = 0
-        List[_ *2+1] = Unit[_]
+        List[_ *2+1] = Pulse[_]
     
     Pulse = array.array('f')
     Pulse.fromlist(List)
@@ -330,7 +328,7 @@ def SoundCalOut(Rate=128000):
                     output=True)
     
     print('Playing...')
-    for OnePulse in range(100):
+    for OnePulse in range(round(30/Time)):
         Stimulation.write(Pulse)
 
 

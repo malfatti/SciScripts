@@ -300,6 +300,55 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     return(SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, StartSoundAndLaser)
 
 
+def SoundCalOut(Rate=128000):
+    """ Generate square pulses in one channel that works as TTL for laser 
+    (Check ControlArduinoWithSoundBoard.ino code)."""
+    PulseDur = 0.005; PostPauseDur = 0.095
+    
+    print('Generating laser pulse...')
+    Pulse = [1] * round(PulseDur * Rate)
+    Pulse[-1] = 0
+    
+    PostPause = [0] * round(PostPauseDur * Rate)
+    Unit = Pulse + PostPause
+    
+    print('Interleaving channels...')
+    List = [0]*(2*len(Unit))
+    for _ in range(len(Unit)):
+        List[_ *2] = 0
+        List[_ *2+1] = Unit[_]
+    
+    Pulse = array.array('f')
+    Pulse.fromlist(List)
+    Pulse = bytes(Pulse)
+    
+    print('Generating sound objects...')
+    p = pyaudio.PyAudio()
+    Stimulation = p.open(format=pyaudio.paFloat32,
+                    channels=2,
+                    rate=Rate,
+                    output=True)
+    
+    print('Playing...')
+    for OnePulse in range(100):
+        Stimulation.write(Pulse)
+
+
+def SoundCalIn(Rate=128000):
+    print('Generating sound objects...')
+    p = pyaudio.PyAudio()
+    Reading = p.open(format=pyaudio.paFloat32,
+                    channels=2,
+                    rate=Rate,
+                    input=True)
+    
+    Data = Reading.read(Rate)
+    
+    Data = array.array('f', Data)
+    return(Data)
+    
+
+
 def GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
                 TTLAmpF, CalibrationFile, SoundPrePauseDur=0, 
                 SoundPostPauseDur=0, SoundStimBlockNo=1, 

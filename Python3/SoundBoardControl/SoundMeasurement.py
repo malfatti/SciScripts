@@ -34,20 +34,16 @@ Rate = 128000
 SoundPulseDur = 0.01
 # Amount of pulses per block
 SoundPulseNo = 300
-# Amplification factor (consider using values <= 1). If using one value, keep it in a list.
-SoundAmpF = [0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 
-             0.15, 0.1, 0.08, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.008, 
-             0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], 
+                  [14000, 16000], [16000, 18000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
 MicSens_dB = -47.46
-# Sound board amp factor. One simple way to get this value is generating  
-# square pulses of amp 1, plug the output channel on the oscilloscope and play
-# them. The output value will be your sound board amp factor.
-SBAmpF = 1.5
+# Sound board amp factor. See Python3/SoundBoardControl/SoundBoardCalibration.py
+SBOutAmpF = 1.8
+SBInAmpF = 
 #==========#==========#==========#==========#
 
 import array
@@ -61,6 +57,17 @@ import pyaudio
 import shelve
 from scipy import signal
 
+def FRange(Start, End, Step):
+    Range = [round(x/(1/Step), 3) for x in range(round(Start/Step), round(End/Step), -1)]
+    return Range
+
+AmpFList = [FRange(3, 2, 0.25) + FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + 
+            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.01, 0.005) + 
+            FRange(0.01, 0, 0.001) + [0]]
+
+SoundAmpF = [AmpFList for _ in range(len(NoiseFrequency))]
+MicSens_VPa = 10**(MicSens_dB/20)
+
 Date = datetime.datetime.now()
 Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
 os.makedirs(Folder)
@@ -69,7 +76,9 @@ os.makedirs(Folder)
 DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur', 
                                                 'SoundPulseNo', 'SoundAmpF', 
                                                 'NoiseFrequency', 'TTLAmpF', 
-                                                'MicSens_dB', 'Folder'])
+                                                'MicSens_dB', 'MicSens_VPa',
+                                                'SBOutAmpF', 'SBInAmpF',
+                                                'Folder'])
 
 ## Prepare sound objects
 Sound, SoundPauseBetweenStimBlocks, SoundRec, Stimulation = \

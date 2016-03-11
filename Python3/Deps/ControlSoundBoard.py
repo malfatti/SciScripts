@@ -15,31 +15,38 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-This is a script that define functions allowing the use of a computer's sound
+This is a script that defines functions allowing the use of a computer's sound
 board as an analog I/O board.
 
 """
 
 import array
 import pyaudio
+import shelve
 import random
 import scipy.signal
 import threading
 
+SoundTTLVal = 0.6; LaserTTLVal = 0.3
+
 def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
-             TTLAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0, 
+             TTLAmpF, CalibrationFile, SoundPrePauseDur=0, SoundPostPauseDur=0, 
              SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0):
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
+    
+    with shelve.open(CalibrationFile) as Shelve:
+        SBAmpF = Shelve['SBAmpF']
+
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
     if SoundPulseDur < 0.01:
-        SoundTTLPulse = [0.4] * round(SoundPulseDur * Rate)
+        SoundTTLPulse = [round(SoundTTLVal/SBAmpF, 3)] * round(SoundPulseDur * Rate)
     else:
         Middle = [0]*round((SoundPulseDur-0.01) * Rate)
-        Border = [0.6] * round(0.005 * Rate)
+        Border = [round(SoundTTLVal/SBAmpF, 3)] * round(0.005 * Rate)
         SoundTTLPulse = Border + Middle + Border
     
     SoundTTLPulse[-1] = 0
@@ -73,16 +80,16 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
         SoundPulseFiltered[Freq][-1] = 0
         
         # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF)
-        SoundList[Freq] = [0]*len(SoundAmpF)
-        Sound[Freq] = [0]*len(SoundAmpF)
+        SoundUnit[Freq] = [0]*len(SoundAmpF[Freq])
+        SoundList[Freq] = [0]*len(SoundAmpF[Freq])
+        Sound[Freq] = [0]*len(SoundAmpF[Freq])
         
-        for AmpF in range(len(SoundAmpF)):
-            print('Applying amplification factor:', SoundAmpF[AmpF], '...')
+        for AmpF in range(len(SoundAmpF[Freq])):
+            print('Applying amplification factor:', SoundAmpF[Freq][AmpF], '...')
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [SoundEl*SoundAmpF[AmpF] \
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBAmpF)*SoundAmpF[Freq][AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -115,7 +122,7 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     class StartSound(threading.Thread):
         def run(self):
             for Freq in range(len(NoiseFrequency)):
-                for AmpF in range(len(SoundAmpF)):
+                for AmpF in range(len(SoundAmpF[Freq])):
                     for OneBlock in range(SoundStimBlockNo):
                         for OnePulse in range(SoundPulseNo):
                             Stimulation.write(Sound[Freq][AmpF])
@@ -129,12 +136,15 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
 
 def GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
              LaserPulseNo, LaserStimBlockNo, LaserPauseBetweenStimBlocksDur, \
-             TTLAmpF):
+             TTLAmpF, CalibrationFile):
     """ Generate square pulses in one channel that works as TTL for laser 
     (Check ControlArduinoWithSoundBoard.ino code)."""
-           
+    
+    with shelve.open(CalibrationFile) as Shelve:
+        SBAmpF = Shelve['SBAmpF']
+    
     print('Generating laser pulse...')
-    LaserPulse = [0.2] * round(LaserPulseDur * Rate)
+    LaserPulse = [round(LaserTTLVal/SBAmpF, 3)] * round(LaserPulseDur * Rate)
     LaserPulse[-1] = 0
     
     LaserPrePause = [0] * round(LaserPrePauseDur * Rate)
@@ -183,12 +193,15 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
                   SoundPulseNo, SoundStimBlockNo, \
                   SoundPauseBetweenStimBlocksDur, SoundAmpF, NoiseFrequency, \
                   LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
-                  LaserPauseBetweenStimBlocksDur, TTLAmpF):
+                  LaserPauseBetweenStimBlocksDur, TTLAmpF, CalibrationFile):
     """ Generate sound pulses in one channel and TTLs for sound and laser in 
     the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
-           
+    
+    with shelve.open(CalibrationFile) as Shelve:
+        SBAmpF = Shelve['SBAmpF']
+    
     print('Generating laser pulse...')
-    LaserPulse = [0.2] * round(LaserPulseDur * Rate)
+    LaserPulse = [round(LaserTTLVal/SBAmpF, 3)] * round(LaserPulseDur * Rate)
     LaserPulse[-1] = 0
     
     LaserPrePause = [0] * round(LaserPrePauseDur * Rate)
@@ -199,7 +212,7 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
-    SoundTTLPulse = [0.4] * round(SoundPulseDur * Rate)
+    SoundTTLPulse = [round(SoundTTLVal/SBAmpF, 3)] * round(SoundPulseDur * Rate)
     SoundTTLPulse[-1] = 0
     
     SoundTTLUnit = SoundTTLPrePause + SoundTTLPulse + SoundTTLPostPause
@@ -233,16 +246,16 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
         SoundPulseFiltered[Freq][-1] = 0
 
         # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF)
-        SoundAndLaserList[Freq] = [0]*len(SoundAmpF)
-        SoundAndLaser[Freq] = [0]*len(SoundAmpF)
+        SoundUnit[Freq] = [0]*len(SoundAmpF[Freq])
+        SoundAndLaserList[Freq] = [0]*len(SoundAmpF[Freq])
+        SoundAndLaser[Freq] = [0]*len(SoundAmpF[Freq])
     
-        for AmpF in range(len(SoundAmpF)):
-            print('Applying amplification factor:', SoundAmpF[AmpF], '...')
+        for AmpF in range(len(SoundAmpF[Freq])):
+            print('Applying amplification factor:', SoundAmpF[Freq][AmpF], '...')
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [SoundEl*SoundAmpF[AmpF] \
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBAmpF)*SoundAmpF[Freq][AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -275,7 +288,7 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     class StartSoundAndLaser(threading.Thread):
         def run(self):
             for Freq in range(len(NoiseFrequency)):
-                for AmpF in range(len(SoundAmpF)):
+                for AmpF in range(len(SoundAmpF[Freq])):
                     for OneBlock in range(SoundStimBlockNo):
                         for OnePulse in range(SoundPulseNo):
                             Stimulation.write(SoundAndLaser[Freq][AmpF])
@@ -288,15 +301,19 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
 
 
 def GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
-                TTLAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0, 
-                SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0):
+                TTLAmpF, CalibrationFile, SoundPrePauseDur=0, 
+                SoundPostPauseDur=0, SoundStimBlockNo=1, 
+                SoundPauseBetweenStimBlocksDur=0):
     """ This will generate the sound pulses and the sound output objects.
     Remember to create input objects and call them accordingly. """
+    
+    with shelve.open(CalibrationFile) as Shelve:
+        SBAmpF = Shelve['SBAmpF']
     
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
-    SoundTTLPulse = [0.6] * round(SoundPulseDur * Rate)
+    SoundTTLPulse = [round(SoundTTLVal/SBAmpF, 3)] * round(SoundPulseDur * Rate)
     SoundTTLPulse[-1] = 0
     
     SoundTTLUnit = SoundTTLPrePause + SoundTTLPulse + SoundTTLPostPause
@@ -329,18 +346,18 @@ def GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
         SoundPulseFiltered[Freq][-1] = 0
         
         # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF)
-        SoundList[Freq] = [0]*len(SoundAmpF)
-        Sound[Freq] = [0]*len(SoundAmpF)
-        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF))]
+        SoundUnit[Freq] = [0]*len(SoundAmpF[Freq])
+        SoundList[Freq] = [0]*len(SoundAmpF[Freq])
+        Sound[Freq] = [0]*len(SoundAmpF[Freq])
+        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF[Freq]))]
         
-        for AmpF in range(len(SoundAmpF)):
-            print('Applying amplification factor:', SoundAmpF[AmpF], '...')
+        for AmpF in range(len(SoundAmpF[Freq])):
+            print('Applying amplification factor:', SoundAmpF[Freq][AmpF], '...')
             SoundUnit[Freq][AmpF] = (SoundPrePause + 
                                     SoundPulseFiltered[Freq] + 
                                     SoundPostPause)
                                     
-            SoundUnit[Freq][AmpF] = [SoundEl*SoundAmpF[AmpF] 
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBAmpF)*SoundAmpF[Freq][AmpF] 
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -372,28 +389,6 @@ def GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
                          output=True)
 
     return(Sound, SoundPauseBetweenStimBlocks, SoundRec, Stimulation)
-
-
-def ReduceStim(SObj):
-    """This function will reduce a stimulus that have frequencies at several
-       AmpFs to a stimulus that has one AmpF per frequency, following the same
-       index for NoiseFrequency and SoundAmpF. For example:
-       
-           SoundAmpF = [1, 0.5]
-           NoiseFrequency = [[8000, 10000],[12000, 14000]]
-       
-           # create sound obj...
-       
-           Sound = ReduceStim(SObj)
-       
-       Sound will have NoiseFrequency[0] at SoundAmpF[0], NoiseFrequency[1] at 
-       SoundAmpF[1], etc. So, obviously, len(SoundAmpF) must be equal to 
-       len(NoiseFrequency)."""
-    
-    for _ in range(len(SObj)):
-        SObj[_] = SObj[_][_]
-    
-    return(SObj)
 
 
 def MicrOscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
@@ -429,7 +424,8 @@ def MicrOscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
         Plot.set_ydata(Data)
         return Plot,
     
-    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=16, blit=False)
+    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, 
+                                   interval=16, blit=False)
 
 
 def MicrOscilloscopeRec(Rate, XLim, YLim, FramesPerBuf=512):

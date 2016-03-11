@@ -44,6 +44,10 @@ NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
 TTLAmpF = 1
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
 MicSens_dB = -47.46
+# Sound board amp factor. One simple way to get this value is generating  
+# square pulses of amp 1, plug the output channel on the oscilloscope and play
+# them. The output value will be your sound board amp factor.
+SBAmpF = 1.5
 #==========#==========#==========#==========#
 
 import array
@@ -151,6 +155,9 @@ for Freq in range(len(SoundRec)):
         RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
                                     round(Rate*0.05)-1:-1*(round(Rate*0.05))]
         
+        RecordingData[Freq][AmpF] = [RecordingData[Freq][AmpF][_]/MicSens_VPa 
+                                     for _ in RecordingData[Freq][AmpF]]
+        
         F, PxxSp = signal.welch(RecordingData[Freq][AmpF], Rate, 
                                 nperseg=1024, scaling='spectrum')
         
@@ -175,6 +182,7 @@ for Freq in range(len(NoiseFrequency)):
 print('Saving analyzed data...')
 with shelve.open(Folder + '/SoundIntensity') as Shelve:
     Shelve['SoundIntensity'] = SoundIntensity
+    Shelve['SBAmpF'] = SBAmpF
 
 TexTable = pandas.DataFrame([[SoundAmpF[AmpF]] + 
                              [Intensity[Freq][AmpF]['dB'] 

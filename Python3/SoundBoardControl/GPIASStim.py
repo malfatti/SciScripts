@@ -42,8 +42,8 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse amplification factors for each frequency tested
-SoundBackgroundAmpF = [0.03, 0.02, 0.015, 0.015]
-SoundPulseAmpF = [1, 0.9, 0.8, 0.7]    # Real pulse
+SoundBackgroundAmpF = [[0.03], [0.02], [0.015], [0.015]]
+SoundPulseAmpF = [[1], [0.9], [0.8], [0.7]]    # Real pulse
 #SoundPulseAmpF = [0.05, 0.05, 0.05, 0.05]    # Small pulse, for habituation
 
 # Freqs to test. If using one freq range, keep it in a list, [[like this]].
@@ -89,8 +89,6 @@ SoundBackground = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo,
                                              SoundAmpF, NoiseFrequency, 
                                              TTLAmpF)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
-SoundBackground = ControlSoundBoard.ReduceStim(SoundBackground)
-
 
 print('Creating SoundGap...')
 SoundGap = [[], []]
@@ -100,7 +98,6 @@ SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
                                         SoundAmpF, NoiseFrequency, 
                                         TTLAmpF)[0]
-SoundGap[0] = ControlSoundBoard.ReduceStim(SoundGap[0])
 SoundGap[1] = [0, 0.6]*(round(Rate*SoundGapDur))
 SoundGap[1][-1] = 0
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
@@ -117,8 +114,6 @@ SoundBackgroundPrePulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur,
                                                      SoundPulseNo, SoundAmpF, 
                                                      NoiseFrequency, TTLAmpF)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
-SoundBackgroundPrePulse = ControlSoundBoard.ReduceStim(SoundBackgroundPrePulse)
-
 
 print('Creating SoundLoudPulse...')
 SoundPulseDur = SoundLoudPulseDur
@@ -128,8 +123,6 @@ SoundLoudPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo,
                                             SoundAmpF, NoiseFrequency, 
                                             TTLAmpF=1)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
-SoundLoudPulse = ControlSoundBoard.ReduceStim(SoundLoudPulse)
-
 
 print('Creating SoundBackgroundAfterPulse...')
 SoundPulseDur = SoundBackgroundAfterPulseDur
@@ -139,8 +132,6 @@ SoundBackgroundAfterPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur,
                                                      SoundPulseNo, SoundAmpF, 
                                                      NoiseFrequency, TTLAmpF)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
-SoundBackgroundAfterPulse = ControlSoundBoard.ReduceStim(SoundBackgroundAfterPulse)
-
 
 print('Creating SoundBetweenStimDur...')
 SBSUnitDur = 0.5; SoundPulseDur = SBSUnitDur
@@ -150,8 +141,6 @@ SoundBetweenStim = ControlSoundBoard.GenSound(Rate, SoundPulseDur,
                                                  SoundPulseNo, SoundAmpF, 
                                                  NoiseFrequency, TTLAmpF)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
-SoundBetweenStim = ControlSoundBoard.ReduceStim(SoundBetweenStim)
-
 
 print('Generating sound objects...')
 p = pyaudio.PyAudio()
@@ -185,13 +174,13 @@ for Freq in range(len(Freqs)):
         print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(Trial)) 
         
         for Pulse in range(NoOfPulses):
-            Stimulation.write(SoundBetweenStim[RealFreq])
+            Stimulation.write(SoundBetweenStim[RealFreq][0])
         
-        Stimulation.write(SoundBackground[RealFreq])
-        Stimulation.write(SoundGap[Trial][RealFreq])
-        Stimulation.write(SoundBackgroundPrePulse[RealFreq])
-        Stimulation.write(SoundLoudPulse[RealFreq])
-        Stimulation.write(SoundBackgroundAfterPulse[RealFreq])
+        Stimulation.write(SoundBackground[RealFreq][0])
+        Stimulation.write(SoundGap[Trial][RealFreq][0])
+        Stimulation.write(SoundBackgroundPrePulse[RealFreq][0])
+        Stimulation.write(SoundLoudPulse[RealFreq][0])
+        Stimulation.write(SoundBackgroundAfterPulse[RealFreq][0])
 print('Done.')
 
 with shelve.open(FileName) as Shelve:

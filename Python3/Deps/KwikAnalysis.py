@@ -47,6 +47,30 @@ def OrganizeShelves():
 
 def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
         ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4):
+    """
+    Analyze ABRs from data recorded with OpenEphys. A '*ABRs-db' file will be 
+    saved in cwd, containing:
+        - ABRs dict, where data will be saved as 
+          ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
+              Ear = 0 (right) or 1 (left)
+              Freq = index of DataInfo['NoiseFrequency']
+              AmpF = index of DataInfo['SoundAmpF'][Freq]
+              DVCoord = string with DV coordinate at the moment of recording
+              Trial = Trial number - 1 (so if it is one trial, Trial=0)
+              
+        - XValues array, for x axis of the plot;
+        
+        - DataInfo dict, where all info will be saved.
+    
+    For this function to work:
+        - The Kwik folders must be in 'KwikFiles/';
+        - There must be a *SoundStim.db file with a 'DataInfo' dict containing 
+          all experimental settings (see 
+          Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
+        - Each folder must have a *.db file with 'ExpInfo' dict containing the 
+          variables 'Freq', 'DVCoord' and 'ExpFileName' (see 
+          Python3/SoundBoardControl/SoundAndLaserStimulation.py, 5th cell).
+    """
     
     with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
     
@@ -55,8 +79,8 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     ABRs[0] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
     ABRs[1] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
     for Freq in range(len(DataInfo['NoiseFrequency'])):
-        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF']))]
-        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF']))]
+        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Freq]))]
+        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Freq]))]
     del(Freq)
     
     print('set paths...')
@@ -191,6 +215,13 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 
 
 def PlotABR(FileName):
+    """ 
+    This function will plot the data from *ABRs.db. Make sure FileName is a 
+    string with the path to only one file.
+    
+    Also, LaTeX will render all the text in the plots. For this, make sure you 
+    have a working LaTex installation and dvipng package installed.
+    """
     print('Plotting...')
     with shelve.open(FileName) as Shelve:
         ABRs = Shelve['ABRs']
@@ -199,7 +230,7 @@ def PlotABR(FileName):
     
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
-              for _ in range(len(DataInfo['SoundAmpF']))]
+              for _ in range(len(DataInfo['SoundAmpF'][0]))]
     
     Keys = list(ABRs[0][0][0].keys())
     for Key in Keys:
@@ -209,36 +240,42 @@ def PlotABR(FileName):
     
             for Ear in range(2):
                 for Freq in range(len(DataInfo['NoiseFrequency'])):
-                    for AmpF in range(len(DataInfo['SoundAmpF'])):
-                        AmpStr = str(DataInfo['SoundAmpF'][AmpF])
+                    for AmpF in range(len(DataInfo['SoundAmpF'][Freq])):
+                        FigTitle = Key + ' DV, trial ' + str(Trial+1)
+                        AxTitle = str(DataInfo['NoiseFrequency'][Freq])
+                        YLabel = 'voltage [\mu V]'
+                        XLabel = 'time [ms]'
+                        AmpStr = str(DataInfo['SoundAmpF'][Freq][AmpF])
+                        LineLabel = str(round(
+                                    DataInfo['SoundIntensity'][Freq][AmpStr]
+                                      )) + ' dB'
+                        
                         if Ear == 0:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
                                 color=Colors[AmpF][Ear], 
-                                label=str(round(
-                                       DataInfo['SoundIntensity'][Freq][AmpStr]
-                                      )) + ' dB')
+                                label='$' + LineLabel + '$')
                         else:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
                                 color=Colors[AmpF][Ear], 
-                                label=str(round(
-                                       DataInfo['SoundIntensity'][Freq][AmpStr]
-                                      )) + ' dB')
+                                label='$' + LineLabel + '$')
                         
                         Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
                         Axes[Freq][Ear].spines['right'].set_visible(False)
                         Axes[Freq][Ear].spines['top'].set_visible(False)
                         Axes[Freq][Ear].yaxis.set_ticks_position('left')
                         Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
-                        Axes[Freq][Ear].set_title(str(DataInfo['NoiseFrequency'][Freq]))
-                        Axes[Freq][Ear].set_ylabel('voltage [µV]')
-            Axes[-1][0].set_xlabel('time [ms]'); Axes[-1][1].set_xlabel('time [ms]')
-            Fig.suptitle(Key + ' DV, trial ' + str(Trial+1))
+                        Axes[Freq][Ear].set_title('$' + AxTitle + '$')
+                        Axes[Freq][Ear].set_ylabel('$' + YLabel + '$')
+            Axes[-1][0].set_xlabel('$' + XLabel + '$')
+            Axes[-1][1].set_xlabel('$' + XLabel + '$')
+            Fig.suptitle('$' + FigTitle + '$')
             Fig.tight_layout()
             Fig.subplots_adjust(top=0.95)
             Fig.savefig('Figs/' + FileName + '-DV' +  Key + '-Trial' + 
-                        str(Trial) + str(DataInfo['NoiseFrequency'][Freq][0]) 
+                        str(Trial) + '-' 
+                        + str(DataInfo['NoiseFrequency'][Freq][0]) 
                         + '_' + str(DataInfo['NoiseFrequency'][Freq][1]) 
                         + '.svg', format='svg')
 

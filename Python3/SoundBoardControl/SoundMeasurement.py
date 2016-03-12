@@ -42,8 +42,8 @@ TTLAmpF = 1
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
 MicSens_dB = -47.46
 # Sound board amp factor. See Python3/SoundBoardControl/SoundBoardCalibration.py
-SBOutAmpF = 1.8
-SBInAmpF = 
+SBOutAmpF = 1.7
+SBInAmpF = 0.4852
 #==========#==========#==========#==========#
 
 import array

@@ -24,21 +24,11 @@ For output:
     increase or decrease the signal written to it.
     
 For input:
-    Read signal from sound board input. You have to apply a known voltage to 
-    sound board input, so you can check if the voltage you applied is the 
-    voltage being read by the sound board. 
-    We do this by putting two resistors (R1 = 9R2) in the positive and 
-    negative of any 5V supply (Arduino, open usb cable...), so in the junction 
-    R1-R2 the output is 0.5V.
-    In the end, our circuit is this:
-        
-            |----900ohm ----|
-        5V -|               |
-                            |---------SoundBoardIn+
-        Gnd-|               |
-            |----100ohm ----|       |-SoundBoardIn-
-                                    |
-                                   Gnd
+    Read signal from sound board input. You have to apply a known amplitude 
+    signal (a sine wave, for example) sound board input, so you can check if 
+    the voltage you applied is the voltage being read by the sound board. 
+    For this, you can open 2 consoles, run the output cell in one and the 
+    input cell in the other.
 
 It is very important to set the volume of the soundboard to 0dB (which is 100%) 
 so you know that no kind of frequency filter is being applied.
@@ -47,17 +37,15 @@ so you know that no kind of frequency filter is being applied.
 Rate = 128000
 
 import ControlSoundBoard
-from scipy import signal
 
 #%% Output
 
 ControlSoundBoard.SoundCalOut(Rate)
 
 #%% Input
+SBOutAmpF = 1.7
 
 Data = ControlSoundBoard.SoundCalIn(Rate)
-F, PxxSp = signal.welch(Data, Rate, nperseg=1024, scaling='spectrum')
+Data = [_/SBOutAmpF for _ in Data]
 
-RMS = (sum(PxxSp) * (F[1] - F[0]))**0.5
-
-print(RMS)
+print((max(Data)+(min(Data)*-1))/2)

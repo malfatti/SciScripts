@@ -197,22 +197,28 @@ print('Done.')
 #%% Run sound and laser >200
 Date = datetime.datetime.now()
 
-Freq=0
+Freq = input('Choose Freq index: ')
+DVCoord = input('Choose DVCoord (in µm): '); 
+Freq = int(Freq)
+
+print('Running...')
 for AmpF in range(len(SoundAmpF)):
     Arduino.write(b'P')
-    for OneBlock in range(SoundStimBlockNo):
-        for OnePulse in range(SoundPulseNo):
-            Stimulation.write(SoundAndLaser[Freq][AmpF])
+    for OnePulse in range(SoundPulseNo):
+        Stimulation.write(SoundAndLaser[Freq][AmpF])
 
-        Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
     Arduino.write(b'P')
-
+    Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
+ 
 print('Done. Saving info...')
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                    '-SoundAndLaserStim-', str(NoiseFrequency[Freq][0]), '_', 
-                    str(NoiseFrequency[Freq][1])])
+ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-SoundStim-' \
+              + DVCoord + '-' + str(NoiseFrequency[Freq][0]) + '_' \
+              + str(NoiseFrequency[Freq][1])
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'FileName'])
+ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName', 
+                                               'DVCoord'])
 
-with shelve.open(FileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
-del(Date, FileName, ExpInfo, Shelve)
+with shelve.open(ExpFileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
+del(Date, ExpFileName, ExpInfo, Shelve)
+print('Saved.')
+print('Played Freq ' + str(Freq) + ' at ' + DVCoord + 'µm DV')

@@ -29,16 +29,16 @@ Rate = 128000
 ## Fill all durations in SECONDS! If
 
 ## Sound
-# Pulse duration. Avoid using more than 0.05. If you need long pulses, use
-# SoundPulseDur = 0.05 and SoundPulseNo = DesiredDurationInSec/0.05
-SoundPulseDur = 0.01
+# Pulse duration. Avoid using more than 0.5. If you need long pulses, use
+# SoundPulseDur = 0.5 and SoundPulseNo = DesiredDurationInSec/0.5
+SoundPulseDur = 0.5
 # Amount of pulses per block
-SoundPulseNo = 300
+SoundPulseNo = 6
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], 
                   [14000, 16000], [16000, 18000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 1
+TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
 MicSens_dB = -47.46
 # Sound board amp factor. See Python3/SoundBoardControl/SoundBoardCalibration.py
@@ -51,26 +51,29 @@ import ControlSoundBoard
 import datetime
 import math
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 import pandas
 import pyaudio
 import shelve
+import time
 from scipy import signal
 
 def FRange(Start, End, Step):
     Range = [round(x/(1/Step), 3) for x in range(round(Start/Step), round(End/Step), -1)]
     return Range
 
-AmpFList = [FRange(3, 2, 0.25) + FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + 
-            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.01, 0.005) + 
-            FRange(0.01, 0, 0.001) + [0]]
+AmpFList = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
+           FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.01, 0.005) + \
+           FRange(0.01, 0, 0.001) + [0]
+
+#AmpFList = [1, 0.5, 0.2, 0.1, 0.05, 0.01, 0.005, 0]
 
 SoundAmpF = [AmpFList for _ in range(len(NoiseFrequency))]
 MicSens_VPa = 10**(MicSens_dB/20)
 
 Date = datetime.datetime.now()
 Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
-os.makedirs(Folder)
 
 ## Prepare dict w/ experimental setup
 DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur', 
@@ -81,9 +84,11 @@ DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur',
                                                 'Folder'])
 
 ## Prepare sound objects
-Sound, SoundPauseBetweenStimBlocks, SoundRec, Stimulation = \
-    ControlSoundBoard.GenSoundRec(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
-                                  NoiseFrequency, TTLAmpF)
+Sound, SoundRec, Stimulation = ControlSoundBoard.SoundMeasurementOut(
+                                   Rate, SoundPulseDur, SoundPulseNo, 
+                                   SoundAmpF, NoiseFrequency, TTLAmpF, 
+                                   SBOutAmpF
+                               )
 
 # Define input objects
 q = pyaudio.PyAudio()
@@ -112,10 +117,22 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 ## Run!
 input('Press enter to start sound measurement.')
+print('Cover your ears!!')
+print('5...')
+time.sleep(1)
+print('4...')
+time.sleep(1)
+print('3...')
+time.sleep(1)
+print('2...')
+time.sleep(1)
+print('1...')
+time.sleep(1)
 print('Sound measurement running...')
+time.sleep(1)
 Reading.start_stream()
 for Freq in range(len(NoiseFrequency)):
-    for AmpF in range(len(SoundAmpF)):
+    for AmpF in range(len(SoundAmpF[Freq])):
             RecStop = False
             InOn = True
             for _ in range(SoundPulseNo):
@@ -126,6 +143,7 @@ Reading.stop_stream()
 print('Done playing/recording. Saving data...')
 
 ## Save!!!
+os.makedirs(Folder)
 with shelve.open(Folder + '/' + Folder) as Shelve:
     Shelve['SoundRec'] = SoundRec
     Shelve['DataInfo'] = DataInfo
@@ -140,12 +158,8 @@ print('Data saved.')
 #with shelve.open(Folder + '/' + Folder) as Shelve:
 #    SoundRec = Shelve['SoundRec']
 #    DataInfo = Shelve['DataInfo']
-#
-#for Key, Value in DataInfo.items():
-#    exec(str(Key) + '=' + 'Value')
-#del(Key, Value)
 
-print('Calculating PSD, RMS and dBSLP...')
+print('Calculating LSD, RMS and dBSLP...')
 RecordingData = [0]*len(SoundRec)
 Intensity = [0]*len(SoundRec)
 MicSens_VPa = 10**(MicSens_dB/20)
@@ -156,70 +170,70 @@ for Freq in range(len(SoundRec)):
     
     for AmpF in range(len(SoundRec[Freq])):
         Intensity[Freq][AmpF] = {}
-        print('Saving data for ', NoiseFrequency[Freq], 
-              ' at ', SoundAmpF[AmpF])
+        print('Saving data for ', DataInfo['NoiseFrequency'][Freq], 
+              ' at ', DataInfo['SoundAmpF'][Freq][AmpF])
         
         RecordingData[Freq][AmpF] = array.array('f', 
                                                 b''.join(SoundRec[Freq][AmpF]))
-        RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
-                                    round(Rate*0.05)-1:-1*(round(Rate*0.05))]
         
-        RecordingData[Freq][AmpF] = [RecordingData[Freq][AmpF][_]/MicSens_VPa 
+        SliceStart = round(Rate*0.5)-1; SliceEnd = SliceStart + round(Rate*2)
+        RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
+                                                        SliceStart:SliceEnd
+                                                        ]
+        
+        RecordingData[Freq][AmpF] = [_/SBInAmpF
                                      for _ in RecordingData[Freq][AmpF]]
         
-        F, PxxSp = signal.welch(RecordingData[Freq][AmpF], Rate, 
-                                nperseg=1024, scaling='spectrum')
+        Window = signal.hanning(len(RecordingData[Freq][AmpF])//(Rate/1000))
+        F, PxxSp = signal.welch(RecordingData[Freq][AmpF], Rate, Window,
+                                nperseg=len(Window), noverlap=0, 
+                                scaling='density')
         
-        Intensity[Freq][AmpF]['PSD'] = [F, PxxSp]
+        FreqBand = [DataInfo['NoiseFrequency'][0][0], 
+                    DataInfo['NoiseFrequency'][-1][-1]]
         
-        Intensity[Freq][AmpF]['RMS'] = (sum(Intensity[Freq][AmpF]['PSD'][1])*
-                                        (Intensity[Freq][AmpF]['PSD'][0][1] -
-                                         Intensity[Freq][AmpF]['PSD'][0][0])
-                                         )**0.5
+        Start = np.where(F > FreqBand[0])[0][0]-1
+        End = np.where(F > FreqBand[1])[0][0]-1
+        BinSize = F[1] - F[0]
+        RMS = sum(PxxSp[Start:End] * BinSize)**0.5
         
-        Intensity[Freq][AmpF]['dB'] = 20*(math.log(
-                                    Intensity[Freq][AmpF]['RMS']/0.00002, 10))
+        Intensity[Freq][AmpF]['LSD'] = [F, PxxSp]
+        Intensity[Freq][AmpF]['RMS'] = RMS
+        Intensity[Freq][AmpF]['dB'] = 20*(math.log(RMS/MicSens_VPa, 10)) + 94
         
-        del(F, PxxSp)
+        del(F, PxxSp, BinSize, RMS)
 
-SoundIntensity = [[0] for _ in range(len(NoiseFrequency))]
-for Freq in range(len(NoiseFrequency)):
-    SoundIntensity[Freq] = {str(SoundAmpF[_]): Intensity[Freq][_]['dB'] 
-                            for _ in range(len(SoundAmpF))}
+SoundIntensity = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+for Freq in range(len(DataInfo['NoiseFrequency'])):
+    SoundIntensity[Freq] = {str(DataInfo['SoundAmpF'][Freq][_]): 
+                                Intensity[Freq][_]['dB'] 
+                            for _ in range(len(DataInfo['SoundAmpF'][Freq]))}
                                 
 ## Save analyzed data
 print('Saving analyzed data...')
 with shelve.open(Folder + '/SoundIntensity') as Shelve:
     Shelve['SoundIntensity'] = SoundIntensity
-    Shelve['SBAmpF'] = SBAmpF
+    Shelve['SBOutAmpF'] = SBOutAmpF
+    Shelve['SBInAmpF'] = SBInAmpF
+    Shelve['DataInfo'] = DataInfo
 
-TexTable = pandas.DataFrame([[SoundAmpF[AmpF]] + 
+TexTable = pandas.DataFrame([[DataInfo['SoundAmpF'][Freq][AmpF]] + 
                              [Intensity[Freq][AmpF]['dB'] 
-                             for Freq in range(len(NoiseFrequency))] 
-                             for AmpF in range(len(SoundAmpF))])
+                             for Freq in range(
+                                             len(DataInfo['NoiseFrequency']))] 
+                             for AmpF in range(
+                                             len(DataInfo['SoundAmpF'][Freq]))]
+                             )
 
 File = open(Folder+'/'+'IntensityTable.tex', 'w')
 File.write(r"""
 %% Configs =====
 \documentclass[12pt,a4paper]{report}
 
-\usepackage{lmodern}
-\usepackage[utf8]{inputenc}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[font=small,labelfont=bf,justification=justified,singlelinecheck=false]{caption}
-
-\usepackage{indentfirst}
-
-\usepackage{siunitx}
-
 \usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
 \usepackage{setspace}
 \usepackage{titlesec}
 \titleformat{\chapter}{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
-
-\renewcommand{\rmdefault}{phv}
-\renewcommand{\sfdefault}{phv}
 
 %% Document ======
 \begin{document}
@@ -240,39 +254,59 @@ del(File)
 
 Colors = ['r', 'g', 'b', 'm', 'k', 'c', 'y']
 
-plt.figure(1)
-for Freq in range(len(NoiseFrequency)):
-    plt.plot(SoundAmpF, 
-             [Intensity[Freq][_]['dB'] for _ in range(len(SoundAmpF))], 
-             label=str(NoiseFrequency[Freq]), color=Colors[Freq])
-plt.ylabel('Intensity [dBSPL]'); plt.xlabel('Sound amplification factor')
-plt.legend(loc='best', frameon=False)
+for Freq in range(len(DataInfo['NoiseFrequency'])):
+    FigTitle = 'Intensity\ curve\ per\ Freq\ per\ AmpF'
+    YLabel = 'Intensity\ [dBSPL]'
+    XLabel = 'Sound\ amplification\ factor'
+    LineLabel = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
+    
+    plt.plot(DataInfo['SoundAmpF'][Freq], 
+             [Intensity[Freq][_]['dB'] 
+              for _ in range(len(DataInfo['SoundAmpF'][Freq]))], 
+             label='$'+LineLabel +'$', color=Colors[Freq])
+
+plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
+plt.legend(loc='lower right')
 plt.locator_params(tight=True)
 plt.tick_params(direction='out')
 plt.axes().spines['right'].set_visible(False)
 plt.axes().spines['top'].set_visible(False)
 plt.axes().yaxis.set_ticks_position('left')
 plt.axes().xaxis.set_ticks_position('bottom')
-plt.show()
-#input('Press enter to save figure 1.')
-plt.savefig(Folder+'/'+'SoundMeasurement.pdf', transparent=True)
+plt.title('$'+FigTitle+'$')
+plt.savefig(Folder+'/'+'SoundMeasurement.svg', format='svg')
 
 
-F, ((A, B), (C, D)) = plt.subplots(2, 2)
-Axes = [A, B, C, D]
-for Freq in range(len(NoiseFrequency)):
-    for AmpF in range(len(SoundAmpF)):
-        Axes[Freq].semilogy(Intensity[Freq][AmpF]['PSD'][0], 
-                     Intensity[Freq][AmpF]['PSD'][1], 
-                     label=str(SoundAmpF[AmpF]), color=Colors[Freq])
+Fig, Axes = plt.subplots(len(DataInfo['NoiseFrequency']), 
+                         sharex=True, figsize=(6, 12))
+for Freq in range(len(DataInfo['NoiseFrequency'])):
+    FigTitle = 'Power\ spectrum\ density'
+    AxTitle = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
+    YLabel = 'LSD\ [V*RMS/\sqrt{Hz}]'
+    XLabel = 'Frequency\ [Hz]'
+    
+    for AmpF in range(len(DataInfo['SoundAmpF'][Freq])):
+        LineLabel = str(SoundIntensity[Freq][str(SoundAmpF[Freq][AmpF])])[:5] \
+                    + ' dB'
+        
+        Axes[Freq].semilogy(Intensity[Freq][AmpF]['LSD'][0], 
+                     Intensity[Freq][AmpF]['LSD'][1], 
+                     label='$'+LineLabel+'$')
+    
     Axes[Freq].set_xlim(left=5000, right=20000)
-    Axes[Freq].set_ylabel('Linear spectrum [V RMS]')
-    Axes[Freq].set_xlabel('Frequency [Hz]')
+    Axes[Freq].set_ylabel('$'+YLabel+'$')
+    Axes[Freq].set_xlabel('$'+XLabel+'$')
     Axes[Freq].spines['right'].set_visible(False)
     Axes[Freq].spines['top'].set_visible(False)
     Axes[Freq].yaxis.set_ticks_position('left')
     Axes[Freq].xaxis.set_ticks_position('bottom')
-    Axes[Freq].set_title(str(NoiseFrequency[Freq]))
-F.show()
-#input('Press enter to save figure 2.')
-F.savefig(Folder+'/'+'LinearSpectrum.pdf', transparent=True)
+    Axes[Freq].set_title('$'+AxTitle+'$')
+#    if Freq < 2:
+#        Axes[Freq].legend(loc='lower right')
+#    else:
+#        Axes[Freq].legend(loc='lower left')
+
+Fig.suptitle('$'+FigTitle+'$')
+Fig.tight_layout()
+Fig.subplots_adjust(top=0.93)
+Fig.savefig(Folder+'/'+'LinearSpectrum.svg', format='svg')

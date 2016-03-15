@@ -25,6 +25,12 @@ in the sound board input.
 AnimalName = 'TestSetup01'
 Rate = 128000
 
+CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+                  '20160315153450-SoundMeasurement/SoundIntensity'
+#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
+#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
+#                  'SoundIntensity'
+
 ## Fill all durations in SECONDS!
 
 ## Sound
@@ -41,12 +47,13 @@ SoundBackgroundAfterPulseDur = 0.51
 # Duration of background noise between stimulation block
 SoundBetweenStimDur = [10, 20]
 
-# Background and pulse amplification factors for each frequency tested
-SoundBackgroundAmpF = [[0.03], [0.02], [0.015], [0.015]]
-SoundPulseAmpF = [[1], [0.9], [0.8], [0.7]]    # Real pulse
-#SoundPulseAmpF = [0.05, 0.05, 0.05, 0.05]    # Small pulse, for habituation
+# Background and pulse intensities in dB. Supports float :)
+BackgroundIntensity = 60
+PulseIntensity = 105
 
-# Freqs to test. If using one freq range, keep it in a list, [[like this]].
+# Noise frequency. If using one freq., keep the list in a list, [[like this]].
+# USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
+# just run the cell once and then list(SoundIntensity).
 NoiseFrequency = [[8000, 10000], [10000, 12000], 
                   [12000, 14000], [14000, 16000]]
 
@@ -66,8 +73,22 @@ import random
 import shelve
 from scipy import signal
 
+with shelve.open(CalibrationFile) as Shelve:
+    SoundIntensity = Shelve['SoundIntensity']
+    SBInAmpF = Shelve['SBInAmpF']
+
 Date = datetime.datetime.now()
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS-', AnimalName])
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), AnimalName, '-GPIAS'])
+
+SoundBackgroundAmpF = [[float(min(SoundIntensity[Hz].keys(), 
+                                 key=lambda i: abs(SoundIntensity[Hz][i] - 
+                                                   BackgroundIntensity)))] 
+                       for Hz in list(SoundIntensity)]
+
+SoundPulseAmpF = [[float(min(SoundIntensity[Hz].keys(), 
+                                 key=lambda i: abs(SoundIntensity[Hz][i] - 
+                                                   BackgroundIntensity)))] 
+                       for Hz in list(SoundIntensity)]
 
 ## Prepare dict w/ experimental setup
 DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
@@ -87,7 +108,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundBackground = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
                                              SoundAmpF, NoiseFrequency, 
-                                             TTLAmpF)[0]
+                                             TTLAmpF, CalibrationFile)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundGap...')
@@ -97,7 +118,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
                                         SoundAmpF, NoiseFrequency, 
-                                        TTLAmpF)[0]
+                                        TTLAmpF, CalibrationFile)[0]
 SoundGap[1] = [0, 0.6]*(round(Rate*SoundGapDur))
 SoundGap[1][-1] = 0
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
@@ -112,7 +133,8 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundPrePulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
-                                                     NoiseFrequency, TTLAmpF)[0]
+                                                     NoiseFrequency, TTLAmpF, 
+                                                     CalibrationFile)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundLoudPulse...')
@@ -121,7 +143,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundPulseAmpF
 SoundLoudPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
                                             SoundAmpF, NoiseFrequency, 
-                                            TTLAmpF=1)[0]
+                                            TTLAmpF=1, CalibrationFile)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundBackgroundAfterPulse...')
@@ -130,7 +152,8 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundAfterPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
-                                                     NoiseFrequency, TTLAmpF)[0]
+                                                     NoiseFrequency, TTLAmpF, 
+                                                     CalibrationFile)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundBetweenStimDur...')
@@ -139,7 +162,8 @@ SoundPulseNo = round(SoundBetweenStimDur[1]/SBSUnitDur)
 SoundAmpF = SoundBackgroundAmpF
 SoundBetweenStim = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                  SoundPulseNo, SoundAmpF, 
-                                                 NoiseFrequency, TTLAmpF)[0]
+                                                 NoiseFrequency, TTLAmpF, 
+                                                 CalibrationFile)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Generating sound objects...')
@@ -176,7 +200,7 @@ Reading = q.open(format=pyaudio.paFloat32,
 XLim = (0, Rate//10)
 YLim = (-0.003, 0.003)
 FramesPerBuf = 512
-ControlSoundBoard.MicrOscilloscope(Rate, XLim, YLim)
+ControlSoundBoard.MicrOscilloscope(Rate, XLim, YLim, CalibrationFile)
 
 
 #%% Run!!
@@ -190,11 +214,11 @@ for _ in range(len(SoundRec)):
     SoundRec[_] = [[] for _ in range(NoOfTrials*2)]
 
 FakeTTLs = [[] for _ in range(len(NoiseFrequency))]
-for Freq in range(len(FakeTTLs)):
-    FakeTTLs[Freq] = [[] for _ in range(NoOfTrials*2)]
+for Hz in range(len(FakeTTLs)):
+    FakeTTLs[Hz] = [[] for _ in range(NoOfTrials*2)]
     
-    for Trial in range(len(FakeTTLs[Freq])):
-        FakeTTLs[Freq][Trial] = [[], []]
+    for Trial in range(len(FakeTTLs[Hz])):
+        FakeTTLs[Hz][Trial] = [[], []]
 
 FreqSlot = [0]*(len(NoiseFrequency)*NoOfTrials*2)
 for FE in range(len(Freqs)):
@@ -202,12 +226,12 @@ for FE in range(len(Freqs)):
     FreqSlot[FE*2+1] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2+1
 
 # Play!!
-for Freq in range(len(Freqs)):
+for Hz in range(len(Freqs)):
     Trials = [0, 1]
     random.shuffle(Trials)
     
     for Trial in Trials:
-        RealFreq = Freqs[Freq]; RealTrial = FreqSlot[Freq*2+Trial]
+        RealFreq = Freqs[Hz]; RealTrial = FreqSlot[Hz*2+Trial]
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         NoOfPulses = round(SBSDur/SBSUnitDur)
         print('Playing ', str(NoiseFrequency[RealFreq]), ' trial ', str(Trial)) 
@@ -234,91 +258,3 @@ with shelve.open(FileName) as Shelve:
     Shelve['DataInfo'] = DataInfo
 
 print('Data saved.')
-
-#%% Analysis
-#
-#import array
-#import matplotlib.pyplot as plt
-#import shelve
-#from scipy import signal
-#
-#FileName = '20160220112122-GPIAS-1ODE'
-#
-#with shelve.open(FileName) as Shelve:
-#    SoundRec = Shelve['SoundRec']
-#    FakeTTLs = Shelve['FakeTTLs']
-#    DataInfo = Shelve['DataInfo']
-#
-#for Key, Value in DataInfo.items():
-#    exec(str(Key) + '=' + 'Value')
-#del(Key, Value)
-
-NoGapId = list(range(0, NoOfTrials*2, 2))
-GapId = list(range(1, NoOfTrials*2, 2))
-
-RecordingData = [0]*len(SoundRec); SoundTTLs = [0]*len(SoundRec)
-for Freq in range(len(NoiseFrequency)):
-    RecordingData[Freq] = [0]*len(SoundRec[Freq])
-    SoundTTLs[Freq] = [0]*len(SoundRec[Freq])
-    
-    for Trial in range(NoOfTrials*2):
-        SoundTTLs[Freq][Trial] = [float('nan')]*((len(SoundRec[Freq][Trial])*
-                                                  len(SoundRec[Freq][Trial][0]))
-                                                  //4)
-        SStart = ((FakeTTLs[Freq][Trial][0]*len(SoundRec[Freq][Trial][0]))//4)-1
-        SEnd = ((FakeTTLs[Freq][Trial][1]*len(SoundRec[Freq][Trial][0]))//4)-1
-
-        RecordingData[Freq][Trial] = array.array('f', 
-                                                b''.join(SoundRec[Freq][Trial]))
-        
-        
-        RecordingData[Freq][Trial] = RecordingData[Freq][Trial][
-                                        int(SStart-(0.05*Rate)):
-                                            int(SStart+(0.190*Rate))]
-        
-        RecordingData[Freq][Trial] = abs(signal.hilbert(
-                                                RecordingData[Freq][Trial]))
-        passband = [3/(Rate/2), 300/(Rate/2)]
-        f2, f1 = signal.butter(1, passband, 'bandpass')
-        RecordingData[Freq][Trial] = signal.filtfilt(f2, f1, 
-                                         RecordingData[Freq][Trial], 
-                                         padtype='odd', padlen=0)
-        
-        SoundTTLs[Freq][Trial][SStart:SEnd] = [max(RecordingData[Freq][Trial])
-                                               *1.5]*len(range(SStart, SEnd))
-        SoundTTLs[Freq][Trial] = SoundTTLs[Freq][Trial][int(SStart-(0.05*Rate)):
-                                                        int(SStart+(0.190*Rate))]
-
-    NoGapAll = [RecordingData[Freq][_] for _ in NoGapId]
-    GapAll = [RecordingData[Freq][_] for _ in GapId]
-    NoGapSum = list(map(sum, zip(*NoGapAll)))
-    GapSum = list(map(sum, zip(*GapAll)))
-    
-    RecordingData[Freq] = [0, 0]
-    RecordingData[Freq][0] = [_/NoOfTrials for _ in NoGapSum]
-    RecordingData[Freq][1] = [_/NoOfTrials for _ in GapSum]
-    RecordingData[Freq][0] = signal.savgol_filter(RecordingData[Freq][0], 5, 2, mode='nearest')
-    RecordingData[Freq][1] = signal.savgol_filter(RecordingData[Freq][1], 5, 2, mode='nearest')
-    del(NoGapAll, GapAll, NoGapSum, GapSum)
-
-
-#for Freq in range(len(NoiseFrequency)):
-#    plt.figure(Freq+1)
-#    plt.plot(RecordingData[Freq][0], label='No gap')
-#    plt.plot(RecordingData[Freq][1], label='Gap')
-#    plt.plot(SoundTTLs[Freq][0], label='Sound pulse', color='black')
-#    
-#    plt.ylabel('Voltage [V]'); plt.xlabel('Time [ms]')
-#    plt.legend(loc='best', frameon=False)
-#    plt.locator_params(tight=True)
-#    plt.tick_params(direction='out')
-#    plt.axes().spines['right'].set_visible(False)
-#    plt.axes().spines['top'].set_visible(False)
-#    plt.axes().yaxis.set_ticks_position('left')
-#    plt.axes().xaxis.set_ticks_position('bottom')
-#    plt.show()
-#    input('Press enter to save figure: ')
-#    FigName = FileName + '-' + str(NoiseFrequency[Freq][0]) + '_' + \
-#              str(NoiseFrequency[Freq][1]) + '.pdf'
-#    plt.savefig(FileName+'.pdf', transparent=True)
-#    print('Figure ' + str(Freq+1) + ' saved.')

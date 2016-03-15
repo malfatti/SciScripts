@@ -39,7 +39,7 @@ Rate = 128000
 BaudRate = 38400
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160126114004-SoundMeasurement/SoundIntensity'
+                  '20160315153450-SoundMeasurement/SoundIntensity'
 #CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
 #                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
 #                  'SoundIntensity'
@@ -62,16 +62,13 @@ SoundPulseNo = 200
 SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 5
-# Amplification factor (values in dB are stored in SoundIntensity variable). 
-# If using one value, keep the list in a list, [[like this]].
-SoundAmpF = [
-             [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-             [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-             [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-             [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-             ]
+# Intensities tested, in order, in dB. Supports floats :)
+Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], [14000, 16000]]
+# USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
+# just run the cell once and then list(SoundIntensity).
+NoiseFrequency = [[8000, 10000], [10000, 12000], 
+                  [12000, 14000], [14000, 16000]]
 
 ## Laser
 # Silence before pulse
@@ -101,15 +98,20 @@ Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundStim'])
 
-DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 
-                                       'SoundPrePauseDur', 'SoundPulseDur', 
-                                       'SoundPostPauseDur', 'SoundPulseNo', 
-                                       'SoundStimBlockNo', 
+SoundAmpF = [[float(min(SoundIntensity[Hz].keys(), 
+              key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
+              for dB in Intensities] 
+         for Hz in list(SoundIntensity)]
+
+DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
+                                       'BaudRate', 'SoundPrePauseDur', 
+                                       'SoundPulseDur', 'SoundPostPauseDur', 
+                                       'SoundPulseNo', 'SoundStimBlockNo', 
                                        'SoundPauseBetweenStimBlocksDur', 
-                                       'SoundAmpF', 'NoiseFrequency', 
-                                       'LaserPrePauseDur', 'LaserPulseDur', 
-                                       'LaserPostPauseDur', 'LaserPulseNo',
-                                       'LaserStimBlockNo', 
+                                       'Intensities', 'SoundAmpF', 
+                                       'NoiseFrequency', 'LaserPrePauseDur', 
+                                       'LaserPulseDur', 'LaserPostPauseDur', 
+                                       'LaserPulseNo', 'LaserStimBlockNo', 
                                        'LaserPauseBetweenStimBlocksDur', 
                                        'SoundIntensity', 'FileName'])
 
@@ -129,8 +131,9 @@ Arduino = ControlArduino.CreateObj(BaudRate)
 #%% Prepare sound stimulation
 Sound, SoundPauseBetweenStimBlocks, _ = \
     ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
-                               NoiseFrequency, TTLAmpF, SoundPrePauseDur, 
-                               SoundPostPauseDur, SoundStimBlockNo, 
+                               NoiseFrequency, TTLAmpF, CalibrationFile, 
+                               SoundPrePauseDur, SoundPostPauseDur, 
+                               SoundStimBlockNo, 
                                SoundPauseBetweenStimBlocksDur)
 
 
@@ -139,7 +142,8 @@ Laser, LaserPauseBetweenStimBlocks, _ = \
     ControlSoundBoard.GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, 
                                LaserPostPauseDur, LaserPulseNo, 
                                LaserStimBlockNo, 
-                               LaserPauseBetweenStimBlocksDur, TTLAmpF)
+                               LaserPauseBetweenStimBlocksDur, TTLAmpF, 
+                               CalibrationFile)
 
 
 #%% Prepare sound and laser simultaneous stimulation
@@ -150,29 +154,30 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
                                     SoundPauseBetweenStimBlocksDur, SoundAmpF, 
                                     NoiseFrequency, LaserPrePauseDur, 
                                     LaserPulseDur, LaserPostPauseDur, 
-                                    LaserPauseBetweenStimBlocksDur, TTLAmpF)
+                                    LaserPauseBetweenStimBlocksDur, TTLAmpF, 
+                                    CalibrationFile)
 
 
 #%% Run sound 135-160
 Date = datetime.datetime.now()
 
-Freq = input('Choose Freq index: ')
+Hz = input('Choose Freq index: ')
 DVCoord = input('Choose DVCoord (in µm): '); 
-Freq = int(Freq)
+Hz = int(Hz)
 
 print('Running...')
 for AmpF in range(len(SoundAmpF)):
     Arduino.write(b'P')
     for OnePulse in range(SoundPulseNo):
-        Stimulation.write(Sound[Freq][AmpF])
+        Stimulation.write(Sound[Hz][AmpF])
     
     Arduino.write(b'P')
     Stimulation.write(SoundPauseBetweenStimBlocks)
 
 print('Done. Saving info...')
 ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-SoundStim-' \
-              + DVCoord + '-' + str(NoiseFrequency[Freq][0]) + '_' \
-              + str(NoiseFrequency[Freq][1])
+              + DVCoord + '-' + str(NoiseFrequency[Hz][0]) + '_' \
+              + str(NoiseFrequency[Hz][1])
 
 ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName', 
                                                'DVCoord'])
@@ -180,9 +185,13 @@ ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName',
 with shelve.open(ExpFileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
 del(Date, ExpFileName, ExpInfo, Shelve)
 print('Saved.')
-print('Played Freq ' + str(Freq) + ' at ' + DVCoord + 'µm DV')
+print('Played Freq ' + str(Hz) + ' at ' + DVCoord + 'µm DV')
 
 #%% Run laser 45 85
+Date = datetime.datetime.now()
+
+DVCoord = '4000'
+
 print('Running...')
 Arduino.write(b'P')
 for OneBlock in range(LaserStimBlockNo):
@@ -191,29 +200,43 @@ for OneBlock in range(LaserStimBlockNo):
     
     Stimulation.write(LaserPauseBetweenStimBlocks)
 Arduino.write(b'P')
-print('Done.')
+
+print('Done. Saving info...')
+Hz = 1000/round((LaserPulseDur+LaserPostPauseDur)*1000)
+ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-LaserStim-' \
+              + DVCoord + '-' + str(round(LaserPulseDur*1000)) + 'ms_' \
+              + str(Hz).replace(".", "Point") + 'Hz'
+
+ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'AmpF', 'SoundAmp', 
+                                               'NoiseFreq', 'DVCoord', 
+                                               'ExpFileName'])
+
+with shelve.open(ExpFileName) as Shelve:
+    Shelve['ExpInfo'] = ExpInfo
+del(Date, DVCoord, Hz, ExpFileName, ExpInfo, Shelve)
+print('Saved.')
 
 
 #%% Run sound and laser >200
 Date = datetime.datetime.now()
 
-Freq = input('Choose Freq index: ')
+Hz = input('Choose Freq index: ')
 DVCoord = input('Choose DVCoord (in µm): '); 
-Freq = int(Freq)
+Hz = int(Hz)
 
 print('Running...')
 for AmpF in range(len(SoundAmpF)):
     Arduino.write(b'P')
     for OnePulse in range(SoundPulseNo):
-        Stimulation.write(SoundAndLaser[Freq][AmpF])
+        Stimulation.write(SoundAndLaser[Hz][AmpF])
 
     Arduino.write(b'P')
     Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
  
 print('Done. Saving info...')
 ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-SoundStim-' \
-              + DVCoord + '-' + str(NoiseFrequency[Freq][0]) + '_' \
-              + str(NoiseFrequency[Freq][1])
+              + DVCoord + '-' + str(NoiseFrequency[Hz][0]) + '_' \
+              + str(NoiseFrequency[Hz][1])
 
 ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName', 
                                                'DVCoord'])
@@ -221,4 +244,4 @@ ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName',
 with shelve.open(ExpFileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
 del(Date, ExpFileName, ExpInfo, Shelve)
 print('Saved.')
-print('Played Freq ' + str(Freq) + ' at ' + DVCoord + 'µm DV')
+print('Played Freq ' + str(Hz) + ' at ' + DVCoord + 'µm DV')

@@ -444,15 +444,23 @@ def PlotGPIAS(FileList):
         
         print('Plotting...')
         for Freq in range(len(DataInfo['NoiseFrequency'])):
+            FigTitle = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
+            Line0Label = 'No\ Gap'; Line1Label = 'Gap'
+            SpanLabel = 'Sound\ Pulse'
+            XLabel = 'time\ [ms]'; YLabel = 'voltage\ [mV]'
+            
             plt.figure(Freq)
-            plt.plot(XValues, GPIAS[Freq][0], color='r', label='No Gap')
-            plt.plot(XValues, GPIAS[Freq][1], color='b', label='Gap')
+            plt.plot(XValues, GPIAS[Freq][0], 
+                     color='r', label='$'+Line0Label+'$')
+            plt.plot(XValues, GPIAS[Freq][1], 
+                     color='b', label='$'+Line1Label+'$')
             plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
-                        color='k', alpha=0.5, lw=0, label='Sound pulse')
+                        color='k', alpha=0.5, lw=0, label='$'+SpanLabel+'$')
 #            plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
 #                        color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
-            plt.ylabel('voltage [mV]'); plt.xlabel('time [ms]')
-            plt.legend(loc='best', frameon=False)
+            plt.suptitle('$'+FigTitle+'$')
+            plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
+            plt.legend(loc='lower right')
             plt.locator_params(tight=True)
             plt.axes().spines['right'].set_visible(False)
             plt.axes().spines['top'].set_visible(False)

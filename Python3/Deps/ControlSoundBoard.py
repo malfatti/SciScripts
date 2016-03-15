@@ -21,11 +21,14 @@ board as an analog I/O board.
 """
 
 import array
+import glob
 import math
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
 import pyaudio
 import shelve
 import random
-import scipy.signal
+from scipy import signal
 import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
@@ -38,16 +41,16 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     
     
     with shelve.open(CalibrationFile) as Shelve:
-        SBAmpF = Shelve['SBAmpF']
+        SBOutAmpF = Shelve['SBOutAmpF']
 
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
     if SoundPulseDur < 0.01:
-        SoundTTLPulse = [round(SoundTTLVal/SBAmpF, 3)] * round(SoundPulseDur * Rate)
+        SoundTTLPulse = [round(SoundTTLVal/SBOutAmpF, 3)] * round(SoundPulseDur * Rate)
     else:
         Middle = [0]*round((SoundPulseDur-0.01) * Rate)
-        Border = [round(SoundTTLVal/SBAmpF, 3)] * round(0.005 * Rate)
+        Border = [round(SoundTTLVal/SBOutAmpF, 3)] * round(0.005 * Rate)
         SoundTTLPulse = Border + Middle + Border
     
     SoundTTLPulse[-1] = 0
@@ -73,8 +76,8 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [NoiseFrequency[Freq][i]/(Rate/2) \
                     for i,j in enumerate(NoiseFrequency[Freq])]
-        f2, f1 = scipy.signal.butter(4, passband, 'bandpass')
-        SoundPulseFiltered[Freq] = scipy.signal.filtfilt(f2, f1, SoundPulse, \
+        f2, f1 = signal.butter(4, passband, 'bandpass')
+        SoundPulseFiltered[Freq] = signal.filtfilt(f2, f1, SoundPulse, \
                                                          padtype='odd', \
                                                          padlen=0)
         SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()
@@ -90,7 +93,7 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBAmpF)*SoundAmpF[Freq][AmpF] \
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Freq][AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -142,10 +145,10 @@ def GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
     with shelve.open(CalibrationFile) as Shelve:
-        SBAmpF = Shelve['SBAmpF']
+        SBOutAmpF = Shelve['SBOutAmpF']
     
     print('Generating laser pulse...')
-    LaserPulse = [round(LaserTTLVal/SBAmpF, 3)] * round(LaserPulseDur * Rate)
+    LaserPulse = [round(LaserTTLVal/SBOutAmpF, 3)] * round(LaserPulseDur * Rate)
     LaserPulse[-1] = 0
     
     LaserPrePause = [0] * round(LaserPrePauseDur * Rate)
@@ -199,10 +202,10 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
     
     with shelve.open(CalibrationFile) as Shelve:
-        SBAmpF = Shelve['SBAmpF']
+        SBOutAmpF = Shelve['SBOutAmpF']
     
     print('Generating laser pulse...')
-    LaserPulse = [round(LaserTTLVal/SBAmpF, 3)] * round(LaserPulseDur * Rate)
+    LaserPulse = [round(LaserTTLVal/SBOutAmpF, 3)] * round(LaserPulseDur * Rate)
     LaserPulse[-1] = 0
     
     LaserPrePause = [0] * round(LaserPrePauseDur * Rate)
@@ -213,7 +216,7 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
     SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
-    SoundTTLPulse = [round(SoundTTLVal/SBAmpF, 3)] * round(SoundPulseDur * Rate)
+    SoundTTLPulse = [round(SoundTTLVal/SBOutAmpF, 3)] * round(SoundPulseDur * Rate)
     SoundTTLPulse[-1] = 0
     
     SoundTTLUnit = SoundTTLPrePause + SoundTTLPulse + SoundTTLPostPause
@@ -239,8 +242,8 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [NoiseFrequency[Freq][i]/(Rate/2) \
                     for i,j in enumerate(NoiseFrequency[Freq])]
-        f2, f1 = scipy.signal.butter(4, passband, 'bandpass')
-        SoundPulseFiltered[Freq] = scipy.signal.filtfilt(f2, f1, SoundPulse, \
+        f2, f1 = signal.butter(4, passband, 'bandpass')
+        SoundPulseFiltered[Freq] = signal.filtfilt(f2, f1, SoundPulse, \
                                                          padtype='odd', \
                                                          padlen=0)
         SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()
@@ -256,7 +259,7 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBAmpF)*SoundAmpF[Freq][AmpF] \
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Freq][AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -300,16 +303,98 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     print('Done generating sound and laser stimulus.')
     return(SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, StartSoundAndLaser)
 
+def GPIAS(FileList, CalibrationFile, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterLow, 
+          FilterHigh, FilterOrder):
+    """ Analyze GPIAS recorded using sound board input. """
+    
+    for File in FileList:
+        with shelve.open(CalibrationFile) as Shelve:
+            SoundRec = Shelve['SoundRec']
+            FakeTTLs = Shelve['FakeTTLs']
+            DataInfo = Shelve['DataInfo']
+        
+        with shelve.open(CalibrationFile) as Shelve:
+            SBInAmpF = Shelve['SBInAmpF']
+        
+        NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*DataInfo['Rate'])*10**-3))
+        NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*DataInfo['Rate'])*10**-3))
+        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+        XValues = (range(-NoOfSamplesBefore, 
+                         NoOfSamples-NoOfSamplesBefore)/DataInfo['Rate'])*10**3
+        
+        print('Preallocate memory...')
+        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+        for Hz in range(len(DataInfo['NoiseFrequency'])):
+            GPIAS[Hz] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
+        
+        AllTTLs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+        for Hz in range(len(DataInfo['NoiseFrequency'])):
+            AllTTLs[Hz] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
+        
+        for Hz in range(len(SoundRec)):        
+            for Trial in range(DataInfo['NoOfTrials']*2):
+                SoundStart = ((FakeTTLs[Hz][Trial][0] * 
+                              len(SoundRec[Hz][Trial][0]))//4)-1
+                SoundEnd = ((FakeTTLs[Hz][Trial][1] * 
+                            len(SoundRec[Hz][Trial][0]))//4)-1
+                
+                Start = int(SoundStart-NoOfSamplesBefore)
+                End = int(SoundEnd+NoOfSamplesAfter)
+        
+                GPIAS[Hz][Trial] = array.array('f', b''.join(SoundRec[Hz][Trial]))
+                GPIAS[Hz][Trial] = GPIAS[Hz][Trial][Start:End]
+                GPIAS[Hz][Trial] = [_/SBInAmpF for _ in GPIAS[Hz][Trial]]
+                GPIAS[Hz][Trial] = abs(signal.hilbert(GPIAS[Hz][Trial]))
+                
+                passband = [FilterLow/(DataInfo['Rate']/2), 
+                            FilterHigh/(DataInfo['Rate']/2)]
+                f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
+                GPIAS[Hz][Trial] = signal.filtfilt(f2, f1, GPIAS[Hz][Trial], 
+                                                 padtype='odd', padlen=0)
+                
+                AllTTLs[Hz][Trial] = [SoundStart, SoundEnd]
+            
+            gData = GPIAS[Hz][:]
+            NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
+            GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
+            NoGapSum = list(map(sum, zip(*NoGapAll)))
+            GapSum = list(map(sum, zip(*GapAll)))
+            
+            gData = [0, 0]
+            gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
+            gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
+            gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
+            gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
+            GPIAS[Hz] = gData[:]
+            
+            
+            tData = AllTTLs[Hz][:]
+            TTLNoGapAll = [tData[_] for _ in range(len(tData)) if _%2 == 0]
+            TTLGapAll = [tData[_] for _ in range(len(tData)) if _%2 != 0]
+            TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
+            TTLGapSum = list(map(sum, zip(*TTLGapAll)))
+            
+            tData = [0, 0]
+            tData[0] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLNoGapSum]
+            tData[1] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLGapSum]
+            AllTTLs[Hz] = tData[:]
+            del(NoGapAll, GapAll, NoGapSum, GapSum, gData, tData)
+        
+        print('Saving data to ' + DataInfo['FileName'])
+        with shelve.open(DataInfo['FileName']) as Shelve:
+            Shelve['GPIAS'] = GPIAS
+            Shelve['AllTTLs'] = AllTTLs
+            Shelve['XValues'] = XValues
+        print('Done.')
 
-def MicrOscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
+
+def MicrOscilloscope(Rate, XLim, YLim, CalibrationFile, FramesPerBuf=512):
     """ Read data from sound board input and plot it until the windows is 
     closed. """
     
-    import array
-    import matplotlib.animation as animation
-    import matplotlib.pyplot as plt
-    import pyaudio
-
+    with shelve.open(CalibrationFile) as Shelve:
+        SBInAmpF = Shelve['SBInAmpF']
+    
     r = pyaudio.PyAudio()
     
     Plotting = r.open(format=pyaudio.paFloat32,
@@ -331,6 +416,7 @@ def MicrOscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
     
     def PltUp(n):
         Data = array.array('f', Plotting.read(Rate//10))
+        Data = [_/SBInAmpF for _ in Data]
         Plot.set_ydata(Data)
         return Plot,
     
@@ -338,15 +424,13 @@ def MicrOscilloscope(Rate, XLim, YLim, FramesPerBuf=512):
                                    interval=16, blit=False)
 
 
-def MicrOscilloscopeRec(Rate, XLim, YLim, FramesPerBuf=512):
+def MicrOscilloscopeRec(Rate, XLim, YLim, CalibrationFile, FramesPerBuf=512):
     """ Read data from sound board input, record it to a video and plot it 
     until the windows is closed (with a delay). """
     
-    import array
-    import matplotlib.animation as animation
-    import matplotlib.pyplot as plt
-    import pyaudio
-
+    with shelve.open(CalibrationFile) as Shelve:
+        SBInAmpF = Shelve['SBInAmpF']
+    
     r = pyaudio.PyAudio()
     
     Plotting = r.open(format=pyaudio.paFloat32,
@@ -371,6 +455,7 @@ def MicrOscilloscopeRec(Rate, XLim, YLim, FramesPerBuf=512):
     
     def PltUp(n):
         Data = array.array('f', Plotting.read(Rate//10))
+        Data = [_/SBInAmpF for _ in Data]
         Plot.set_ydata(Data)
         return Plot,
     
@@ -378,12 +463,52 @@ def MicrOscilloscopeRec(Rate, XLim, YLim, FramesPerBuf=512):
     Anim.save('MicrOscilloscope.mp4', writer=Writer)
 
 
-def SoundCalOut(Rate=128000):
-    """ Generate square pulses in one channel that works as TTL for laser 
-    (Check ControlArduinoWithSoundBoard.ino code)."""
+def PlotGPIAS(FileList):
+    for File in FileList:
+        print('Loading data from ', File, ' ...')
+        with shelve.open(File[:-3]) as Shelve:
+            GPIAS = Shelve['GPIAS']
+            AllTTLs = Shelve['AllTTLs']
+            XValues = Shelve['XValues']
+            DataInfo = Shelve['DataInfo']
+        
+        print('Plotting...')
+        for Freq in range(len(DataInfo['NoiseFrequency'])):
+            FigTitle = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
+            Line0Label = 'No\ Gap'; Line1Label = 'Gap'
+            SpanLabel = 'Sound\ Pulse'
+            XLabel = 'time\ [ms]'; YLabel = 'voltage\ [mV]'
+            
+            plt.figure(Freq)
+            plt.plot(XValues, GPIAS[Freq][0], 
+                     color='r', label='$'+Line0Label+'$')
+            plt.plot(XValues, GPIAS[Freq][1], 
+                     color='b', label='$'+Line1Label+'$')
+            plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
+                        color='k', alpha=0.5, lw=0, label='$'+SpanLabel+'$')
+#            plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
+#                        color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
+            plt.suptitle('$'+FigTitle+'$')
+            plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
+            plt.legend(loc='lower right')
+            plt.locator_params(tight=True)
+            plt.axes().spines['right'].set_visible(False)
+            plt.axes().spines['top'].set_visible(False)
+            plt.axes().yaxis.set_ticks_position('left')
+            plt.axes().xaxis.set_ticks_position('bottom')
+            plt.savefig('Figs/' + File[:-3] + '-' + 
+                        str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + 
+                        str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg', 
+                        format='svg')
+        print('Done.')
+
+
+def SoundCalOut(Rate):
+    """ Generate 3s of 100Hz sine wave (1 to -1). """
+    
     Freq = 100; Time = 0.1
     
-    print('Generating laser pulse...')
+    print('Generating sound...')
     Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) for _ in range(round(Rate*Time))]
     Pulse[-1] = 0
     
@@ -409,16 +534,45 @@ def SoundCalOut(Rate=128000):
         Stimulation.write(Pulse)
 
 
-def SoundCalIn(Rate=128000):
+def SoundCalIn(Rate, SBOutAmpF):
+    """ Generate 3s of 100Hz sine wave (1V to -1V) and read 1s of it. """
+    Freq = 100; Time = 0.1
+    
+    print('Generating laser pulse...')
+    Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) for _ in range(round(Rate*Time))]
+    Pulse[-1] = 0
+    
+    print('Interleaving channels...')
+    List = [0]*(2*len(Pulse))
+    for _ in range(len(Pulse)):
+        List[_ *2] = 0
+        List[_ *2+1] = Pulse[_]
+    
+    Pulse = array.array('f')
+    Pulse.fromlist(List)
+    Pulse = bytes(Pulse)
+    
     print('Generating sound objects...')
     p = pyaudio.PyAudio()
-    Reading = p.open(format=pyaudio.paFloat32,
+    Stimulation = p.open(format=pyaudio.paFloat32,
+                    channels=2,
+                    rate=Rate,
+                    output=True)
+    
+    q = pyaudio.PyAudio()
+    Reading = q.open(format=pyaudio.paFloat32,
                     channels=2,
                     rate=Rate,
                     input=True)
     
-    Data = Reading.read(Rate)
+    class PlayThr(threading.Thread):
+        def run(self):
+            for OnePulse in range(round(30/Time)):
+                Stimulation.write(Pulse)
     
+    print('Playing...')
+    PlayThr().start()
+    Data = Reading.read(Rate)
     Data = array.array('f', Data)
     return(Data)    
 
@@ -449,8 +603,8 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
     for Freq in range(len(NoiseFrequency)):
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [_/(Rate/2) for _ in NoiseFrequency[Freq]]
-        f2, f1 = scipy.signal.butter(4, passband, 'bandpass')
-        SoundPulseFiltered[Freq] = scipy.signal.filtfilt(f2, f1, SoundPulse, 
+        f2, f1 = signal.butter(4, passband, 'bandpass')
+        SoundPulseFiltered[Freq] = signal.filtfilt(f2, f1, SoundPulse, 
                                                          padtype='odd', 
                                                          padlen=0)
         SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()

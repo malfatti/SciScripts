@@ -21,7 +21,7 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 #%% Calibration
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160315153450-SoundMeasurement/SoundIntensity'
+                  '20160315202456-SoundMeasurement/SoundIntensity'
 #CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
 #                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
 #                  'SoundIntensity'

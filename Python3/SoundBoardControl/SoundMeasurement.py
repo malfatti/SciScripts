@@ -66,7 +66,8 @@ def FRange(Start, End, Step):
 
 AmpFList = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-           FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0, 0.0001) + [0]
+           FRange(0.03, 0.01, 0.0005) + FRange(0.0001, 0, 0.0001) + \
+           FRange(0.0001, 0, 0.00002) + [0]
 
 #AmpFList = FRange(0.025, 0, 0.0005) + [0]
 
@@ -188,7 +189,7 @@ for Freq in range(len(SoundRec)):
         RecordingData[Freq][AmpF] = array.array('f', 
                                                 b''.join(SoundRec[Freq][AmpF]))
         
-        SliceStart = round(DataInfo['Rate']*0.5)-1
+        SliceStart = round(DataInfo['Rate']*0.25)-1
         SliceEnd = SliceStart + round(DataInfo['Rate']*1)
         RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
                                                         SliceStart:SliceEnd
@@ -253,6 +254,7 @@ File.write(r"""
 \documentclass[12pt,a4paper]{report}
 
 \usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
+\usepackage{longtable}
 \usepackage{setspace}
 \usepackage{titlesec}
 \titleformat{\chapter}{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
@@ -270,7 +272,7 @@ File.close()
 del(File)
 
 File = open(Folder+'/'+'IntensityTable-Contents.tex', 'w')
-File.write(TexTable.to_latex())
+File.write(TexTable.to_latex(longtable=True))
 File.close()
 del(File)
 

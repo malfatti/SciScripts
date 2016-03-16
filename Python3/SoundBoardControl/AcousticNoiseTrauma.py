@@ -30,20 +30,39 @@ Leão, PhD.
 Rate = 128000
 SoundDur = 60 * 70 # in SECONDS!
 NoiseFrequency = [[10000, 14000]]
-SoundAmpF = [0.8]
+Intensity = [90]
 TTLAmpF = 0
+
+CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+                  '20160315202456-SoundMeasurement/SoundIntensity'
+#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
+#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
+#                  'SoundIntensity'
 #==========#==========#==========#==========#
 
 import ControlSoundBoard
+import shelve
+
+with shelve.open(CalibrationFile) as Shelve:
+    SoundIntensity = Shelve['SoundIntensity']
+    SBInAmpF = Shelve['SBInAmpF']
 
 SoundPulseDur = 0.5
 SoundPulseNo = round(SoundDur/SoundPulseDur)
+
+
+SoundAmpF = [[float(min(SoundIntensity[Hz].keys(), 
+                                 key=lambda i: abs(SoundIntensity[Hz][i] - 
+                                                   Intensity)))] 
+                       for Hz in list(SoundIntensity)]
+
 
 # Generate sound stimulus
 Sound, SoundPauseBetweenStimBlocks, StartSound = ControlSoundBoard.GenSound(
                                                     Rate, SoundPulseDur, 
                                                     SoundPulseNo, SoundAmpF, 
-                                                    NoiseFrequency, TTLAmpF)
+                                                    NoiseFrequency, TTLAmpF, 
+                                                    CalibrationFile)
 
 #%% Run!!
 """ To stop, close the console :) """

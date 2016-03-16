@@ -26,7 +26,7 @@ AnimalName = 'TestSetup01'
 Rate = 128000
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160315153450-SoundMeasurement/SoundIntensity'
+                  '20160315202456-SoundMeasurement/SoundIntensity'
 #CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
 #                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
 #                  'SoundIntensity'

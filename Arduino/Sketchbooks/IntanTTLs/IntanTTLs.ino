@@ -19,15 +19,13 @@
   B = pulse on pin 4
   C = pulse on pin 7
   D = pulse on pin 8
-  E = pulse on pin 10
-  F = pulse on pin 11
-  G = pulse on pin 12
+  E = pulse on pin 12
   P = pulse on pin 13
 */
 
 const int inPin = 1;
-const int PinNo = 8;
-const int Pins[PinNo] = {2, 4, 7, 8, 10, 11, 12, 13};
+const int Pins[6] = {2, 4, 7, 8, 12, 13};
+const int PinNo = 6;
 const int Delay = 20;
 
 void setup() {
@@ -127,38 +125,10 @@ void loop() {
     digitalWrite(Pins[4], LOW);
   }
 
-  if (ch == 'F') {
-    digitalWrite(Pins[5], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[5], LOW);
-  }
-
-  if (ch == 'f') {
-    digitalWrite(Pins[5], HIGH);
-    while (ch != 'u') {
-      ch = Serial.read();
-    }
-    digitalWrite(Pins[5], LOW);
-  }
-
-  if (ch == 'G') {
-    digitalWrite(Pins[6], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[6], LOW);
-  }
-
-  if (ch == 'g') {
-    digitalWrite(Pins[6], HIGH);
-    while (ch != 't') {
-      ch = Serial.read();
-    }
-    digitalWrite(Pins[6], LOW);
-  }
-
   if (ch == 'P') {
-    digitalWrite(Pins[7], HIGH);
+    digitalWrite(Pins[5], HIGH);
     delay(Delay);
-    digitalWrite(Pins[7], LOW);
+    digitalWrite(Pins[5], LOW);
   }
   
   inPinV = map(inPinV, 0, 1023, 0, 255);

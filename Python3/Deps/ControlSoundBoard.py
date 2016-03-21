@@ -21,7 +21,6 @@ board as an analog I/O board.
 """
 
 import array
-import glob
 import math
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -73,6 +72,8 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     SoundPulse = [SoundNoise[ElI]*2-1 for ElI,ElV in enumerate(SoundNoise)]
     
     for Freq in range(len(NoiseFrequency)):
+        Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+        
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [NoiseFrequency[Freq][i]/(Rate/2) \
                     for i,j in enumerate(NoiseFrequency[Freq])]
@@ -84,16 +85,16 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
         SoundPulseFiltered[Freq][-1] = 0
         
         # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF[Freq])
-        SoundList[Freq] = [0]*len(SoundAmpF[Freq])
-        Sound[Freq] = [0]*len(SoundAmpF[Freq])
+        SoundUnit[Freq] = [0]*len(SoundAmpF[Key])
+        SoundList[Freq] = [0]*len(SoundAmpF[Key])
+        Sound[Freq] = [0]*len(SoundAmpF[Key])
         
-        for AmpF in range(len(SoundAmpF[Freq])):
-            print('Applying amplification factor:', SoundAmpF[Freq][AmpF], '...')
+        for AmpF in range(len(SoundAmpF[Key])):
+            print('Applying amplification factor:', SoundAmpF[Key][AmpF], '...')
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Freq][AmpF] \
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Key][AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -126,7 +127,10 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     class StartSound(threading.Thread):
         def run(self):
             for Freq in range(len(NoiseFrequency)):
-                for AmpF in range(len(SoundAmpF[Freq])):
+                Key= str(NoiseFrequency[Freq][0]) + '-' \
+                     + str(NoiseFrequency[Freq][1])
+                
+                for AmpF in range(len(SoundAmpF[Key])):
                     for OneBlock in range(SoundStimBlockNo):
                         for OnePulse in range(SoundPulseNo):
                             Stimulation.write(Sound[Freq][AmpF])
@@ -138,9 +142,9 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     return(Sound, SoundPauseBetweenStimBlocks, StartSound)
 
 
-def GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
-             LaserPulseNo, LaserStimBlockNo, LaserPauseBetweenStimBlocksDur, \
-             TTLAmpF, CalibrationFile):
+def GenLaser(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, CalibrationFile, 
+             LaserPrePauseDur=0, LaserPostPauseDur=0, LaserStimBlockNo=1, 
+             LaserPauseBetweenStimBlocksDur=0):
     """ Generate square pulses in one channel that works as TTL for laser 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
@@ -193,11 +197,12 @@ def GenLaser(Rate, LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
     return(Laser, LaserPauseBetweenStimBlocks, StartLaser)
 
 
-def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
-                  SoundPulseNo, SoundStimBlockNo, \
-                  SoundPauseBetweenStimBlocksDur, SoundAmpF, NoiseFrequency, \
-                  LaserPrePauseDur, LaserPulseDur, LaserPostPauseDur, \
-                  LaserPauseBetweenStimBlocksDur, TTLAmpF, CalibrationFile):
+def GenSoundLaser(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
+                  LaserPulseDur, LaserPulseNo, TTLAmpF, CalibrationFile, 
+                  SoundPrePauseDur=0, SoundPostPauseDur=0, SoundStimBlockNo=1, 
+                  SoundPauseBetweenStimBlocksDur=0, LaserPrePauseDur=0, 
+                  LaserPostPauseDur=0, LaserStimBlockNo=1, 
+                  LaserPauseBetweenStimBlocksDur=0):
     """ Generate sound pulses in one channel and TTLs for sound and laser in 
     the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
     
@@ -239,6 +244,8 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     SoundAndLaser = [0]*len(NoiseFrequency)
     
     for Freq in range(len(NoiseFrequency)):
+        Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+        
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [NoiseFrequency[Freq][i]/(Rate/2) \
                     for i,j in enumerate(NoiseFrequency[Freq])]
@@ -250,16 +257,16 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
         SoundPulseFiltered[Freq][-1] = 0
 
         # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF[Freq])
-        SoundAndLaserList[Freq] = [0]*len(SoundAmpF[Freq])
-        SoundAndLaser[Freq] = [0]*len(SoundAmpF[Freq])
+        SoundUnit[Freq] = [0]*len(SoundAmpF[Key])
+        SoundAndLaserList[Freq] = [0]*len(SoundAmpF[Key])
+        SoundAndLaser[Freq] = [0]*len(SoundAmpF[Key])
     
-        for AmpF in range(len(SoundAmpF[Freq])):
-            print('Applying amplification factor:', SoundAmpF[Freq][AmpF], '...')
+        for AmpF in range(len(SoundAmpF[Key])):
+            print('Applying amplification factor:', SoundAmpF[Key][AmpF], '...')
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Freq][AmpF] \
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Key][AmpF] \
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -292,7 +299,10 @@ def GenSoundLaser(Rate, SoundPrePauseDur, SoundPulseDur, SoundPostPauseDur, \
     class StartSoundAndLaser(threading.Thread):
         def run(self):
             for Freq in range(len(NoiseFrequency)):
-                for AmpF in range(len(SoundAmpF[Freq])):
+                Key= str(NoiseFrequency[Freq][0]) + '-' \
+                     + str(NoiseFrequency[Freq][1])
+                
+                for AmpF in range(len(SoundAmpF[Key])):
                     for OneBlock in range(SoundStimBlockNo):
                         for OnePulse in range(SoundPulseNo):
                             Stimulation.write(SoundAndLaser[Freq][AmpF])
@@ -601,6 +611,8 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
     SoundRec = [0]*len(NoiseFrequency)
     
     for Freq in range(len(NoiseFrequency)):
+        Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+        
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [_/(Rate/2) for _ in NoiseFrequency[Freq]]
         f2, f1 = signal.butter(4, passband, 'bandpass')
@@ -611,16 +623,16 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
         SoundPulseFiltered[Freq][-1] = 0
         
         # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF[Freq])
-        SoundList[Freq] = [0]*len(SoundAmpF[Freq])
-        Sound[Freq] = [0]*len(SoundAmpF[Freq])
-        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF[Freq]))]
+        SoundUnit[Freq] = [0]*len(SoundAmpF[Key])
+        SoundList[Freq] = [0]*len(SoundAmpF[Key])
+        Sound[Freq] = [0]*len(SoundAmpF[Key])
+        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF[Key]))]
         
         print('Applying amplification factors...')
-        for AmpF in range(len(SoundAmpF[Freq])):
+        for AmpF in range(len(SoundAmpF[Key])):
             SoundUnit[Freq][AmpF] = SoundPulseFiltered[Freq]
                                     
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Freq][AmpF] 
+            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Key][AmpF] 
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory

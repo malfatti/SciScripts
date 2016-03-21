@@ -22,7 +22,7 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 
 ## Set experiment details
 
-ABRCh = [1, 16]         # [RightChannel, LeftChannel], if order matters
+ABRCh = [1, 2]         # [RightChannel, LeftChannel], if order matters
 ABRTimeBeforeTTL = 0    # in ms
 ABRTimeAfterTTL = 12    # in ms
 ABRTTLCh = 1            # TTL ch for ABR

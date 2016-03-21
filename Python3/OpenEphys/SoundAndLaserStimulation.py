@@ -34,12 +34,12 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'TestABR02'
+AnimalName = 'TestABR03'
 Rate = 128000
 BaudRate = 38400
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160315153450-SoundMeasurement/SoundIntensity'
+                  '20160315202456-SoundMeasurement/SoundIntensity'
 #CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
 #                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
 #                  'SoundIntensity'
@@ -63,7 +63,7 @@ SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 5
 # Intensities tested, in order, in dB. Supports floats :)
-Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30]
+Intensities = [80, 75, 70, 65, 60, 55, 50, 45]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
@@ -98,10 +98,10 @@ Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundStim'])
 
-SoundAmpF = [[float(min(SoundIntensity[Hz].keys(), 
+SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
               key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
               for dB in Intensities] 
-         for Hz in list(SoundIntensity)]
+         for Hz in list(SoundIntensity)}
 
 DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
                                        'BaudRate', 'SoundPrePauseDur', 
@@ -166,7 +166,8 @@ DVCoord = input('Choose DVCoord (in µm): ');
 Hz = int(Hz)
 
 print('Running...')
-for AmpF in range(len(SoundAmpF)):
+Key = str(NoiseFrequency[Hz][0]) + '-' + str(NoiseFrequency[Hz][1])
+for AmpF in range(len(SoundAmpF[Key])):
     Arduino.write(b'P')
     for OnePulse in range(SoundPulseNo):
         Stimulation.write(Sound[Hz][AmpF])
@@ -179,7 +180,7 @@ ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-SoundStim-' \
               + DVCoord + '-' + str(NoiseFrequency[Hz][0]) + '_' \
               + str(NoiseFrequency[Hz][1])
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName', 
+ExpInfo = dict((Name, eval(Name)) for Name in ['Hz', 'ExpFileName', 
                                                'DVCoord'])
 
 with shelve.open(ExpFileName) as Shelve: Shelve['ExpInfo'] = ExpInfo

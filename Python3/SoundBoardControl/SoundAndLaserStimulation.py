@@ -130,8 +130,9 @@ Stimulation = p.open(format=pyaudio.paFloat32,
 #%% Prepare sound stimulation
 Sound, SoundPauseBetweenStimBlocks, _ = \
     ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
-                               NoiseFrequency, TTLAmpF, SoundPrePauseDur, 
-                               SoundPostPauseDur, SoundStimBlockNo, 
+                               NoiseFrequency, TTLAmpF, CalibrationFile, 
+                               SoundPrePauseDur, SoundPostPauseDur, 
+                               SoundStimBlockNo, 
                                SoundPauseBetweenStimBlocksDur)
 
 

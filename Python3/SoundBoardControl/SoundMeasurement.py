@@ -183,6 +183,7 @@ for Freq in range(len(SoundRec)):
     
     for AmpF in range(len(SoundRec[Freq])):
         Intensity[Freq][AmpF] = {}
+        
         print('Saving data for ', DataInfo['NoiseFrequency'][Freq], 
               ' at ', DataInfo['SoundAmpF'][Freq][AmpF])
         

@@ -138,17 +138,17 @@ void loop() {
     digitalWrite(Pins[1], LOW);
   }
 
-  if (inPinV >= 50 && inPinV < 80) {
+  if (inPinV >= 40 && inPinV < 70) {
     digitalWrite(Pins[0], LOW);
     digitalWrite(Pins[1], HIGH);
   }
 
-  if (inPinV >= 135 && inPinV < 160) {
+  if (inPinV >= 120 && inPinV < 145) {
     digitalWrite(Pins[0], HIGH);
     digitalWrite(Pins[1], LOW);
   }
 
-  if (inPinV >= 200) {
+  if (inPinV >= 180) {
     digitalWrite(Pins[0], HIGH);
     digitalWrite(Pins[1], HIGH);
   }

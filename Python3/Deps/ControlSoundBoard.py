@@ -89,25 +89,25 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
         SoundList[Freq] = [0]*len(SoundAmpF[Key])
         Sound[Freq] = [0]*len(SoundAmpF[Key])
         
+        print('Applying amplification factors and interleaving channels...')
         for AmpF in range(len(SoundAmpF[Key])):
-            print('Applying amplification factor:', SoundAmpF[Key][AmpF], '...')
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Key][AmpF] \
+            Max = max(SoundUnit[Freq][AmpF])
+            SoundUnit[Freq][AmpF] = [(SoundEl * (SBOutAmpF/Max))
+                                     * SoundAmpF[Key][AmpF]
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
             SoundList[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
             Sound[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))  
             
-            print('Interleaving channels...')
             for _ in range(len(SoundUnit[Freq][AmpF])):
                 SoundList[Freq][AmpF][_ *2] = SoundUnit[Freq][AmpF][_]
                 SoundList[Freq][AmpF][_ *2+1] = SoundTTLUnit[_]
             
-            Sound[Freq][AmpF] = array.array('f')
-            Sound[Freq][AmpF].fromlist(SoundList[Freq][AmpF])
+            Sound[Freq][AmpF] = array.array('f', SoundList[Freq][AmpF])
             Sound[Freq][AmpF] = bytes(Sound[Freq][AmpF])
     
     print('Generating pause...')
@@ -266,7 +266,9 @@ def GenSoundLaser(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
             SoundUnit[Freq][AmpF] = SoundPrePause + \
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Key][AmpF] \
+            Max = max(SoundUnit[Freq][AmpF])
+            SoundUnit[Freq][AmpF] = [(SoundEl * (SBOutAmpF/Max))
+                                     * SoundAmpF[Key][AmpF]
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory
@@ -516,7 +518,7 @@ def PlotGPIAS(FileList):
 def SoundCalOut(Rate):
     """ Generate 3s of 100Hz sine wave (1 to -1). """
     
-    Freq = 100; Time = 0.1
+    Freq = 10000; Time = 0.1
     
     print('Generating sound...')
     Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) for _ in range(round(Rate*Time))]
@@ -525,8 +527,8 @@ def SoundCalOut(Rate):
     print('Interleaving channels...')
     List = [0]*(2*len(Pulse))
     for _ in range(len(Pulse)):
-        List[_ *2] = 0
-        List[_ *2+1] = Pulse[_]
+        List[_ *2] = Pulse[_]
+        List[_ *2+1] = 0
     
     Pulse = array.array('f')
     Pulse.fromlist(List)
@@ -540,7 +542,7 @@ def SoundCalOut(Rate):
                     output=True)
     
     print('Playing...')
-    for OnePulse in range(round(30/Time)):
+    for OnePulse in range(round(300/Time)):
         Stimulation.write(Pulse)
 
 
@@ -610,9 +612,7 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
     Sound = [0]*len(NoiseFrequency)
     SoundRec = [0]*len(NoiseFrequency)
     
-    for Freq in range(len(NoiseFrequency)):
-        Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
-        
+    for Freq in range(len(NoiseFrequency)):        
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [_/(Rate/2) for _ in NoiseFrequency[Freq]]
         f2, f1 = signal.butter(4, passband, 'bandpass')
@@ -623,16 +623,18 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
         SoundPulseFiltered[Freq][-1] = 0
         
         # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF[Key])
-        SoundList[Freq] = [0]*len(SoundAmpF[Key])
-        Sound[Freq] = [0]*len(SoundAmpF[Key])
-        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF[Key]))]
+        SoundUnit[Freq] = [0]*len(SoundAmpF)
+        SoundList[Freq] = [0]*len(SoundAmpF)
+        Sound[Freq] = [0]*len(SoundAmpF)
+        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF))]
         
         print('Applying amplification factors...')
-        for AmpF in range(len(SoundAmpF[Key])):
+        for AmpF in range(len(SoundAmpF)):
             SoundUnit[Freq][AmpF] = SoundPulseFiltered[Freq]
                                     
-            SoundUnit[Freq][AmpF] = [(SoundEl*SBOutAmpF)*SoundAmpF[Key][AmpF] 
+            Max = max(SoundUnit[Freq][AmpF])
+            SoundUnit[Freq][AmpF] = [(SoundEl * (SBOutAmpF/Max))
+                                     * SoundAmpF[AmpF]
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
             # Preallocating memory

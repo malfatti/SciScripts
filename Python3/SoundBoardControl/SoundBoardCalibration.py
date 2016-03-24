@@ -37,6 +37,7 @@ so you know that no kind of frequency filter is being applied.
 Rate = 128000
 
 import ControlSoundBoard
+import shelve
 
 #%% Output
 
@@ -49,3 +50,8 @@ Data = ControlSoundBoard.SoundCalIn(Rate)
 Data = [_/SBOutAmpF for _ in Data]
 
 print((max(Data)+(min(Data)*-1))/2)
+
+#%% Save
+with shelve.open('SBAmpFs') as Shelve:
+    Shelve['SBOutAmpF'] = SBOutAmpF
+    Shelve['SBInAmpF'] = 0.4852

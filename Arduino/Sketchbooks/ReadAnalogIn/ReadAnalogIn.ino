@@ -1,4 +1,4 @@
-int analogPin = 1;
+int analogPin = 2;
 int val = 0;
 
 void setup()

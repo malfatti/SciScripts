@@ -54,7 +54,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
           ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
               Ear = 0 (right) or 1 (left)
               Freq = index of DataInfo['NoiseFrequency']
-              AmpF = index of DataInfo['SoundAmpF'][Freq]
+              AmpF = index of DataInfo['SoundAmpF']['Freq']
               DVCoord = string with DV coordinate at the moment of recording
               Trial = Trial number - 1 (so if it is one trial, Trial=0)
               
@@ -79,8 +79,10 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     ABRs[0] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
     ABRs[1] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
     for Freq in range(len(DataInfo['NoiseFrequency'])):
-        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Freq]))]
-        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Freq]))]
+        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
+              + str(DataInfo['NoiseFrequency'][Freq][1])
+        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
+        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
     del(Freq)
     
     print('set paths...')
@@ -128,10 +130,25 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         
         print('Data from ', RecFolder, ' loaded.')
         
+        if '0' not in list(Raw['data'].keys()):
+            print('Rec numbers are wrong. Fixing...')
+            for iKey in Raw.keys():
+                Recs = list(Raw[iKey].keys())
+                Recs = [int(_) for _ in Recs]; Min = min(Recs)
+                
+                EventRec = Events['TTLs']['recording'][:]
+                for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
+                
+                for Key in Recs:
+                    Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
+                
+            print('Fixed.')
+        else:
+            EventRec = Events['TTLs']['recording']
+        
         print('Get TTL data...')
         EventID = Events['TTLs']['user_data']['eventID']
         EventCh = Events['TTLs']['user_data']['event_channels']
-        EventRec = Events['TTLs']['recording']
         EventSample = Events['TTLs']['time_samples']
     
         TTLChs = np.nonzero(np.bincount(EventCh))[0]
@@ -142,7 +159,6 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                              and EventID[_] == 1]
                       for _Rec in TTLRecs}
         
-        
         Rate = Raw['info']['0']['sample_rate']
 #        NoOfSamplesBefore = int(round((ABRTimeBeforeTTL*Rate)*10**-3))
 #        NoOfSamplesAfter = int(round((ABRTimeAfterTTL*Rate)*10**-3))
@@ -151,7 +167,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
         NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
         NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-        XValues = (range(NoOfSamples)/Rate)*10**3
+#        XValues = (range(NoOfSamples)/Rate)*10**3
+        XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
+                  list((range(NoOfSamplesAfter)/Rate)*10**3)
         
         print('Set filter...')
         passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
@@ -166,7 +184,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
             lABR = [[0 for _ in range(NoOfSamples)] 
                     for _ in range(len(TTLsPerRec[Rec]))]
             
-            print('Slicing and filtering ABRs...')
+            print('Slicing and filtering ABRs Rec ', str(Rec), '...')
             for TTL in range(len(TTLsPerRec[Rec])):
                 TTLLoc = int(TTLsPerRec[Rec][TTL])
                 Start = TTLLoc-NoOfSamplesBefore
@@ -176,7 +194,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                     End = RawTime.index(End)
                 except ValueError:
                     print('ValueError: Timestamp is messed up in Freq', 
-                          str(ExpInfo['Freq']), ' AmpF ', str(Rec), ' :(')
+                          str(ExpInfo['Hz']), ' AmpF ', str(Rec), ' :(')
                     break
                 
                 rData = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
@@ -190,13 +208,12 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 
                 del(TTLLoc, Start, End, rData, lData)
         
-            print('Saving ABRs...')
-            if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Freq']][Rec]:
-                ABRs[0][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']] = [np.mean(rABR, axis=0)]
-                ABRs[1][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']] = [np.mean(lABR, axis=0)]
+            if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
+                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [np.mean(rABR, axis=0)]
+                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [np.mean(lABR, axis=0)]
             else:
-                ABRs[0][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']].append(np.mean(rABR, axis=0))
-                ABRs[1][ExpInfo['Freq']][Rec][ExpInfo['DVCoord']].append(np.mean(lABR, axis=0))
+                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(np.mean(rABR, axis=0))
+                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(np.mean(lABR, axis=0))
     
     # Extracting number of trials
 #    DataInfo['NoOfTrials'] = []
@@ -230,7 +247,7 @@ def PlotABR(FileName):
     
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
-              for _ in range(len(DataInfo['SoundAmpF'][0]))]
+              for _ in range(len(ABRs[0][0]))]
     
     Keys = list(ABRs[0][0][0].keys())
     for Key in Keys:
@@ -240,25 +257,33 @@ def PlotABR(FileName):
     
             for Ear in range(2):
                 for Freq in range(len(DataInfo['NoiseFrequency'])):
-                    for AmpF in range(len(DataInfo['SoundAmpF'][Freq])):
+                    KeyHz = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
+                            + str(DataInfo['NoiseFrequency'][Freq][1])
+                    
+                    for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
                         FigTitle = Key + ' DV, trial ' + str(Trial+1)
                         AxTitle = str(DataInfo['NoiseFrequency'][Freq])
                         YLabel = 'voltage [\mu V]'
                         XLabel = 'time [ms]'
-                        AmpStr = str(DataInfo['SoundAmpF'][Freq][AmpF])
+                        if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
+                            DataInfo['SoundAmpF'][KeyHz][
+                                DataInfo['SoundAmpF'][KeyHz].index(0.0)
+                                                        ] = 0
+                        
+                        AmpStr = str(DataInfo['SoundAmpF'][KeyHz][AmpF])
                         LineLabel = str(round(
-                                    DataInfo['SoundIntensity'][Freq][AmpStr]
+                                    DataInfo['SoundIntensity'][KeyHz][AmpStr]
                                       )) + ' dB'
                         
                         if Ear == 0:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
+#                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         else:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
+#                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         
                         Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
@@ -268,6 +293,7 @@ def PlotABR(FileName):
                         Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
                         Axes[Freq][Ear].set_title('$' + AxTitle + '$')
                         Axes[Freq][Ear].set_ylabel('$' + YLabel + '$')
+                        Axes[Freq][Ear].locator_params(tight=True)
             Axes[-1][0].set_xlabel('$' + XLabel + '$')
             Axes[-1][1].set_xlabel('$' + XLabel + '$')
             Fig.suptitle('$' + FigTitle + '$')

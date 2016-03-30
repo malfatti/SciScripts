@@ -23,7 +23,7 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 ## Set experiment details
 
 ABRCh = [1, 2]         # [RightChannel, LeftChannel], if order matters
-ABRTimeBeforeTTL = 0    # in ms
+ABRTimeBeforeTTL = 5    # in ms
 ABRTimeAfterTTL = 12    # in ms
 ABRTTLCh = 1            # TTL ch for ABR
 FilterLow = 300         # High-pass frequency for bandpass filter
@@ -35,7 +35,7 @@ FilterOrder = 4         # butter order
 import glob
 import KwikAnalysis
 
-FileName = glob.glob('*.db'); FileName = FileName[0][:-3]
+FileName = glob.glob('*SoundStim.db'); FileName = FileName[0][:-3]
 
 KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
                  FilterLow, FilterHigh, FilterOrder)

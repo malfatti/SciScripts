@@ -25,7 +25,7 @@
   P = pulse on pin 13
 */
 
-const int inPin = 1;
+const int inPin = 2;
 const int PinNo = 8;
 const int Pins[PinNo] = {2, 4, 7, 8, 10, 11, 12, 13};
 const int Delay = 20;
@@ -173,7 +173,7 @@ void loop() {
     digitalWrite(Pins[1], HIGH);
   }
 
-  if (inPinV >= 135 && inPinV < 160) {
+  if (inPinV >= 125 && inPinV < 135) {
     digitalWrite(Pins[0], HIGH);
     digitalWrite(Pins[1], LOW);
   }

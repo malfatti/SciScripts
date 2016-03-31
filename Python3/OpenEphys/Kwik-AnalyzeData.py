@@ -23,8 +23,8 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 ## Set experiment details
 
 ABRCh = [1, 2]         # [RightChannel, LeftChannel], if order matters
-ABRTimeBeforeTTL = 5    # in ms
-ABRTimeAfterTTL = 12    # in ms
+ABRTimeBeforeTTL = 30    # in ms
+ABRTimeAfterTTL = 30    # in ms
 ABRTTLCh = 1            # TTL ch for ABR
 FilterLow = 300         # High-pass frequency for bandpass filter
 FilterHigh = 3000       # Low-pass frequency

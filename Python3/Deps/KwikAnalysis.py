@@ -203,10 +203,15 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 rABR[TTL] = [float(rData[_]) for _ in range(NoOfSamples)]
                 lABR[TTL] = [float(lData[_]) for _ in range(NoOfSamples)]
                 
-                rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
-                lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
+#                rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
+#                lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
                 
                 del(TTLLoc, Start, End, rData, lData)
+            
+            rABR = np.mean(rABR, axis=0); lABR = np.mean(lABR, axis=0)
+#                
+            rABR = signal.savgol_filter(rABR, 5, 2, mode='nearest')
+            lABR = signal.savgol_filter(lABR, 5, 2, mode='nearest')
         
             if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
                 ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [np.mean(rABR, axis=0)]
@@ -278,12 +283,12 @@ def PlotABR(FileName):
                         if Ear == 0:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-#                                color=Colors[AmpF][Ear], 
+                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         else:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-#                                color=Colors[AmpF][Ear], 
+                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         
                         Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)

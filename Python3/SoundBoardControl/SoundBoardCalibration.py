@@ -37,6 +37,7 @@ so you know that no kind of frequency filter is being applied.
 Rate = 128000
 
 import ControlSoundBoard
+import datetime
 import shelve
 
 #%% Output
@@ -44,14 +45,22 @@ import shelve
 ControlSoundBoard.SoundCalOut(Rate)
 
 #%% Input
-SBOutAmpF = 1.7
+Repetitions = 20
+SBOutAmpF = 2
 
-Data = ControlSoundBoard.SoundCalIn(Rate)
-Data = [_/SBOutAmpF for _ in Data]
+Data = [[] for _ in range(Repetitions)]
+SBInAmpF = [[] for _ in range(Repetitions)]
+for aa in range(Repetitions):
+    Data[aa] = ControlSoundBoard.SoundCalIn(Rate, SBOutAmpF)
+    Data[aa] = [_/SBOutAmpF for _ in Data[aa]]
+    SBInAmpF[aa] = (max(Data[aa])+(min(Data[aa])*-1))/2
 
-print((max(Data)+(min(Data)*-1))/2)
+SBInAmpF = sum(SBInAmpF)/len(SBInAmpF)
+
+print(str(SBInAmpF))
 
 #%% Save
-with shelve.open('SBAmpFs') as Shelve:
+Date = datetime.datetime.now()
+with shelve.open(Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs') as Shelve:
     Shelve['SBOutAmpF'] = SBOutAmpF
-    Shelve['SBInAmpF'] = 0.4852
+    Shelve['SBInAmpF'] = SBInAmpF

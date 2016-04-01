@@ -548,7 +548,7 @@ def SoundCalOut(Rate):
 
 def SoundCalIn(Rate, SBOutAmpF):
     """ Generate 3s of 100Hz sine wave (1V to -1V) and read 1s of it. """
-    Freq = 100; Time = 0.1
+    Freq = 10000; Time = 0.1
     
     print('Generating laser pulse...')
     Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) for _ in range(round(Rate*Time))]
@@ -557,8 +557,8 @@ def SoundCalIn(Rate, SBOutAmpF):
     print('Interleaving channels...')
     List = [0]*(2*len(Pulse))
     for _ in range(len(Pulse)):
-        List[_ *2] = 0
-        List[_ *2+1] = Pulse[_]
+        List[_ *2] = Pulse[_]
+        List[_ *2+1] = 0
     
     Pulse = array.array('f')
     Pulse.fromlist(List)

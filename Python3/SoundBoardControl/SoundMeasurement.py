@@ -43,7 +43,7 @@ TTLAmpF = 0
 MicSens_dB = -47.46
 
 # Path to file saved after Python3/SoundBoardControl/SoundBoardCalibration.py
-SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/SBAmpFs'
+SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/20160401184709-SBAmpFs'
 #==========#==========#==========#==========#
 
 import array

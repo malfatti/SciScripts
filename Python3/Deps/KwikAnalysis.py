@@ -171,9 +171,11 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
                   list((range(NoOfSamplesAfter)/Rate)*10**3)
         
-        print('Set filter...')
-        passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
-        f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
+#        print('Set filter...')
+#        passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
+#        f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
+        Lf2, Lf1 = signal.butter(FilterOrder, FilterLow/(Rate/2), 'highpass')
+        Hf2, Hf1 = signal.butter(FilterOrder, FilterHigh/(Rate/2), 'lowpass')
         
         for Rec in range(len(Raw['data'])):
             RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
@@ -197,28 +199,36 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                           str(ExpInfo['Hz']), ' AmpF ', str(Rec), ' :(')
                     break
                 
-                rData = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
-                lData = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
+                rABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
+                lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
                 
-                rABR[TTL] = [float(rData[_]) for _ in range(NoOfSamples)]
-                lABR[TTL] = [float(lData[_]) for _ in range(NoOfSamples)]
-                
-#                rABR[TTL] = signal.filtfilt(f2, f1, rABR[TTL], padtype='odd', padlen=0)
-#                lABR[TTL] = signal.filtfilt(f2, f1, lABR[TTL], padtype='odd', padlen=0)
-                
-                del(TTLLoc, Start, End, rData, lData)
+                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
+                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
+
+                del(TTLLoc, Start, End)
             
-            rABR = np.mean(rABR, axis=0); lABR = np.mean(lABR, axis=0)
-#                
-            rABR = signal.savgol_filter(rABR, 5, 2, mode='nearest')
-            lABR = signal.savgol_filter(lABR, 5, 2, mode='nearest')
+            rData = rABR[0]; lData = lABR[0]
+            for _ in range(1, len(rABR)):
+                rData = (rData + rABR[_])/2
+                lData = (lData + lABR[_])/2
+            
+            rABR = rData; lABR = lData
+            
+            rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
+            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
+            
+#            rABR = signal.filtfilt(f2, f1, rABR, padtype='odd', padlen=0)
+#            lABR = signal.filtfilt(f2, f1, lABR, padtype='odd', padlen=0)
+
+#            rABR = signal.savgol_filter(rABR, 9, 2, mode='nearest')
+#            lABR = signal.savgol_filter(lABR, 9, 2, mode='nearest')
         
             if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [np.mean(rABR, axis=0)]
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [np.mean(lABR, axis=0)]
+                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
+                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [lABR]
             else:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(np.mean(rABR, axis=0))
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(np.mean(lABR, axis=0))
+                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(rABR)
+                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(lABR)
     
     # Extracting number of trials
 #    DataInfo['NoOfTrials'] = []

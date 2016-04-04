@@ -57,13 +57,13 @@ SoundPulseDur = 0.003
 # Silence after pulse
 SoundPostPauseDur = 0.093
 # Amount of pulses per block
-SoundPulseNo = 300
+SoundPulseNo = 324
 # Number of blocks
 SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 5
 # Intensities tested, in order, in dB. Supports floats :)
-Intensities = [80, 75, 70, 65, 60, 55, 50]
+Intensities = [80, 75, 70, 65, 60, 55, 50, 45]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).

@@ -64,12 +64,12 @@ def FRange(Start, End, Step):
              for x in range(round(Start/Step), round(End/Step), -1)]
     return(Range)
 
-#SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
-#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
-#            FRange(0.001, 0, 0.00002) + [0]
+SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
+            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
+            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
+            FRange(0.001, 0, 0.00002) + [0]
 
-SoundAmpF = FRange(0.01, 0.001, 0.0001) + FRange(0.001, 0, 0.00002) + [0]
+#SoundAmpF = FRange(0.01, 0.001, 0.0001) + FRange(0.001, 0, 0.00002) + [0]
 
 with shelve.open(SBAmpFsFile) as Shelve:
     SBOutAmpF = Shelve['SBOutAmpF']

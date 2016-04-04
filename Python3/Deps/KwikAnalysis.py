@@ -222,7 +222,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 
 #            rABR = signal.savgol_filter(rABR, 9, 2, mode='nearest')
 #            lABR = signal.savgol_filter(lABR, 9, 2, mode='nearest')
-        
+            rABR = (rABR/10) + DataInfo['Intensities'][Rec]
+            lABR = (lABR/10) + DataInfo['Intensities'][Rec]
+            
             if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
                 ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
                 ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [lABR]
@@ -278,7 +280,7 @@ def PlotABR(FileName):
                     for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
                         FigTitle = Key + ' DV, trial ' + str(Trial+1)
                         AxTitle = str(DataInfo['NoiseFrequency'][Freq])
-                        YLabel = 'voltage [\mu V]'
+                        YLabel = 'Intensity tested [dB]'
                         XLabel = 'time [ms]'
                         if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
                             DataInfo['SoundAmpF'][KeyHz][
@@ -293,18 +295,19 @@ def PlotABR(FileName):
                         if Ear == 0:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
+#                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         else:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
+#                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         
-                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
+#                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
                         Axes[Freq][Ear].spines['right'].set_visible(False)
                         Axes[Freq][Ear].spines['top'].set_visible(False)
-                        Axes[Freq][Ear].yaxis.set_ticks_position('left')
+                        Axes[Freq][Ear].spines['left'].set_visible(False)
+                        Axes[Freq][Ear].yaxis.set_ticks_position('none')
                         Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
                         Axes[Freq][Ear].set_title('$' + AxTitle + '$')
                         Axes[Freq][Ear].set_ylabel('$' + YLabel + '$')

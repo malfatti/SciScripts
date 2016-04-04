@@ -88,6 +88,7 @@ LaserPauseBetweenStimBlocksDur = 5
 import ControlArduino
 import ControlSoundBoard
 import datetime
+import h5py
 import pyaudio
 import shelve
 
@@ -96,7 +97,7 @@ with shelve.open(CalibrationFile) as Shelve:
 
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                    '-SoundStim'])
+                    '-SoundStim.hdf5'])
 
 SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
               key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
@@ -115,9 +116,16 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'LaserPauseBetweenStimBlocksDur', 
                                        'SoundIntensity', 'FileName'])
 
-with shelve.open(FileName) as Shelve:
-    Shelve['DataInfo'] = DataInfo
-del(Date, FileName, DataInfo)
+
+with h5py.File(FileName) as h5:
+#    h5.create_group('info')
+    for Key, Value in DataInfo.items():
+        h5['info'].attrs[Key] = Value
+
+
+
+    ['DataInfo'] = DataInfo
+#del(Date, FileName, DataInfo)
 
 p = pyaudio.PyAudio()
 Stimulation = p.open(format=pyaudio.paFloat32,
@@ -162,8 +170,8 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 Date = datetime.datetime.now()
 
 Hz = input('Choose Freq index: ')
-#DVCoord = input('Choose DVCoord (in µm): '); 
-DVCoord = 'Out'
+DVCoord = input('Choose DVCoord (in µm): '); 
+#DVCoord = 'Out'
 Hz = int(Hz)
 
 print('Running...')
@@ -176,16 +184,15 @@ for AmpF in range(len(SoundAmpF[Key])):
     Arduino.write(b'P')
     Stimulation.write(SoundPauseBetweenStimBlocks)
 
+
 print('Done. Saving info...')
-ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-SoundStim-' \
-              + DVCoord + '-' + str(NoiseFrequency[Hz][0]) + '_' \
-              + str(NoiseFrequency[Hz][1])
+#ExpFileName = AnimalName + '-SoundStim.hdf5'
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['Hz', 'ExpFileName', 
-                                               'DVCoord'])
+with h5py.File(FileName) as h5:
+    h5.create_group(str(len(list(h5)) - 1))
+    h5[list(h5.keys())[-1]].attrs['DVCoord'] = DVCoord
+    h5[list(h5.keys())[-1]].attrs['Hz'] = Hz
 
-with shelve.open(ExpFileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
-del(Date, ExpFileName, ExpInfo, Shelve)
 print('Saved.')
 print('Played Freq ' + str(Hz) + ' at ' + DVCoord + 'µm DV')
 

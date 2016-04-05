@@ -40,7 +40,7 @@ FileName = glob.glob('*SoundStim.db'); FileName = FileName[0][:-3]
 KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
                  FilterLow, FilterHigh, FilterOrder)
 
-FileName = glob.glob('*ABRs.db'); FileName = FileName[0][:-3]
+#FileName = glob.glob('*ABRs.db'); FileName = FileName[0][:-3]
 KwikAnalysis.PlotABR(FileName)
 
 

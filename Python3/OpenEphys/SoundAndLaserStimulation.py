@@ -118,14 +118,20 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
 
 
 with h5py.File(FileName) as h5:
-#    h5.create_group('info')
+    h5.create_group('info')
     for Key, Value in DataInfo.items():
-        h5['info'].attrs[Key] = Value
+        if isinstance(Value, dict):
+            h5['info'].create_group(Key)
+            for aKey, aValue in Value.items():
+                if isinstance(aValue, dict):
+                    h5['info'][Key].create_group(aKey)
+                    for bKey, bValue in aValue.items():
+                        h5['info'][Key][aKey].attrs[bKey] = bValue
+                else:
+                    h5['info'][Key].attrs[aKey] = aValue
+        else:
+            h5['info'].attrs[Key] = Value
 
-
-
-    ['DataInfo'] = DataInfo
-#del(Date, FileName, DataInfo)
 
 p = pyaudio.PyAudio()
 Stimulation = p.open(format=pyaudio.paFloat32,

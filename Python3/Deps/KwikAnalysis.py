@@ -237,7 +237,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 #    for Key in ABRs[0][ExpInfo['Freq']][Rec]:
 #        DataInfo['NoOfTrials'].append(len(ABRs[0][ExpInfo['Freq']][Rec][Key]))
 #    
-    FileName = DataInfo['AnimalName'] + '-ABRs'
+#    FileName = DataInfo['AnimalName'] + '-ABRs'
     print('Saving data to ' + FileName)
     with shelve.open(FileName) as Shelve:
         Shelve['ABRs'] = ABRs
@@ -318,10 +318,7 @@ def PlotABR(FileName):
             Fig.tight_layout()
             Fig.subplots_adjust(top=0.95)
             Fig.savefig('Figs/' + FileName + '-DV' +  Key + '-Trial' + 
-                        str(Trial) + '-' 
-                        + str(DataInfo['NoiseFrequency'][Freq][0]) 
-                        + '_' + str(DataInfo['NoiseFrequency'][Freq][1]) 
-                        + '.svg', format='svg')
+                        str(Trial) + '.svg', format='svg')
 
 
 def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 

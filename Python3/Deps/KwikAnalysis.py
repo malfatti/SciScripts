@@ -207,12 +207,23 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 
                 del(TTLLoc, Start, End)
             
-            rData = rABR[0]; lData = lABR[0]
-            for _ in range(1, len(rABR)):
-                rData = (rData + rABR[_])/2
-                lData = (lData + lABR[_])/2
+#            # CrazyMA
+#            rData = rABR[0]; lData = lABR[0]
+#            for _ in range(1, len(rABR)):
+#                rData = (rData + rABR[_])/2
+#                lData = (lData + lABR[_])/2
             
-            rABR = rData; lABR = lData
+#            # MACrazy
+#            rData = rABR[-1]; lData = lABR[-1]
+#            for _ in range(len(rABR), 1):
+#                rData = (rData + rABR[_])/2
+#                lData = (lData + lABR[_])/2
+#            
+#            rABR = rData; lABR = lData
+            
+            # Mean
+            rABR = np.mean(rABR, axis=0)
+            lABR = np.mean(lABR, axis=0)
             
             rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
             lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)

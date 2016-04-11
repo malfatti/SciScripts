@@ -18,6 +18,7 @@
 """
 
 import glob
+import h5py
 import Kwik
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,7 +73,21 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
           Python3/SoundBoardControl/SoundAndLaserStimulation.py, 5th cell).
     """
     
-    with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
+#    with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
+    DataInfo = {}
+    with h5py.File(FileName) as F: 
+        for Key, Value in F['info'].items():
+            DataInfo['SoundAmpF'] = {}
+            for aKey, aValue in F['info']['SoundAmpF'].attrs.items():
+                DataInfo['SoundAmpF'][aKey] = aValue
+            
+            DataInfo['SoundIntensity'] = {}
+            for bKey, bValue in F['info']['SoundIntensity'].attrs.items():
+                DataInfo['SoundIntensity'][bKey] = bValue
+        
+        for cKey, cValue in F['info'].attrs.items():
+            DataInfo[cKey] = cValue
+        
     
     print('Preallocate memory...')
     ABRs = [[], []]
@@ -119,6 +134,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 with shelve.open(File[:-3]) as Shelve: 
                     ExpInfo = Shelve['ExpInfo']
         
+        with h5py.File(FileName) as F:
+            ExpInfo['DVCoord'] = F[str(DirList.index(RecFolder))].attrs['DVCoord']
+            ExpInfo['Hz'] = F[str(DirList.index(RecFolder))].attrs['Hz']
         print('Check if files are ok...')
         if 'Raw' not in locals():
             print('.kwd file is corrupted. Skipping dataset...')

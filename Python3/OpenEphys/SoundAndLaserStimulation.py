@@ -89,6 +89,7 @@ import ControlArduino
 import ControlSoundBoard
 import datetime
 import h5py
+import numbers
 import pyaudio
 import shelve
 
@@ -173,7 +174,7 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 
 #%% Run sound 135-160
-Date = datetime.datetime.now()
+#Date = datetime.datetime.now()
 
 Hz = input('Choose Freq index: ')
 DVCoord = input('Choose DVCoord (in µm): '); 
@@ -196,8 +197,8 @@ print('Done. Saving info...')
 
 with h5py.File(FileName) as h5:
     h5.create_group(str(len(list(h5)) - 1))
-    h5[list(h5.keys())[-1]].attrs['DVCoord'] = DVCoord
-    h5[list(h5.keys())[-1]].attrs['Hz'] = Hz
+    h5[list(h5.keys())[-2]].attrs['DVCoord'] = DVCoord
+    h5[list(h5.keys())[-2]].attrs['Hz'] = Hz
 
 print('Saved.')
 print('Played Freq ' + str(Hz) + ' at ' + DVCoord + 'µm DV')

@@ -18,6 +18,7 @@
 """
 
 import glob
+import h5py
 import Kwik
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,7 +73,21 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
           Python3/SoundBoardControl/SoundAndLaserStimulation.py, 5th cell).
     """
     
-    with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
+#    with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
+    DataInfo = {}
+    with h5py.File(FileName) as F: 
+        for Key, Value in F['info'].items():
+            DataInfo['SoundAmpF'] = {}
+            for aKey, aValue in F['info']['SoundAmpF'].attrs.items():
+                DataInfo['SoundAmpF'][aKey] = aValue
+            
+            DataInfo['SoundIntensity'] = {}
+            for bKey, bValue in F['info']['SoundIntensity'].attrs.items():
+                DataInfo['SoundIntensity'][bKey] = bValue
+        
+        for cKey, cValue in F['info'].attrs.items():
+            DataInfo[cKey] = cValue
+        
     
     print('Preallocate memory...')
     ABRs = [[], []]
@@ -119,6 +134,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 with shelve.open(File[:-3]) as Shelve: 
                     ExpInfo = Shelve['ExpInfo']
         
+        with h5py.File(FileName) as F:
+            ExpInfo['DVCoord'] = F[str(DirList.index(RecFolder))].attrs['DVCoord']
+            ExpInfo['Hz'] = F[str(DirList.index(RecFolder))].attrs['Hz']
         print('Check if files are ok...')
         if 'Raw' not in locals():
             print('.kwd file is corrupted. Skipping dataset...')
@@ -207,12 +225,23 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 
                 del(TTLLoc, Start, End)
             
-            rData = rABR[0]; lData = lABR[0]
-            for _ in range(1, len(rABR)):
-                rData = (rData + rABR[_])/2
-                lData = (lData + lABR[_])/2
+#            # CrazyMA
+#            rData = rABR[0]; lData = lABR[0]
+#            for _ in range(1, len(rABR)):
+#                rData = (rData + rABR[_])/2
+#                lData = (lData + lABR[_])/2
             
-            rABR = rData; lABR = lData
+#            # MACrazy
+#            rData = rABR[-1]; lData = lABR[-1]
+#            for _ in range(len(rABR), 1):
+#                rData = (rData + rABR[_])/2
+#                lData = (lData + lABR[_])/2
+#            
+#            rABR = rData; lABR = lData
+            
+            # Mean
+            rABR = np.mean(rABR, axis=0)
+            lABR = np.mean(lABR, axis=0)
             
             rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
             lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
@@ -222,7 +251,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 
 #            rABR = signal.savgol_filter(rABR, 9, 2, mode='nearest')
 #            lABR = signal.savgol_filter(lABR, 9, 2, mode='nearest')
-        
+            rABR = (rABR/10) + DataInfo['Intensities'][Rec]
+            lABR = (lABR/10) + DataInfo['Intensities'][Rec]
+            
             if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
                 ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
                 ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [lABR]
@@ -278,7 +309,7 @@ def PlotABR(FileName):
                     for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
                         FigTitle = Key + ' DV, trial ' + str(Trial+1)
                         AxTitle = str(DataInfo['NoiseFrequency'][Freq])
-                        YLabel = 'voltage [\mu V]'
+                        YLabel = 'Intensity tested [dB]'
                         XLabel = 'time [ms]'
                         if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
                             DataInfo['SoundAmpF'][KeyHz][
@@ -293,18 +324,19 @@ def PlotABR(FileName):
                         if Ear == 0:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
+#                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         else:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
+#                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         
-                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
+#                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
                         Axes[Freq][Ear].spines['right'].set_visible(False)
                         Axes[Freq][Ear].spines['top'].set_visible(False)
-                        Axes[Freq][Ear].yaxis.set_ticks_position('left')
+                        Axes[Freq][Ear].spines['left'].set_visible(False)
+                        Axes[Freq][Ear].yaxis.set_ticks_position('none')
                         Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
                         Axes[Freq][Ear].set_title('$' + AxTitle + '$')
                         Axes[Freq][Ear].set_ylabel('$' + YLabel + '$')
@@ -315,10 +347,7 @@ def PlotABR(FileName):
             Fig.tight_layout()
             Fig.subplots_adjust(top=0.95)
             Fig.savefig('Figs/' + FileName + '-DV' +  Key + '-Trial' + 
-                        str(Trial) + '-' 
-                        + str(DataInfo['NoiseFrequency'][Freq][0]) 
-                        + '_' + str(DataInfo['NoiseFrequency'][Freq][1]) 
-                        + '.svg', format='svg')
+                        str(Trial) + '.svg', format='svg')
 
 
 def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 

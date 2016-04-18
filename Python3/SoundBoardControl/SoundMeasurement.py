@@ -25,6 +25,8 @@ equipment.
 #%% Set parameters of the experiment
 
 Rate = 128000
+# Use one that was used in SoundBoardCalibration.py
+SoundBoard = 'USBPre2_oAux-iAux'
 
 ## Fill all durations in SECONDS! If
 
@@ -43,38 +45,37 @@ TTLAmpF = 0
 MicSens_dB = -47.46
 
 # Path to file saved after Python3/SoundBoardControl/SoundBoardCalibration.py
-SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test' + \
-              '20160418160952-SBAmpFs-USBPre2_oAux-iAux.shlv'
+SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/20160418173048-SBAmpFs.hdf5'
 #==========#==========#==========#==========#
 
 import array
 import ControlSoundBoard
 import datetime
+import h5py
 import math
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas
 import pyaudio
-import shelve
 import time
 from scipy import signal
+
+with h5py.File(SBAmpFsFile) as h5:
+    SBOutAmpF = h5[SoundBoard].attrs['SBOutAmpF']
+    SBInAmpF = h5[SoundBoard].attrs['SBInAmpF']
 
 def FRange(Start, End, Step):
     Range = [round(x/(1/Step), 5) 
              for x in range(round(Start/Step), round(End/Step), -1)]
     return(Range)
 
-SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
-            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
-            FRange(0.001, 0, 0.00002) + [0]
+#SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
+#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
+#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
+#            FRange(0.001, 0, 0.00002) + [0]
 
-#SoundAmpF = [1, 0.5, 0.25, 0]
-
-with shelve.open(SBAmpFsFile) as Shelve:
-    SBOutAmpF = Shelve['SBOutAmpF']
-    SBInAmpF = Shelve['SBInAmpF']
+SoundAmpF = [1, 0.5, 0.25, 0]
 
 MicSens_VPa = 10**(MicSens_dB/20)
 
@@ -82,6 +83,7 @@ Date = datetime.datetime.now()
 Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
 
 ## Prepare dict w/ experimental setup
+FileName = Folder + '/' + Folder + '.hdf5'
 DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur', 
                                                 'SoundPulseNo', 'SoundAmpF', 
                                                 'NoiseFrequency', 'TTLAmpF', 
@@ -123,7 +125,7 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 ## Run!
 fTime = (len(SoundAmpF)*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
-print('Full test will take', str(int(fTime)), 'min to run.')
+print('Full test will take', str(round(fTime, 2)), 'min to run.')
 print('Current time: ', datetime.datetime.now().strftime("%H:%M:%S"))
 input('Press enter to start sound measurement.')
 print('Cover your ears!!')
@@ -153,42 +155,41 @@ print('Done playing/recording. Saving data...')
 
 ## Save!!!
 os.makedirs(Folder)
-with shelve.open(Folder + '/' + Folder + '.shlv') as Shelve:
-    Shelve['SoundRec'] = SoundRec
-    Shelve['DataInfo'] = DataInfo
-
+with h5py.File(FileName) as h5:
+    h5.create_group('SoundRec')
+    for Freq in range(len(SoundRec)):
+        Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+        h5['SoundRec'].create_group(Key)
+        for AmpF in range(len(SoundRec[Freq])):
+            h5['SoundRec'][Key].create_dataset(str(SoundAmpF[AmpF]), 
+                                                data=SoundRec[Freq][AmpF])
+del(Sound, SoundRec, Stimulation, q, Reading)
 print('Data saved.')
 
-## Analysis
 
-# If needed:
-#
-#
-#import array
-#import math
-#import matplotlib.pyplot as plt
-#import numpy as np
-#import pandas
-#import shelve
-#from scipy import signal
-#Folder = '20160315153450-SoundMeasurement'
-#with shelve.open(Folder + '/' + Folder + '.shlv') as Shelve:
-#    SoundRec = Shelve['SoundRec']
-#    DataInfo = Shelve['DataInfo']
-#MicSens_dB = -47.46
-#MicSens_VPa = 10**(MicSens_dB/20)
-#SBOutAmpF = 1.7
-#SBInAmpF = 0.4852
+## Analysis
+with h5py.File(FileName) as h5:
+    SoundRec = [0]*len(DataInfo['NoiseFrequency'])
+    
+    for Freq in range(len(SoundRec)):
+        SoundRec[Freq] = [0]*len(DataInfo['SoundAmpF'])
+        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
+              str(DataInfo['NoiseFrequency'][Freq][1])
+        
+        for AmpF in range(len(SoundRec[Freq])):
+            aKey = str(DataInfo['SoundAmpF'][AmpF])
+            SoundRec[Freq][AmpF] = list(h5['SoundRec'][Key][aKey])
+
 
 print('Calculating LSD, RMS and dBSLP...')
-RecordingData = [0]*len(SoundRec)
-Intensity = [0]*len(SoundRec)
+RecordingData = [0]*len(DataInfo['NoiseFrequency'])
+Intensity = [0]*len(DataInfo['NoiseFrequency'])
 
-for Freq in range(len(SoundRec)):   
-    RecordingData[Freq] = [0]*len(SoundRec[Freq])
-    Intensity[Freq] = [0]*len(SoundRec[Freq])
+for Freq in range(len(DataInfo['NoiseFrequency'])):   
+    RecordingData[Freq] = [0]*len(DataInfo['SoundAmpF'])
+    Intensity[Freq] = [0]*len(DataInfo['SoundAmpF'])
     
-    for AmpF in range(len(SoundRec[Freq])):
+    for AmpF in range(len(DataInfo['SoundAmpF'])):
         Intensity[Freq][AmpF] = {}
         
         print('Saving data for ', DataInfo['NoiseFrequency'][Freq], 
@@ -242,10 +243,18 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
                                 
 ## Save analyzed data
 print('Saving analyzed data...')
+os.makedirs(Folder)
+with h5py.File(FileName) as h5:
+    h5.create_group('SoundIntensity')
+    for Freq in range(len(DataInfo['NoiseFrequency'])):
+        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
+              str(DataInfo['NoiseFrequency'][Freq][1])
+        for AmpF in range(len(DataInfo['SoundAmpF'])):
+            h5['SoundIntensity'].create_dataset(str(DataInfo['SoundAmpF'][AmpF]), 
+                                                data=Intensity[Freq][AmpF]['dB'])
+    
 with shelve.open(Folder + '/SoundIntensity.shlv') as Shelve:
     Shelve['SoundIntensity'] = SoundIntensity
-    Shelve['SBOutAmpF'] = SBOutAmpF
-    Shelve['SBInAmpF'] = SBInAmpF
     Shelve['DataInfo'] = DataInfo
 
 TexTable = pandas.DataFrame([[DataInfo['SoundAmpF'][AmpF]] + 

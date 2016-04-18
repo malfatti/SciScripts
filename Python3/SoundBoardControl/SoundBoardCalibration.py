@@ -35,11 +35,11 @@ so you know that no kind of frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 128000
-SoundBoard = 'USBPre2_oAux-iIntel'
+SoundBoard = 'USBPre2_oAux-iAux'
 
 import ControlSoundBoard
 import datetime
-import shelve
+import h5py
 
 #%% Output
 
@@ -62,7 +62,12 @@ print('SBInAmpF = ', str(SBInAmpF))
 
 #%% Save
 Date = datetime.datetime.now()
-with shelve.open(Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs-' + SoundBoard + 
-                 '.shlv') as Shelve:
-    Shelve['SBOutAmpF'] = SBOutAmpF
-    Shelve['SBInAmpF'] = SBInAmpF
+FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
+with h5py.File(FileName) as h5:
+    h5.create_group(SoundBoard)
+    h5[SoundBoard].attrs['SBOutAmpF'] = SBOutAmpF
+    h5[SoundBoard].attrs['SBInAmpF'] = SBInAmpF
+
+with h5py.File(FileName) as h5:
+    a = h5[SoundBoard].attrs['SBOutAmpF']
+    b = h5[SoundBoard].attrs['SBInAmpF']

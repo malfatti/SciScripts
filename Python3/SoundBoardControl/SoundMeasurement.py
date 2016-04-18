@@ -44,7 +44,7 @@ MicSens_dB = -47.46
 
 # Path to file saved after Python3/SoundBoardControl/SoundBoardCalibration.py
 SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test' + \
-              '20160418110754-SBAmpFs-USBPre2Out_IntelIn.shlv'
+              '20160418160952-SBAmpFs-USBPre2_oAux-iAux.shlv'
 #==========#==========#==========#==========#
 
 import array
@@ -65,12 +65,12 @@ def FRange(Start, End, Step):
              for x in range(round(Start/Step), round(End/Step), -1)]
     return(Range)
 
-#SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
-#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
-#            FRange(0.001, 0, 0.00002) + [0]
+SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
+            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
+            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
+            FRange(0.001, 0, 0.00002) + [0]
 
-SoundAmpF = [1, 0.5, 0.25, 0]
+#SoundAmpF = [1, 0.5, 0.25, 0]
 
 with shelve.open(SBAmpFsFile) as Shelve:
     SBOutAmpF = Shelve['SBOutAmpF']
@@ -122,6 +122,9 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 
 ## Run!
+fTime = (len(SoundAmpF)*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
+print('Full test will take', str(int(fTime)), 'min to run.')
+print('Current time: ', datetime.datetime.now().strftime("%H:%M:%S"))
 input('Press enter to start sound measurement.')
 print('Cover your ears!!')
 print('5...')

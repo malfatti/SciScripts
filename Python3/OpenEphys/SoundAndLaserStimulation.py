@@ -118,20 +118,20 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'SoundIntensity', 'FileName'])
 
 
-with h5py.File(FileName) as h5:
-    h5.create_group('info')
-    for Key, Value in DataInfo.items():
-        if isinstance(Value, dict):
-            h5['info'].create_group(Key)
-            for aKey, aValue in Value.items():
-                if isinstance(aValue, dict):
-                    h5['info'][Key].create_group(aKey)
-                    for bKey, bValue in aValue.items():
-                        h5['info'][Key][aKey].attrs[bKey] = bValue
-                else:
-                    h5['info'][Key].attrs[aKey] = aValue
-        else:
-            h5['info'].attrs[Key] = Value
+#with h5py.File(FileName) as h5:
+#    h5.create_group('info')
+#    for Key, Value in DataInfo.items():
+#        if isinstance(Value, dict):
+#            h5['info'].create_group(Key)
+#            for aKey, aValue in Value.items():
+#                if isinstance(aValue, dict):
+#                    h5['info'][Key].create_group(aKey)
+#                    for bKey, bValue in aValue.items():
+#                        h5['info'][Key][aKey].attrs[bKey] = bValue
+#                else:
+#                    h5['info'][Key].attrs[aKey] = aValue
+#        else:
+#            h5['info'].attrs[Key] = Value
 
 
 p = pyaudio.PyAudio()
@@ -177,8 +177,8 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 #Date = datetime.datetime.now()
 
 Hz = input('Choose Freq index: ')
-DVCoord = input('Choose DVCoord (in µm): '); 
-#DVCoord = 'Out'
+#DVCoord = input('Choose DVCoord (in µm): '); 
+DVCoord = 'Out'
 Hz = int(Hz)
 
 print('Running...')

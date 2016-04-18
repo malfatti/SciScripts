@@ -35,7 +35,7 @@ so you know that no kind of frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 128000
-SoundBoard = 'USBPre2Out_IntelIn'
+SoundBoard = 'USBPre2_oAux-iIntel'
 
 import ControlSoundBoard
 import datetime
@@ -53,7 +53,6 @@ Data = [[] for _ in range(Repetitions)]
 SBInAmpF = [[] for _ in range(Repetitions)]
 for aa in range(Repetitions):
     Data[aa] = ControlSoundBoard.SoundCalIn(Rate, SBOutAmpF)
-    Data[aa] = [_/SBOutAmpF for _ in Data[aa]]
     SBInAmpF[aa] = (max(Data[aa])+(min(Data[aa])*-1))/2
     print(SBInAmpF[aa])
 
@@ -63,7 +62,7 @@ print('SBInAmpF = ', str(SBInAmpF))
 
 #%% Save
 Date = datetime.datetime.now()
-with shelve.open(Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs' + SoundBoard + 
+with shelve.open(Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs-' + SoundBoard + 
                  '.shlv') as Shelve:
     Shelve['SBOutAmpF'] = SBOutAmpF
     Shelve['SBInAmpF'] = SBInAmpF

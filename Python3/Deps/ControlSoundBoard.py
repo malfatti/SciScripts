@@ -551,7 +551,7 @@ def SoundCalIn(Rate, SBOutAmpF):
     Freq = 10000; Time = 0.1
     
     print('Generating laser pulse...')
-    Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) for _ in range(round(Rate*Time))]
+    Pulse = [SBOutAmpF*(math.sin(2*math.pi*Freq*(_/Rate))) for _ in range(round(Rate*Time))]
     Pulse[-1] = 0
     
     print('Interleaving channels...')

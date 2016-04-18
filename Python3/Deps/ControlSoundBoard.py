@@ -547,7 +547,7 @@ def SoundCalOut(Rate):
 
 
 def SoundCalIn(Rate, SBOutAmpF):
-    """ Generate 3s of 100Hz sine wave (1V to -1V) and read 1s of it. """
+    """ Generate 3s of 10KHz sine wave (1V to -1V) and read 1s of it. """
     Freq = 10000; Time = 0.1
     
     print('Generating laser pulse...')

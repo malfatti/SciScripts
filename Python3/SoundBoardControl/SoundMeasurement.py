@@ -43,7 +43,8 @@ TTLAmpF = 0
 MicSens_dB = -47.46
 
 # Path to file saved after Python3/SoundBoardControl/SoundBoardCalibration.py
-SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/20160401184709-SBAmpFs'
+SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test' + \
+              '20160418110754-SBAmpFs-USBPre2Out_IntelIn.shlv'
 #==========#==========#==========#==========#
 
 import array
@@ -64,12 +65,12 @@ def FRange(Start, End, Step):
              for x in range(round(Start/Step), round(End/Step), -1)]
     return(Range)
 
-SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
-            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
-            FRange(0.001, 0, 0.00002) + [0]
+#SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
+#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
+#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
+#            FRange(0.001, 0, 0.00002) + [0]
 
-#SoundAmpF = FRange(0.01, 0.001, 0.0001) + FRange(0.001, 0, 0.00002) + [0]
+SoundAmpF = [1, 0.5, 0.25, 0]
 
 with shelve.open(SBAmpFsFile) as Shelve:
     SBOutAmpF = Shelve['SBOutAmpF']
@@ -149,7 +150,7 @@ print('Done playing/recording. Saving data...')
 
 ## Save!!!
 os.makedirs(Folder)
-with shelve.open(Folder + '/' + Folder) as Shelve:
+with shelve.open(Folder + '/' + Folder + '.shlv') as Shelve:
     Shelve['SoundRec'] = SoundRec
     Shelve['DataInfo'] = DataInfo
 
@@ -168,7 +169,7 @@ print('Data saved.')
 #import shelve
 #from scipy import signal
 #Folder = '20160315153450-SoundMeasurement'
-#with shelve.open(Folder + '/' + Folder) as Shelve:
+#with shelve.open(Folder + '/' + Folder + '.shlv') as Shelve:
 #    SoundRec = Shelve['SoundRec']
 #    DataInfo = Shelve['DataInfo']
 #MicSens_dB = -47.46
@@ -238,7 +239,7 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
                                 
 ## Save analyzed data
 print('Saving analyzed data...')
-with shelve.open(Folder + '/SoundIntensity') as Shelve:
+with shelve.open(Folder + '/SoundIntensity.shlv') as Shelve:
     Shelve['SoundIntensity'] = SoundIntensity
     Shelve['SBOutAmpF'] = SBOutAmpF
     Shelve['SBInAmpF'] = SBInAmpF

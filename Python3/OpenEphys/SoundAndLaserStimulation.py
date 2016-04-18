@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn09'
+AnimalName = 'TestAnimal'
 Rate = 128000
 BaudRate = 38400
 
@@ -118,20 +118,20 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'SoundIntensity', 'FileName'])
 
 
-#with h5py.File(FileName) as h5:
-#    h5.create_group('info')
-#    for Key, Value in DataInfo.items():
-#        if isinstance(Value, dict):
-#            h5['info'].create_group(Key)
-#            for aKey, aValue in Value.items():
-#                if isinstance(aValue, dict):
-#                    h5['info'][Key].create_group(aKey)
-#                    for bKey, bValue in aValue.items():
-#                        h5['info'][Key][aKey].attrs[bKey] = bValue
-#                else:
-#                    h5['info'][Key].attrs[aKey] = aValue
-#        else:
-#            h5['info'].attrs[Key] = Value
+with h5py.File(FileName) as h5:
+    h5.create_group('info')
+    for Key, Value in DataInfo.items():
+        if isinstance(Value, dict):
+            h5['info'].create_group(Key)
+            for aKey, aValue in Value.items():
+                if isinstance(aValue, dict):
+                    h5['info'][Key].create_group(aKey)
+                    for bKey, bValue in aValue.items():
+                        h5['info'][Key][aKey].attrs[bKey] = bValue
+                else:
+                    h5['info'][Key].attrs[aKey] = aValue
+        else:
+            h5['info'].attrs[Key] = Value
 
 
 p = pyaudio.PyAudio()
@@ -174,8 +174,6 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 
 #%% Run sound 135-160
-#Date = datetime.datetime.now()
-
 Hz = input('Choose Freq index: ')
 #DVCoord = input('Choose DVCoord (in µm): '); 
 DVCoord = 'Out'
@@ -197,6 +195,7 @@ print('Done. Saving info...')
 
 with h5py.File(FileName) as h5:
     h5.create_group(str(len(list(h5)) - 1))
+    h5[list(h5.keys())[-2]].attrs['StimType'] = ['Sound']
     h5[list(h5.keys())[-2]].attrs['DVCoord'] = DVCoord
     h5[list(h5.keys())[-2]].attrs['Hz'] = Hz
 
@@ -204,9 +203,8 @@ print('Saved.')
 print('Played Freq ' + str(Hz) + ' at ' + DVCoord + 'µm DV')
 
 #%% Run laser 45 85
-Date = datetime.datetime.now()
-
-DVCoord = '4000'
+#DVCoord = input('Choose DVCoord (in µm): '); 
+DVCoord = 'Out'
 
 print('Running...')
 Arduino.write(b'P')
@@ -218,30 +216,26 @@ for OneBlock in range(LaserStimBlockNo):
 Arduino.write(b'P')
 
 print('Done. Saving info...')
-Hz = 1000/round((LaserPulseDur+LaserPostPauseDur)*1000)
-ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-LaserStim-' \
-              + DVCoord + '-' + str(round(LaserPulseDur*1000)) + 'ms_' \
-              + str(Hz).replace(".", "Point") + 'Hz'
+lHz = 1000/round((LaserPulseDur+LaserPostPauseDur)*1000)
+with h5py.File(FileName) as h5:
+    h5.create_group(str(len(list(h5)) - 1))
+    h5[list(h5.keys())[-2]].attrs['StimType'] = ['Laser']
+    h5[list(h5.keys())[-2]].attrs['DVCoord'] = DVCoord
+    h5[list(h5.keys())[-2]].attrs['lHz'] = lHz
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'AmpF', 'SoundAmp', 
-                                               'NoiseFreq', 'DVCoord', 
-                                               'ExpFileName'])
-
-with shelve.open(ExpFileName) as Shelve:
-    Shelve['ExpInfo'] = ExpInfo
-del(Date, DVCoord, Hz, ExpFileName, ExpInfo, Shelve)
 print('Saved.')
+print('Ran laser pulses at ' + str(lHz) + ' at ' + DVCoord + 'µm DV')
 
 
 #%% Run sound and laser >200
-Date = datetime.datetime.now()
-
 Hz = input('Choose Freq index: ')
-DVCoord = input('Choose DVCoord (in µm): '); 
+#DVCoord = input('Choose DVCoord (in µm): '); 
+DVCoord = 'Out'
 Hz = int(Hz)
 
 print('Running...')
-for AmpF in range(len(SoundAmpF)):
+Key = str(NoiseFrequency[Hz][0]) + '-' + str(NoiseFrequency[Hz][1])
+for AmpF in range(len(SoundAmpF[Key])):
     Arduino.write(b'P')
     for OnePulse in range(SoundPulseNo):
         Stimulation.write(SoundAndLaser[Hz][AmpF])
@@ -250,14 +244,14 @@ for AmpF in range(len(SoundAmpF)):
     Stimulation.write(SoundAndLaserPauseBetweenStimBlocks)
  
 print('Done. Saving info...')
-ExpFileName = Date.strftime("%Y%m%d%H%M%S") + '-' + AnimalName + '-SoundStim-' \
-              + DVCoord + '-' + str(NoiseFrequency[Hz][0]) + '_' \
-              + str(NoiseFrequency[Hz][1])
+lHz = 1000/round((LaserPulseDur+LaserPostPauseDur)*1000)
+with h5py.File(FileName) as h5:
+    h5.create_group(str(len(list(h5)) - 1))
+    h5[list(h5.keys())[-2]].attrs['StimType'] = ['Sound', 'Laser']
+    h5[list(h5.keys())[-2]].attrs['DVCoord'] = DVCoord
+    h5[list(h5.keys())[-2]].attrs['Hz'] = Hz
+    h5[list(h5.keys())[-2]].attrs['lHz'] = lHz
 
-ExpInfo = dict((Name, eval(Name)) for Name in ['Freq', 'ExpFileName', 
-                                               'DVCoord'])
-
-with shelve.open(ExpFileName) as Shelve: Shelve['ExpInfo'] = ExpInfo
-del(Date, ExpFileName, ExpInfo, Shelve)
 print('Saved.')
 print('Played Freq ' + str(Hz) + ' at ' + DVCoord + 'µm DV')
+print('Ran laser pulses at ' + str(lHz) + ' at ' + DVCoord + 'µm DV')

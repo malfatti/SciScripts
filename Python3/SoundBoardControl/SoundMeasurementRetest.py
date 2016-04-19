@@ -26,7 +26,8 @@ equipment.
 Rate = 128000
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160324144308-SoundMeasurement/SoundIntensity'
+                  '20160419093139-SoundMeasurement/' + \
+                  '20160419093139-SoundMeasurement.hdf5'
 
 ## Fill all durations in SECONDS! If
 
@@ -41,23 +42,20 @@ TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
 MicSens_dB = -47.46
 
-Frequency = '8000-10000'
+Frequency = '12000-14000'
 Intensities = [80, 60, 40, 0]
 
 
 import array
 import ControlSoundBoard
+import LoadHdf5Files
 import math
 import numpy as np
 import pyaudio
-import shelve
 from scipy import signal
 
-
-with shelve.open(CalibrationFile) as Shelve:
-    SoundIntensity = Shelve['SoundIntensity']
-    SBOutAmpF = Shelve['SBOutAmpF']
-    SBInAmpF = Shelve['SBInAmpF']
+SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 'SoundIntensity')
+DataInfo = LoadHdf5Files.SoundMeasurement(CalibrationFile, 'DataInfo')
 
 NoiseFrequency = [[int(Val) for Val in Frequency.split('-')]]
 SoundAmpF = [float(min(SoundIntensity[Frequency].keys(), 
@@ -67,18 +65,11 @@ SoundAmpF = [float(min(SoundIntensity[Frequency].keys(),
 MicSens_VPa = 10**(MicSens_dB/20)
 
 
-DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur', 
-                                                'SoundPulseNo', 'SoundAmpF', 
-                                                'NoiseFrequency', 'TTLAmpF', 
-                                                'MicSens_dB', 'MicSens_VPa',
-                                                'SBOutAmpF', 'SBInAmpF',
-                                                'Folder'])
-
 ## Prepare sound objects
 Sound, SoundRec, Stimulation = ControlSoundBoard.SoundMeasurementOut(
                                    Rate, SoundPulseDur, SoundPulseNo, 
                                    SoundAmpF, NoiseFrequency, TTLAmpF, 
-                                   SBOutAmpF
+                                   DataInfo['SBOutAmpF']
                                )
 
 # Define input objects
@@ -127,29 +118,27 @@ for Freq in range(len(SoundRec)):
     for AmpF in range(len(SoundRec[Freq])):
         Intensity[Freq][AmpF] = {}
         
-        print('Saving data for ', DataInfo['NoiseFrequency'][Freq], 
-              ' at ', DataInfo['SoundAmpF'][AmpF])
+        print('Saving data for ', Frequency, ' at ', SoundAmpF[AmpF])
         
         RecordingData[Freq][AmpF] = array.array('f', 
                                                 b''.join(SoundRec[Freq][AmpF]))
         
-        SliceStart = round(DataInfo['Rate']*0.25)-1
-        SliceEnd = SliceStart + round(DataInfo['Rate']*1)
+        SliceStart = int(Rate*0.25)-1
+        SliceEnd = SliceStart + int(Rate*1)
         RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
                                                         SliceStart:SliceEnd
                                                         ]
         
-        RecordingData[Freq][AmpF] = [_/SBInAmpF
+        RecordingData[Freq][AmpF] = [_/DataInfo['SBInAmpF']
                                      for _ in RecordingData[Freq][AmpF]]
         
         Window = signal.hanning(len(RecordingData[Freq][AmpF])//
-                                    (DataInfo['Rate']/1000))
-        F, PxxSp = signal.welch(RecordingData[Freq][AmpF], DataInfo['Rate'], 
+                                    (Rate/1000))
+        F, PxxSp = signal.welch(RecordingData[Freq][AmpF], Rate, 
                                 Window, nperseg=len(Window), noverlap=0, 
                                 scaling='density')
         
-        FreqBand = [DataInfo['NoiseFrequency'][Freq][0], 
-                    DataInfo['NoiseFrequency'][Freq][1]]
+        FreqBand = [NoiseFrequency[Freq][0], NoiseFrequency[Freq][1]]
         
         Start = np.where(F > FreqBand[0])[0][0]-1
         End = np.where(F > FreqBand[1])[0][0]-1

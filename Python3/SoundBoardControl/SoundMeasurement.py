@@ -62,8 +62,8 @@ import time
 from scipy import signal
 
 with h5py.File(SBAmpFsFile) as h5:
-    SBOutAmpF = h5[SoundBoard].attrs['SBOutAmpF']
-    SBInAmpF = h5[SoundBoard].attrs['SBInAmpF']
+    SBOutAmpF = h5[SoundBoard]['SBOutAmpF'][0]
+    SBInAmpF = h5[SoundBoard]['SBInAmpF'][0]
 
 def FRange(Start, End, Step):
     Range = [round(x/(1/Step), 5) 
@@ -125,9 +125,9 @@ Reading = q.open(format=pyaudio.paFloat32,
 
 ## Run!
 fTime = (len(SoundAmpF)*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
+input('Press enter to start sound measurement.')
 print('Full test will take', str(round(fTime, 2)), 'min to run.')
 print('Current time: ', datetime.datetime.now().strftime("%H:%M:%S"))
-input('Press enter to start sound measurement.')
 print('Cover your ears!!')
 print('5...')
 time.sleep(1)
@@ -343,3 +343,5 @@ Fig.suptitle('$'+FigTitle+'$')
 Fig.tight_layout()
 Fig.subplots_adjust(top=0.93)
 Fig.savefig(Folder+'/'+'LinearSpectrum.svg', format='svg')
+
+print('Done.')

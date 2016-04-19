@@ -70,12 +70,12 @@ def FRange(Start, End, Step):
              for x in range(round(Start/Step), round(End/Step), -1)]
     return(Range)
 
-#SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
-#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
-#            FRange(0.001, 0, 0.00002) + [0]
+SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
+            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
+            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
+            FRange(0.001, 0, 0.00002) + [0]
 
-SoundAmpF = [1, 0.5, 0.25, 0]
+#SoundAmpF = [1, 0.5, 0.25, 0]
 
 MicSens_VPa = 10**(MicSens_dB/20)
 
@@ -163,24 +163,15 @@ with h5py.File(FileName) as h5:
         for AmpF in range(len(SoundRec[Freq])):
             h5['SoundRec'][Key].create_dataset(str(SoundAmpF[AmpF]), 
                                                 data=SoundRec[Freq][AmpF])
-del(Sound, SoundRec, Stimulation, q, Reading)
+    
+    for Key, Value in DataInfo.items():
+        h5['SoundRec'].attrs[Key] = Value
+
+del(Sound, Stimulation, q, Reading)
 print('Data saved.')
 
 
 ## Analysis
-with h5py.File(FileName) as h5:
-    SoundRec = [0]*len(DataInfo['NoiseFrequency'])
-    
-    for Freq in range(len(SoundRec)):
-        SoundRec[Freq] = [0]*len(DataInfo['SoundAmpF'])
-        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
-              str(DataInfo['NoiseFrequency'][Freq][1])
-        
-        for AmpF in range(len(SoundRec[Freq])):
-            aKey = str(DataInfo['SoundAmpF'][AmpF])
-            SoundRec[Freq][AmpF] = list(h5['SoundRec'][Key][aKey])
-
-
 print('Calculating LSD, RMS and dBSLP...')
 RecordingData = [0]*len(DataInfo['NoiseFrequency'])
 Intensity = [0]*len(DataInfo['NoiseFrequency'])
@@ -243,19 +234,17 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
                                 
 ## Save analyzed data
 print('Saving analyzed data...')
-os.makedirs(Folder)
 with h5py.File(FileName) as h5:
     h5.create_group('SoundIntensity')
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
               str(DataInfo['NoiseFrequency'][Freq][1])
+        h5['SoundIntensity'].create_group(Key)
         for AmpF in range(len(DataInfo['SoundAmpF'])):
-            h5['SoundIntensity'].create_dataset(str(DataInfo['SoundAmpF'][AmpF]), 
-                                                data=Intensity[Freq][AmpF]['dB'])
-    
-with shelve.open(Folder + '/SoundIntensity.shlv') as Shelve:
-    Shelve['SoundIntensity'] = SoundIntensity
-    Shelve['DataInfo'] = DataInfo
+            h5['SoundIntensity'][Key].create_dataset(
+                str(DataInfo['SoundAmpF'][AmpF]), 
+                data=[Intensity[Freq][AmpF]['dB']]
+                                                     )
 
 TexTable = pandas.DataFrame([[DataInfo['SoundAmpF'][AmpF]] + 
                              [Intensity[Freq][AmpF]['dB'] 

@@ -29,13 +29,14 @@ ABRTTLCh = 1            # TTL ch for ABR
 FilterLow = 300         # High-pass frequency for bandpass filter
 FilterHigh = 3000       # Low-pass frequency
 FilterOrder = 5         # butter order
+StimType = 'Sound'
 
 #==========#==========#==========#==========#
 
 import glob
 import KwikAnalysis
 
-FileName = glob.glob('*SoundStim.db'); FileName = FileName[0][:-3]
+FileName = glob.glob('*.hdf5'); FileName = FileName[0]
 
 KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
                  FilterLow, FilterHigh, FilterOrder)

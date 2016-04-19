@@ -154,7 +154,7 @@ Reading.stop_stream()
 print('Done playing/recording. Saving data...')
 
 ## Save!!!
-os.makedirs(Folder)
+os.makedirs(Folder, exist_ok=True)
 with h5py.File(FileName) as h5:
     h5.create_group('SoundRec')
     for Freq in range(len(SoundRec)):

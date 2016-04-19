@@ -20,10 +20,11 @@
 import glob
 import h5py
 import Kwik
+import LoadHdf5Files
 import matplotlib.pyplot as plt
+from numbers import Number
 import numpy as np
 import os
-import shelve
 from scipy import signal
 
 def RemoveDateFromFolderName():
@@ -35,21 +36,14 @@ def RemoveDateFromFolderName():
             NewFolderName = NewFolderName.replace("-", "")
             os.rename(FolderName, NewFolderName)
             print(FolderName, ' moved to ', NewFolderName)
-        del(RenameFolders, DirList, FolderName, NewFolderName)
+        del(RenameFolders, DirList, FolderName, NewFolderName)    
 
-def OrganizeShelves():
-    Shelves = glob.glob('*00.db'); Shelves.sort()
-    Folders = glob.glob('KwikFiles/*'); Folders.sort()
-    for _ in range(len(Shelves)):
-        os.rename(Shelves[_], Folders[_]+'/'+Shelves[_])
-        print(Shelves[_], 'moved to ', Folders[_]+'/'+Shelves[_])
-    
-    
 
 def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
-        ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4):
+        ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4, 
+        StimType='Sound'):
     """
-    Analyze ABRs from data recorded with OpenEphys. A '*ABRs-db' file will be 
+    Analyze ABRs from data recorded with OpenEphys. A '*ABRs.hdf5' file will be 
     saved in cwd, containing:
         - ABRs dict, where data will be saved as 
           ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
@@ -65,29 +59,30 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     
     For this function to work:
         - The Kwik folders must be in 'KwikFiles/';
-        - There must be a *SoundStim.db file with a 'DataInfo' dict containing 
-          all experimental settings (see 
-          Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
-        - Each folder must have a *.db file with 'ExpInfo' dict containing the 
-          variables 'Freq', 'DVCoord' and 'ExpFileName' (see 
-          Python3/SoundBoardControl/SoundAndLaserStimulation.py, 5th cell).
+        - There must be a *Exp.hdf5 file containing all experimental settings 
+          (see Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
     """
     
-#    with shelve.open(FileName) as Shelve: DataInfo = Shelve['DataInfo']
+    print('set paths...')
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
+    DirList = glob.glob('KwikFiles/*'); DirList.sort()
+    
+    print('Load DataInfo...')
     DataInfo = {}
-    with h5py.File(FileName) as F: 
-        for Key, Value in F['info'].items():
+    with h5py.File(FileName) as F:
+        for Key, Value in F['DataInfo'].items():
             DataInfo['SoundAmpF'] = {}
-            for aKey, aValue in F['info']['SoundAmpF'].attrs.items():
-                DataInfo['SoundAmpF'][aKey] = aValue
-            
-            DataInfo['SoundIntensity'] = {}
-            for bKey, bValue in F['info']['SoundIntensity'].attrs.items():
-                DataInfo['SoundIntensity'][bKey] = bValue
+            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
+                DataInfo['SoundAmpF'][aKey] = aValue[:]
         
-        for cKey, cValue in F['info'].attrs.items():
-            DataInfo[cKey] = cValue
+        for bKey, bValue in F['DataInfo'].attrs.items():
+            if isinstance(bValue, Number):
+                DataInfo[bKey] = float(bValue)
+            else:
+                DataInfo[bKey] = bValue
         
+        Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
+                if F['ExpInfo'][Exp].attrs['StimType'][0].decode() == StimType]
     
     print('Preallocate memory...')
     ABRs = [[], []]
@@ -100,11 +95,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
     del(Freq)
     
-    print('set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    DirList = glob.glob('KwikFiles/*'); DirList.sort()
-    
-    for RecFolder in DirList:
+    for RecFolder in Exps:
         print('Load files...')
         FilesList = glob.glob(''.join([RecFolder, '/*']))
         Files = {}
@@ -129,14 +120,13 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                     Files['kwik'] = File
                 except OSError:
                     print('File ', File, " is corrupted :'(")
-                
-            elif '.db' in File:
-                with shelve.open(File[:-3]) as Shelve: 
-                    ExpInfo = Shelve['ExpInfo']
         
+        ExpInfo = {}
         with h5py.File(FileName) as F:
-            ExpInfo['DVCoord'] = F[str(DirList.index(RecFolder))].attrs['DVCoord']
-            ExpInfo['Hz'] = F[str(DirList.index(RecFolder))].attrs['Hz']
+            Key = str(DirList.index(RecFolder))
+            ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
+            ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
+        
         print('Check if files are ok...')
         if 'Raw' not in locals():
             print('.kwd file is corrupted. Skipping dataset...')
@@ -230,13 +220,6 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 #            for _ in range(1, len(rABR)):
 #                rData = (rData + rABR[_])/2
 #                lData = (lData + lABR[_])/2
-            
-#            # MACrazy
-#            rData = rABR[-1]; lData = lABR[-1]
-#            for _ in range(len(rABR), 1):
-#                rData = (rData + rABR[_])/2
-#                lData = (lData + lABR[_])/2
-#            
 #            rABR = rData; lABR = lData
             
             # Mean
@@ -251,8 +234,8 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 
 #            rABR = signal.savgol_filter(rABR, 9, 2, mode='nearest')
 #            lABR = signal.savgol_filter(lABR, 9, 2, mode='nearest')
-            rABR = (rABR/10) + DataInfo['Intensities'][Rec]
-            lABR = (lABR/10) + DataInfo['Intensities'][Rec]
+#            rABR = (rABR/10) + DataInfo['Intensities'][Rec]
+#            lABR = (lABR/10) + DataInfo['Intensities'][Rec]
             
             if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
                 ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
@@ -261,17 +244,28 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(rABR)
                 ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(lABR)
     
-    # Extracting number of trials
-#    DataInfo['NoOfTrials'] = []
-#    for Key in ABRs[0][ExpInfo['Freq']][Rec]:
-#        DataInfo['NoOfTrials'].append(len(ABRs[0][ExpInfo['Freq']][Rec][Key]))
-#    
-    FileName = DataInfo['AnimalName'] + '-ABRs'
     print('Saving data to ' + FileName)
-    with shelve.open(FileName) as Shelve:
-        Shelve['ABRs'] = ABRs
-        Shelve['XValues'] = XValues
-        Shelve['DataInfo'] = DataInfo
+    with h5py.File(FileName) as F:
+        F.create_group('ABRs')
+        F['ABRs'].attrs['XValues'] = XValues
+        F['ABRs'].create_group('Right'); F['ABRs'].create_group('Left')
+            
+        for Freq in range(len(ABRs[0])):
+            for AmpF in range(len(ABRs[0][Freq])):
+                for DV in ABRs[0][Freq][AmpF].keys():
+                    Path = str(Freq) + '/' + \
+                           str(AmpF) + '/' + \
+                           DV
+                    
+                    F['ABRs']['Right'].create_group(Path)
+                    F['ABRs']['Left'].create_group(Path)
+                    del(Path)
+                    
+                    for Trial in range(len(ABRs[0][Freq][AmpF][DV])):
+                        F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
+                            ABRs[0][Freq][AmpF][DV][Trial][:]
+                        F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
+                            ABRs[1][Freq][AmpF][DV][Trial][:]
     
     print('Done.')
     return(None)
@@ -279,17 +273,43 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
 
 def PlotABR(FileName):
     """ 
-    This function will plot the data from *ABRs.db. Make sure FileName is a 
+    This function will plot the data from *Stim.hdf5. Make sure FileName is a 
     string with the path to only one file.
     
     Also, LaTeX will render all the text in the plots. For this, make sure you 
     have a working LaTex installation and dvipng package installed.
     """
     print('Plotting...')
-    with shelve.open(FileName) as Shelve:
-        ABRs = Shelve['ABRs']
-        XValues = Shelve['XValues']
-        DataInfo = Shelve['DataInfo']
+    
+    DataInfo = {}
+    with h5py.File(FileName) as F:
+        for Key, Value in F['DataInfo'].items():
+            DataInfo['SoundAmpF'] = {}
+            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
+                DataInfo['SoundAmpF'][aKey] = aValue[:]
+        
+        for bKey, bValue in F['DataInfo'].attrs.items():
+            if isinstance(bValue, Number):
+                DataInfo[bKey] = float(bValue)
+            else:
+                DataInfo[bKey] = bValue
+        
+        ABRs = [[], []]
+        ABRs[0] = [0]*len(F['ABRs'])
+        ABRs[1] = [0]*len(F['ABRs'])
+        for Freq in range(len(F['ABRs']['Right'])):
+            ABRs[0][Freq] = [{} for _ in range(len(F['ABRs']['Right'][str(Freq)]))]
+            ABRs[1][Freq] = [{} for _ in range(len(F['ABRs']['Left'][str(Freq)]))]
+            
+            for AmpF in range(len(F['ABRs']['Right'][str(Freq)])):
+                for DV in F['ABRs']['Right'][str(Freq)][str(AmpF)].keys():
+                    ABRs[0][Freq][AmpF][DV] = [[] for Trial in range(len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV]))]
+                    ABRs[1][Freq][AmpF][DV] = [[] for Trial in range(len(F['ABRs']['Left'][str(Freq)][str(AmpF)][DV]))]
+                    
+                    for Trial in range(len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV])):
+                        ABRs[0][Freq][AmpF][DV][Trial] = F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
+                        ABRs[1][Freq][AmpF][DV][Trial] = F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
+    
     
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 

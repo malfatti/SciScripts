@@ -6,6 +6,52 @@ Created on Tue Apr 19 08:59:41 2016
 """
 
 import h5py
+from numbers import Number
+
+
+def CheckGroup(FileName, Group):
+    with h5py.File(FileName) as F:
+        if Group in F.keys():
+            print(Group + ' already exists.')
+            print('Running this will erase previous analysis. Be careful!')
+            Ans = input('Continue? [y/N] ')
+            if Ans in ['y', 'Y', 'yes', 'Yes', 'YES']:
+                return(True)
+            else:
+                return(False)
+        else:
+            return(True)
+
+
+def ExpDataInfo(FileName, DirList, StimType):
+    DataInfo = {}
+    with h5py.File(FileName) as F:
+        for Key, Value in F['DataInfo'].items():
+            DataInfo['SoundAmpF'] = {}
+            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
+                DataInfo['SoundAmpF'][aKey] = aValue[:]
+        
+        for bKey, bValue in F['DataInfo'].attrs.items():
+            if isinstance(bValue, Number):
+                DataInfo[bKey] = float(bValue)
+            else:
+                DataInfo[bKey] = bValue
+        
+        Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
+                if F['ExpInfo'][Exp].attrs['StimType'][0].decode() == StimType]
+    
+    return(DataInfo, Exps)
+
+
+def ExpExpInfo(FileName, DirList, RecFolder):
+    ExpInfo = {}
+    with h5py.File(FileName) as F:
+        Key = str(DirList.index(RecFolder))
+        ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
+        ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
+    
+    return(ExpInfo)
+
 
 def SoundMeasurement(FileName, Var='SoundIntensity'):
     DataInfo = {}; SoundIntensity = {}

@@ -17,6 +17,7 @@
 
 """
 
+import datetime
 import glob
 import h5py
 import Kwik
@@ -62,27 +63,12 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         - There must be a *Exp.hdf5 file containing all experimental settings 
           (see Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
     """
-    
     print('set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     DirList = glob.glob('KwikFiles/*'); DirList.sort()
     
     print('Load DataInfo...')
-    DataInfo = {}
-    with h5py.File(FileName) as F:
-        for Key, Value in F['DataInfo'].items():
-            DataInfo['SoundAmpF'] = {}
-            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
-                DataInfo['SoundAmpF'][aKey] = aValue[:]
-        
-        for bKey, bValue in F['DataInfo'].attrs.items():
-            if isinstance(bValue, Number):
-                DataInfo[bKey] = float(bValue)
-            else:
-                DataInfo[bKey] = bValue
-        
-        Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
-                if F['ExpInfo'][Exp].attrs['StimType'][0].decode() == StimType]
+    DataInfo, Exps = LoadHdf5Files.ExpDataInfo(FileName, DirList, StimType)
     
     print('Preallocate memory...')
     ABRs = [[], []]
@@ -121,11 +107,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 except OSError:
                     print('File ', File, " is corrupted :'(")
         
-        ExpInfo = {}
-        with h5py.File(FileName) as F:
-            Key = str(DirList.index(RecFolder))
-            ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
-            ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
+        ExpInfo = LoadHdf5Files.ExpExpInfo(FileName, DirList, RecFolder)
         
         print('Check if files are ok...')
         if 'Raw' not in locals():
@@ -245,7 +227,11 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(lABR)
     
     print('Saving data to ' + FileName)
+    GroupName = 'ABRs-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     with h5py.File(FileName) as F:
+        if 'ABRs' in F.keys():
+            F[GroupName] = F['ABRs']; del(F['ABRs'])
+        
         F.create_group('ABRs')
         F['ABRs'].attrs['XValues'] = XValues
         F['ABRs'].create_group('Right'); F['ABRs'].create_group('Left')
@@ -279,8 +265,8 @@ def PlotABR(FileName):
     Also, LaTeX will render all the text in the plots. For this, make sure you 
     have a working LaTex installation and dvipng package installed.
     """
-    print('Plotting...')
     
+    print('Loading data...')
     DataInfo = {}
     with h5py.File(FileName) as F:
         for Key, Value in F['DataInfo'].items():
@@ -295,22 +281,28 @@ def PlotABR(FileName):
                 DataInfo[bKey] = bValue
         
         ABRs = [[], []]
-        ABRs[0] = [0]*len(F['ABRs'])
-        ABRs[1] = [0]*len(F['ABRs'])
+        ABRs[0] = [0]*len(F['ABRs']['Right'])
+        ABRs[1] = [0]*len(F['ABRs']['Left'])
         for Freq in range(len(F['ABRs']['Right'])):
-            ABRs[0][Freq] = [{} for _ in range(len(F['ABRs']['Right'][str(Freq)]))]
-            ABRs[1][Freq] = [{} for _ in range(len(F['ABRs']['Left'][str(Freq)]))]
+            ABRs[0][Freq] = [0]*len(F['ABRs']['Right'][str(Freq)])
+            ABRs[1][Freq] = [0]*len(F['ABRs']['Left'][str(Freq)])
             
             for AmpF in range(len(F['ABRs']['Right'][str(Freq)])):
+                ABRs[0][Freq][AmpF] = {}; ABRs[1][Freq][AmpF] = {}
+                
                 for DV in F['ABRs']['Right'][str(Freq)][str(AmpF)].keys():
-                    ABRs[0][Freq][AmpF][DV] = [[] for Trial in range(len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV]))]
-                    ABRs[1][Freq][AmpF][DV] = [[] for Trial in range(len(F['ABRs']['Left'][str(Freq)][str(AmpF)][DV]))]
+                    ABRs[0][Freq][AmpF][DV] = [0]*len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV])
+                    ABRs[1][Freq][AmpF][DV] = [0]*len(F['ABRs']['Left'][str(Freq)][str(AmpF)][DV])
                     
                     for Trial in range(len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV])):
                         ABRs[0][Freq][AmpF][DV][Trial] = F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
                         ABRs[1][Freq][AmpF][DV][Trial] = F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
+        
+        XValues = F['ABRs'].attrs['XValues'][:]
     
+    SoundIntensity = LoadHdf5Files.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
     
+    print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
               for _ in range(len(ABRs[0][0]))]
@@ -327,29 +319,28 @@ def PlotABR(FileName):
                             + str(DataInfo['NoiseFrequency'][Freq][1])
                     
                     for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
-                        FigTitle = Key + ' DV, trial ' + str(Trial+1)
-                        AxTitle = str(DataInfo['NoiseFrequency'][Freq])
-                        YLabel = 'Intensity tested [dB]'
-                        XLabel = 'time [ms]'
+                        FigTitle = Key + '\ DV,\ trial\ ' + str(Trial+1)
+                        AxTitle = KeyHz
+                        YLabel = 'Voltage\ [mV]'
+                        XLabel = 'Time\ [ms]'
                         if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
                             DataInfo['SoundAmpF'][KeyHz][
                                 DataInfo['SoundAmpF'][KeyHz].index(0.0)
                                                         ] = 0
                         
                         AmpStr = str(DataInfo['SoundAmpF'][KeyHz][AmpF])
-                        LineLabel = str(round(
-                                    DataInfo['SoundIntensity'][KeyHz][AmpStr]
-                                      )) + ' dB'
+                        LineLabel = str(round(SoundIntensity[KeyHz][AmpStr]
+                                              )) + ' dB'
                         
                         if Ear == 0:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-#                                color=Colors[AmpF][Ear], 
+                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         else:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-#                                color=Colors[AmpF][Ear], 
+                                color=Colors[AmpF][Ear], 
                                 label='$' + LineLabel + '$')
                         
 #                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)

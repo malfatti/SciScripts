@@ -23,8 +23,8 @@ a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 ## Set experiment details
 
 ABRCh = [1, 2]         # [RightChannel, LeftChannel], if order matters
-ABRTimeBeforeTTL = 20    # in ms
-ABRTimeAfterTTL = 20    # in ms
+ABRTimeBeforeTTL = 3    # in ms
+ABRTimeAfterTTL = 9    # in ms
 ABRTTLCh = 1            # TTL ch for ABR
 FilterLow = 300         # High-pass frequency for bandpass filter
 FilterHigh = 3000       # Low-pass frequency
@@ -39,9 +39,8 @@ import KwikAnalysis
 FileName = glob.glob('*.hdf5'); FileName = FileName[0]
 
 KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
-                 FilterLow, FilterHigh, FilterOrder)
+                 FilterLow, FilterHigh, FilterOrder, StimType)
 
-FileName = glob.glob('*ABRs.db'); FileName = FileName[0][:-3]
 KwikAnalysis.PlotABR(FileName)
 
 

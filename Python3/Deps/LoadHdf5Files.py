@@ -70,6 +70,8 @@ def SoundMeasurement(FileName, Var='SoundIntensity'):
                     
                     for AmpF in range(len(SoundRec[Freq])):
                         aKey = str(DataInfo['SoundAmpF'][AmpF])
+                        if aKey == '0.0': aKey = '0'
+                        
                         SoundRec[Freq][AmpF] = list(h5['SoundRec'][Key][aKey])
                 
                 return(SoundRec)

@@ -172,6 +172,21 @@ print('Data saved.')
 
 
 ## Analysis
+# If needed:
+#import array
+#import datetime
+#import glob
+#import h5py
+#import LoadHdf5Files
+#import math
+#import matplotlib.pyplot as plt
+#import numpy as np
+#import pandas
+#from scipy import signal
+#FileName = glob.glob('*.hdf5'); FileName = FileName[0]
+#DataInfo = LoadHdf5Files.SoundMeasurement(FileName, 'DataInfo')
+#SoundRec = LoadHdf5Files.SoundMeasurement(FileName, 'SoundRec')
+
 print('Calculating LSD, RMS and dBSLP...')
 RecordingData = [0]*len(DataInfo['NoiseFrequency'])
 Intensity = [0]*len(DataInfo['NoiseFrequency'])
@@ -189,13 +204,13 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
         RecordingData[Freq][AmpF] = array.array('f', 
                                                 b''.join(SoundRec[Freq][AmpF]))
         
-        SliceStart = round(DataInfo['Rate']*0.25)-1
-        SliceEnd = SliceStart + round(DataInfo['Rate']*1)
+        SliceStart = int(DataInfo['Rate']*0.25)-1
+        SliceEnd = SliceStart + int(DataInfo['Rate']*1)
         RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
                                                         SliceStart:SliceEnd
                                                         ]
         
-        RecordingData[Freq][AmpF] = [_/SBInAmpF
+        RecordingData[Freq][AmpF] = [_/DataInfo['SBInAmpF']
                                      for _ in RecordingData[Freq][AmpF]]
         
         Window = signal.hanning(len(RecordingData[Freq][AmpF])//
@@ -211,10 +226,11 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
         End = np.where(F > FreqBand[1])[0][0]-1
         BinSize = F[1] - F[0]
         RMS = sum(PxxSp[Start:End] * BinSize)**0.5
+#        RMS = sum(PxxSp * BinSize)**0.5
         
         Intensity[Freq][AmpF]['LSD'] = [F, PxxSp]
         Intensity[Freq][AmpF]['RMS'] = RMS
-        Intensity[Freq][AmpF]['dB'] = 20*(math.log(RMS/MicSens_VPa, 10)) + 94
+        Intensity[Freq][AmpF]['dB'] = 20*(math.log(RMS/DataInfo['MicSens_VPa'], 10)) + 94
         
         del(F, PxxSp, BinSize, RMS)
 
@@ -234,7 +250,11 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
                                 
 ## Save analyzed data
 print('Saving analyzed data...')
+GroupName = 'SoundIntensity-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 with h5py.File(FileName) as h5:
+    if 'SoundIntensity' in h5.keys():
+            h5[GroupName] = h5['SoundIntensity']; del(h5['SoundIntensity'])
+    
     h5.create_group('SoundIntensity')
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
@@ -254,7 +274,8 @@ TexTable = pandas.DataFrame([[DataInfo['SoundAmpF'][AmpF]] +
                                              len(DataInfo['SoundAmpF']))]
                              )
 
-File = open(Folder+'/'+'IntensityTable.tex', 'w')
+#File = open(Folder+'/'+'IntensityTable.tex', 'w')
+File = open('IntensityTable.tex', 'w')
 File.write(r"""
 %% Configs =====
 \documentclass[12pt,a4paper]{report}
@@ -277,7 +298,8 @@ File.write(r"""
 File.close()
 del(File)
 
-File = open(Folder+'/'+'IntensityTable-Contents.tex', 'w')
+#File = open(Folder+'/'+'IntensityTable-Contents.tex', 'w')
+File = open('IntensityTable-Contents.tex', 'w')
 File.write(TexTable.to_latex(longtable=True))
 File.close()
 del(File)
@@ -285,15 +307,17 @@ del(File)
 Colors = ['r', 'g', 'b', 'm', 'k', 'c', 'y']
 
 for Freq in range(len(DataInfo['NoiseFrequency'])):
+    Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
+          str(DataInfo['NoiseFrequency'][Freq][1])
     FigTitle = 'Intensity\ curve\ per\ Freq\ per\ AmpF'
-    YLabel = 'Intensity\ [dBSPL]'
+    YLabel = 'Intensity\ [\si{\dB SPL}]'
     XLabel = 'Sound\ amplification\ factor'
-    LineLabel = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
+    LineLabel = '$'+ Key + '\ \si{\hertz}' +'$'
     
     plt.plot(DataInfo['SoundAmpF'], 
              [Intensity[Freq][_]['dB'] 
               for _ in range(len(DataInfo['SoundAmpF']))], 
-             label='$'+LineLabel +'$', color=Colors[Freq])
+             label=LineLabel, color=Colors[Freq])
 
 plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
 plt.legend(loc='lower right')
@@ -303,8 +327,9 @@ plt.axes().spines['right'].set_visible(False)
 plt.axes().spines['top'].set_visible(False)
 plt.axes().yaxis.set_ticks_position('left')
 plt.axes().xaxis.set_ticks_position('bottom')
-plt.title('$'+FigTitle+'$')
-plt.savefig(Folder+'/'+'SoundMeasurement.svg', format='svg')
+plt.title(FigTitle)
+#plt.savefig(Folder+'/'+'SoundMeasurement.svg', format='svg')
+plt.savefig('SoundMeasurement.svg', format='svg')
 
 
 Fig, Axes = plt.subplots(len(DataInfo['NoiseFrequency']), 
@@ -313,18 +338,18 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
     Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
           str(DataInfo['NoiseFrequency'][Freq][1])
     FigTitle = 'Linear\ spectral\ density'
-    AxTitle = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
-    YLabel = 'LSD\ [V*RMS/\sqrt{Hz}]'
-    XLabel = 'Frequency\ [Hz]'
+    AxTitle = Key + '\ \si{\hertz}'
+    YLabel = 'LSD\ [\si{V *RMS}/\sqrt{\si{\hertz}}]'
+    XLabel = 'Frequency\ [\si{\hertz}]'
     
     for AmpF in range(len(DataInfo['SoundAmpF'])):
-        LineLabel = str(SoundIntensity[Key][
+        LineLabel = '$'+str(SoundIntensity[Key][
                         str(DataInfo['SoundAmpF'][AmpF])
-                        ])[:5] + ' dB'
+                        ])[:5] + ' \si{\dB}' +'$'
         
         Axes[Freq].semilogy(Intensity[Freq][AmpF]['LSD'][0], 
                      Intensity[Freq][AmpF]['LSD'][1], 
-                     label='$'+LineLabel+'$')
+                     label=LineLabel)
     
     Axes[Freq].set_xlim(left=5000, right=20000)
     Axes[Freq].set_ylabel('$'+YLabel+'$')
@@ -333,15 +358,16 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
     Axes[Freq].spines['top'].set_visible(False)
     Axes[Freq].yaxis.set_ticks_position('left')
     Axes[Freq].xaxis.set_ticks_position('bottom')
-    Axes[Freq].set_title('$'+AxTitle+'$')
+    Axes[Freq].set_title(AxTitle)
 #    if Freq < 2:
 #        Axes[Freq].legend(loc='lower right')
 #    else:
 #        Axes[Freq].legend(loc='lower left')
 
-Fig.suptitle('$'+FigTitle+'$')
+Fig.suptitle(FigTitle)
 Fig.tight_layout()
 Fig.subplots_adjust(top=0.93)
-Fig.savefig(Folder+'/'+'LinearSpectrum.svg', format='svg')
+#Fig.savefig(Folder+'/'+'LinearSpectrum.svg', format='svg')
+Fig.savefig('LinearSpectrum.svg', format='svg')
 
 print('Done.')

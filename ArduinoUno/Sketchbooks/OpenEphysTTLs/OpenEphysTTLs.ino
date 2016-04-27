@@ -25,12 +25,25 @@
   P = pulse on pin 13
 */
 
+// defines for setting and clearing register bits
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
+
 const int inPin = 2;
 const int PinNo = 8;
 const int Pins[PinNo] = {2, 4, 7, 8, 10, 11, 12, 13};
 const int Delay = 40;
 
 void setup() {
+  // set prescale to 16
+  sbi(ADCSRA,ADPS2) ;
+  cbi(ADCSRA,ADPS1) ;
+  cbi(ADCSRA,ADPS0) ;
+  
   Serial.begin(38400);
   analogReference(INTERNAL);
 
@@ -164,23 +177,27 @@ void loop() {
   inPinV = map(inPinV, 0, 1023, 0, 255);
 
   if (inPinV >= 0 && inPinV < 30) {
-    digitalWrite(Pins[0], LOW);
-    digitalWrite(Pins[1], LOW);
+    PORTD = B00000000;
+//    digitalWrite(Pins[0], LOW);
+//    digitalWrite(Pins[1], LOW);
   }
 
-  if (inPinV >= 50 && inPinV < 80) {
-    digitalWrite(Pins[0], LOW);
-    digitalWrite(Pins[1], HIGH);
+  if (inPinV >= 55 && inPinV < 45) {
+    PORTD = B00010000;
+//    digitalWrite(Pins[0], LOW);
+//    digitalWrite(Pins[1], HIGH);
   }
 
-  if (inPinV >= 125 && inPinV < 135) {
-    digitalWrite(Pins[0], HIGH);
-    digitalWrite(Pins[1], LOW);
+  if (inPinV >= 105 && inPinV < 110) {
+    PORTD = B00000100;
+//    digitalWrite(Pins[0], HIGH);
+//    digitalWrite(Pins[1], LOW);
   }
 
-  if (inPinV >= 200) {
-    digitalWrite(Pins[0], HIGH);
-    digitalWrite(Pins[1], HIGH);
+  if (inPinV >= 150) {
+    PORTD = B00010100;
+//    digitalWrite(Pins[0], HIGH);
+//    digitalWrite(Pins[1], HIGH);
   }
 
 }

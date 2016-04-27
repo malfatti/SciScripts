@@ -15,8 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Experiment: stimulation of the brainstem using light and sound, recording with
-a silicon probe (16 channels) + 2 tungsten wires + reference screw.
 """
 #%% ABRs
 

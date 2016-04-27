@@ -21,6 +21,7 @@ board as an analog I/O board.
 """
 
 import array
+import h5py
 import math
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -31,16 +32,17 @@ from scipy import signal
 import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
+SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/20160418173048-SBAmpFs.hdf5'
 
 def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
-             TTLAmpF, CalibrationFile, SoundPrePauseDur=0, SoundPostPauseDur=0, 
-             SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0):
+             TTLAmpF, CalibrationFile, SoundBoard, SoundPrePauseDur=0, 
+             SoundPostPauseDur=0, SoundStimBlockNo=1, 
+             SoundPauseBetweenStimBlocksDur=0):
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
-    
-    with shelve.open(CalibrationFile) as Shelve:
-        SBOutAmpF = Shelve['SBOutAmpF']
+    with h5py.File(SBAmpFsFile) as h5: 
+        SBOutAmpF = h5[SoundBoard]['SBOutAmpF'][0]
 
     print('Generating Sound TTL...')
     SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
@@ -143,13 +145,13 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
 
 
 def GenLaser(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, CalibrationFile, 
-             LaserPrePauseDur=0, LaserPostPauseDur=0, LaserStimBlockNo=1, 
-             LaserPauseBetweenStimBlocksDur=0):
+             SoundBoard, LaserPrePauseDur=0, LaserPostPauseDur=0, 
+             LaserStimBlockNo=1, LaserPauseBetweenStimBlocksDur=0):
     """ Generate square pulses in one channel that works as TTL for laser 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
-    with shelve.open(CalibrationFile) as Shelve:
-        SBOutAmpF = Shelve['SBOutAmpF']
+    with h5py.File(SBAmpFsFile) as h5: 
+        SBOutAmpF = h5[SoundBoard]['SBOutAmpF'][0]
     
     print('Generating laser pulse...')
     LaserPulse = [round(LaserTTLVal/SBOutAmpF, 3)] * round(LaserPulseDur * Rate)
@@ -199,15 +201,15 @@ def GenLaser(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, CalibrationFile,
 
 def GenSoundLaser(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
                   LaserPulseDur, LaserPulseNo, TTLAmpF, CalibrationFile, 
-                  SoundPrePauseDur=0, SoundPostPauseDur=0, SoundStimBlockNo=1, 
-                  SoundPauseBetweenStimBlocksDur=0, LaserPrePauseDur=0, 
-                  LaserPostPauseDur=0, LaserStimBlockNo=1, 
+                  SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, 
+                  SoundStimBlockNo=1, SoundPauseBetweenStimBlocksDur=0, 
+                  LaserPrePauseDur=0, LaserPostPauseDur=0, LaserStimBlockNo=1, 
                   LaserPauseBetweenStimBlocksDur=0):
     """ Generate sound pulses in one channel and TTLs for sound and laser in 
     the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
     
-    with shelve.open(CalibrationFile) as Shelve:
-        SBOutAmpF = Shelve['SBOutAmpF']
+    with h5py.File(SBAmpFsFile) as h5: 
+        SBOutAmpF = h5[SoundBoard]['SBOutAmpF'][0]
     
     print('Generating laser pulse...')
     LaserPulse = [round(LaserTTLVal/SBOutAmpF, 3)] * round(LaserPulseDur * Rate)

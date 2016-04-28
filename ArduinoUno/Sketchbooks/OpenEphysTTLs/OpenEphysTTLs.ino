@@ -33,21 +33,22 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-const int inPin = 2;
+const int inPin = 3;
 const int PinNo = 8;
 const int Pins[PinNo] = {2, 4, 7, 8, 10, 11, 12, 13};
-const int Delay = 40;
+const int Delay = 20;
 
 void setup() {
   // set prescale to 16
-  sbi(ADCSRA,ADPS2) ;
-  cbi(ADCSRA,ADPS1) ;
-  cbi(ADCSRA,ADPS0) ;
-  
+  sbi(ADCSRA, ADPS2) ;
+  cbi(ADCSRA, ADPS1) ;
+  cbi(ADCSRA, ADPS0) ;
+
   Serial.begin(38400);
   analogReference(INTERNAL);
 
   pinMode(inPin, INPUT);
+
   for (int Pin = 0; Pin < PinNo; Pin++) {
     pinMode(Pins[Pin], OUTPUT);
     digitalWrite(Pins[Pin], LOW);
@@ -58,162 +59,161 @@ void setup() {
 }
 
 void loop() {
-  char ch = 0;
-  int inPinV = 0;
+  while (1) {
+    char ch = 0;
+    int inPinV = 0;
 
-  while (ch == 0) {
-    ch = Serial.read();
-    inPinV = analogRead(inPin);
-    if (inPinV > 10) {
-      ch = -1;
-    }
-  }
-
-  if (ch == 'A') {
-    digitalWrite(Pins[0], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[0], LOW);
-  }
-
-  if (ch == 'a') {
-    digitalWrite(Pins[0], HIGH);
-    while (ch != 'z') {
+    while (ch == 0) {
       ch = Serial.read();
+      inPinV = analogRead(inPin);
+      if (inPinV > 10) {
+        ch = -1;
+      }
     }
-    digitalWrite(Pins[0], LOW);
-  }
 
-
-  if (ch == 'B') {
-    digitalWrite(Pins[1], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[1], LOW);
-  }
-
-  if (ch == 'b') {
-    digitalWrite(Pins[1], HIGH);
-    while (ch != 'y') {
-      ch = Serial.read();
+    if (ch == 'A') {
+      digitalWrite(Pins[0], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[0], LOW);
     }
-    digitalWrite(Pins[1], LOW);
-  }
 
-  if (ch == 'C') {
-    digitalWrite(Pins[2], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[2], LOW);
-  }
-
-  if (ch == 'c') {
-    digitalWrite(Pins[2], HIGH);
-    while (ch != 'x') {
-      ch = Serial.read();
+    if (ch == 'a') {
+      digitalWrite(Pins[0], HIGH);
+      while (ch != 'z') {
+        ch = Serial.read();
+      }
+      digitalWrite(Pins[0], LOW);
     }
-    digitalWrite(Pins[2], LOW);
-  }
 
-  if (ch == 'D') {
-    digitalWrite(Pins[3], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[3], LOW);
-  }
 
-  if (ch == 'd') {
-    digitalWrite(Pins[3], HIGH);
-    while (ch != 'w') {
-      ch = Serial.read();
+    if (ch == 'B') {
+      digitalWrite(Pins[1], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[1], LOW);
     }
-    digitalWrite(Pins[3], LOW);
-  }
 
-  if (ch == 'E') {
-    digitalWrite(Pins[4], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[4], LOW);
-  }
-
-  if (ch == 'e') {
-    digitalWrite(Pins[4], HIGH);
-    while (ch != 'v') {
-      ch = Serial.read();
+    if (ch == 'b') {
+      digitalWrite(Pins[1], HIGH);
+      while (ch != 'y') {
+        ch = Serial.read();
+      }
+      digitalWrite(Pins[1], LOW);
     }
-    digitalWrite(Pins[4], LOW);
-  }
 
-  if (ch == 'F') {
-    digitalWrite(Pins[5], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[5], LOW);
-  }
-
-  if (ch == 'f') {
-    digitalWrite(Pins[5], HIGH);
-    while (ch != 'u') {
-      ch = Serial.read();
+    if (ch == 'C') {
+      digitalWrite(Pins[2], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[2], LOW);
     }
-    digitalWrite(Pins[5], LOW);
-  }
 
-  if (ch == 'G') {
-    digitalWrite(Pins[6], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[6], LOW);
-  }
-
-  if (ch == 'g') {
-    digitalWrite(Pins[6], HIGH);
-    while (ch != 't') {
-      ch = Serial.read();
+    if (ch == 'c') {
+      digitalWrite(Pins[2], HIGH);
+      while (ch != 'x') {
+        ch = Serial.read();
+      }
+      digitalWrite(Pins[2], LOW);
     }
-    digitalWrite(Pins[6], LOW);
-  }
 
-  if (ch == 'P') {
-    digitalWrite(Pins[7], HIGH);
-    delay(Delay);
-    digitalWrite(Pins[7], LOW);
-  }
-  
-  inPinV = map(inPinV, 0, 1023, 0, 255);
+    if (ch == 'D') {
+      digitalWrite(Pins[3], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[3], LOW);
+    }
 
-  if (inPinV >= 0 && inPinV < 30) {
-    PORTD &= ~_BV (Pins[0]);
-    PORTD &= ~_BV (Pins[1]);
-//    bitClear (PORTD, Pins[0]);
-//    bitClear (PORTD, Pins[1]);
-//    PORTD = B00000000;
-//    digitalWrite(Pins[0], LOW);
-//    digitalWrite(Pins[1], LOW);
-  }
+    if (ch == 'd') {
+      digitalWrite(Pins[3], HIGH);
+      while (ch != 'w') {
+        ch = Serial.read();
+      }
+      digitalWrite(Pins[3], LOW);
+    }
 
-  if (inPinV >= 55 && inPinV < 45) {
-    PORTD &= ~_BV (Pins[0]);
-    PORTD |= _BV (Pins[1]);
-//    bitClear (PORTD, Pins[0]);
-//    bitSet (PORTD, Pins[1]);
-//    PORTD = B00010000;
-//    digitalWrite(Pins[0], LOW);
-//    digitalWrite(Pins[1], HIGH);
-  }
+    if (ch == 'E') {
+      digitalWrite(Pins[4], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[4], LOW);
+    }
 
-  if (inPinV >= 105 && inPinV < 110) {
-    PORTD |= _BV (Pins[0]);
-    PORTD &= ~_BV (Pins[1]);
-//    bitSet (PORTD, Pins[0]);
-//    bitClear (PORTD, Pins[1]);
-//    PORTD = B00000100;
-//    digitalWrite(Pins[0], HIGH);
-//    digitalWrite(Pins[1], LOW);
-  }
+    if (ch == 'e') {
+      digitalWrite(Pins[4], HIGH);
+      while (ch != 'v') {
+        ch = Serial.read();
+      }
+      digitalWrite(Pins[4], LOW);
+    }
 
-  if (inPinV >= 150) {
-    PORTD |= _BV (Pins[0]);
-    PORTD |= _BV (Pins[1]);
-//    bitSet (PORTD, Pins[0]);
-//    bitSet (PORTD, Pins[1]);
-//    PORTD = B00010100;
-//    digitalWrite(Pins[0], HIGH);
-//    digitalWrite(Pins[1], HIGH);
-  }
+    if (ch == 'F') {
+      digitalWrite(Pins[5], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[5], LOW);
+    }
 
+    if (ch == 'f') {
+      digitalWrite(Pins[5], HIGH);
+      while (ch != 'u') {
+        ch = Serial.read();
+      }
+      digitalWrite(Pins[5], LOW);
+    }
+
+    if (ch == 'G') {
+      digitalWrite(Pins[6], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[6], LOW);
+    }
+
+    if (ch == 'g') {
+      digitalWrite(Pins[6], HIGH);
+      while (ch != 't') {
+        ch = Serial.read();
+      }
+      digitalWrite(Pins[6], LOW);
+    }
+
+    if (ch == 'P') {
+      digitalWrite(Pins[7], HIGH);
+      delay(Delay);
+      digitalWrite(Pins[7], LOW);
+    }
+
+    if (inPinV < 150) {
+      //    PORTD &= ~_BV (Pins[0]);
+      //    PORTD &= ~_BV (Pins[1]);
+      //    bitClear (PORTD, Pins[0]);
+      //    bitClear (PORTD, Pins[1]);
+      PORTD = B00000000;
+      //    digitalWrite(Pins[0], LOW);
+      //    digitalWrite(Pins[1], LOW);
+    }
+
+    if (inPinV >= 180 && inPinV < 205) {
+      //    PORTD &= ~_BV (Pins[0]);
+      //    PORTD |= _BV (Pins[1]);
+      //    bitClear (PORTD, Pins[0]);
+      //    bitSet (PORTD, Pins[1]);
+      PORTD = B00010000;
+      //    digitalWrite(Pins[0], LOW);
+      //    digitalWrite(Pins[1], HIGH);
+    }
+
+    if (inPinV >= 225 && inPinV < 240) {
+      //    PORTD |= _BV (Pins[0]);
+      //    PORTD &= ~_BV (Pins[1]);
+      //    bitSet (PORTD, Pins[0]);
+      //    bitClear (PORTD, Pins[1]);
+      PORTD = B00000100;
+      //    digitalWrite(Pins[0], HIGH);
+      //    digitalWrite(Pins[1], LOW);
+    }
+
+    if (inPinV >= 280) {
+      //    PORTD |= _BV (Pins[0]);
+      //    PORTD |= _BV (Pins[1]);
+      //    bitSet (PORTD, Pins[0]);
+      //    bitSet (PORTD, Pins[1]);
+      PORTD = B00010100;
+      //    digitalWrite(Pins[0], HIGH);
+      //    digitalWrite(Pins[1], HIGH);
+    }
+  }
 }

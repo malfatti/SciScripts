@@ -6,25 +6,27 @@ Created on Fri Mar 18 16:43:58 2016
 """
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160315202456-SoundMeasurement/SoundIntensity'
-#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
-#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
-#                  'SoundIntensity'
+                  '20160419093139-SoundMeasurement/' + \
+                  '20160419093139-SoundMeasurement.hdf5'
+
+SoundBoard = 'USBPre2_oAux-iAux'
 
 import ControlArduino
 import ControlSoundBoard
 import pyaudio
 import time
 
-Sound = ControlSoundBoard.GenSound(128000, 0.003, 1, [[0.004]], [[8000, 10000]],
-                                   1,CalibrationFile, SoundPostPauseDur=0.097)[0]
+Sound = ControlSoundBoard.GenSound(128000, 0.003, 1, {'8000-10000': [0.004]}, 
+                                   [[8000, 10000]], 1, CalibrationFile, 
+                                   SoundBoard, SoundPostPauseDur=0.097)[0]
 
 Laser = ControlSoundBoard.GenLaser(128000, 0.01, 1, 1, CalibrationFile, 
-                                   LaserPostPauseDur=0.09)[0]
+                                   SoundBoard, LaserPostPauseDur=0.09)[0]
                                    
-SoundLaser = ControlSoundBoard.GenSoundLaser(128000, 0.003, 1, [[0.004]], 
+SoundLaser = ControlSoundBoard.GenSoundLaser(128000, 0.003, 1, 
+                                             {'8000-10000': [0.004]}, 
                                              [[8000, 10000]], 0.01, 1, 1, 
-                                             CalibrationFile,
+                                             CalibrationFile, SoundBoard,
                                              SoundPrePauseDur=0.004, 
                                              SoundPostPauseDur=0.093,
                                              LaserPostPauseDur=0.09,)[0]
@@ -39,7 +41,7 @@ Stimulation = p.open(format=pyaudio.paFloat32,
 Arduino = ControlArduino.CreateObj(38400)
 
 #%% Test OpenEphys
-for _ in range(10):
+for _ in range(1000):
     Arduino.write(b'A')
     time.sleep(0.08)
     Arduino.write(b'B')

@@ -177,25 +177,41 @@ void loop() {
   inPinV = map(inPinV, 0, 1023, 0, 255);
 
   if (inPinV >= 0 && inPinV < 30) {
-    PORTD = B00000000;
+    PORTD &= ~_BV (Pins[0]);
+    PORTD &= ~_BV (Pins[1]);
+//    bitClear (PORTD, Pins[0]);
+//    bitClear (PORTD, Pins[1]);
+//    PORTD = B00000000;
 //    digitalWrite(Pins[0], LOW);
 //    digitalWrite(Pins[1], LOW);
   }
 
   if (inPinV >= 55 && inPinV < 45) {
-    PORTD = B00010000;
+    PORTD &= ~_BV (Pins[0]);
+    PORTD |= _BV (Pins[1]);
+//    bitClear (PORTD, Pins[0]);
+//    bitSet (PORTD, Pins[1]);
+//    PORTD = B00010000;
 //    digitalWrite(Pins[0], LOW);
 //    digitalWrite(Pins[1], HIGH);
   }
 
   if (inPinV >= 105 && inPinV < 110) {
-    PORTD = B00000100;
+    PORTD |= _BV (Pins[0]);
+    PORTD &= ~_BV (Pins[1]);
+//    bitSet (PORTD, Pins[0]);
+//    bitClear (PORTD, Pins[1]);
+//    PORTD = B00000100;
 //    digitalWrite(Pins[0], HIGH);
 //    digitalWrite(Pins[1], LOW);
   }
 
   if (inPinV >= 150) {
-    PORTD = B00010100;
+    PORTD |= _BV (Pins[0]);
+    PORTD |= _BV (Pins[1]);
+//    bitSet (PORTD, Pins[0]);
+//    bitSet (PORTD, Pins[1]);
+//    PORTD = B00010100;
 //    digitalWrite(Pins[0], HIGH);
 //    digitalWrite(Pins[1], HIGH);
   }

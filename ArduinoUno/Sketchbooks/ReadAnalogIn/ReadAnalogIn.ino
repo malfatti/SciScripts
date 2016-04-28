@@ -10,7 +10,7 @@ void setup()
 void loop()
 {
   val = analogRead(analogPin);
-  val = map(val, 0, 1023, 0, 255);
+//  val = map(val, 0, 1023, 0, 255);
 
   Serial.println(val);
 }

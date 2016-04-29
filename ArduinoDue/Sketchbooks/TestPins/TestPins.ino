@@ -29,12 +29,8 @@ const int sRate = 40; // in KHz
 const int sPulseDur = 3; // in ms
 const int PulseNo = 200;
 
-const int dPinNo = 32;
-const int Pins[dPinNo] = {22, 23, 24, 25, 26, 27, 28, 29, \
-                          30, 31, 32, 33, 34, 35, 36, 37, \
-                          38, 39, 40, 41, 42, 43, 44, 45, \
-                          46, 47, 48, 49, 50, 51, 52, 53
-                         };
+const int dPinNo = 8;
+const int Pins[dPinNo] = {38, 41, 42, 45, 46, 49, 50, 51};
 
 const int aPinNo = 12;
 const int inPins[aPinNo] = {A0, A1, A2, A3, A4, A5, \

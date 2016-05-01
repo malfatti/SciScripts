@@ -18,9 +18,8 @@
 This is a script to generate a filtered sound pulse and send it to a sound 
 board.
 
-The first cell will set the experiment parameters and create an ALSA pcm 
-object for sound playback. The following cell send the stimulus to the sound 
-board.
+The first cell will set the experiment parameters and create an audio object 
+for sound playback. The following cell send the stimulus to the sound board.
 
 This code is profoundly inspired in a Matlab code, written by Dr. Richardson 
 Leão, PhD.
@@ -29,32 +28,31 @@ Leão, PhD.
 
 Rate = 128000
 SoundDur = 60 * 70 # in SECONDS!
-NoiseFrequency = [[10000, 14000]]
+NoiseFrequency = [[10000, 12000]]
 Intensity = [90]
 TTLAmpF = 0
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160315202456-SoundMeasurement/SoundIntensity'
-#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
-#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
-#                  'SoundIntensity'
+                  '20160419093139-SoundMeasurement/' + \
+                  '20160419093139-SoundMeasurement.hdf5'
+
+# Sound board used
+SoundBoard = 'USBPre2_oAux-iAux'
 #==========#==========#==========#==========#
 
 import ControlSoundBoard
-import shelve
+import LoadHdf5Files
 
-with shelve.open(CalibrationFile) as Shelve:
-    SoundIntensity = Shelve['SoundIntensity']
-    SBInAmpF = Shelve['SBInAmpF']
+SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 'SoundIntensity')
 
 SoundPulseDur = 0.5
 SoundPulseNo = round(SoundDur/SoundPulseDur)
 
 
-SoundAmpF = [[float(min(SoundIntensity[Hz].keys(), 
-                                 key=lambda i: abs(SoundIntensity[Hz][i] - 
-                                                   Intensity)))] 
-                       for Hz in list(SoundIntensity)]
+SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
+              key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
+              for dB in Intensity] 
+         for Hz in list(SoundIntensity)}
 
 
 # Generate sound stimulus
@@ -62,7 +60,8 @@ Sound, SoundPauseBetweenStimBlocks, StartSound = ControlSoundBoard.GenSound(
                                                     Rate, SoundPulseDur, 
                                                     SoundPulseNo, SoundAmpF, 
                                                     NoiseFrequency, TTLAmpF, 
-                                                    CalibrationFile)
+                                                    CalibrationFile, 
+                                                    SoundBoard)
 
 #%% Run!!
 """ To stop, close the console :) """

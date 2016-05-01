@@ -43,7 +43,8 @@ SoundBoard = 'USBPre2_oAux-iAux'
 import ControlSoundBoard
 import LoadHdf5Files
 
-SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 'SoundIntensity')
+SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
+                                                'SoundIntensity')
 
 SoundPulseDur = 0.5
 SoundPulseNo = round(SoundDur/SoundPulseDur)

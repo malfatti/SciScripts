@@ -24,10 +24,11 @@ the acoustic startle reflex (GPIAS).
 AnimalName = 'TestSetup02'
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160315153450-SoundMeasurement/SoundIntensity'
-#CalibrationFile = '/home/malfatti/NotSynced/SoftwareTest/' + \
-#                  'SoundMeasurements/20160125114052-SoundMeasurement/' + \
-#                  'SoundIntensity'
+                  '20160419093139-SoundMeasurement/' + \
+                  '20160419093139-SoundMeasurement.hdf5'
+
+# Sound board used
+SoundBoard = 'USBPre2_oAux-iAux'
 
 Rate = 128000
 BaudRate = 38400
@@ -49,8 +50,8 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = 60
-PulseIntensity = 105
+BackgroundIntensity = [60]
+PulseIntensity = [105]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
@@ -69,25 +70,27 @@ import array
 import datetime
 import ControlArduino
 import ControlSoundBoard
+import h5py
+import LoadHdf5Files
 import pyaudio
 import random
-import shelve
 
-with shelve.open(CalibrationFile) as Shelve:
-    SoundIntensity = Shelve['SoundIntensity']
+SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
+                                                'SoundIntensity')
 
 Date = datetime.datetime.now()
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-GPIAS-', AnimalName])
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundStim.hdf5'])
 
-SoundBackgroundAmpF = [float(min(SoundIntensity[Hz].keys(), 
-                                 key=lambda i: abs(SoundIntensity[Hz][i] - 
-                                                   BackgroundIntensity))) 
-                       for Hz in range(len(NoiseFrequency))]
+SoundBackgroundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
+                            key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
+                            for dB in BackgroundIntensity] 
+                       for Hz in list(SoundIntensity)}
 
-SoundPulseAmpF = [float(min(SoundIntensity[Hz].keys(), 
-                            key=lambda i: abs(SoundIntensity[Hz][i] - 
-                                              PulseIntensity))) 
-                       for Hz in range(len(NoiseFrequency))]
+SoundPulseAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
+                       key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
+                       for dB in PulseIntensity] 
+                  for Hz in list(SoundIntensity)}
 
 ## Prepare dict w/ experimental setup
 DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate',
@@ -96,8 +99,7 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate'
                                        'SoundBackgroundPrePulseDur', 
                                        'SoundLoudPulseDur', 
                                        'SoundBackgroundAfterPulseDur', 
-                                       'SoundBetweenStimDur', 
-                                       'SoundBackgroundAmpF', 'SoundPulseAmpF', 
+                                       'SoundBetweenStimDur',  
                                        'NoiseFrequency', 'NoOfTrials', 
                                        'TTLAmpF', 'FileName'])
 
@@ -107,7 +109,8 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundBackground = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
                                              SoundAmpF, NoiseFrequency, 
-                                             TTLAmpF, CalibrationFile)[0]
+                                             TTLAmpF, CalibrationFile, 
+                                             SoundBoard)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundGap...')
@@ -117,11 +120,11 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
                                         SoundAmpF, NoiseFrequency, 
-                                        TTLAmpF, CalibrationFile)[0]
+                                        TTLAmpF, CalibrationFile, SoundBoard)[0]
 SoundGap[1] = [0, 0.6]*(round(Rate*SoundGapDur))
 SoundGap[1][-1] = 0
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
-SoundGap[1] = [SoundGap[1]]*len(SoundGap[0])
+SoundGap[1] = [[SoundGap[1]]]*len(SoundGap[0])
 
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
@@ -133,16 +136,20 @@ SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundPrePulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
                                                      NoiseFrequency, TTLAmpF, 
-                                                     CalibrationFile)[0]
+                                                     CalibrationFile, 
+                                                     SoundBoard)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundLoudPulse...')
 SoundPulseDur = SoundLoudPulseDur
 SoundPulseNo = 1
 SoundAmpF = SoundPulseAmpF
+TTLAmpF = 1
 SoundLoudPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
                                             SoundAmpF, NoiseFrequency, 
-                                            TTLAmpF=1, CalibrationFile)[0]
+                                            TTLAmpF, CalibrationFile, 
+                                            SoundBoard)[0]
+TTLAmpF = 0
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundBackgroundAfterPulse...')
@@ -152,7 +159,8 @@ SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundAfterPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
                                                      NoiseFrequency, TTLAmpF, 
-                                                     CalibrationFile)[0]
+                                                     CalibrationFile, 
+                                                     SoundBoard)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundBetweenStimDur...')
@@ -162,7 +170,7 @@ SoundAmpF = SoundBackgroundAmpF
 SoundBetweenStim = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
                                                  SoundPulseNo, SoundAmpF, 
                                                  NoiseFrequency, TTLAmpF, 
-                                                 CalibrationFile)[0]
+                                                 CalibrationFile, SoundBoard)[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Generating sound and arduino objects...')
@@ -216,10 +224,22 @@ for Hz in range(len(Freqs)):
 FreqOrder.remove([0])
 print('Done.')
 
-with shelve.open(FileName) as Shelve:
-    Shelve['DataInfo'] = DataInfo
-    Shelve['Freqs'] = Freqs
-    Shelve['FreqOrder'] = FreqOrder
-    Shelve['FreqSlot'] = FreqSlot
+with h5py.File(FileName) as h5:
+    h5.create_group('DataInfo')
+    for Key, Value in DataInfo.items():
+        h5['DataInfo'].attrs[Key] = Value
+    
+    h5['DataInfo'].create_group('SoundBackgroundAmpF')
+    h5['DataInfo'].create_group('SoundPulseAmpF')
+    
+    for Key, Value in SoundBackgroundAmpF.items():
+        h5['DataInfo']['SoundBackgroundAmpF'][Key] = Value
+    
+    for Key, Value in SoundPulseAmpF.items():
+        h5['DataInfo']['SoundPulseAmpF'][Key] = Value
+
+    h5['DataInfo']['Freqs'] = Freqs
+    h5['DataInfo']['FreqOrder'] = FreqOrder
+    h5['DataInfo']['FreqSlot'] = FreqSlot
 
 print('Data saved.')

@@ -27,7 +27,7 @@ import ControlSoundBoard
 import pyaudio
 import time
 
-Sound = ControlSoundBoard.GenSound(128000, 0.003, 1, {'8000-10000': [0.004]}, 
+Sound = ControlSoundBoard.GenSound(128000, 0.003, 1, {'8000-10000': [0.04]}, 
                                    [[8000, 10000]], 1, CalibrationFile, 
                                    SoundBoard, SoundPostPauseDur=0.097)[0]
 
@@ -35,7 +35,7 @@ Laser = ControlSoundBoard.GenLaser(128000, 0.01, 1, 1, CalibrationFile,
                                    SoundBoard, LaserPostPauseDur=0.09)[0]
                                    
 SoundLaser = ControlSoundBoard.GenSoundLaser(128000, 0.003, 1, 
-                                             {'8000-10000': [0.004]}, 
+                                             {'8000-10000': [0.04]}, 
                                              [[8000, 10000]], 0.01, 1, 1, 
                                              CalibrationFile, SoundBoard,
                                              SoundPrePauseDur=0.004, 
@@ -52,7 +52,7 @@ Stimulation = p.open(format=pyaudio.paFloat32,
 Arduino = ControlArduino.CreateObj(38400)
 
 #%% Test OpenEphys
-for _ in range(1000):
+for _ in range(10):
     Arduino.write(b'A')
     time.sleep(0.08)
     Arduino.write(b'B')
@@ -71,7 +71,7 @@ for _ in range(1000):
     time.sleep(3)
 
 for _ in range(100):
-    Stimulation.write(Sound)
+    Stimulation.write(Sound[0][0])
 time.sleep(3)
 
 for _ in range(100):
@@ -79,7 +79,7 @@ for _ in range(100):
 time.sleep(3)
 
 for _ in range(100):
-    Stimulation.write(SoundLaser)
+    Stimulation.write(SoundLaser[0][0])
 time.sleep(3)
 
 

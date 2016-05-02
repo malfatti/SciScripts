@@ -64,3 +64,12 @@ FileList = glob.glob('*.db'); FileList.sort()
 KwikAnalysis.GPIAS(GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterLow, 
                    FilterHigh, FilterOrder, GPIASTTLCh, PiezoCh)
 KwikAnalysis.PlotGPIAS(FileList)
+
+#%% TTLsLatencyTest
+
+SoundCh = 1
+SoundSqCh = 2
+SoundTTLCh = 1
+
+TimeBeforeTTL = 5   # in ms
+TimeAfterTTL = 8    # in ms

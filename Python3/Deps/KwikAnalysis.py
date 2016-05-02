@@ -553,3 +553,163 @@ def PlotGPIAS(FileList):
                         format='svg')
         print('Done.')
 
+
+def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1, 
+                TimeBeforeTTL=5, TimeAfterTTL=8):
+    print('set paths...')
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
+    RecFolder = glob.glob('KwikFiles/*'); RecFolder = RecFolder[0]
+    SoundCh = SoundCh + 18; SoundSqCh = SoundSqCh + 18
+    
+    print('Load DataInfo...')
+    DataInfo= LoadHdf5Files.ExpDataInfo(FileName, list(RecFolder), 'Sound')
+    
+    print('Preallocate memory...')
+#    SoundPulse = [[] for _ in range(int(DataInfo['SoundPulseNo']))]
+#    SoundSq = SoundPulse[:]
+    
+    print('Load files...')
+    FilesList = glob.glob(''.join([RecFolder, '/*']))
+    Files = {}
+    for File in FilesList:
+        if '.kwd' in File:
+            try:
+                Raw = Kwik.load(File, 'all')
+                Files['kwd'] = File
+            except OSError:
+                    print('File ', File, " is corrupted :'(")
+            
+        elif '.kwe' in File:
+            try:
+                Events = Kwik.load(File)
+                Files['kwe'] = File
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+            
+        elif '.kwik' in File:
+            try:
+                Events = Kwik.load(File)
+                Files['kwik'] = File
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+    
+    print('Check if files are ok...')
+    if 'Raw' not in locals():
+        print('.kwd file is corrupted  >:(')
+        raise SystemExit
+    
+    if 'Events' not in locals():
+        print('.kwd file is corrupted  >:(')
+        raise SystemExit
+    
+    print('Data from ', RecFolder, ' loaded.')
+    
+    if '0' not in list(Raw['data'].keys()):
+        print('Rec numbers are wrong. Fixing...')
+        for iKey in Raw.keys():
+            Recs = list(Raw[iKey].keys())
+            Recs = [int(_) for _ in Recs]; Min = min(Recs)
+            
+            EventRec = Events['TTLs']['recording'][:]
+            for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
+            
+            for Key in Recs:
+                Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
+            
+        print('Fixed.')
+    else:
+        EventRec = Events['TTLs']['recording']
+    
+    print('Get TTL data...')
+    EventID = Events['TTLs']['user_data']['eventID']
+    EventCh = Events['TTLs']['user_data']['event_channels']
+    EventSample = Events['TTLs']['time_samples']
+
+    TTLChs = np.nonzero(np.bincount(EventCh))[0]
+    TTLRecs = np.nonzero(np.bincount(EventRec))[0]
+    TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
+                         if EventRec[_] == _Rec 
+                         and EventCh[_] == SoundTTLCh-1 
+                         and EventID[_] == 1]
+                  for _Rec in TTLRecs}
+    
+    Rate = Raw['info']['0']['sample_rate']
+    NoOfSamplesBefore = TimeBeforeTTL*int(Rate*10**-3)
+    NoOfSamplesAfter = TimeAfterTTL*int(Rate*10**-3)
+    NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+    
+    XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
+              list((range(NoOfSamplesAfter)/Rate)*10**3)
+    
+    RawTime = [int(round(Raw['timestamps']['0'][_]*Rate)) 
+               for _ in range(len(Raw['timestamps']['0']))]
+    
+    SoundPulse = [[0 for _ in range(NoOfSamples)] 
+                  for _ in range(len(TTLsPerRec[0]))]
+    SoundSq = SoundPulse[:]
+    
+    print('Slicing data...')
+    for TTL in range(len(TTLsPerRec[0])):
+        TTLLoc = int(TTLsPerRec[0][TTL])
+        Start = TTLLoc-NoOfSamplesBefore
+        End = TTLLoc+NoOfSamplesAfter
+        try:
+            Start = RawTime.index(Start)
+            End = RawTime.index(End)
+        except ValueError:
+            print('ValueError: Timestamp is messed up for TTL', 
+                  str(TTL), ' :(')
+            break
+        
+        SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
+        SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
+
+        del(TTLLoc, Start, End)
+    
+    # Mean
+#            rABR = np.mean(rABR, axis=0)
+#            lABR = np.mean(lABR, axis=0)
+        
+    print('Saving data to ' + FileName)
+    GroupName = 'Analysis-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    with h5py.File(FileName) as F:
+        if 'Analysis' in F.keys():
+            F[GroupName] = F['Analysis']; del(F['Analysis'])
+        
+        F.create_group('Analysis')
+        F['Analysis']['SoundPulse'] = SoundPulse
+        F['Analysis']['SoundSq'] = SoundSq
+        F['Analysis']['XValues'] = XValues
+    
+    print('Done.')
+    return(None)
+
+
+def PlotTTLsLatency(FileName):
+    DataInfo = {}
+    with h5py.File(FileName) as F:
+        SoundPulse = F['Analysis']['SoundPulse']
+        SoundSq = F['Analysis']['SoundSq']
+        XValues = F['Analysis']['XValues']
+    
+        for Key, Value in F['DataInfo'].items():
+            DataInfo['SoundAmpF'] = {}
+            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
+                DataInfo['SoundAmpF'][aKey] = aValue[:]
+        
+        for bKey, bValue in F['DataInfo'].attrs.items():
+            if isinstance(bValue, Number):
+                DataInfo[bKey] = float(bValue)
+            else:
+                DataInfo[bKey] = bValue
+    
+    TTLStart = int(XValues.index(0) - (DataInfo['Rate']*0.00005))
+    TTLEnd = int(XValues.index(0) + (DataInfo['Rate']*0.00005))
+    
+    plt.plot(XValues, SoundPulse[0])
+    plt.plot(XValues, SoundSq[0])
+    plt.axvspan(XValues[TTLStart], XValues[TTLEnd], color='k', alpha=0.5, lw=0)
+    
+    for _ in range(len(SoundPulse)):
+        plt.figure(1); plt.plot(XValues, SoundPulse[_])
+        plt.figure(2); plt.plot(XValues, SoundSq[_])

@@ -35,7 +35,7 @@ def CheckGroup(FileName, Group):
             return(True)
 
 
-def ExpDataInfo(FileName, DirList, StimType):
+def ExpDataInfo(FileName, DirList, StimType, Var='DataInfo'):
     DataInfo = {}
     with h5py.File(FileName) as F:
         for Key, Value in F['DataInfo'].items():
@@ -49,10 +49,14 @@ def ExpDataInfo(FileName, DirList, StimType):
             else:
                 DataInfo[bKey] = bValue
         
-        Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
-                if F['ExpInfo'][Exp].attrs['StimType'][0].decode() == StimType]
-    
-    return(DataInfo, Exps)
+        if Var == 'DataInfo':
+            return(DataInfo)
+        else:
+            Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
+                    if F['ExpInfo'][Exp].attrs['StimType'][0].decode() 
+                    == StimType]
+            
+            return(DataInfo, Exps)
 
 
 def ExpExpInfo(FileName, DirList, RecFolder):

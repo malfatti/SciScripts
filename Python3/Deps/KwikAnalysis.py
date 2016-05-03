@@ -581,7 +581,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
     print('set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     RecFolder = glob.glob('KwikFiles/*'); RecFolder = RecFolder[0]
-    SoundCh = SoundCh + 18; SoundSqCh = SoundSqCh + 18
+#    SoundCh = SoundCh + 18; SoundSqCh = SoundSqCh + 18
     
     print('Load DataInfo...')
     DataInfo= LoadHdf5Files.ExpDataInfo(FileName, list(RecFolder), 'Sound')
@@ -681,7 +681,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
         try:
-            SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
+#            SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
             SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
 #            Start = RawTime.index(Start)
 #            End = RawTime.index(End)
@@ -744,11 +744,13 @@ def PlotTTLsLatency(FileName):
     
     Hist, BinEdges = np.histogram(SoundSqDelay, bins=200)
     Threshold = (DataInfo['SoundPulseDur']/100)*1000
+    Threshold = Threshold*1.5
     sIndex = min(range(len(BinEdges)), 
                  key=lambda i: abs(BinEdges[i]-Threshold*-1))
     eIndex = min(range(len(BinEdges)), 
                  key=lambda i: abs(BinEdges[i]-Threshold))
     Sum = sum(Hist[sIndex:eIndex]); Perc = Sum/len(SoundSq) * 100
     plt.figure(3); plt.plot(BinEdges[:-1], Hist)
-    plt.axvspan(XValues[TTLStart], XValues[TTLEnd], color='k', alpha=0.5, lw=0,
-                label=str(Perc))
+    plt.axvspan(BinEdges[sIndex], BinEdges[eIndex], color='k', alpha=0.5, lw=0,
+                label=str(Perc) + '\% of pulses with latency $<$ 30µs') 
+    plt.legend(loc='lower right')

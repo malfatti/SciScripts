@@ -42,7 +42,7 @@ SoundPulseDur = 0.003
 # Silence after pulse
 SoundPostPauseDur = 0.093
 # Amount of pulses per block
-SoundPulseNo = 1200
+SoundPulseNo = 5000
 # Number of blocks
 SoundStimBlockNo = 5
 # Duration of pause between blocks
@@ -62,6 +62,7 @@ import datetime
 import h5py
 import LoadHdf5Files
 import pyaudio
+import os
 
 SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
                                                 'SoundIntensity')
@@ -69,6 +70,9 @@ SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile,
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundStim.hdf5'])
+
+Folder = FileName[:-5]
+os.makedirs(Folder, exist_ok=True)    # Figs folder
 
 SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
               key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
@@ -84,7 +88,7 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'NoiseFrequency', 'CalibrationFile', 
                                        'SoundBoard', 'FileName'])
 
-with h5py.File(FileName) as h5:
+with h5py.File(Folder+'/'+FileName) as h5:
     h5.create_group('DataInfo')
     for Key, Value in DataInfo.items():
         h5['DataInfo'].attrs[Key] = Value
@@ -117,13 +121,13 @@ Hz = 0
 print('Running...')
 Key = str(NoiseFrequency[Hz][0]) + '-' + str(NoiseFrequency[Hz][1])
 for AmpF in range(len(SoundAmpF[Key])):
-#    Arduino.write(b'P')
+    Arduino.write(b'P')
     for OnePulse in range(SoundPulseNo):
 #        Arduino.write(b'a')
         Stimulation.write(Sound[Hz][AmpF])
 #        Arduino.write(b'z')
     
-#    Arduino.write(b'P')
+    Arduino.write(b'P')
     Stimulation.write(SoundPauseBetweenStimBlocks)
 
 

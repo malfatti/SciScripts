@@ -73,3 +73,5 @@ SoundTTLCh = 1
 
 TimeBeforeTTL = 5   # in ms
 TimeAfterTTL = 8    # in ms
+
+FileName = glob.glob('*.hdf5'); FileName = FileName[0]

@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 from numbers import Number
 import numpy as np
 import os
+import PeakDetect
 from scipy import signal
 
 def RemoveDateFromFolderName():
@@ -68,7 +69,8 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     DirList = glob.glob('KwikFiles/*'); DirList.sort()
     
     print('Load DataInfo...')
-    DataInfo, Exps = LoadHdf5Files.ExpDataInfo(FileName, DirList, StimType)
+    DataInfo, Exps = LoadHdf5Files.ExpDataInfo(FileName, DirList, StimType, 
+                                               Var='Exps')
     
     print('Preallocate memory...')
     ABRs = [[], []]
@@ -148,6 +150,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                              and EventCh[_] ==  ABRTTLCh-1 
                              and EventID[_] == 1]
                       for _Rec in TTLRecs}
+        TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
         
         Rate = Raw['info']['0']['sample_rate']
 #        NoOfSamplesBefore = int(round((ABRTimeBeforeTTL*Rate)*10**-3))
@@ -168,32 +171,50 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         Hf2, Hf1 = signal.butter(FilterOrder, FilterHigh/(Rate/2), 'lowpass')
         
         for Rec in range(len(Raw['data'])):
-            RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
-                       for _ in range(len(Raw['timestamps'][str(Rec)]))]
+#            RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
+#                       for _ in range(len(Raw['timestamps'][str(Rec)]))]
+            TTLNo = [0]
+            for _ in range(1, len(TTLsPerRec)+1):
+                TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
+
+            TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
+            
+            RawTime = list(Raw['timestamps'][str(Rec)])
             
             rABR = [[0 for _ in range(NoOfSamples)] 
                     for _ in range(len(TTLsPerRec[Rec]))]
             lABR = [[0 for _ in range(NoOfSamples)] 
                     for _ in range(len(TTLsPerRec[Rec]))]
             
+            if Rec == 0:
+                sTTLNo = 0
+            else:
+                sTTLNo = TTLNo[Rec] + 1
+            
             print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            for TTL in range(len(TTLsPerRec[Rec])):
-                TTLLoc = int(TTLsPerRec[Rec][TTL])
+            for TTL in range(sTTLNo, TTLNo[Rec+1]):
+#                TTLLoc = int(TTLsPerRec[Rec][TTL])
+#                Start = TTLLoc-NoOfSamplesBefore
+#                End = TTLLoc+NoOfSamplesAfter
+#                try:
+#                    Start = RawTime.index(Start)
+#                    End = RawTime.index(End)
+#                except ValueError:
+#                    print('ValueError: Timestamp is messed up in Freq', 
+#                          str(ExpInfo['Hz']), ' AmpF ', str(Rec), ' :(')
+#                    break
+                TTLLoc = RawTime.index(TTLRising[TTL])
+                    
                 Start = TTLLoc-NoOfSamplesBefore
                 End = TTLLoc+NoOfSamplesAfter
-                try:
-                    Start = RawTime.index(Start)
-                    End = RawTime.index(End)
-                except ValueError:
-                    print('ValueError: Timestamp is messed up in Freq', 
-                          str(ExpInfo['Hz']), ' AmpF ', str(Rec), ' :(')
-                    break
                 
-                rABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
-                lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
+                Index = TTL-sTTLNo
                 
-                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
-                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
+                rABR[Index] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
+                lABR[Index] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
+                
+                rABR[Index] = signal.filtfilt(Lf2, Lf1, rABR[Index], padlen=0)
+                lABR[Index] = signal.filtfilt(Lf2, Lf1, lABR[Index], padlen=0)
 
                 del(TTLLoc, Start, End)
             
@@ -207,12 +228,13 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
             # Mean
             rABR = np.mean(rABR, axis=0)
             lABR = np.mean(lABR, axis=0)
+#            rData = np.mean(rABR, axis=0)
+#            lData = np.mean(lABR, axis=0)
             
             rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
             lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
-            
-#            rABR = signal.filtfilt(f2, f1, rABR, padtype='odd', padlen=0)
-#            lABR = signal.filtfilt(f2, f1, lABR, padtype='odd', padlen=0)
+#            rData = signal.filtfilt(Hf2, Hf1, rData, padlen=0)
+#            lData = signal.filtfilt(Hf2, Hf1, lData, padlen=0)
 
 #            rABR = signal.savgol_filter(rABR, 9, 2, mode='nearest')
 #            lABR = signal.savgol_filter(lABR, 9, 2, mode='nearest')
@@ -632,6 +654,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
                          and EventCh[_] == SoundTTLCh-1 
                          and EventID[_] == 1]
                   for _Rec in TTLRecs}
+    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], SoundTTLCh-1)
     
     Rate = Raw['info']['0']['sample_rate']
     NoOfSamplesBefore = TimeBeforeTTL*int(Rate*10**-3)
@@ -641,8 +664,12 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
     XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
               list((range(NoOfSamplesAfter)/Rate)*10**3)
     
-    RawTime = [int(round(Raw['timestamps']['0'][_]*Rate)) 
-               for _ in range(len(Raw['timestamps']['0']))]
+    TTLNo = [0]
+    for _ in range(1, len(TTLsPerRec)+1):
+        TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
+    TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
+    
+    RawTime = list(Raw['timestamps']['0'])
     
     SoundPulse = [[0 for _ in range(NoOfSamples)] 
                   for _ in range(len(TTLsPerRec[0]))]
@@ -650,27 +677,33 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
     
     print('Slicing data...')
     for TTL in range(len(TTLsPerRec[0])):
-        TTLLoc = int(TTLsPerRec[0][TTL])
+        TTLLoc = RawTime.index(TTLRising[TTL])
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
         try:
-            Start = RawTime.index(Start)
-            End = RawTime.index(End)
+            SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
+            SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
+#            Start = RawTime.index(Start)
+#            End = RawTime.index(End)
         except ValueError:
-            print('ValueError: Timestamp is messed up for TTL', 
-                  str(TTL), ' :(')
-            break
+            print('ValueError: Slice outside data limits. Skipping', 
+                  str(TTL), '...')
+            continue
         
-        SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
-        SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
-
         del(TTLLoc, Start, End)
     
-    # Mean
-#            rABR = np.mean(rABR, axis=0)
-#            lABR = np.mean(lABR, axis=0)
+    SoundSqDelay = [[0] for _ in range(len(SoundSq))]
+    for TTL in range(len(SoundSq)):
+        Peaks = PeakDetect.indexes(SoundSq[TTL])
+        SoundSqDelay[TTL] = ((Peaks[0] - NoOfSamplesBefore) / (Rate/1000))*-1
+        del(Peaks)
+    
         
-    print('Saving data to ' + FileName)
+#    SoundSqDelay = [float(((list(SoundSq[_]).index(max(SoundSq[_]))
+#                           - NoOfSamplesBefore) / (Rate/1000))*-1)
+#                   for _ in range(len(SoundSq))]
+        
+    print('Saving data to ' + FileName + ' ...')
     GroupName = 'Analysis-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     with h5py.File(FileName) as F:
         if 'Analysis' in F.keys():
@@ -679,6 +712,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
         F.create_group('Analysis')
         F['Analysis']['SoundPulse'] = SoundPulse
         F['Analysis']['SoundSq'] = SoundSq
+        F['Analysis']['SoundSqDelay'] = SoundSqDelay
         F['Analysis']['XValues'] = XValues
     
     print('Done.')
@@ -688,9 +722,10 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
 def PlotTTLsLatency(FileName):
     DataInfo = {}
     with h5py.File(FileName) as F:
-        SoundPulse = F['Analysis']['SoundPulse']
-        SoundSq = F['Analysis']['SoundSq']
-        XValues = F['Analysis']['XValues']
+        SoundPulse = F['Analysis']['SoundPulse'][:]
+        SoundSq = F['Analysis']['SoundSq'][:]
+        SoundSqDelay = F['Analysis']['SoundSqDelay'][:]
+        XValues = list(F['Analysis']['XValues'])
     
         for Key, Value in F['DataInfo'].items():
             DataInfo['SoundAmpF'] = {}
@@ -703,13 +738,17 @@ def PlotTTLsLatency(FileName):
             else:
                 DataInfo[bKey] = bValue
     
-    TTLStart = int(XValues.index(0) - (DataInfo['Rate']*0.00005))
-    TTLEnd = int(XValues.index(0) + (DataInfo['Rate']*0.00005))
-    
-    plt.plot(XValues, SoundPulse[0])
-    plt.plot(XValues, SoundSq[0])
-    plt.axvspan(XValues[TTLStart], XValues[TTLEnd], color='k', alpha=0.5, lw=0)
-    
     for _ in range(len(SoundPulse)):
         plt.figure(1); plt.plot(XValues, SoundPulse[_])
         plt.figure(2); plt.plot(XValues, SoundSq[_])
+    
+    Hist, BinEdges = np.histogram(SoundSqDelay, bins=200)
+    Threshold = (DataInfo['SoundPulseDur']/100)*1000
+    sIndex = min(range(len(BinEdges)), 
+                 key=lambda i: abs(BinEdges[i]-Threshold*-1))
+    eIndex = min(range(len(BinEdges)), 
+                 key=lambda i: abs(BinEdges[i]-Threshold))
+    Sum = sum(Hist[sIndex:eIndex]); Perc = Sum/len(SoundSq) * 100
+    plt.figure(3); plt.plot(BinEdges[:-1], Hist)
+    plt.axvspan(XValues[TTLStart], XValues[TTLEnd], color='k', alpha=0.5, lw=0,
+                label=str(Perc))

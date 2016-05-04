@@ -18,6 +18,7 @@
 """
 
 import datetime
+import DetectPeaks
 import glob
 import h5py
 import Kwik
@@ -582,6 +583,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     RecFolder = glob.glob('KwikFiles/*'); RecFolder = RecFolder[0]
 #    SoundCh = SoundCh + 18; SoundSqCh = SoundSqCh + 18
+    SoundCh = 0; SoundSqCh = 1
     
     print('Load DataInfo...')
     DataInfo= LoadHdf5Files.ExpDataInfo(FileName, list(RecFolder), 'Sound')
@@ -694,7 +696,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
     
     SoundSqDelay = [[0] for _ in range(len(SoundSq))]
     for TTL in range(len(SoundSq)):
-        Peaks = PeakDetect.indexes(SoundSq[TTL])
+        Peaks = DetectPeaks.detect_peaks(SoundSq[TTL])
         SoundSqDelay[TTL] = ((Peaks[0] - NoOfSamplesBefore) / (Rate/1000))*-1
         del(Peaks)
     
@@ -744,7 +746,7 @@ def PlotTTLsLatency(FileName):
     
     Hist, BinEdges = np.histogram(SoundSqDelay, bins=200)
     Threshold = (DataInfo['SoundPulseDur']/100)*1000
-    Threshold = Threshold*1.5
+    Threshold = 0.15
     sIndex = min(range(len(BinEdges)), 
                  key=lambda i: abs(BinEdges[i]-Threshold*-1))
     eIndex = min(range(len(BinEdges)), 
@@ -752,5 +754,11 @@ def PlotTTLsLatency(FileName):
     Sum = sum(Hist[sIndex:eIndex]); Perc = Sum/len(SoundSq) * 100
     plt.figure(3); plt.plot(BinEdges[:-1], Hist)
     plt.axvspan(BinEdges[sIndex], BinEdges[eIndex], color='k', alpha=0.5, lw=0,
-                label=str(Perc) + '\% of pulses with latency $<$ 30µs') 
-    plt.legend(loc='lower right')
+                label=str(Perc) + '\% of pulses with latency $<$ 150µs') 
+    plt.legend(loc='upper right')
+    plt.locator_params(tight=True)
+    plt.axes().spines['right'].set_visible(False)
+    plt.axes().spines['top'].set_visible(False)
+    plt.axes().yaxis.set_ticks_position('left')
+    plt.axes().xaxis.set_ticks_position('bottom')
+    plt.savefig('Figs/SoundTTLLatencies-SoundBoardToArduinoToOE.pdf', format='pdf')

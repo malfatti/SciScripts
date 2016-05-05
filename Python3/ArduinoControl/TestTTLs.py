@@ -52,7 +52,7 @@ Stimulation = p.open(format=pyaudio.paFloat32,
 Arduino = ControlArduino.CreateObj(38400)
 
 #%% Test OpenEphys
-for _ in range(10):
+for _ in range(1000):
     Arduino.write(b'A')
     time.sleep(0.08)
     Arduino.write(b'B')

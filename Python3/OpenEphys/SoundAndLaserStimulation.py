@@ -174,7 +174,7 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 #Hz = input('Choose Freq index: ')
 #DVCoord = input('Choose DVCoord (in µm): '); 
 DVCoord = 'Out'
-Hz = 1
+Hz = 0
 Hz = int(Hz)
 
 print('Running...')

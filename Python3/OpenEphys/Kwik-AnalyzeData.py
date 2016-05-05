@@ -23,7 +23,7 @@
 ABRCh = [1, 2]         # [RightChannel, LeftChannel], if order matters
 ABRTimeBeforeTTL = 3    # in ms
 ABRTimeAfterTTL = 9    # in ms
-ABRTTLCh = 1            # TTL ch for ABR
+ABRTTLCh = 2            # TTL ch for ABR
 FilterLow = 300         # High-pass frequency for bandpass filter
 FilterHigh = 3000       # Low-pass frequency
 FilterOrder = 5         # butter order

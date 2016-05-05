@@ -33,10 +33,10 @@ const int Delay = 25;
 void setup() {
   Serial.begin(38400);
 
-  // Set free running mode on ADC7 (pin A0)
-  ADC->ADC_MR |= 0x80;
-  ADC->ADC_CR = 2;
-  ADC->ADC_CHER = 0x80;
+//  // Set free running mode on ADC7 (pin A0)
+//  ADC->ADC_MR |= 0x80;
+//  ADC->ADC_CR = 2;
+//  ADC->ADC_CHER = 0x80;
 
   pinMode(inPin, INPUT);
   for (int Pin = 0; Pin < PinNo; Pin++) {
@@ -54,12 +54,12 @@ void loop() {
 
   while (ch == 0) {
     ch = Serial.read();
-    while ((ADC->ADC_ISR & 0x80) == 0); // wait for conversion
-    inPinV = ADC->ADC_CDR[7];
-    
-    if (inPinV > 150) {
-      ch = -1;
-    }
+//    while ((ADC->ADC_ISR & 0x80) == 0); // wait for conversion
+//    inPinV = ADC->ADC_CDR[7];
+//    
+//    if (inPinV > 150) {
+//      ch = -1;
+//    }
   }
 
   if (ch == 'A') {
@@ -167,24 +167,24 @@ void loop() {
     digitalWrite(Pins[7], LOW);
   }
 
-  if (inPinV < 200) {
-    digitalWrite(Pins[0], LOW);
-    digitalWrite(Pins[1], LOW);
-  }
-
-  if (inPinV >= 215 && inPinV < 275) {
-    digitalWrite(Pins[0], LOW);
-    digitalWrite(Pins[1], HIGH);
-  }
-
-  if (inPinV >= 550 && inPinV < 570) {
-    digitalWrite(Pins[0], HIGH);
-    digitalWrite(Pins[1], LOW);
-  }
-
-  if (inPinV >= 800) {
-    digitalWrite(Pins[0], HIGH);
-    digitalWrite(Pins[1], HIGH);
-  }
-
+//  if (inPinV < 200) {
+//    digitalWrite(Pins[0], LOW);
+//    digitalWrite(Pins[1], LOW);
+//  }
+//
+//  if (inPinV >= 215 && inPinV < 275) {
+//    digitalWrite(Pins[0], LOW);
+//    digitalWrite(Pins[1], HIGH);
+//  }
+//
+//  if (inPinV >= 550 && inPinV < 570) {
+//    digitalWrite(Pins[0], HIGH);
+//    digitalWrite(Pins[1], LOW);
+//  }
+//
+//  if (inPinV >= 800) {
+//    digitalWrite(Pins[0], HIGH);
+//    digitalWrite(Pins[1], HIGH);
+//  }
+//
 }

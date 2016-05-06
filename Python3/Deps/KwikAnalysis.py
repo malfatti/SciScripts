@@ -387,8 +387,11 @@ def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=1
                 Start = TTLLoc-NoOfSamplesBefore
                 End = TTLLoc+NoOfSamplesAfter
                 
-                rABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
-                lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
+                rABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
+                            Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+                
+                lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1] * \
+                            Raw['channel_bit_volts'][str(Rec)][ABRCh[1]-1]
                 
 #                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
 #                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
@@ -509,7 +512,7 @@ def PlotABR(FileName):
                     for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
                         FigTitle = Key + '\ DV,\ trial\ ' + str(Trial+1)
                         AxTitle = KeyHz
-                        YLabel = 'Voltage\ [mV]'
+                        YLabel = 'Voltage\ [\si{\micro}V]'
                         XLabel = 'Time\ [ms]'
                         if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
                             DataInfo['SoundAmpF'][KeyHz][

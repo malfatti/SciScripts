@@ -69,8 +69,9 @@ Intensities = [80, 75, 70]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 10000], [10000, 12000], 
-                  [12000, 14000], [14000, 16000]]
+#NoiseFrequency = [[8000, 10000], [10000, 12000], 
+#                  [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 18000]]
 
 ## Laser
 # Silence before pulse

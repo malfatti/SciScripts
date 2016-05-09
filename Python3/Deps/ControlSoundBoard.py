@@ -74,11 +74,19 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     SoundPulse = [SoundNoise[ElI]*2-1 for ElI,ElV in enumerate(SoundNoise)]
     
     for Freq in range(len(NoiseFrequency)):
-        Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+        if len(NoiseFrequency[Freq]) == 1:
+            Key= str(NoiseFrequency[Freq][0])
+            
+            print('Filtering sound: ', NoiseFrequency[Freq], '...')
+            passband = [(NoiseFrequency[Freq][0]-1)/(Rate/2), 
+                        (NoiseFrequency[Freq][0]+1)/(Rate/2)]
+            f2, f1 = signal.butter(4, passband, 'bandpass')
+        else:
+            Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+            
+            print('Filtering sound: ', NoiseFrequency[Freq], '...')
+            passband = [_/(Rate/2) for _ in NoiseFrequency[Freq]]
         
-        print('Filtering sound: ', NoiseFrequency[Freq], '...')
-        passband = [NoiseFrequency[Freq][i]/(Rate/2) \
-                    for i,j in enumerate(NoiseFrequency[Freq])]
         f2, f1 = signal.butter(4, passband, 'bandpass')
         SoundPulseFiltered[Freq] = signal.filtfilt(f2, f1, SoundPulse, \
                                                          padtype='odd', \
@@ -129,8 +137,11 @@ def GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     class StartSound(threading.Thread):
         def run(self):
             for Freq in range(len(NoiseFrequency)):
-                Key= str(NoiseFrequency[Freq][0]) + '-' \
-                     + str(NoiseFrequency[Freq][1])
+                if len(NoiseFrequency[Freq]) == 1:
+                    Key= str(NoiseFrequency[Freq][0])
+                else:
+                    Key= str(NoiseFrequency[Freq][0]) + '-' \
+                         + str(NoiseFrequency[Freq][1])
                 
                 for AmpF in range(len(SoundAmpF[Key])):
                     for OneBlock in range(SoundStimBlockNo):
@@ -246,6 +257,14 @@ def GenSoundLaser(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     SoundAndLaser = [0]*len(NoiseFrequency)
     
     for Freq in range(len(NoiseFrequency)):
+        if len(NoiseFrequency[Freq]) == 1:
+            Key= str(NoiseFrequency[Freq][0])
+            
+            print('Filtering sound: ', NoiseFrequency[Freq], '...')
+            passband = [(NoiseFrequency[Freq][0]-1)/(Rate/2), 
+                        (NoiseFrequency[Freq][0]+1)/(Rate/2)]
+            f2, f1 = signal.butter(4, passband, 'bandpass')
+        
         Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
         
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
@@ -303,6 +322,9 @@ def GenSoundLaser(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     class StartSoundAndLaser(threading.Thread):
         def run(self):
             for Freq in range(len(NoiseFrequency)):
+                if len(NoiseFrequency[Freq]) == 1:
+                    Key= str(NoiseFrequency[Freq][0])
+                
                 Key= str(NoiseFrequency[Freq][0]) + '-' \
                      + str(NoiseFrequency[Freq][1])
                 

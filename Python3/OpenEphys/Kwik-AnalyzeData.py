@@ -36,8 +36,9 @@ import KwikAnalysis
 
 FileName = glob.glob('*.hdf5'); FileName = FileName[0]
 
-KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
-                 FilterLow, FilterHigh, FilterOrder, StimType)
+KwikAnalysis.ABRAnalogTTLs(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
+                           ABRTTLCh, FilterLow, FilterHigh, FilterOrder, 
+                           StimType)
 
 KwikAnalysis.PlotABR(FileName)
 

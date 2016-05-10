@@ -366,7 +366,8 @@ def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=1
         Hf2, Hf1 = signal.butter(FilterOrder, FilterHigh/(Rate/2), 'lowpass')
         
         for Rec in range(len(Raw['data'])):
-            TTLCh = Raw['data'][str(Rec)][:, ABRTTLCh+15]
+            RecChNo = Raw['data'][str(Rec)].shape[1]
+            TTLCh = Raw['data'][str(Rec)][:, ABRTTLCh + (RecChNo-9)]
             Threshold = max(TTLCh)/5
             TTLs = []
             for _ in range(1, len(TTLCh)):
@@ -393,8 +394,8 @@ def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=1
                 lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1] * \
                             Raw['channel_bit_volts'][str(Rec)][ABRCh[1]-1]
                 
-#                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
-#                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
+                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
+                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
                 
                 del(TTLLoc, Start, End)
             
@@ -404,8 +405,8 @@ def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=1
 #            rData = np.mean(rABR, axis=0)
 #            lData = np.mean(lABR, axis=0)
             
-#            rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
-#            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
+            rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
+            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
 #            rData = signal.filtfilt(Hf2, Hf1, rData, padlen=0)
 #            lData = signal.filtfilt(Hf2, Hf1, lData, padlen=0)
             
@@ -493,6 +494,11 @@ def PlotABR(FileName):
     
     SoundIntensity = LoadHdf5Files.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
     
+    print('Set plot...')
+    plt.rc('text', usetex=True)
+    plt.rc('text.latex', unicode=True)
+    plt.rc('font',**{'family':'serif','serif':['Computer Modern']})
+    
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
@@ -510,10 +516,10 @@ def PlotABR(FileName):
                             + str(DataInfo['NoiseFrequency'][Freq][1])
                     
                     for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
-                        FigTitle = Key + '\ DV,\ trial\ ' + str(Trial+1)
+                        FigTitle = Key + ' DV, trial ' + str(Trial+1)
                         AxTitle = KeyHz
-                        YLabel = 'Voltage\ [\si{\micro}V]'
-                        XLabel = 'Time\ [ms]'
+                        YLabel = 'Voltage [\si{\micro}V]'
+                        XLabel = 'Time [ms]'
                         if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
                             DataInfo['SoundAmpF'][KeyHz][
                                 DataInfo['SoundAmpF'][KeyHz].index(0.0)
@@ -527,12 +533,12 @@ def PlotABR(FileName):
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
                                 color=Colors[AmpF][Ear], 
-                                label='$' + LineLabel + '$')
+                                label=LineLabel)
                         else:
                             Axes[Freq][Ear].plot(
                                 XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
                                 color=Colors[AmpF][Ear], 
-                                label='$' + LineLabel + '$')
+                                label=LineLabel)
                         
 #                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
                         Axes[Freq][Ear].spines['right'].set_visible(False)
@@ -540,12 +546,12 @@ def PlotABR(FileName):
                         Axes[Freq][Ear].spines['left'].set_visible(False)
                         Axes[Freq][Ear].yaxis.set_ticks_position('none')
                         Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
-                        Axes[Freq][Ear].set_title('$' + AxTitle + '$')
-                        Axes[Freq][Ear].set_ylabel('$' + YLabel + '$')
+                        Axes[Freq][Ear].set_title(AxTitle)
+                        Axes[Freq][Ear].set_ylabel(YLabel)
                         Axes[Freq][Ear].locator_params(tight=True)
-            Axes[-1][0].set_xlabel('$' + XLabel + '$')
-            Axes[-1][1].set_xlabel('$' + XLabel + '$')
-            Fig.suptitle('$' + FigTitle + '$')
+            Axes[-1][0].set_xlabel(XLabel)
+            Axes[-1][1].set_xlabel(XLabel)
+            Fig.suptitle(FigTitle)
             Fig.tight_layout()
             Fig.subplots_adjust(top=0.95)
             Fig.savefig('Figs/' + FileName + '-DV' +  Key + '-Trial' + 
@@ -930,7 +936,3 @@ def PlotTTLsLatency(FileName):
     plt.axes().yaxis.set_ticks_position('left')
     plt.axes().xaxis.set_ticks_position('bottom')
     plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.pdf', format='pdf')
-
-
-#
-Latency = 

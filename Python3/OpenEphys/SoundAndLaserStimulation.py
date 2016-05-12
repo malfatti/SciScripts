@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn06'
+AnimalName = 'CaMKIIahM4Dn07'
 Rate = 128000
 BaudRate = 38400
 

@@ -558,6 +558,115 @@ def PlotABR(FileName):
                         str(Trial) + '.svg', format='svg')
 
 
+def PlotABR2(FileName):
+    """ 
+    This function will plot the data from *Stim.hdf5. Make sure FileName is a 
+    string with the path to only one file.
+    
+    Also, LaTeX will render all the text in the plots. For this, make sure you 
+    have a working LaTex installation and dvipng package installed.
+    """
+    
+    print('Loading data...')
+    DataInfo = {}
+    with h5py.File(FileName) as F:
+        for Key, Value in F['DataInfo'].items():
+            DataInfo['SoundAmpF'] = {}
+            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
+                DataInfo['SoundAmpF'][aKey] = aValue[:]
+        
+        for bKey, bValue in F['DataInfo'].attrs.items():
+            if isinstance(bValue, Number):
+                DataInfo[bKey] = float(bValue)
+            else:
+                DataInfo[bKey] = bValue
+        
+        ABRs = [[], []]
+        ABRs[0] = [0]*len(F['ABRs']['Right'])
+        ABRs[1] = [0]*len(F['ABRs']['Left'])
+        for Freq in range(len(F['ABRs']['Right'])):
+            ABRs[0][Freq] = [0]*len(F['ABRs']['Right'][str(Freq)])
+            ABRs[1][Freq] = [0]*len(F['ABRs']['Left'][str(Freq)])
+            
+            for AmpF in range(len(F['ABRs']['Right'][str(Freq)])):
+                ABRs[0][Freq][AmpF] = {}; ABRs[1][Freq][AmpF] = {}
+                
+                for DV in F['ABRs']['Right'][str(Freq)][str(AmpF)].keys():
+                    ABRs[0][Freq][AmpF][DV] = [0]*len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV])
+                    ABRs[1][Freq][AmpF][DV] = [0]*len(F['ABRs']['Left'][str(Freq)][str(AmpF)][DV])
+                    
+                    for Trial in range(len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV])):
+                        ABRs[0][Freq][AmpF][DV][Trial] = F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
+                        ABRs[1][Freq][AmpF][DV][Trial] = F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
+        
+        XValues = F['ABRs'].attrs['XValues'][:]
+    
+    SoundIntensity = LoadHdf5Files.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
+    
+    print('Set plot...')
+    plt.rc('text', usetex=True)
+    plt.rc('text.latex', unicode=True)
+    plt.rc('font',**{'family':'serif','serif':['Computer Modern']})
+    
+    print('Plotting...')
+    Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
+    Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
+              for _ in range(len(ABRs[0][0]))]
+    
+    Keys = list(ABRs[0][0][0].keys())
+    for Key in Keys:
+        for Trial in range(len(ABRs[0][0][0][Key])):
+            for Ear in range(2):
+                for Freq in range(len(DataInfo['NoiseFrequency'])):
+                    Fig, Axes = plt.subplots(len(ABRs[0][0]), 2, 
+                                         sharex=True, figsize=(12, 12))
+                    
+                    KeyHz = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
+                            + str(DataInfo['NoiseFrequency'][Freq][1])
+                    
+                    for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
+                        FigTitle = Key + ' DV, trial ' + str(Trial+1)
+                        AxTitle = KeyHz
+                        YLabel = 'Voltage [\si{\micro}V]'
+                        XLabel = 'Time [ms]'
+                        if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
+                            DataInfo['SoundAmpF'][KeyHz][
+                                DataInfo['SoundAmpF'][KeyHz].index(0.0)
+                                                        ] = 0
+                        
+                        AmpStr = str(DataInfo['SoundAmpF'][KeyHz][AmpF])
+                        LineLabel = str(round(SoundIntensity[KeyHz][AmpStr]
+                                              )) + ' dB'
+                        
+                        if Ear == 0:
+                            Axes[Freq][Ear].plot(
+                                XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
+                                color=Colors[AmpF][Ear], 
+                                label=LineLabel)
+                        else:
+                            Axes[Freq][Ear].plot(
+                                XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
+                                color=Colors[AmpF][Ear], 
+                                label=LineLabel)
+                        
+                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
+                        Axes[Freq][Ear].spines['right'].set_visible(False)
+                        Axes[Freq][Ear].spines['top'].set_visible(False)
+                        Axes[Freq][Ear].spines['left'].set_visible(False)
+                        Axes[Freq][Ear].yaxis.set_ticks_position('none')
+                        Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
+                        Axes[Freq][Ear].set_title(AxTitle)
+                        Axes[Freq][Ear].set_ylabel(YLabel)
+                        Axes[Freq][Ear].locator_params(tight=True)
+            Axes[-1][0].set_xlabel(XLabel)
+            Axes[-1][1].set_xlabel(XLabel)
+            Fig.suptitle(FigTitle)
+            Fig.tight_layout()
+            Fig.subplots_adjust(top=0.95)
+            Fig.savefig('Figs/' + FileName + '-DV' +  Key + '-Trial' + 
+                        str(Trial) + '.svg', format='svg')
+
+
 def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
           FilterHigh=300, FilterOrder=4, GPIASTTLCh=1, PiezoCh=1):
     

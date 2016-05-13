@@ -23,7 +23,8 @@ import glob
 import h5py
 import Kwik
 import LoadHdf5Files
-import matplotlib.pyplot as plt
+from matplotlib import rcParams
+from matplotlib import pyplot as plt
 from numbers import Number
 import numpy as np
 import os
@@ -604,10 +605,20 @@ def PlotABR2(FileName):
     SoundIntensity = LoadHdf5Files.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
     
     print('Set plot...')
-    plt.rc('text', usetex=True)
-    plt.rc('text.latex', unicode=True)
-    plt.rc('font',**{'family':'serif','serif':['Computer Modern']})
-    
+    Params = {'backend': 'TkAgg',
+              'text.usetex': True, 'text.latex.unicode': True,
+              'text.latex.preamble': '\\usepackage{siunitx}',
+              
+              'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
+              'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
+              'xtick.labelsize': 'small', 'xtick.direction': 'out',
+              'ytick.labelsize': 'small', 'ytick.direction': 'out',
+              'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
+              'figure.titlesize': 'large', 'figure.titleweight': 'normal',
+              
+              'image.cmap': 'cubehelix', 'savefig.transparent': True,
+              'svg.fonttype': 'path'}
+    rcParams.update(Params)
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
@@ -616,55 +627,52 @@ def PlotABR2(FileName):
     Keys = list(ABRs[0][0][0].keys())
     for Key in Keys:
         for Trial in range(len(ABRs[0][0][0][Key])):
-            for Ear in range(2):
-                for Freq in range(len(DataInfo['NoiseFrequency'])):
-                    Fig, Axes = plt.subplots(len(ABRs[0][0]), 2, 
-                                         sharex=True, figsize=(12, 12))
+            for Freq in range(len(DataInfo['NoiseFrequency'])):
+                Fig, Axes = plt.subplots(len(ABRs[0][0]), 
+                                     sharex=True, figsize=(8, 12))
+                
+                KeyHz = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
+                        + str(DataInfo['NoiseFrequency'][Freq][1])
+                
+                if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
+                    DataInfo['SoundAmpF'][KeyHz][
+                        DataInfo['SoundAmpF'][KeyHz].index(0.0)
+                                                ] = 0
+                upYLim = max(ABRs[0][Freq][0][Key][Trial])
+                downYLim = min(ABRs[0][Freq][0][Key][Trial])
+                for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
+                    AmpStr = str(DataInfo['SoundAmpF'][KeyHz][AmpF])
                     
-                    KeyHz = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
-                            + str(DataInfo['NoiseFrequency'][Freq][1])
+                    FigTitle = KeyHz + ' Hz, trial ' + str(Trial+1)
+                    YLabel = 'Voltage [\si{\micro}V]'
+                    XLabel = 'Time [ms]'
+                    LineLabel = str(round(
+                                    SoundIntensity[KeyHz][AmpStr]
+                                          )) + ' dB'
                     
-                    for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
-                        FigTitle = Key + ' DV, trial ' + str(Trial+1)
-                        AxTitle = KeyHz
-                        YLabel = 'Voltage [\si{\micro}V]'
-                        XLabel = 'Time [ms]'
-                        if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
-                            DataInfo['SoundAmpF'][KeyHz][
-                                DataInfo['SoundAmpF'][KeyHz].index(0.0)
-                                                        ] = 0
-                        
-                        AmpStr = str(DataInfo['SoundAmpF'][KeyHz][AmpF])
-                        LineLabel = str(round(SoundIntensity[KeyHz][AmpStr]
-                                              )) + ' dB'
-                        
-                        if Ear == 0:
-                            Axes[Freq][Ear].plot(
-                                XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
-                                label=LineLabel)
-                        else:
-                            Axes[Freq][Ear].plot(
-                                XValues, ABRs[Ear][Freq][AmpF][Key][Trial], 
-                                color=Colors[AmpF][Ear], 
-                                label=LineLabel)
-                        
-                        Axes[Freq][Ear].legend(loc='lower right')#, frameon=False)
-                        Axes[Freq][Ear].spines['right'].set_visible(False)
-                        Axes[Freq][Ear].spines['top'].set_visible(False)
-                        Axes[Freq][Ear].spines['left'].set_visible(False)
-                        Axes[Freq][Ear].yaxis.set_ticks_position('none')
-                        Axes[Freq][Ear].xaxis.set_ticks_position('bottom')
-                        Axes[Freq][Ear].set_title(AxTitle)
-                        Axes[Freq][Ear].set_ylabel(YLabel)
-                        Axes[Freq][Ear].locator_params(tight=True)
-            Axes[-1][0].set_xlabel(XLabel)
-            Axes[-1][1].set_xlabel(XLabel)
-            Fig.suptitle(FigTitle)
-            Fig.tight_layout()
-            Fig.subplots_adjust(top=0.95)
-            Fig.savefig('Figs/' + FileName + '-DV' +  Key + '-Trial' + 
-                        str(Trial) + '.svg', format='svg')
+                    Axes[AmpF].plot(XValues, ABRs[0][Freq][AmpF][Key][Trial], 
+                                    color=Colors[AmpF][0], label=LineLabel)
+                    
+                    Axes[AmpF].legend(loc='lower right', frameon=False)
+                    Axes[AmpF].spines['right'].set_visible(False)
+                    Axes[AmpF].spines['top'].set_visible(False)
+                    Axes[AmpF].spines['left'].set_bounds(round(downYLim),
+                                                         round(upYLim))
+                    Axes[AmpF].spines['down'].set_bounds(round(ABRTi),
+                                                         round(upYLim))
+                    Axes[AmpF].yaxis.set_ticks_position('left')
+                    Axes[AmpF].xaxis.set_ticks_position('bottom')
+                    Axes[AmpF].set_ylabel(YLabel)
+                    Axes[AmpF].set_ylim(downYLim, upYLim)
+                    Axes[AmpF].locator_params(tight=True)
+                Axes[-1].set_xlabel(XLabel)
+                Fig.suptitle(FigTitle)
+                Fig.tight_layout()
+                Fig.subplots_adjust(top=0.95)
+                
+                FigName = 'Figs/' + FileName[:-15] + '-ABR_DV' +  Key + \
+                          '_Trial' + str(Trial) + '_Freq' + KeyHz + '.svg'
+                Fig.savefig(FigName, format='svg')
 
 
 def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 

@@ -602,8 +602,6 @@ def PlotABR2(FileName):
         
         XValues = F['ABRs'].attrs['XValues'][:]
     
-    SoundIntensity = LoadHdf5Files.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
-    
     print('Set plot...')
     Params = {'backend': 'TkAgg',
               'text.usetex': True, 'text.latex.unicode': True,
@@ -641,31 +639,36 @@ def PlotABR2(FileName):
                 upYLim = max(ABRs[0][Freq][0][Key][Trial])
                 downYLim = min(ABRs[0][Freq][0][Key][Trial])
                 for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
-                    AmpStr = str(DataInfo['SoundAmpF'][KeyHz][AmpF])
-                    
                     FigTitle = KeyHz + ' Hz, trial ' + str(Trial+1)
                     YLabel = 'Voltage [\si{\micro}V]'
                     XLabel = 'Time [ms]'
-                    LineLabel = str(round(
-                                    SoundIntensity[KeyHz][AmpStr]
-                                          )) + ' dB'
+                    LineLabel = str(DataInfo['Intensities'][AmpF]) + ' dB'
+                    SpanLabel = 'Sound pulse'
+                    
+                    Ind1 = list(XValues).index(0)
+                    Ind2 = list(XValues).index(3)
                     
                     Axes[AmpF].plot(XValues, ABRs[0][Freq][AmpF][Key][Trial], 
                                     color=Colors[AmpF][0], label=LineLabel)
                     
+                    Axes[AmpF].axvspan(XValues[Ind1], XValues[Ind2], 
+                                       color='k', alpha=0.3, lw=0, 
+                                       label=SpanLabel)
+                    
                     Axes[AmpF].legend(loc='lower right', frameon=False)
                     Axes[AmpF].spines['right'].set_visible(False)
                     Axes[AmpF].spines['top'].set_visible(False)
-                    Axes[AmpF].spines['left'].set_bounds(round(downYLim),
-                                                         round(upYLim))
-                    Axes[AmpF].spines['down'].set_bounds(round(ABRTi),
-                                                         round(upYLim))
+                    Axes[AmpF].spines['bottom'].set_visible(False)
+                    Axes[AmpF].spines['left'].set_bounds(round(0), round(1))
                     Axes[AmpF].yaxis.set_ticks_position('left')
-                    Axes[AmpF].xaxis.set_ticks_position('bottom')
+                    Axes[AmpF].xaxis.set_ticks_position('none')
                     Axes[AmpF].set_ylabel(YLabel)
                     Axes[AmpF].set_ylim(downYLim, upYLim)
                     Axes[AmpF].locator_params(tight=True)
+                    
+                Axes[-1].spines['bottom'].set_visible(True)
                 Axes[-1].set_xlabel(XLabel)
+                Axes[-1].spines['bottom'].set_bounds(round(0), round(1))
                 Fig.suptitle(FigTitle)
                 Fig.tight_layout()
                 Fig.subplots_adjust(top=0.95)

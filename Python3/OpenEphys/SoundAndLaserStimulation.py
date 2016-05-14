@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn07'
+AnimalName = 'CaMKIIahM4Dn06'
 Rate = 128000
 BaudRate = 38400
 
@@ -58,13 +58,13 @@ SoundPulseDur = 0.003
 # Silence after pulse
 SoundPostPauseDur = 0.093
 # Amount of pulses per block
-SoundPulseNo = 500
+SoundPulseNo = 529
 # Number of blocks
 SoundStimBlockNo = 1
 # Duration of pause between blocks
-SoundPauseBetweenStimBlocksDur = 5
+SoundPauseBetweenStimBlocksDur = 10
 # Intensities tested, in order, in dB. Supports floats :)
-Intensities = [80, 75, 70, 65, 60, 55, 50, 45]
+Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
 #Intensities = [100, 75, 70]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
@@ -175,7 +175,7 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 #Hz = input('Choose Freq index: ')
 #DVCoord = input('Choose DVCoord (in µm): '); 
 DVCoord = 'Out'
-Hz = 0
+Hz = 3
 Hz = int(Hz)
 
 print('Running...')

@@ -40,7 +40,7 @@ KwikAnalysis.ABRAnalogTTLs(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL,
                            ABRTTLCh, FilterLow, FilterHigh, FilterOrder, 
                            StimType)
 
-KwikAnalysis.PlotABR(FileName)
+KwikAnalysis.PlotABR2(FileName)
 
 
 #%% GPIASs

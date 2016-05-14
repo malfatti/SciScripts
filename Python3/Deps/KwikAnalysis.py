@@ -625,7 +625,7 @@ def PlotABR2(FileName):
     Keys = list(ABRs[0][0][0].keys())
     for Key in Keys:
         for Trial in range(len(ABRs[0][0][0][Key])):
-            for Freq in range(len(DataInfo['NoiseFrequency'])):
+            for Freq in range(len(ABRs[0])):
                 Fig, Axes = plt.subplots(len(ABRs[0][0]), 
                                      sharex=True, figsize=(8, 12))
                 

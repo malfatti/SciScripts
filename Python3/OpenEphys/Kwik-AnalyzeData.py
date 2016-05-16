@@ -27,7 +27,7 @@ ABRTTLCh = 2            # TTL ch for ABR
 FilterLow = 300         # High-pass frequency for bandpass filter
 FilterHigh = 3000       # Low-pass frequency
 FilterOrder = 5         # butter order
-StimType = 'Sound'
+StimType = 'Sound'      # Stimulation type: 'Sound', 'Laser' or ['Sound', 'Laser'] 
 
 #==========#==========#==========#==========#
 

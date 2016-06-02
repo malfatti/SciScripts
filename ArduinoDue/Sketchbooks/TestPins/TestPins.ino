@@ -27,7 +27,14 @@
 
 const int sRate = 40; // in KHz
 const int sPulseDur = 3; // in ms
+const int sPulsePause = 97; // in ms
 const int PulseNo = 200;
+
+const long Pi = 3.1415; // in ms
+const int sWaveDur = 100; // in ms
+const int sWavePause = 900; // in ms
+const int sWaveFreq = 1000; // in Hz
+const int WaveNo = 1;
 
 const int dPinNo = 8;
 const int Pins[dPinNo] = {38, 41, 42, 45, 46, 49, 50, 51};
@@ -99,6 +106,30 @@ void loop() {
         dacc_write_conversion_data(DACC_INTERFACE, WN[El]);
         dacc_set_channel_selection(DACC_INTERFACE, 1);
         dacc_write_conversion_data(DACC_INTERFACE, WN[El]);
+        //analogWrite(DAC0, WN[El]);
+        //analogWrite(DAC1, WN[El]);
+        delayMicroseconds(Delay);
+      }
+      analogWrite(DAC0, 0);
+      analogWrite(DAC1, 0);
+      delay(97);
+    }
+  }
+
+  if (ch == 'S') {
+    int Len = sRate * sWaveDur;
+    int Delay = 1000 / sRate;
+
+    long SW[Len];
+    for (int El = 0; El < Len; El++) {
+      SW[El] = sin(2*Pi*sWaveFreq*(El/sRate));
+    }
+
+    for ( int Pulse = 0; Pulse < PulseNo; Pulse++) {
+      for (int El = 0; El < Len; El++) {
+//        dacc_set_channel_selection(DACC_INTERFACE, 0);
+//        dacc_write_conversion_data(DACC_INTERFACE, SW[El]);
+          Serial.println(SW[El]);
         //analogWrite(DAC0, WN[El]);
         //analogWrite(DAC1, WN[El]);
         delayMicroseconds(Delay);

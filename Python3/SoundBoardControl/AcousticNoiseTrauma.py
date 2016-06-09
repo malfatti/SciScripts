@@ -28,8 +28,8 @@ Leão, PhD.
 
 Rate = 128000
 SoundDur = 60 * 70 # in SECONDS!
-NoiseFrequency = [[10000, 12000]]
-Intensity = [90]
+NoiseFrequency = [[9000, 11000]]
+Intensity = [50]
 TTLAmpF = 0
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \

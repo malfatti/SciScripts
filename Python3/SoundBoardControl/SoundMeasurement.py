@@ -37,8 +37,9 @@ SoundPulseDur = 0.5
 # Amount of pulses per block
 SoundPulseNo = 4
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], 
-                  [14000, 16000], [16000, 18000]]
+#NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
+#                  [14000, 16000], [16000, 18000]]
+NoiseFrequency = [[9000, 11000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
@@ -79,11 +80,12 @@ SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
 
 MicSens_VPa = 10**(MicSens_dB/20)
 
-Date = datetime.datetime.now()
-Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
+#Date = datetime.datetime.now()
+#Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurement'])
 
 ## Prepare dict w/ experimental setup
-FileName = Folder + '/' + Folder + '.hdf5'
+#FileName = Folder + '/' + Folder + '.hdf5'
+FileName = '20160419093139-SoundMeasurement/20160419093139-SoundMeasurement.hdf5'
 DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundPulseDur', 
                                                 'SoundPulseNo', 'SoundAmpF', 
                                                 'NoiseFrequency', 'TTLAmpF', 
@@ -154,9 +156,9 @@ Reading.stop_stream()
 print('Done playing/recording. Saving data...')
 
 ## Save!!!
-os.makedirs(Folder, exist_ok=True)
+#os.makedirs(Folder, exist_ok=True)
 with h5py.File(FileName) as h5:
-    h5.create_group('SoundRec')
+#    h5.create_group('SoundRec')
     for Freq in range(len(SoundRec)):
         Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
         h5['SoundRec'].create_group(Key)
@@ -250,12 +252,12 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
                                 
 ## Save analyzed data
 print('Saving analyzed data...')
-GroupName = 'SoundIntensity-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+#GroupName = 'SoundIntensity-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 with h5py.File(FileName) as h5:
-    if 'SoundIntensity' in h5.keys():
-            h5[GroupName] = h5['SoundIntensity']; del(h5['SoundIntensity'])
-    
-    h5.create_group('SoundIntensity')
+#    if 'SoundIntensity' in h5.keys():
+#            h5[GroupName] = h5['SoundIntensity']; del(h5['SoundIntensity'])
+#    
+#    h5.create_group('SoundIntensity')
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
               str(DataInfo['NoiseFrequency'][Freq][1])

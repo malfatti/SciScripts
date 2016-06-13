@@ -15,11 +15,7 @@
     You should have received a copy of the GNU General Public License           
     along with this program.  If not, see <http://www.gnu.org/licenses/>.       
 
-This is a script to generate a sound white noise at several frequencies and 
-intensities, play and record them at the same time, for testing purposes. 
-Next, it calculates the intensity in RMS and dB for each frequency at each 
-amplification factor. In our setup, we use this to calibrate the audio 
-equipment.
+Retest script
 """
 
 #%% Set parameters of the experiment
@@ -69,8 +65,7 @@ MicSens_VPa = 10**(MicSens_dB/20)
 Sound, SoundRec, Stimulation = ControlSoundBoard.SoundMeasurementOut(
                                    Rate, SoundPulseDur, SoundPulseNo, 
                                    SoundAmpF, NoiseFrequency, TTLAmpF, 
-                                   DataInfo['SBOutAmpF']
-                               )
+                                   DataInfo['SBOutAmpF'])
 
 # Define input objects
 q = pyaudio.PyAudio()

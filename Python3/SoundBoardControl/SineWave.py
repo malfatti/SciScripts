@@ -22,10 +22,10 @@ import math
 import pyaudio
 
 Rate = 128000
-Freq = 2; Time = 30
+Freq = 2; Time = 10
     
 print('Generating sound...')
-Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) * 1.5 + 1.5 
+Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) * 2.5 + 0.5 
          for _ in range(round(Rate*Time))]
 Pulse[-1] = 0
 

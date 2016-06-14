@@ -28,7 +28,7 @@ Leão, PhD.
 
 Rate = 128000
 SoundDur = 60 * 70 # in SECONDS!
-NoiseFrequency = [[8000, 10000]]
+NoiseFrequency = [[9000, 11000]]
 Intensity = [50]
 TTLAmpF = 0
 

@@ -27,9 +27,9 @@ Leão, PhD.
 #%% Set up everything
 
 Rate = 128000
-SoundDur = 60 * 70 # in SECONDS!
+SoundDur = 60 * 120 # in SECONDS!
 NoiseFrequency = [[9000, 11000]]
-Intensity = [50]
+Intensity = [90]
 TTLAmpF = 0
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
@@ -42,6 +42,7 @@ SoundBoard = 'USBPre2_oAux-iAux'
 
 import ControlSoundBoard
 import LoadHdf5Files
+import pyaudio
 
 SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
                                                 'SoundIntensity')
@@ -64,6 +65,15 @@ Sound, SoundPauseBetweenStimBlocks, StartSound = ControlSoundBoard.GenSound(
                                                     CalibrationFile, 
                                                     SoundBoard)
 
+p = pyaudio.PyAudio()
+Stimulation = p.open(format=pyaudio.paFloat32,
+                     channels=2,
+                     rate=Rate,
+                     output=True)
+
 #%% Run!!
-""" To stop, close the console :) """
-StartSound().start()
+""" To stop, just ctrl+c :) """
+for OnePulse in range(SoundPulseNo):
+    Stimulation.write(Sound[0][0])
+
+#StartSound().start()

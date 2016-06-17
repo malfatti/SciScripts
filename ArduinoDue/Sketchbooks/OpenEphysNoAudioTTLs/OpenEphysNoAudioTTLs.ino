@@ -27,7 +27,8 @@
 
 const int inPin = A0;
 const int PinNo = 8;
-const int Pins[PinNo] = {53, 50, 49, 46, 45, 42, 41, 38};
+//const int Pins[PinNo] = {53, 50, 49, 46, 45, 42, 41, 38};
+const int Pins[PinNo] = {38, 41, 42, 45, 46, 49, 50, 53};
 const int Delay = 25;
 
 void setup() {

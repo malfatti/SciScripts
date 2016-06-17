@@ -37,7 +37,7 @@ const int sWaveFreq = 50; // in Hz
 const int WaveNo = 50;
 
 const int dPinNo = 8;
-const int Pins[dPinNo] = {38, 41, 42, 45, 46, 49, 50, 51};
+const int Pins[dPinNo] = {38, 41, 42, 45, 46, 49, 50, 53};
 
 const int aPinNo = 12;
 const int inPins[aPinNo] = {A0, A1, A2, A3, A4, A5, \

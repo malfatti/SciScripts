@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn07'
+AnimalName = 'CaMKIIahM4Dn09'
 Rate = 128000
 BaudRate = 38400
 
@@ -175,7 +175,7 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 #Hz = input('Choose Freq index: ')
 #DVCoord = input('Choose DVCoord (in µm): '); 
 DVCoord = 'Out'
-Hz = 3
+Hz = 4
 Hz = int(Hz)
 
 print('Running...')

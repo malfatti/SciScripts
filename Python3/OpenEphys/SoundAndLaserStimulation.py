@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn06'
+AnimalName = 'CaMKIIahM4Dn07'
 Rate = 128000
 BaudRate = 38400
 
@@ -69,7 +69,7 @@ Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 10000], [10000, 12000], 
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
                   [12000, 14000], [14000, 16000]]
 #NoiseFrequency = [[8000, 10000]]
 
@@ -183,9 +183,11 @@ Key = str(NoiseFrequency[Hz][0]) + '-' + str(NoiseFrequency[Hz][1])
 for AmpF in range(len(SoundAmpF[Key])):
     Arduino.write(b'P')
     for OnePulse in range(SoundPulseNo):
+#        print(str(SoundPulseNo), end='')
 #        Arduino.write(b'a')
         Stimulation.write(Sound[Hz][AmpF])
 #        Arduino.write(b'z')
+#        print('Finished AmpF', str(AmpF))
     
     Arduino.write(b'P')
     Stimulation.write(SoundPauseBetweenStimBlocks)

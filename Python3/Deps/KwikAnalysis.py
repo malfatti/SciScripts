@@ -368,7 +368,8 @@ def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=1
         
         for Rec in range(len(Raw['data'])):
             RecChNo = Raw['data'][str(Rec)].shape[1]
-            TTLCh = Raw['data'][str(Rec)][:, ABRTTLCh + (RecChNo-9)]
+#            TTLCh = Raw['data'][str(Rec)][:, ABRTTLCh + (RecChNo-9)]
+            TTLCh = Raw['data'][str(Rec)][:, -1]
             Threshold = max(TTLCh)/5
             TTLs = []
             for _ in range(1, len(TTLCh)):
@@ -605,7 +606,7 @@ def PlotABR2(FileName):
     print('Set plot...')
     Params = {'backend': 'TkAgg',
               'text.usetex': True, 'text.latex.unicode': True,
-              'text.latex.preamble': '\\usepackage{siunitx}',
+#              'text.latex.preamble': '\\usepackage{siunitx}',
               
               'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
               'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
@@ -640,7 +641,7 @@ def PlotABR2(FileName):
                 downYLim = min(ABRs[0][Freq][0][Key][Trial])
                 for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
                     FigTitle = KeyHz + ' Hz, trial ' + str(Trial+1)
-                    YLabel = 'Voltage [\si{\micro}V]'
+                    YLabel = 'Voltage [mV]'
                     XLabel = 'Time [ms]'
                     LineLabel = str(DataInfo['Intensities'][AmpF]) + ' dB'
                     SpanLabel = 'Sound pulse'

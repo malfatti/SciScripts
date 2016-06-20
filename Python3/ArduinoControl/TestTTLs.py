@@ -51,8 +51,8 @@ Stimulation = p.open(format=pyaudio.paFloat32,
 
 Arduino = ControlArduino.CreateObj(38400)
 
-#%% Test OpenEphys
-for _ in range(1000):
+#%% Test TTL connections
+for _ in range(10):
     Arduino.write(b'A')
     time.sleep(0.08)
     Arduino.write(b'B')
@@ -70,6 +70,7 @@ for _ in range(1000):
     Arduino.write(b'P')
     time.sleep(3)
 
+#%% Test Sound-Arduino TTLs
 for _ in range(100):
     Stimulation.write(Sound[0][0])
 time.sleep(3)
@@ -99,6 +100,7 @@ for _ in range(10):
     Arduino.write(b'P')
     time.sleep(3)
 
+#%% Test Sound-Arduino TTLs
 print('Testing sound TTLs...')
 for _ in range(100):
     Stimulation.write(Sound[0][0])

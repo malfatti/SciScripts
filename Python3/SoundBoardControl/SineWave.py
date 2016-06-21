@@ -22,12 +22,16 @@ import math
 import pyaudio
 
 Rate = 128000
-Freq = 2; Time = 10
+Freq = 200; Time = 10
     
 print('Generating sound...')
-Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) * 2.5 + 0.5 
-         for _ in range(round(Rate*Time))]
-Pulse[-1] = 0
+#Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) * 3.3/1.7 #+ 0.5 
+#         for _ in range(round(Rate*Time))]
+#Pulse[-1] = 0
+
+Pulse = [1]*round((Rate*0.01)//2) + [-1]*round((Rate*0.01)//2) + [0]*round(Rate*0.08)
+Pulse = Pulse*100
+Pulse[-1] = 0; Pulse[0] = 0
 
 print('Interleaving channels...')
 List = [0]*(2*len(Pulse))

@@ -21,6 +21,11 @@ import h5py
 from numbers import Number
 
 
+def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
+    with h5py.File(SBAmpFsFile) as h5: 
+        Var = h5[SoundBoard][Key][0]
+    return(Var)
+    
 def CheckGroup(FileName, Group):
     with h5py.File(FileName) as F:
         if Group in F.keys():

@@ -69,7 +69,7 @@ KwikAnalysis.PlotGPIAS(FileList)
 #%% TTLsLatencyTest
 
 SoundCh = 1
-SoundSqCh = 2
+SoundSqCh = 5
 SoundTTLCh = 1
 
 TimeBeforeTTL = 5   # in ms

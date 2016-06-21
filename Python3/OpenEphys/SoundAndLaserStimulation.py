@@ -58,13 +58,14 @@ SoundPulseDur = 0.003
 # Silence after pulse
 SoundPostPauseDur = 0.093
 # Amount of pulses per block
-SoundPulseNo = 529
+SoundPulseNo = 10
 # Number of blocks
 SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 10
 # Intensities tested, in order, in dB. Supports floats :)
-Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
+#Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
+Intensities = [80, 65]
 #Intensities = [100, 75, 70]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
@@ -94,7 +95,6 @@ import datetime
 import h5py
 import LoadHdf5Files
 import numpy as np
-import pyaudio
 
 SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
                                                 'SoundIntensity')
@@ -120,35 +120,32 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'LaserPauseBetweenStimBlocksDur', 
                                        'CalibrationFile', 'FileName'])
 
-with h5py.File(FileName) as h5:
-    h5.create_group('DataInfo')
-    h5.create_group('ExpInfo')
-    for Key, Value in DataInfo.items():
-        h5['DataInfo'].attrs[Key] = Value
-    
-    h5['DataInfo'].create_group('SoundAmpF')
-    for Key, Value in SoundAmpF.items():
-        h5['DataInfo']['SoundAmpF'][Key] = Value
-
-
-## Create Audio and Arduino objects
-p = pyaudio.PyAudio()
-Stimulation = p.open(format=pyaudio.paFloat32,
-                channels=2,
-                rate=Rate,
-                output=True)
+#with h5py.File(FileName) as h5:
+#    h5.create_group('DataInfo')
+#    for Key, Value in DataInfo.items():
+#        h5['DataInfo'].attrs[Key] = Value
+#    
+#    h5['DataInfo'].create_group('SoundAmpF')
+#    for Key, Value in SoundAmpF.items():
+#        h5['DataInfo']['SoundAmpF'][Key] = Value
 
 Arduino = ControlArduino.CreateObj(BaudRate)
 
 
 #%% Prepare sound stimulation
-Sound, SoundPauseBetweenStimBlocks, _ = \
-    ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
-                               NoiseFrequency, TTLAmpF, CalibrationFile, 
-                               SoundBoard, SoundPrePauseDur, SoundPostPauseDur, 
-                               SoundStimBlockNo, 
-                               SoundPauseBetweenStimBlocksDur)
+Sound, PlaySound = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
+                                              SoundPulseNo, SoundAmpF, 
+                                              NoiseFrequency, TTLAmpF, 
+                                              CalibrationFile, SoundBoard, 
+                                              'AllPulses', SoundPrePauseDur, 
+                                              SoundPostPauseDur, 
+                                              SoundStimBlockNo, 
+                                              SoundPauseBetweenStimBlocksDur)
 
+Stimulation = ControlSoundBoard.GenAudioObj(Rate, 'out')
+SoundPauseBetweenStimBlocks = ControlSoundBoard.GenSoundPause(
+                                        Rate, SoundPauseBetweenStimBlocksDur
+                                                              )
 
 #%% Prepare laser stimulation
 Laser, LaserPauseBetweenStimBlocks, _ = \
@@ -171,43 +168,46 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
                                     LaserPauseBetweenStimBlocksDur)
 
 
-#%% Run sound 135-160
-#Hz = input('Choose Freq index: ')
-#DVCoord = input('Choose DVCoord (in µm): '); 
+#%% Run sound
+
 DVCoord = 'Out'
-Hz = 4
-Hz = int(Hz)
-
-print('Running...')
-Key = str(NoiseFrequency[Hz][0]) + '-' + str(NoiseFrequency[Hz][1])
-for AmpF in range(len(SoundAmpF[Key])):
-    Arduino.write(b'P')
-    for OnePulse in range(SoundPulseNo):
-#        print(str(SoundPulseNo), end='')
-#        Arduino.write(b'a')
-        Stimulation.write(Sound[Hz][AmpF])
-#        Arduino.write(b'z')
-#        print('Finished AmpF', str(AmpF))
+#Freq = 4
+#Freq = int(Freq)
+while True:
+    print('Remember to change folder name in OE!')
+    Freq = input('Choose Freq index [0-' + str(len(NoiseFrequency)-1) + ']: ')
+    Freq = int(Freq)
     
-    Arduino.write(b'P')
-    Stimulation.write(SoundPauseBetweenStimBlocks)
-
-
-print('Done. Saving info...')
-#ExpFileName = AnimalName + '-SoundStim.hdf5'
-
-with h5py.File(FileName) as h5:
-    h5['ExpInfo'].create_group(str(len(list(h5['ExpInfo']))))
-    Key = list(h5['ExpInfo'].keys())[-1]
+    if Freq not in list(range(len(NoiseFrequency))):
+        print('=== Wrong Freq index. Stopping... ===')
+        print('')
+        break
     
-    h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
-    h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
-    h5['ExpInfo'][Key].attrs['Hz'] = Hz
+    print('Running...')
+    Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+    for AmpF in range(len(SoundAmpF[Key])):
+        print('Playing', str(NoiseFrequency[Freq]), 'at', 
+              str(Intensities[AmpF]), 'dB')
+        
+        Arduino.write(b'P')
+        PlaySound(Freq, AmpF)
+        Arduino.write(b'P')
+        Stimulation.write(SoundPauseBetweenStimBlocks)
+    
+    print('Done. Saving info...')
+    #with h5py.File(FileName) as h5:
+#        h5.create_group('ExpInfo')
+    #    h5['ExpInfo'].create_group(str(len(list(h5['ExpInfo']))))
+    #    Key = list(h5['ExpInfo'].keys())[-1]
+    #    
+    #    h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
+    #    h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
+    #    h5['ExpInfo'][Key].attrs['Hz'] = Freq
+    
+    print('Saved.')
+    print('Played Freq', str(Freq), 'at', DVCoord, 'µm DV')
 
-print('Saved.')
-print('Played Freq ' + str(Hz) + ' at ' + DVCoord + 'µm DV')
-
-#%% Run laser 45 85
+#%% Run laser
 #DVCoord = input('Choose DVCoord (in µm): '); 
 DVCoord = 'Out'
 #
@@ -234,7 +234,7 @@ Arduino.write(b'P')
 #print('Ran laser pulses at ' + str(lHz) + ' at ' + DVCoord + 'µm DV')
 
 
-#%% Run sound and laser >200
+#%% Run sound and laser
 #Hz = input('Choose Freq index: ')
 #DVCoord = input('Choose DVCoord (in µm): '); 
 DVCoord = 'Out'

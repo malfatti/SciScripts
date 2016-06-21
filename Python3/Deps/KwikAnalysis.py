@@ -878,7 +878,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     RecFolder = glob.glob('KwikFiles/*'); RecFolder = RecFolder[0]
 #    SoundCh = SoundCh + 18; SoundSqCh = SoundSqCh + 18
-    SoundCh = 0; SoundSqCh = 1
+    SoundCh = 0; SoundSqCh = 2
     
     print('Load DataInfo...')
     DataInfo= LoadHdf5Files.ExpDataInfo(FileName, list(RecFolder), 'Sound')
@@ -978,8 +978,8 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
         try:
-#            SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
-            SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
+            SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
+#            SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
 #            Start = RawTime.index(Start)
 #            End = RawTime.index(End)
         except ValueError:
@@ -1035,18 +1035,34 @@ def PlotTTLsLatency(FileName):
             else:
                 DataInfo[bKey] = bValue
     
+    print('Set plot...')
+    Params = {'backend': 'TkAgg',
+              'text.usetex': True, 'text.latex.unicode': True,
+#              'text.latex.preamble': '\\usepackage{siunitx}',
+              
+              'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
+              'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
+              'xtick.labelsize': 'small', 'xtick.direction': 'out',
+              'ytick.labelsize': 'small', 'ytick.direction': 'out',
+              'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
+              'figure.titlesize': 'large', 'figure.titleweight': 'normal',
+              
+              'image.cmap': 'cubehelix', 'savefig.transparent': True,
+              'svg.fonttype': 'path'}
+    rcParams.update(Params)
+    
     for _ in range(len(SoundPulse)):
         plt.figure(1); plt.plot(XValues, SoundPulse[_])
         plt.figure(2); plt.plot(XValues, SoundSq[_])
     
     Hist, BinEdges = np.histogram(SoundSqDelay, bins=200)
     Threshold = (DataInfo['SoundPulseDur']/100)*1000
-    Threshold = 0.15
+    Threshold = 15
     sIndex = min(range(len(BinEdges)), 
                  key=lambda i: abs(BinEdges[i]-Threshold*-1))
     eIndex = min(range(len(BinEdges)), 
                  key=lambda i: abs(BinEdges[i]-Threshold))
-    Sum = sum(Hist[sIndex:eIndex]); Perc = Sum/len(SoundSq) * 100
+    Sum = sum(Hist); Perc = Sum/len(SoundSq) * 100
     plt.figure(3); plt.plot(BinEdges[:-1], Hist)
     plt.axvspan(BinEdges[sIndex], BinEdges[eIndex], color='k', alpha=0.5, lw=0,
                 label=str(Perc) + '\% of pulses with latency $<$ 3µs') 
@@ -1056,4 +1072,4 @@ def PlotTTLsLatency(FileName):
     plt.axes().spines['top'].set_visible(False)
     plt.axes().yaxis.set_ticks_position('left')
     plt.axes().xaxis.set_ticks_position('bottom')
-    plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.pdf', format='pdf')
+    plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.svg', format='svg')

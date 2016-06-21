@@ -40,13 +40,13 @@ SoundPrePauseDur = 0.004
 # Pulse duration
 SoundPulseDur = 0.003
 # Silence after pulse
-SoundPostPauseDur = 0.093
+SoundPostPauseDur = 0.013
 # Amount of pulses per block
-SoundPulseNo = 5000
+SoundPulseNo = 4000
 # Number of blocks
-SoundStimBlockNo = 5
+SoundStimBlockNo = 1
 # Duration of pause between blocks
-SoundPauseBetweenStimBlocksDur = 10
+SoundPauseBetweenStimBlocksDur = 1
 # Intensities tested, in order, in dB. Supports floats :)
 #Intensities = [80, 75, 70, 65, 60, 55, 50, 45]
 Intensities = [80]
@@ -61,6 +61,7 @@ import ControlSoundBoard
 import datetime
 import h5py
 import LoadHdf5Files
+import numpy as np
 import pyaudio
 import os
 
@@ -107,28 +108,39 @@ Stimulation = p.open(format=pyaudio.paFloat32,
 
 Arduino = ControlArduino.CreateObj(BaudRate)
 
-Sound, SoundPauseBetweenStimBlocks, _ = \
-    ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
-                               NoiseFrequency, TTLAmpF, CalibrationFile, 
-                               SoundBoard, SoundPrePauseDur, SoundPostPauseDur, 
-                               SoundStimBlockNo, 
-                               SoundPauseBetweenStimBlocksDur)
+Sound, PlaySound = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
+                                              SoundPulseNo, SoundAmpF, 
+                                              NoiseFrequency, TTLAmpF, 
+                                              CalibrationFile, SoundBoard, 
+                                              'AllPulses', SoundPrePauseDur, 
+                                              SoundPostPauseDur, 
+                                              SoundStimBlockNo, 
+                                              SoundPauseBetweenStimBlocksDur)
 
 #%% Run!
+
 DVCoord = 'Out'
-Hz = 0
+Freq = 0
 
 print('Running...')
-Key = str(NoiseFrequency[Hz][0]) + '-' + str(NoiseFrequency[Hz][1])
+Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
 for AmpF in range(len(SoundAmpF[Key])):
-    Arduino.write(b'P')
-    for OnePulse in range(SoundPulseNo):
-#        Arduino.write(b'a')
-        Stimulation.write(Sound[Hz][AmpF])
-#        Arduino.write(b'z')
+    print('Playing', str(NoiseFrequency[Freq]), 'at', 
+          str(Intensities[AmpF]), 'dB')
     
     Arduino.write(b'P')
-    Stimulation.write(SoundPauseBetweenStimBlocks)
+    PlaySound(Freq, AmpF)
+    Arduino.write(b'P')
 
+print('Done. Saving info...')
+with h5py.File(Folder+'/'+FileName) as h5:
+    h5.create_group('ExpInfo')
+    h5['ExpInfo'].create_group(str(len(list(h5['ExpInfo']))))
+    Key = list(h5['ExpInfo'].keys())[-1]
+    
+    h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
+    h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
+    h5['ExpInfo'][Key].attrs['Hz'] = Freq
 
-print('Done.')
+print('Saved.')
+print('Played Freq', str(Freq), 'at', DVCoord, 'µm DV')

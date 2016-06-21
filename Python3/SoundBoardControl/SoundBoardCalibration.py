@@ -35,7 +35,7 @@ so you know that no kind of frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 128000
-SoundBoard = 'USBPre2_oAux-iAux'
+SoundBoard = 'Intel_oAnalog-iAnalog'
 
 import ControlSoundBoard
 import datetime
@@ -47,7 +47,7 @@ ControlSoundBoard.SoundCalOut(Rate)
 
 #%% Input
 Repetitions = 20
-SBOutAmpF = 1
+SBOutAmpF = 1.7
 
 Data = [[] for _ in range(Repetitions)]
 SBInAmpF = [[] for _ in range(Repetitions)]
@@ -61,8 +61,9 @@ SBInAmpF = sum(SBInAmpF)/len(SBInAmpF)
 print('SBInAmpF = ', str(SBInAmpF))
 
 #%% Save
-Date = datetime.datetime.now()
-FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
+#Date = datetime.datetime.now()
+#FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
+FileName = '20160418173048-SBAmpFs.hdf5'
 with h5py.File(FileName) as h5:
     h5.create_group(SoundBoard)
     h5[SoundBoard].attrs['SBOutAmpF'] = SBOutAmpF

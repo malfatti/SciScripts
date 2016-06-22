@@ -56,11 +56,11 @@ PulseIntensity = [105]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 10000], [10000, 12000], 
-                  [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000]]#, 
+#                  [12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
-NoOfTrials = 5
+NoOfTrials = 2
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
@@ -72,7 +72,6 @@ import ControlArduino
 import ControlSoundBoard
 import h5py
 import LoadHdf5Files
-import pyaudio
 import random
 
 SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
@@ -107,20 +106,22 @@ print('Creating SoundBackground...')
 SoundPulseDur = SoundBackgroundDur
 SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
-SoundBackground = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
-                                             SoundAmpF, NoiseFrequency, 
-                                             TTLAmpF, CalibrationFile, 
-                                             SoundBoard)[0]
+SoundBackground = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundPulseNo, 
+                                              SoundAmpF, NoiseFrequency, 
+                                              TTLAmpF, CalibrationFile, 
+                                              SoundBoard, 'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
+
 
 print('Creating SoundGap...')
 SoundGap = [[], []]
 SoundPulseDur = SoundGapDur
 SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
-SoundGap[0] = ControlSoundBoard.GenSound(Rate, SoundPulseDur,SoundPulseNo, 
-                                        SoundAmpF, NoiseFrequency, 
-                                        TTLAmpF, CalibrationFile, SoundBoard)[0]
+SoundGap[0] = ControlSoundBoard.SoundStim(Rate, SoundPulseDur,SoundPulseNo, 
+                                          SoundAmpF, NoiseFrequency, 
+                                          TTLAmpF, CalibrationFile, 
+                                          SoundBoard, 'AllPulses')[0]
 SoundGap[1] = [0, 0.6]*(round(Rate*SoundGapDur))
 SoundGap[1][-1] = 0
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
@@ -133,11 +134,12 @@ print('Creating SoundBackgroundPrePulse...')
 SoundPulseDur = SoundBackgroundPrePulseDur
 SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
-SoundBackgroundPrePulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
-                                                     SoundPulseNo, SoundAmpF, 
-                                                     NoiseFrequency, TTLAmpF, 
-                                                     CalibrationFile, 
-                                                     SoundBoard)[0]
+SoundBackgroundPrePulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
+                                                      SoundPulseNo, SoundAmpF, 
+                                                      NoiseFrequency, TTLAmpF, 
+                                                      CalibrationFile, 
+                                                      SoundBoard, 
+                                                      'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundLoudPulse...')
@@ -145,10 +147,10 @@ SoundPulseDur = SoundLoudPulseDur
 SoundPulseNo = 1
 SoundAmpF = SoundPulseAmpF
 TTLAmpF = 1
-SoundLoudPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, SoundPulseNo, 
-                                            SoundAmpF, NoiseFrequency, 
-                                            TTLAmpF, CalibrationFile, 
-                                            SoundBoard)[0]
+SoundLoudPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundPulseNo, 
+                                             SoundAmpF, NoiseFrequency, 
+                                             TTLAmpF, CalibrationFile, 
+                                             SoundBoard, 'AllPulses')[0]
 TTLAmpF = 0
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
@@ -156,31 +158,27 @@ print('Creating SoundBackgroundAfterPulse...')
 SoundPulseDur = SoundBackgroundAfterPulseDur
 SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
-SoundBackgroundAfterPulse = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
+SoundBackgroundAfterPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
                                                      NoiseFrequency, TTLAmpF, 
                                                      CalibrationFile, 
-                                                     SoundBoard)[0]
+                                                     SoundBoard, 
+                                                     'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundBetweenStimDur...')
 SBSUnitDur = 0.5; SoundPulseDur = SBSUnitDur
 SoundPulseNo = round(SoundBetweenStimDur[1]/SBSUnitDur)
 SoundAmpF = SoundBackgroundAmpF
-SoundBetweenStim = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
-                                                 SoundPulseNo, SoundAmpF, 
-                                                 NoiseFrequency, TTLAmpF, 
-                                                 CalibrationFile, SoundBoard)[0]
+SoundBetweenStim = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
+                                               SoundPulseNo, SoundAmpF, 
+                                               NoiseFrequency, TTLAmpF, 
+                                               CalibrationFile, SoundBoard, 
+                                               'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
-print('Generating sound and arduino objects...')
-p = pyaudio.PyAudio()
-Stimulation = p.open(format=pyaudio.paFloat32,
-                     channels=2,
-                     rate=Rate,
-                     input=False,
-                     output=True)
 
+Stimulation = ControlSoundBoard.GenAudioObj(Rate, 'out')
 Arduino = ControlArduino.CreateObj(BaudRate)
 
 #%% Run!!

@@ -358,8 +358,9 @@ def SoundStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
 
 
 def LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, CalibrationFile, 
-              SoundBoard, LaserPrePauseDur=0, LaserPostPauseDur=0, 
-              LaserStimBlockNo=1, LaserPauseBetweenStimBlocksDur=0):
+              SoundBoard, Complexity='AllBlocks', LaserPrePauseDur=0, 
+              LaserPostPauseDur=0, LaserStimBlockNo=1, 
+              LaserPauseBetweenStimBlocksDur=0):
     """ Generate square pulses in one channel that works as TTL for laser 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
@@ -373,22 +374,12 @@ def LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, CalibrationFile,
     LaserPauseBetweenStimBlocks = GenPause(Rate, LaserPauseBetweenStimBlocksDur)    
     
     Stimulation = GenAudioObj(Rate, 'out')
-    Play = RunSound(Sound, LasePauseBetweenStimBlocks, SoundPulseNo, 
-                         Stimulation, SoundAmpF, NoiseFrequency, Complexity'AllPulses" 
-                         SoundStimBlockNo, Multithread=False)
-    
-    
-    class StartLaser(threading.Thread):
-        def run(self):
-            for OneBlock in range(LaserStimBlockNo):
-                for OnePulse in range(LaserPulseNo):
-                    Stimulation.write(Laser)
-                
-                Stimulation.write(LaserPauseBetweenStimBlocks)
-    
+    PlayLaser = RunSound(Laser, LaserPauseBetweenStimBlocks, LaserPulseNo, 
+                         Stimulation, [0], [0], Complexity, LaserStimBlockNo, 
+                         Multithread=False)
     
     print('Done generating laser stimulus.')
-    return(Laser, LaserPauseBetweenStimBlocks, StartLaser)
+    return(Laser, PlayLaser)
 
 
 def GenSoundLaser(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
@@ -403,24 +394,12 @@ def GenSoundLaser(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     SBOutAmpF = LoadHdf5Files.SoundCalibration(SBAmpFsFile, SoundBoard,
                                                'SBOutAmpF')
     
-    print('Generating laser pulse...')
-    LaserPulse = [round(LaserTTLVal/SBOutAmpF, 3)] * round(LaserPulseDur * Rate)
-    LaserPulse[-1] = 0
+    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
+                       LaserPrePauseDur, LaserPostPauseDur)
     
-    LaserPrePause = [0] * round(LaserPrePauseDur * Rate)
-    LaserPostPause = [0] * round(LaserPostPauseDur * Rate)
-    LaserUnit = LaserPrePause + LaserPulse + LaserPostPause
-    LaserUnit = [LaserEl*TTLAmpF for LaserEl in LaserUnit]
-    
-    print('Generating Sound TTL...')
-    SoundTTLPrePause = [0] * round(SoundPrePauseDur * Rate)
-    SoundTTLPostPause = [0] * round(SoundPostPauseDur * Rate)
-    SoundTTLPulse = [round(SoundTTLVal/SBOutAmpF, 3)] * round(SoundPulseDur * Rate)
-    SoundTTLPulse[-1] = 0
-    
-    SoundTTLUnit = SoundTTLPrePause + SoundTTLPulse + SoundTTLPostPause
-    SoundTTLUnit = [SoundTTLEl*TTLAmpF for SoundTTLEl in SoundTTLUnit]
-    
+    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
+                          SoundPrePauseDur, SoundPostPauseDur)
+    # ==== # ==== # ==== # ==== # ==== # ==== # ==== # ==== #
     print('Summing sound TTL and laser units...')
     SoundTTLAndLaserUnit = [LaserUnit[_]+SoundTTLUnit[_] \
                             for _ in range(len(SoundTTLUnit))]

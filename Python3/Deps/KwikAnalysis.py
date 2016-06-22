@@ -31,6 +31,27 @@ import os
 import PeakDetect
 from scipy import signal
 
+
+## Lower-level functions
+
+def SetLaTexPlot():
+    print('Set plot...')
+    Params = {'backend': 'TkAgg',
+              'text.usetex': True, 'text.latex.unicode': True,
+#              'text.latex.preamble': '\\usepackage{siunitx}',
+              
+              'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
+              'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
+              'xtick.labelsize': 'small', 'xtick.direction': 'out',
+              'ytick.labelsize': 'small', 'ytick.direction': 'out',
+              'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
+              'figure.titlesize': 'large', 'figure.titleweight': 'normal',
+              
+              'image.cmap': 'cubehelix', 'savefig.transparent': True,
+              'svg.fonttype': 'path'}
+    rcParams.update(Params)
+
+
 def RemoveDateFromFolderName():
     RenameFolders = input('Rename folders in KwikFiles/* (BE CAREFUL)? [y/N] ')
     if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
@@ -42,6 +63,8 @@ def RemoveDateFromFolderName():
             print(FolderName, ' moved to ', NewFolderName)
         del(RenameFolders, DirList, FolderName, NewFolderName)    
 
+
+## Higher-level functions
 
 def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
         ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4, 
@@ -216,7 +239,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
                 lABR[Index] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
                 
                 rABR[Index] = signal.filtfilt(Lf2, Lf1, rABR[Index], padlen=0)
-                lABR[Index] = signal.filtfilt(Lf2, Lf1, lABR[Index], padlen=0)
+#                lABR[Index] = signal.filtfilt(Lf2, Lf1, lABR[Index], padlen=0)
 
                 del(TTLLoc, Start, End)
             
@@ -229,12 +252,12 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
             
             # Mean
             rABR = np.mean(rABR, axis=0)
-            lABR = np.mean(lABR, axis=0)
+#            lABR = np.mean(lABR, axis=0)
 #            rData = np.mean(rABR, axis=0)
 #            lData = np.mean(lABR, axis=0)
             
             rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
-            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
+#            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
 #            rData = signal.filtfilt(Hf2, Hf1, rData, padlen=0)
 #            lData = signal.filtfilt(Hf2, Hf1, lData, padlen=0)
 
@@ -496,11 +519,7 @@ def PlotABR(FileName):
     
     SoundIntensity = LoadHdf5Files.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
     
-    print('Set plot...')
-    plt.rc('text', usetex=True)
-    plt.rc('text.latex', unicode=True)
-    plt.rc('font',**{'family':'serif','serif':['Computer Modern']})
-    
+    SetLaTexPlot()
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
@@ -603,21 +622,7 @@ def PlotABR2(FileName):
         
         XValues = F['ABRs'].attrs['XValues'][:]
     
-    print('Set plot...')
-    Params = {'backend': 'TkAgg',
-              'text.usetex': True, 'text.latex.unicode': True,
-#              'text.latex.preamble': '\\usepackage{siunitx}',
-              
-              'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
-              'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
-              'xtick.labelsize': 'small', 'xtick.direction': 'out',
-              'ytick.labelsize': 'small', 'ytick.direction': 'out',
-              'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
-              'figure.titlesize': 'large', 'figure.titleweight': 'normal',
-              
-              'image.cmap': 'cubehelix', 'savefig.transparent': True,
-              'svg.fonttype': 'path'}
-    rcParams.update(Params)
+    SetLaTexPlot()
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
@@ -679,15 +684,13 @@ def PlotABR2(FileName):
                 Fig.savefig(FigName, format='svg')
 
 
-def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
+def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
           FilterHigh=300, FilterOrder=4, GPIASTTLCh=1, PiezoCh=1):
     
     print('set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     DirList = glob.glob('KwikFiles/*'); DirList.sort()
     
-    GPIAS = [0]
-    AllTTLs = [0]
     for RecFolder in DirList:
         print('Load files...')
         FilesList = glob.glob(''.join([RecFolder, '/*']))
@@ -714,12 +717,11 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
                 except OSError:
                     print('File ', File, " is corrupted :'(")
             
-            elif '.db' in File:
-                with shelve.open(File[:-3]) as Shelve: 
-                    DataInfo = Shelve['DataInfo']
-                    Freqs = Shelve['Freqs']
-                    FreqOrder = Shelve['FreqOrder']
-                    FreqSlot = Shelve['FreqSlot']
+#            elif '.db' in File:
+#                with shelve.open(File[:-3]) as Shelve: 
+#                    DataInfo = Shelve['DataInfo']
+        
+        DataInfo = LoadHdf5Files.GPIASDataInfo(FileName, DirList)
         
         print('Check if files are ok...')
         if 'Raw' not in locals():
@@ -739,17 +741,29 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
         print('Preallocate memory...')
         GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
         for Freq in range(len(DataInfo['NoiseFrequency'])):
-            GPIAS[Freq] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
+            GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
         
-        AllTTLs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-        for Freq in range(len(DataInfo['NoiseFrequency'])):
-            AllTTLs[Freq] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
+#        AllTTLs = GPIAS.copy()
         
         print('Get TTL data...')
         EventID = Events['TTLs']['user_data']['eventID']
         EventCh = Events['TTLs']['user_data']['event_channels']
         EventRec = Events['TTLs']['recording']
         EventSample = Events['TTLs']['time_samples']
+        
+        TTLChs = np.nonzero(np.bincount(EventCh))[0]
+        TTLRecs = np.nonzero(np.bincount(EventRec))[0]
+        TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
+                             if EventRec[_] == _Rec 
+                             and EventCh[_] ==  GPIASTTLCh-1 
+                             and EventID[_] == 1]
+                      for _Rec in TTLRecs}
+        TTLsDPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
+                             if EventRec[_] == _Rec 
+                             and EventCh[_] ==  GPIASTTLCh-1 
+                             and EventID[_] == 0]
+                      for _Rec in TTLRecs}
+        TTLRising = Kwik.get_rising_edge_times(Files['kwe'], GPIASTTLCh-1)
         
         Rate = Raw['info']['0']['sample_rate']
         NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
@@ -762,33 +776,40 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
         passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
         f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
         
-        for Rec in range(len(Raw['data'])):            
-            RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
-                       for _ in range(len(Raw['timestamps'][str(Rec)]))]
+        for Rec in range(len(Raw['data'])):
+            TTLNo = [0]
+            for _ in range(1, len(TTLsPerRec)+1):
+                TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
+
+            TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
             
-            print('Find TTL...')
-            TTLLoc = [EventSample[_] for _ in range(len(EventID)) 
-                      if EventCh[_] == GPIASTTLCh-1 and EventRec[_] == Rec]
+            RawTime = list(Raw['timestamps'][str(Rec)])
             
-            Start = int(round(TTLLoc[0]-NoOfSamplesBefore))
-            End = int(round(TTLLoc[1]+NoOfSamplesAfter))
-            Start = RawTime.index(Start)
-            End = RawTime.index(End)
+            if Rec == 0:
+                sTTLNo = 0
+            else:
+                sTTLNo = TTLNo[Rec] + 1
             
-            TTLStart = RawTime.index(TTLLoc[0])-Start
-            TTLEnd = RawTime.index(TTLLoc[1])-RawTime.index(TTLLoc[0])
-            
-            print('Slicing and filtering...')            
-            gData = Raw['data'][str(Rec)][Start:End,PiezoCh-1]        
-            gData = [float(gData[_]) for _ in range(NoOfSamples)]
-            gData = abs(signal.hilbert(gData))
-            gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
-            
-            Freq = FreqOrder[Rec][0]; Trial = FreqOrder[Rec][1]
-            GPIAS[Freq][Trial] = gData[:]
-            AllTTLs[Freq][Trial] = [TTLStart, TTLEnd]
-            
-            del(TTLLoc, Start, End, TTLStart, TTLEnd, Freq, Trial, gData)
+            print('Slicing and filtering Rec ', str(Rec), '...')
+            for TTL in range(sTTLNo, TTLNo[Rec+1]):
+                TTLLoc = RawTime.index(TTLRising[TTL])
+                    
+                Start = TTLLoc-NoOfSamplesBefore
+                End = TTLLoc+NoOfSamplesAfter
+                
+                Index = TTL-sTTLNo
+                
+                gData = Raw['data'][str(Rec)][Start:End, PiezoCh-1]
+#                gData = [float(gData[_]) for _ in range(NoOfSamples)]
+                gData = abs(signal.hilbert(gData))
+                gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
+                
+                Freq = DataInfo['FreqOrder'][Rec][0]; 
+                Trial = DataInfo['FreqOrder'][Rec][1];
+                GPIAS[Freq][Trial] = gData[:]
+#                AllTTLs[Freq][Trial] = [TTLStart, TTLEnd]
+                
+                del(TTLLoc, Start, End, Freq, Trial, gData)
         
         for Freq in range(len(DataInfo['NoiseFrequency'])):
             gData = GPIAS[Freq][:]
@@ -804,19 +825,19 @@ def GPIAS(GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
             gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
             GPIAS[Freq] = gData[:]
             
-            tData = AllTTLs[Freq][:]
-            TTLNoGapAll = [tData[_] for _ in range(len(tData)) if _%2 == 0]
-            TTLGapAll = [tData[_] for _ in range(len(tData)) if _%2 != 0]
-            TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
-            TTLGapSum = list(map(sum, zip(*TTLGapAll)))
-            
-            tData = [0, 0]
-            tData[0] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLNoGapSum]
-            tData[1] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLGapSum]
-            AllTTLs[Freq] = tData[:]
+#            tData = AllTTLs[Freq][:]
+#            TTLNoGapAll = [tData[_] for _ in range(len(tData)) if _%2 == 0]
+#            TTLGapAll = [tData[_] for _ in range(len(tData)) if _%2 != 0]
+#            TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
+#            TTLGapSum = list(map(sum, zip(*TTLGapAll)))
+#            
+#            tData = [0, 0]
+#            tData[0] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLNoGapSum]
+#            tData[1] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLGapSum]
+#            AllTTLs[Freq] = tData[:]
             
             del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
-            del(TTLNoGapAll, TTLGapAll, TTLNoGapSum, TTLGapSum, tData)
+#            del(TTLNoGapAll, TTLGapAll, TTLNoGapSum, TTLGapSum, tData)
             
         FileName = DataInfo['AnimalName'] + '-GPIAS-' + RecFolder[10:]
         print('Saving data to ' + FileName)
@@ -1035,21 +1056,7 @@ def PlotTTLsLatency(FileName):
             else:
                 DataInfo[bKey] = bValue
     
-    print('Set plot...')
-    Params = {'backend': 'TkAgg',
-              'text.usetex': True, 'text.latex.unicode': True,
-#              'text.latex.preamble': '\\usepackage{siunitx}',
-              
-              'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
-              'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
-              'xtick.labelsize': 'small', 'xtick.direction': 'out',
-              'ytick.labelsize': 'small', 'ytick.direction': 'out',
-              'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
-              'figure.titlesize': 'large', 'figure.titleweight': 'normal',
-              
-              'image.cmap': 'cubehelix', 'savefig.transparent': True,
-              'svg.fonttype': 'path'}
-    rcParams.update(Params)
+    SetLaTexPlot()
     
     for _ in range(len(SoundPulse)):
         plt.figure(1); plt.plot(XValues, SoundPulse[_])

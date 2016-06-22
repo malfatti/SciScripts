@@ -55,17 +55,6 @@ FilterLow = 3       # High-pass frequency for bandpass filter
 FilterHigh = 300     # Low-pass frequency
 FilterOrder = 3       # butter order
 
-#==========#==========#==========#==========#
-
-import glob
-import KwikAnalysis
-
-FileList = glob.glob('*.db'); FileList.sort()
-
-KwikAnalysis.GPIAS(GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterLow, 
-                   FilterHigh, FilterOrder, GPIASTTLCh, PiezoCh)
-KwikAnalysis.PlotGPIAS(FileList)
-
 #%% TTLsLatencyTest
 
 SoundCh = 1

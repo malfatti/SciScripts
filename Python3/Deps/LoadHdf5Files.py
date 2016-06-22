@@ -64,6 +64,31 @@ def ExpDataInfo(FileName, DirList, StimType, Var='DataInfo'):
             return(DataInfo, Exps)
 
 
+def GPIASDataInfo(FileName, DirList):
+    DataInfo = {}
+    with h5py.File(FileName) as F:
+        for Key, Value in F['DataInfo'].items():
+            DataInfo['SoundBackgroundAmpF'] = {}
+            DataInfo['SoundPulseAmpF'] = {}
+            for aKey, aValue in F['DataInfo']['SoundPulseAmpF'].items():
+                DataInfo['SoundPulseAmpF'][aKey] = aValue[:]
+            
+            for cKey, cValue in F['DataInfo']['SoundBackgroundAmpF'].items():
+                DataInfo['SoundBackgroundAmpF'][cKey] = cValue[:]
+        
+        for bKey, bValue in F['DataInfo'].attrs.items():
+            if isinstance(bValue, Number):
+                DataInfo[bKey] = float(bValue)
+            else:
+                DataInfo[bKey] = bValue
+        
+        DataInfo['Freqs'] = F['DataInfo']['Freqs'][:]
+        DataInfo['FreqOrder'] = F['DataInfo']['FreqOrder'][:]
+        DataInfo['FreqSlot'] = F['DataInfo']['FreqSlot'][:]
+        
+        return(DataInfo)
+
+
 def ExpExpInfo(FileName, DirList, RecFolder):
     ExpInfo = {}
     with h5py.File(FileName) as F:

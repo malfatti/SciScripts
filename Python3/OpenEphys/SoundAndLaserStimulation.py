@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn09'
+AnimalName = 'Test'
 Rate = 128000
 BaudRate = 38400
 
@@ -58,14 +58,14 @@ SoundPulseDur = 0.003
 # Silence after pulse
 SoundPostPauseDur = 0.093
 # Amount of pulses per block
-SoundPulseNo = 10
+SoundPulseNo = 40
 # Number of blocks
 SoundStimBlockNo = 1
 # Duration of pause between blocks
-SoundPauseBetweenStimBlocksDur = 10
+SoundPauseBetweenStimBlocksDur = 3
 # Intensities tested, in order, in dB. Supports floats :)
-#Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
-Intensities = [80, 65]
+Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
+#Intensities = [80, 65]
 #Intensities = [100, 75, 70]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
@@ -120,30 +120,31 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'LaserPauseBetweenStimBlocksDur', 
                                        'CalibrationFile', 'FileName'])
 
-#with h5py.File(FileName) as h5:
-#    h5.create_group('DataInfo')
-#    for Key, Value in DataInfo.items():
-#        h5['DataInfo'].attrs[Key] = Value
-#    
-#    h5['DataInfo'].create_group('SoundAmpF')
-#    for Key, Value in SoundAmpF.items():
-#        h5['DataInfo']['SoundAmpF'][Key] = Value
+with h5py.File(FileName) as h5:
+    h5.create_group('DataInfo')
+    h5.create_group('ExpInfo')
+    for Key, Value in DataInfo.items():
+        h5['DataInfo'].attrs[Key] = Value
+    
+    h5['DataInfo'].create_group('SoundAmpF')
+    for Key, Value in SoundAmpF.items():
+        h5['DataInfo']['SoundAmpF'][Key] = Value
 
 Arduino = ControlArduino.CreateObj(BaudRate)
 
 
 #%% Prepare sound stimulation
-Sound, PlaySound = ControlSoundBoard.GenSound(Rate, SoundPulseDur, 
-                                              SoundPulseNo, SoundAmpF, 
-                                              NoiseFrequency, TTLAmpF, 
-                                              CalibrationFile, SoundBoard, 
-                                              'AllPulses', SoundPrePauseDur, 
-                                              SoundPostPauseDur, 
-                                              SoundStimBlockNo, 
-                                              SoundPauseBetweenStimBlocksDur)
+Sound, PlaySound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
+                                               SoundPulseNo, SoundAmpF, 
+                                               NoiseFrequency, TTLAmpF, 
+                                               CalibrationFile, SoundBoard, 
+                                               'AllPulses', SoundPrePauseDur, 
+                                               SoundPostPauseDur, 
+                                               SoundStimBlockNo, 
+                                               SoundPauseBetweenStimBlocksDur)
 
 Stimulation = ControlSoundBoard.GenAudioObj(Rate, 'out')
-SoundPauseBetweenStimBlocks = ControlSoundBoard.GenSoundPause(
+SoundPauseBetweenStimBlocks = ControlSoundBoard.GenPause(
                                         Rate, SoundPauseBetweenStimBlocksDur
                                                               )
 
@@ -195,14 +196,13 @@ while True:
         Stimulation.write(SoundPauseBetweenStimBlocks)
     
     print('Done. Saving info...')
-    #with h5py.File(FileName) as h5:
-#        h5.create_group('ExpInfo')
-    #    h5['ExpInfo'].create_group(str(len(list(h5['ExpInfo']))))
-    #    Key = list(h5['ExpInfo'].keys())[-1]
-    #    
-    #    h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
-    #    h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
-    #    h5['ExpInfo'][Key].attrs['Hz'] = Freq
+    with h5py.File(FileName) as h5:
+        h5['ExpInfo'].create_group(str(len(list(h5['ExpInfo']))))
+        Key = list(h5['ExpInfo'].keys())[-1]
+        
+        h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
+        h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
+        h5['ExpInfo'][Key].attrs['Hz'] = Freq
     
     print('Saved.')
     print('Played Freq', str(Freq), 'at', DVCoord, 'µm DV')

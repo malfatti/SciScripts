@@ -18,7 +18,6 @@
 """
 
 import datetime
-import DetectPeaks
 import glob
 import h5py
 import Kwik
@@ -28,7 +27,6 @@ from matplotlib import pyplot as plt
 from numbers import Number
 import numpy as np
 import os
-import PeakDetect
 from scipy import signal
 
 
@@ -841,26 +839,174 @@ def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
             
         FileName = DataInfo['AnimalName'] + '-GPIAS-' + RecFolder[10:]
         print('Saving data to ' + FileName)
-        with shelve.open(FileName) as Shelve:
-            Shelve['GPIAS'] = GPIAS
-            Shelve['AllTTLs'] = AllTTLs
-            Shelve['XValues'] = XValues
-            Shelve['RecFolder'] = RecFolder
-            Shelve['DataInfo'] = DataInfo
+#        with shelve.open(FileName) as Shelve:
+#            Shelve['GPIAS'] = GPIAS
+#            Shelve['AllTTLs'] = AllTTLs
+#            Shelve['XValues'] = XValues
+#            Shelve['RecFolder'] = RecFolder
+#            Shelve['DataInfo'] = DataInfo
         print('Done.')
     
     print('Finished.')
     return(None)
 
 
+def GPIASAnalogTTLs(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
+                    FilterLow=3, FilterHigh=300, FilterOrder=4, GPIASTTLCh=1, 
+                    PiezoCh=1):
+    
+    print('set paths...')
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
+    DirList = glob.glob('KwikFiles/*'); DirList.sort()
+    
+    for RecFolder in DirList:
+        print('Load files...')
+        FilesList = glob.glob(''.join([RecFolder, '/*']))
+        Files = {}
+        for File in FilesList:
+            if '.kwd' in File:
+                try:
+                    Raw = Kwik.load(File, 'all')
+                    Files['kwd'] = File
+                except OSError:
+                        print('File', File, "is corrupted :'(")
+                except KeyError: 
+                    # Old OE versions do not have channel_bit_volts
+                    print('No channel_bit_volts in the file!')
+                    with h5py.File(File, 'r') as F:
+                        Raw = {}
+                        Raw['info'] = {Rec: F['recordings'][Rec].attrs 
+                                       for Rec in F['recordings'].keys()}
+                        Raw['data'] = {Rec: F['recordings'][Rec]['data']
+                                       for Rec in F['recordings'].keys()}
+                        Raw['timestamps'] = {Rec: ((
+                                        np.arange(0,Raw['data'][Rec].shape[0])
+                                        + Raw['info'][Rec]['start_time'])
+                                       / Raw['info'][Rec]['sample_rate'])
+                                             for Rec in F['recordings']}
+                
+            elif '.kwe' in File:
+                try:
+                    Events = Kwik.load(File)
+                    Files['kwe'] = File
+                except OSError:
+                    print('File', File, "is corrupted :'(")
+                
+            elif '.kwik' in File:
+                try:
+                    Events = Kwik.load(File)
+                    Files['kwik'] = File
+                except OSError:
+                    print('File', File, "is corrupted :'(")
+            
+        
+        DataInfo = LoadHdf5Files.GPIASDataInfo(FileName)
+        
+        print('Check if files are ok...')
+        if 'Raw' not in locals():
+            print('.kwd file is corrupted. Skipping dataset...')
+            continue
+        
+        if 'Events' not in locals():
+            print('.kwe/.kwik file is corrupted. Skipping dataset...')
+            continue
+        
+        if 'DataInfo' not in locals():
+            print('No data info. Skipping dataset...')
+            continue
+        
+        print('Data from ', RecFolder, ' loaded.')
+        
+        print('Preallocate memory...')
+        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+        for Freq in range(len(DataInfo['NoiseFrequency'])):
+            GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
+        
+        Rate = Raw['info']['0']['sample_rate']
+        NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
+        NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
+        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+        XValues = (range(-NoOfSamplesBefore, 
+                         NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
+        
+        print('Set filter...')
+        passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
+        f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
+        
+        for Rec in range(len(Raw['data'])):
+            TTLCh = Raw['data'][str(Rec)][:, -1]
+            if len(TTLCh) == 0:
+                print('Bad recording. Skipping...')
+                continue
+            
+            Threshold = max(TTLCh)/5
+            TTLs = []
+            for _ in range(1, len(TTLCh)):
+                if TTLCh[_] > Threshold:
+                    if TTLCh[_-1] < Threshold:
+                        TTLs.append(_)
+            
+            print('Slicing and filtering Rec ', str(Rec), '...')
+            for TTL in range(len(TTLs)):
+                TTLLoc = int(TTLs[TTL])
+                Start = TTLLoc-NoOfSamplesBefore
+                End = TTLLoc+NoOfSamplesAfter
+                
+                gData = Raw['data'][str(Rec)][Start:End, PiezoCh-1]
+#                gData = [float(gData[_]) for _ in range(NoOfSamples)]
+                gData = abs(signal.hilbert(gData))
+                gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
+                
+                Freq = DataInfo['FreqOrder'][Rec][0]; 
+                Trial = DataInfo['FreqOrder'][Rec][1];
+                GPIAS[Freq][Trial] = gData[:]
+                
+                del(TTLLoc, Start, End, Freq, Trial, gData)
+        
+        for Freq in range(len(DataInfo['NoiseFrequency'])):
+            gData = GPIAS[Freq][:]
+            NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
+            GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
+            NoGapSum = list(map(sum, zip(*NoGapAll)))
+            GapSum = list(map(sum, zip(*GapAll)))
+            
+            gData = [0, 0]
+            gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
+            gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
+            gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
+            gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
+            GPIAS[Freq] = gData[:]
+            
+            del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
+        
+        if 'XValues' in locals():
+            print('Saving data to ' + FileName)
+            GroupName = 'GPIAS-' + RecFolder[10:] + '-' + \
+                        datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            with h5py.File(FileName) as F:
+                F.create_group(GroupName)
+                F[GroupName].attrs['XValues'] = XValues
+
+                for Freq in range(len(GPIAS)):
+                    F[GroupName].create_group(str(Freq))
+                    
+                    F[GroupName][str(Freq)]['NoGap'] = GPIAS[Freq][0]
+                    F[GroupName][str(Freq)]['Gap'] = GPIAS[Freq][1]
+            
+            print('Done.')
+    
+    print('All data saved.')
+    return(None)
+
+
 def PlotGPIAS(FileList):
     for File in FileList:
         print('Loading data from GPIAS.db ...')
-        with shelve.open(File[:-3]) as Shelve:
-            GPIAS = Shelve['GPIAS']
-            AllTTLs = Shelve['AllTTLs']
-            XValues = Shelve['XValues']
-            DataInfo = Shelve['DataInfo']
+#        with shelve.open(File[:-3]) as Shelve:
+#            GPIAS = Shelve['GPIAS']
+#            AllTTLs = Shelve['AllTTLs']
+#            XValues = Shelve['XValues']
+#            DataInfo = Shelve['DataInfo']
         
         print('Plotting...')
         for Freq in range(len(DataInfo['NoiseFrequency'])):
@@ -893,20 +1039,69 @@ def PlotGPIAS(FileList):
         print('Done.')
 
 
+def PlotGPIAS2(FileName):
+    print('Loading data...')
+    DataInfo = LoadHdf5Files.GPIASDataInfo(FileName)
+    with h5py.File(FileName) as F:
+        Keys = list(F.keys())
+    
+    Keys.remove('DataInfo')
+    
+    SetLaTexPlot()
+    
+#    for Key in Keys:
+    Key = Keys[-1]
+    with h5py.File(FileName) as F:
+        XValues = F[Key].attrs['XValues']
+        
+        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+        for Freq in range(len(GPIAS)):
+            GPIAS[Freq] = [[], []]
+            GPIAS[Freq][0] = F[Key][str(Freq)]['NoGap'][:]
+            GPIAS[Freq][1] = F[Key][str(Freq)]['Gap'][:]
+    
+    print('Plotting...')
+    Ind1 = list(XValues).index(0)
+    Ind2 = list(XValues).index(int(DataInfo['SoundLoudPulseDur']*1000))
+    
+    for Freq in range(len(DataInfo['NoiseFrequency'])):
+        FigTitle = str(DataInfo['NoiseFrequency'][Freq]) + ' Hz'
+        Line0Label = 'No Gap'; Line1Label = 'Gap'
+        SpanLabel = 'Sound Pulse'
+        XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
+        
+        plt.figure(Freq)
+        plt.plot(XValues, GPIAS[Freq][0], 
+                 color='r', label=Line0Label)
+        plt.plot(XValues, GPIAS[Freq][1], 
+                 color='b', label=Line1Label)
+        plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
+                    lw=0, label=SpanLabel)
+
+        plt.suptitle(FigTitle)
+        plt.ylabel(YLabel); plt.xlabel(XLabel)
+        plt.legend(loc='lower right')
+        plt.locator_params(tight=True)
+        plt.axes().spines['right'].set_visible(False)
+        plt.axes().spines['top'].set_visible(False)
+        plt.axes().yaxis.set_ticks_position('left')
+        plt.axes().xaxis.set_ticks_position('bottom')
+        plt.savefig('Figs/' + FileName[:-9] + '-' + 
+                    str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + 
+                    str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg', 
+                    format='svg')
+    print('Done.')
+
+
 def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1, 
                 TimeBeforeTTL=5, TimeAfterTTL=8):
     print('set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     RecFolder = glob.glob('KwikFiles/*'); RecFolder = RecFolder[0]
-#    SoundCh = SoundCh + 18; SoundSqCh = SoundSqCh + 18
-    SoundCh = 0; SoundSqCh = 2
+    SoundCh = 0; SoundSqCh = 1
     
     print('Load DataInfo...')
     DataInfo= LoadHdf5Files.ExpDataInfo(FileName, list(RecFolder), 'Sound')
-    
-    print('Preallocate memory...')
-#    SoundPulse = [[] for _ in range(int(DataInfo['SoundPulseNo']))]
-#    SoundSq = SoundPulse[:]
     
     print('Load files...')
     FilesList = glob.glob(''.join([RecFolder, '/*']))
@@ -1000,9 +1195,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
         End = TTLLoc+NoOfSamplesAfter
         try:
             SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
-#            SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
-#            Start = RawTime.index(Start)
-#            End = RawTime.index(End)
+            SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
         except ValueError:
             print('ValueError: Slice outside data limits. Skipping', 
                   str(TTL), '...')
@@ -1010,17 +1203,18 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
         
         del(TTLLoc, Start, End)
     
-    SoundSqDelay = [[0] for _ in range(len(SoundSq))]
+    SoundSqDelay = [[0] for _ in range(len(SoundSq))]    
     for TTL in range(len(SoundSq)):
-        Peaks = DetectPeaks.detect_peaks(SoundSq[TTL])
+        Threshold = max(SoundSq[TTL])/5
+        Peaks = []
+        for _ in range(len(SoundSq[TTL])):
+            if SoundSq[TTL][_] > Threshold:
+                if SoundSq[TTL][_-1] < Threshold:
+                    Peaks.append(_)
+        
         SoundSqDelay[TTL] = ((Peaks[0] - NoOfSamplesBefore) / (Rate/1000))*-1
         del(Peaks)
     
-        
-#    SoundSqDelay = [float(((list(SoundSq[_]).index(max(SoundSq[_]))
-#                           - NoOfSamplesBefore) / (Rate/1000))*-1)
-#                   for _ in range(len(SoundSq))]
-        
     print('Saving data to ' + FileName + ' ...')
     GroupName = 'Analysis-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     with h5py.File(FileName) as F:
@@ -1064,7 +1258,7 @@ def PlotTTLsLatency(FileName):
     
     Hist, BinEdges = np.histogram(SoundSqDelay, bins=200)
     Threshold = (DataInfo['SoundPulseDur']/100)*1000
-    Threshold = 15
+    Threshold = 0.08
     sIndex = min(range(len(BinEdges)), 
                  key=lambda i: abs(BinEdges[i]-Threshold*-1))
     eIndex = min(range(len(BinEdges)), 

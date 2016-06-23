@@ -21,7 +21,7 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'TestSetup02'
+AnimalName = 'CaMKIIahM4Dn06'
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
                   '20160419093139-SoundMeasurement/' + \
@@ -56,11 +56,11 @@ PulseIntensity = [105]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 10000], [10000, 12000]]#, 
-#                  [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
+                  [12000, 14000], [14000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
-NoOfTrials = 2
+NoOfTrials = 9
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
@@ -79,7 +79,7 @@ SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile,
 
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                    '-SoundStim.hdf5'])
+                    '-GPIAS.hdf5'])
 
 SoundBackgroundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
                             key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
@@ -122,7 +122,7 @@ SoundGap[0] = ControlSoundBoard.SoundStim(Rate, SoundPulseDur,SoundPulseNo,
                                           SoundAmpF, NoiseFrequency, 
                                           TTLAmpF, CalibrationFile, 
                                           SoundBoard, 'AllPulses')[0]
-SoundGap[1] = [0, 0.6]*(round(Rate*SoundGapDur))
+SoundGap[1] = [0, 0]*(round(Rate*SoundGapDur))
 SoundGap[1][-1] = 0
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
 SoundGap[1] = [[SoundGap[1]]]*len(SoundGap[0])
@@ -146,7 +146,7 @@ print('Creating SoundLoudPulse...')
 SoundPulseDur = SoundLoudPulseDur
 SoundPulseNo = 1
 SoundAmpF = SoundPulseAmpF
-TTLAmpF = 1
+TTLAmpF = 0.07
 SoundLoudPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundPulseNo, 
                                              SoundAmpF, NoiseFrequency, 
                                              TTLAmpF, CalibrationFile, 

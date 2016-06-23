@@ -64,7 +64,7 @@ def ExpDataInfo(FileName, DirList, StimType, Var='DataInfo'):
             return(DataInfo, Exps)
 
 
-def GPIASDataInfo(FileName, DirList):
+def GPIASDataInfo(FileName):
     DataInfo = {}
     with h5py.File(FileName) as F:
         for Key, Value in F['DataInfo'].items():

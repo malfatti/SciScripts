@@ -48,12 +48,23 @@ KwikAnalysis.PlotABR2(FileName)
 ## Set experiment details
 
 PiezoCh = 1
-GPIASTTLCh = 1
+GPIASTTLCh = 2
 GPIASTimeBeforeTTL = 50    # in ms
 GPIASTimeAfterTTL = 150    # in ms
-FilterLow = 3       # High-pass frequency for bandpass filter
+FilterLow = 70       # High-pass frequency for bandpass filter
 FilterHigh = 300     # Low-pass frequency
 FilterOrder = 3       # butter order
+
+import glob
+import KwikAnalysis
+
+FileName = glob.glob('*.hdf5'); FileName = FileName[0]
+
+KwikAnalysis.GPIASAnalogTTLs(FileName, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+                             FilterLow, FilterHigh, FilterOrder, GPIASTTLCh, 
+                             PiezoCh)
+
+KwikAnalysis.PlotGPIAS2(FileName)
 
 #%% TTLsLatencyTest
 
@@ -61,7 +72,7 @@ SoundCh = 1
 SoundSqCh = 5
 SoundTTLCh = 1
 
-TimeBeforeTTL = 5   # in ms
-TimeAfterTTL = 8    # in ms
+TimeBeforeTTL = 10   # in ms
+TimeAfterTTL = 10    # in ms
 
 FileName = glob.glob('*.hdf5'); FileName = FileName[0]

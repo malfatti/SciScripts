@@ -21,7 +21,7 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'CaMKIIahM4Dn06'
+AnimalName = 'CaMKIIahM4Dn09'
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
                   '20160419093139-SoundMeasurement/' + \
@@ -50,8 +50,8 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [60]
-PulseIntensity = [105]
+BackgroundIntensity = [65]
+PulseIntensity = [110]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 

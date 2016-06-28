@@ -68,9 +68,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4, 
         StimType='Sound'):
     """
-    Analyze ABRs from data recorded with OpenEphys. A '*ABRs.hdf5' file will be 
-    saved in cwd, containing:
-        - ABRs dict, where data will be saved as 
+    Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
+    in cwd, containing:
+        - ABRs group, where data will be saved as 
           ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
               Ear = 0 (right) or 1 (left)
               Freq = index of DataInfo['NoiseFrequency']

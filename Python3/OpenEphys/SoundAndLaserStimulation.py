@@ -93,20 +93,13 @@ import ControlArduino
 import ControlSoundBoard
 import datetime
 import h5py
-import LoadHdf5Files
 import numpy as np
-
-SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
-                                                'SoundIntensity')
 
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundStim.hdf5'])
 
-SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
-              key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
-              for dB in Intensities] 
-         for Hz in list(SoundIntensity)}
+SoundAmpF = ControlSoundBoard.dBToAmpF(Intensities, CalibrationFile)
 
 DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
                                        'BaudRate', 'SoundPrePauseDur', 

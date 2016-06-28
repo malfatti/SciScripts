@@ -34,16 +34,15 @@ It is very important to set the volume of the soundboard to 0dB (which is 100%)
 so you know that no kind of frequency filter is being applied.
 """
 #%% Set calibration
-Rate = 128000
+Rate = 128000; Freq = 1000; WaveDur = 10
 SoundBoard = 'Intel_oAnalog-iAnalog'
 
 import ControlSoundBoard
-import datetime
 import h5py
 
 #%% Output
 
-ControlSoundBoard.SoundCalOut(Rate)
+ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
 
 #%% Input
 Repetitions = 20
@@ -52,7 +51,7 @@ SBOutAmpF = 1.7
 Data = [[] for _ in range(Repetitions)]
 SBInAmpF = [[] for _ in range(Repetitions)]
 for aa in range(Repetitions):
-    Data[aa] = ControlSoundBoard.SoundCalIn(Rate, SBOutAmpF)
+    Data[aa] = ControlSoundBoard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF)
     SBInAmpF[aa] = (max(Data[aa])+(min(Data[aa])*-1))/2
     print(SBInAmpF[aa])
 

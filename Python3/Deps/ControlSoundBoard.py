@@ -155,7 +155,7 @@ def InterleaveChannels(Right, Left, SoundAmpF, NoiseFrequency):
 def ListToByteArray(List, SoundAmpF, NoiseFrequency):
     if SoundAmpF == [0]:
         ByteArray = array.array('f', List)
-        ByteArray = bytes(Laser)
+        ByteArray = bytes(ByteArray)
     
     else:
         ByteArray = [0]*len(NoiseFrequency)

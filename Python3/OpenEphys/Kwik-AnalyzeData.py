@@ -49,17 +49,18 @@ KwikAnalysis.PlotABR2(FileName)
 
 PiezoCh = 1
 GPIASTTLCh = 2
-GPIASTimeBeforeTTL = 50    # in ms
-GPIASTimeAfterTTL = 150    # in ms
+GPIASTimeBeforeTTL = 20    # in ms
+GPIASTimeAfterTTL = 100    # in ms
 FilterLow = 65       # High-pass frequency for bandpass filter
-FilterHigh = 400     # Low-pass frequency
-FilterOrder = 3       # butter order
+FilterHigh = 300     # Low-pass frequency
+FilterOrder = 4       # butter order
 RecFolder = 1
 
 import glob
 import KwikAnalysis
 
-FileName = glob.glob('*.hdf5'); FileName.sort(); FileName = FileName[RecFolder-1]
+FileName = glob.glob('*.hdf5'); FileName.sort()
+FileName = FileName[RecFolder-1]
 
 KwikAnalysis.GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL, 
                              GPIASTimeAfterTTL, FilterLow, FilterHigh, 

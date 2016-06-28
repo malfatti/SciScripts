@@ -18,14 +18,10 @@
 """
 
 import h5py
+from datetime import datetime
 from numbers import Number
 
 
-def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
-    with h5py.File(SBAmpFsFile) as h5: 
-        Var = h5[SoundBoard][Key][0]
-    return(Var)
-    
 def CheckGroup(FileName, Group):
     with h5py.File(FileName) as F:
         if Group in F.keys():
@@ -64,6 +60,16 @@ def ExpDataInfo(FileName, DirList, StimType, Var='DataInfo'):
             return(DataInfo, Exps)
 
 
+def ExpExpInfo(FileName, RecFolder, DirList):
+    ExpInfo = {}
+    with h5py.File(FileName) as F:
+        Key = str(DirList.index(RecFolder))
+        ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
+        ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
+    
+    return(ExpInfo)
+
+
 def GPIASDataInfo(FileName):
     DataInfo = {}
     with h5py.File(FileName) as F:
@@ -89,14 +95,10 @@ def GPIASDataInfo(FileName):
         return(DataInfo)
 
 
-def ExpExpInfo(FileName, DirList, RecFolder):
-    ExpInfo = {}
-    with h5py.File(FileName) as F:
-        Key = str(DirList.index(RecFolder))
-        ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
-        ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
-    
-    return(ExpInfo)
+def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
+    with h5py.File(SBAmpFsFile) as h5: 
+        Var = h5[SoundBoard][Key][0]
+    return(Var)
 
 
 def SoundMeasurement(FileName, Var='SoundIntensity'):
@@ -136,5 +138,30 @@ def SoundMeasurement(FileName, Var='SoundIntensity'):
         
         else:
             print('Supported variables: DataInfo, SoundRec, SoundIntensity.')
+
+
+def WriteABRs(FileName, ABRs, XValues):
+    print('Saving data to ' + FileName)
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    Group = 'ABRs-' + Now
+    with h5py.File(FileName) as F:
+        F.create_group(Group)
+        F[Group].attrs['XValues'] = XValues
+            
+        for Freq in range(len(ABRs[0])):
+            for AmpF in range(len(ABRs[0][Freq])):
+                for DV in ABRs[0][Freq][AmpF].keys():
+                    Path = str(Freq) + '/' + \
+                           str(AmpF) + '/' + \
+                           DV
+                    
+                    F[Group].create_group(Path)
+                    del(Path)
+                    
+                    for Trial in range(len(ABRs[0][Freq][AmpF][DV])):
+                        F[Group][str(Freq)][str(AmpF)][DV][str(Trial)] = \
+                            ABRs[Freq][AmpF][DV][Trial][:]
+    
+    return(None)
 
 

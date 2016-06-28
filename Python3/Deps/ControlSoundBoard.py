@@ -681,7 +681,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
                     'AllPulses', 1, Multithread=False)
     
     print('Playing...')
-    PlaySound()
+    Play()
     
     return(None)
 

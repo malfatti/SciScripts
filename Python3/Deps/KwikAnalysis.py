@@ -21,7 +21,7 @@ import datetime
 import glob
 import h5py
 import Kwik
-import LoadHdf5Files
+import Hdf5F
 from matplotlib import rcParams
 from matplotlib import pyplot as plt
 from numbers import Number
@@ -31,6 +31,143 @@ from scipy import signal
 
 
 ## Lower-level functions
+
+def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
+    print('Filtering signal...')
+    if Type not in ['bandpass', 'lowpass', 'highpass']:
+        print("Choose 'bandpass', 'lowpass' or 'highpass'.")
+    
+    elif len(Frequency) not in [1, 2]:
+        print('Frequency must have 2 elements for bandpass; or 1 element for \
+        lowpass or highpass.')
+    
+    else:
+        passband = [_/(Rate/2) for _ in Frequency]
+        f2, f1 = signal.butter(FilterOrder, passband, Type)
+        Signal = signal.filtfilt(f2, f1, Signal, padtype='odd', padlen=0)
+        
+        return(Signal)
+
+
+def GetRecKeys(Raw, Events, AnalogTTLs):
+    if '0' not in list(Raw['data'].keys()):
+        print('Rec numbers are wrong. Fixing...')
+        for iKey in Raw.keys():
+            Recs = list(Raw[iKey].keys())
+            Recs = [int(_) for _ in Recs]; Min = min(Recs)
+            
+            for Key in Recs:
+                Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
+            
+            if AnalogTTLs:
+                return(Raw)
+            else:
+                EventRec = Events['TTLs']['recording'][:]
+                for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
+                return(Raw, EventRec)
+        
+        print('Fixed.')
+    
+    else:
+        if AnalogTTLs:
+            return(Raw)
+        else:
+            EventRec = Events['TTLs']['recording']
+            return(Raw, EventRec)
+
+
+def GetTTLInfo(Events, EventRec, ABRTTLCh, Files):
+    print('Get TTL data...')
+    EventID = Events['TTLs']['user_data']['eventID']
+    EventCh = Events['TTLs']['user_data']['event_channels']
+    EventSample = Events['TTLs']['time_samples']
+
+    TTLChs = np.nonzero(np.bincount(EventCh))[0]
+    TTLRecs = np.nonzero(np.bincount(EventRec))[0]
+    TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
+                         if EventRec[_] == _Rec 
+                         and EventCh[_] ==  ABRTTLCh-1 
+                         and EventID[_] == 1]
+                  for _Rec in TTLRecs}
+    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
+    
+    return(TTLChs, TTLRecs, TTLsPerRec, TTLRising)
+
+
+def LoadOEFiles(RecFolder, DirList):
+    print('Load files...')
+    FilesList = glob.glob(''.join([RecFolder, '/*']))
+    Files = {}
+    for File in FilesList:
+        if '.kwd' in File:
+            try:
+                Raw = Kwik.load(File, 'all')
+                Files['kwd'] = File
+            except OSError:
+                    print('File ', File, " is corrupted :'(")
+            
+        elif '.kwe' in File:
+            try:
+                Events = Kwik.load(File)
+                Files['kwe'] = File
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+            
+        elif '.kwik' in File:
+            try:
+                Events = Kwik.load(File)
+                Files['kwik'] = File
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+        
+        elif '.kwx' in File:
+            try:
+                Events = Kwik.load(File)
+                Files['kwx'] = File
+            except OSError:
+                print('File ', File, " is corrupted :'(")
+    
+    return(Raw, Events, Files)
+
+
+def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLsPerRec):
+    if AnalogTTLs:
+        TTLCh = Raw['data'][str(Rec)][:, -1]
+        Threshold = max(TTLCh)/5
+        TTLs = []
+        for _ in range(1, len(TTLCh)):
+            if TTLCh[_] > Threshold:
+                if TTLCh[_-1] < Threshold:
+                    TTLs.append(_)
+        return(TTLs)
+    else:
+#        TTLNo = [0]
+#        for _ in range(1, len(TTLsPerRec)+1):
+#            TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
+#        TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
+#        
+#        if Rec == 0:
+#            sTTLNo = 0
+#        else:
+#            sTTLNo = TTLNo[Rec] + 1
+#        
+#        return(TTLNo, sTTLNo)
+        TTLs = TTLsPerRec[Rec]
+
+
+def RemoveDateFromFolderName():
+    RenameFolders = input('Rename folders in KwikFiles/* (BE CAREFUL)? [y/N] ')
+    if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
+        DirList = glob.glob('KwikFiles/*'); DirList.sort()
+        for FolderName in DirList:
+            NewFolderName = ''.join([FolderName[:10], FolderName[21:]])
+            NewFolderName = NewFolderName.replace("-", "")
+            os.rename(FolderName, NewFolderName)
+            print(FolderName, ' moved to ', NewFolderName)
+        del(RenameFolders, DirList, FolderName, NewFolderName)    
+    
+    return(None)
+
 
 def SetLaTexPlot():
     print('Set plot...')
@@ -48,25 +185,27 @@ def SetLaTexPlot():
               'image.cmap': 'cubehelix', 'savefig.transparent': True,
               'svg.fonttype': 'path'}
     rcParams.update(Params)
+    
+    return(None)
 
 
-def RemoveDateFromFolderName():
-    RenameFolders = input('Rename folders in KwikFiles/* (BE CAREFUL)? [y/N] ')
-    if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
-        DirList = glob.glob('KwikFiles/*'); DirList.sort()
-        for FolderName in DirList:
-            NewFolderName = ''.join([FolderName[:10], FolderName[21:]])
-            NewFolderName = NewFolderName.replace("-", "")
-            os.rename(FolderName, NewFolderName)
-            print(FolderName, ' moved to ', NewFolderName)
-        del(RenameFolders, DirList, FolderName, NewFolderName)    
+def SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter):
+    for TTL in range(len(TTLs)):
+        TTLLoc = int(TTLs[TTL])        
+        Start = TTLLoc-NoOfSamplesBefore
+        End = TTLLoc+NoOfSamplesAfter
+
+        ABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
+                   Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+        
+    return(ABR)
 
 
 ## Higher-level functions
 
 def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
-        ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4, 
-        StimType='Sound'):
+        ABRTTLCh=1, FilterFreq=[300, 3000], FilterOrder=4, StimType='Sound', 
+        AnalogTTLs=False):
     """
     Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
@@ -92,384 +231,249 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     DirList = glob.glob('KwikFiles/*'); DirList.sort()
     
     print('Load DataInfo...')
-    DataInfo, Exps = LoadHdf5Files.ExpDataInfo(FileName, DirList, StimType, 
+    DataInfo, Exps = Hdf5F.ExpDataInfo(FileName, DirList, StimType, 
                                                Var='Exps')
     
     print('Preallocate memory...')
-    ABRs = [[], []]
-    ABRs[0] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-    ABRs[1] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+    ABRs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
               + str(DataInfo['NoiseFrequency'][Freq][1])
-        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
-        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
+        ABRs[Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
     del(Freq)
     
     for RecFolder in Exps:
-        print('Load files...')
-        FilesList = glob.glob(''.join([RecFolder, '/*']))
-        Files = {}
-        for File in FilesList:
-            if '.kwd' in File:
-                try:
-                    Raw = Kwik.load(File, 'all')
-                    Files['kwd'] = File
-                except OSError:
-                        print('File ', File, " is corrupted :'(")
-                
-            elif '.kwe' in File:
-                try:
-                    Events = Kwik.load(File)
-                    Files['kwe'] = File
-                except OSError:
-                    print('File ', File, " is corrupted :'(")
-                
-            elif '.kwik' in File:
-                try:
-                    Events = Kwik.load(File)
-                    Files['kwik'] = File
-                except OSError:
-                    print('File ', File, " is corrupted :'(")
+        if AnalogTTLs:
+            Raw, _, Files = LoadOEFiles(RecFolder, DirList)
+        else:
+            Raw, Events, Files = LoadOEFiles(RecFolder, DirList)
         
-        ExpInfo = LoadHdf5Files.ExpExpInfo(FileName, DirList, RecFolder)
+        ExpInfo = Hdf5F.ExpExpInfo(FileName, RecFolder, DirList)
         
         print('Check if files are ok...')
         if 'Raw' not in locals():
             print('.kwd file is corrupted. Skipping dataset...')
             continue
         
-        if 'Events' not in locals():
-            print('.kwe/.kwik file is corrupted. Skipping dataset...')
-            continue
+        if not AnalogTTLs:
+            if 'Events' not in locals():
+                print('.kwe/.kwik file is corrupted. Skipping dataset...')
+                continue
         
         print('Data from ', RecFolder, ' loaded.')
         
-        if '0' not in list(Raw['data'].keys()):
-            print('Rec numbers are wrong. Fixing...')
-            for iKey in Raw.keys():
-                Recs = list(Raw[iKey].keys())
-                Recs = [int(_) for _ in Recs]; Min = min(Recs)
-                
-                EventRec = Events['TTLs']['recording'][:]
-                for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
-                
-                for Key in Recs:
-                    Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
-                
-            print('Fixed.')
+        if AnalogTTLs:
+            Raw = GetRecKeys(Raw, [0], AnalogTTLs)
         else:
-            EventRec = Events['TTLs']['recording']
-        
-        print('Get TTL data...')
-        EventID = Events['TTLs']['user_data']['eventID']
-        EventCh = Events['TTLs']['user_data']['event_channels']
-        EventSample = Events['TTLs']['time_samples']
-    
-        TTLChs = np.nonzero(np.bincount(EventCh))[0]
-        TTLRecs = np.nonzero(np.bincount(EventRec))[0]
-        TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
-                             if EventRec[_] == _Rec 
-                             and EventCh[_] ==  ABRTTLCh-1 
-                             and EventID[_] == 1]
-                      for _Rec in TTLRecs}
-        TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
+            Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
+            TTLsPerRec, TTLRising = GetTTLInfo(Events, EventRec, ABRTTLCh, 
+                                               Files)[2:]
         
         Rate = Raw['info']['0']['sample_rate']
-#        NoOfSamplesBefore = int(round((ABRTimeBeforeTTL*Rate)*10**-3))
-#        NoOfSamplesAfter = int(round((ABRTimeAfterTTL*Rate)*10**-3))
-#        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-#        XValues = (range(NoOfSamples)/Rate)*10**3
         NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
         NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
         NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-#        XValues = (range(NoOfSamples)/Rate)*10**3
+
         XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
                   list((range(NoOfSamplesAfter)/Rate)*10**3)
         
-#        print('Set filter...')
-#        passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
-#        f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
-        Lf2, Lf1 = signal.butter(FilterOrder, FilterLow/(Rate/2), 'highpass')
-        Hf2, Hf1 = signal.butter(FilterOrder, FilterHigh/(Rate/2), 'lowpass')
-        
         for Rec in range(len(Raw['data'])):
-#            RawTime = [int(round(Raw['timestamps'][str(Rec)][_]*Rate)) 
-#                       for _ in range(len(Raw['timestamps'][str(Rec)]))]
-            TTLNo = [0]
-            for _ in range(1, len(TTLsPerRec)+1):
-                TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
-
-            TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
-            
-            RawTime = list(Raw['timestamps'][str(Rec)])
-            
-            rABR = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLsPerRec[Rec]))]
-            lABR = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLsPerRec[Rec]))]
-            
-            if Rec == 0:
-                sTTLNo = 0
-            else:
-                sTTLNo = TTLNo[Rec] + 1
+            TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLsPerRec)
+            ABR = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
+#            RawTime = list(Raw['timestamps'][str(Rec)])
             
             print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            for TTL in range(sTTLNo, TTLNo[Rec+1]):
-#                TTLLoc = int(TTLsPerRec[Rec][TTL])
+#            for TTL in range(sTTLNo, TTLNo[Rec+1]):
+#                TTLLoc = RawTime.index(TTLRising[TTL])
+            ABR = SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, 
+                               NoOfSamplesAfter)
+            for TTL in range(len(TTLs)):
+                ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
+                                        FilterOrder, 'highpass')
+            
+            ABR = np.mean(ABR, axis=0)            
+            ABR = FilterSignal(ABR, Rate, [min(FilterFreq)], FilterOrder, 
+                               'lowpass')
+            
+            if ExpInfo['DVCoord'] not in ABRs[ExpInfo['Hz']][Rec]:
+                ABRs[ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [ABR]
+            else:
+                ABRs[ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(ABR)
+    
+    Hdf5F.WriteABRs(FileName, ABRs, XValues)
+    
+    print('Done.')
+    return(None)
+
+    
+#def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
+#        ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4, 
+#        StimType='Sound'):
+#    """
+#    Analyze ABRs from data recorded with OpenEphys. A '*ABRs.hdf5' file will be 
+#    saved in cwd, containing:
+#        - ABRs dict, where data will be saved as 
+#          ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
+#              Ear = 0 (right) or 1 (left)
+#              Freq = index of DataInfo['NoiseFrequency']
+#              AmpF = index of DataInfo['SoundAmpF']['Freq']
+#              DVCoord = string with DV coordinate at the moment of recording
+#              Trial = Trial number - 1 (so if it is one trial, Trial=0)
+#              
+#        - XValues array, for x axis of the plot;
+#        
+#        - DataInfo dict, where all info will be saved.
+#    
+#    For this function to work:
+#        - The Kwik folders must be in 'KwikFiles/';
+#        - There must be a *Exp.hdf5 file containing all experimental settings 
+#          (see Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
+#    """
+#    print('set paths...')
+#    os.makedirs('Figs', exist_ok=True)    # Figs folder
+#    DirList = glob.glob('KwikFiles/*'); DirList.sort()
+#    
+#    print('Load DataInfo...')
+#    DataInfo, Exps = Hdf5F.ExpDataInfo(FileName, DirList, StimType, 
+#                                               Var='Exps')
+#    
+#    print('Preallocate memory...')
+#    ABRs = [[], []]
+#    ABRs[0] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+#    ABRs[1] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+#    for Freq in range(len(DataInfo['NoiseFrequency'])):
+#        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
+#              + str(DataInfo['NoiseFrequency'][Freq][1])
+#        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
+#        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
+#    del(Freq)
+#    
+#    for RecFolder in Exps:
+#        print('Load files...')
+#        FilesList = glob.glob(''.join([RecFolder, '/*']))
+#        Files = {}
+#        for File in FilesList:
+#            if '.kwd' in File:
+#                try:
+#                    Raw = Kwik.load(File, 'all')
+#                    Files['kwd'] = File
+#                except OSError:
+#                        print('File ', File, " is corrupted :'(")
+#        
+#        ExpInfo = Hdf5F.ExpExpInfo(FileName, DirList, RecFolder)
+#        
+#        print('Check if files are ok...')
+#        if 'Raw' not in locals():
+#            print('.kwd file is corrupted. Skipping dataset...')
+#            continue
+#        
+#        print('Data from ', RecFolder, ' loaded.')
+#        
+#        if '0' not in list(Raw['data'].keys()):
+#            print('Rec numbers are wrong. Fixing...')
+#            for iKey in Raw.keys():
+#                Recs = list(Raw[iKey].keys())
+#                Recs = [int(_) for _ in Recs]; Min = min(Recs)
+#                
+#                for Key in Recs:
+#                    Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
+#                
+#            print('Fixed.')
+#        
+#        Rate = Raw['info']['0']['sample_rate']
+#
+#        NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
+#        NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
+#        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+#        XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
+#                  list((range(NoOfSamplesAfter)/Rate)*10**3)
+#        
+#        Lf2, Lf1 = signal.butter(FilterOrder, FilterLow/(Rate/2), 'highpass')
+#        Hf2, Hf1 = signal.butter(FilterOrder, FilterHigh/(Rate/2), 'lowpass')
+#        
+#        for Rec in range(len(Raw['data'])):
+##            RecChNo = Raw['data'][str(Rec)].shape[1]
+##            TTLCh = Raw['data'][str(Rec)][:, ABRTTLCh + (RecChNo-9)]
+#            TTLCh = Raw['data'][str(Rec)][:, -1]
+#            Threshold = max(TTLCh)/5
+#            TTLs = []
+#            for _ in range(1, len(TTLCh)):
+#                if TTLCh[_] > Threshold:
+#                    if TTLCh[_-1] < Threshold:
+#                        TTLs.append(_)
+#            
+#            rABR = [[0 for _ in range(NoOfSamples)] 
+#                    for _ in range(len(TTLs))]
+#            lABR = [[0 for _ in range(NoOfSamples)] 
+#                    for _ in range(len(TTLs))]
+#            sTTL = [[0 for _ in range(NoOfSamples)] 
+#                    for _ in range(len(TTLs))]
+#            
+#            print('Slicing and filtering ABRs Rec ', str(Rec), '...')
+#            for TTL in range(len(TTLs)):
+#                TTLLoc = int(TTLs[TTL])
 #                Start = TTLLoc-NoOfSamplesBefore
 #                End = TTLLoc+NoOfSamplesAfter
-#                try:
-#                    Start = RawTime.index(Start)
-#                    End = RawTime.index(End)
-#                except ValueError:
-#                    print('ValueError: Timestamp is messed up in Freq', 
-#                          str(ExpInfo['Hz']), ' AmpF ', str(Rec), ' :(')
-#                    break
-                TTLLoc = RawTime.index(TTLRising[TTL])
-                    
-                Start = TTLLoc-NoOfSamplesBefore
-                End = TTLLoc+NoOfSamplesAfter
-                
-                Index = TTL-sTTLNo
-                
-                rABR[Index] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1]
-                lABR[Index] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1]
-                
-                rABR[Index] = signal.filtfilt(Lf2, Lf1, rABR[Index], padlen=0)
-#                lABR[Index] = signal.filtfilt(Lf2, Lf1, lABR[Index], padlen=0)
-
-                del(TTLLoc, Start, End)
-            
-#            # CrazyMA
-#            rData = rABR[0]; lData = lABR[0]
-#            for _ in range(1, len(rABR)):
-#                rData = (rData + rABR[_])/2
-#                lData = (lData + lABR[_])/2
-#            rABR = rData; lABR = lData
-            
-            # Mean
-            rABR = np.mean(rABR, axis=0)
+#                
+#                rABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
+#                            Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+#                
+#                lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1] * \
+#                            Raw['channel_bit_volts'][str(Rec)][ABRCh[1]-1]
+#                
+#                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
+#                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
+#                
+#                del(TTLLoc, Start, End)
+#            
+#            # Mean
+#            rABR = np.mean(rABR, axis=0)
 #            lABR = np.mean(lABR, axis=0)
-#            rData = np.mean(rABR, axis=0)
-#            lData = np.mean(lABR, axis=0)
-            
-            rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
+##            rData = np.mean(rABR, axis=0)
+##            lData = np.mean(lABR, axis=0)
+#            
+#            rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
 #            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
-#            rData = signal.filtfilt(Hf2, Hf1, rData, padlen=0)
-#            lData = signal.filtfilt(Hf2, Hf1, lData, padlen=0)
-
-#            rABR = signal.savgol_filter(rABR, 9, 2, mode='nearest')
-#            lABR = signal.savgol_filter(lABR, 9, 2, mode='nearest')
-#            rABR = (rABR/10) + DataInfo['Intensities'][Rec]
-#            lABR = (lABR/10) + DataInfo['Intensities'][Rec]
-            
-            if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [lABR]
-            else:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(rABR)
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(lABR)
-    
-    print('Saving data to ' + FileName)
-    GroupName = 'ABRs-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    with h5py.File(FileName) as F:
-        if 'ABRs' in F.keys():
-            F[GroupName] = F['ABRs']; del(F['ABRs'])
-        
-        F.create_group('ABRs')
-        F['ABRs'].attrs['XValues'] = XValues
-        F['ABRs'].create_group('Right'); F['ABRs'].create_group('Left')
-            
-        for Freq in range(len(ABRs[0])):
-            for AmpF in range(len(ABRs[0][Freq])):
-                for DV in ABRs[0][Freq][AmpF].keys():
-                    Path = str(Freq) + '/' + \
-                           str(AmpF) + '/' + \
-                           DV
-                    
-                    F['ABRs']['Right'].create_group(Path)
-                    F['ABRs']['Left'].create_group(Path)
-                    del(Path)
-                    
-                    for Trial in range(len(ABRs[0][Freq][AmpF][DV])):
-                        F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
-                            ABRs[0][Freq][AmpF][DV][Trial][:]
-                        F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
-                            ABRs[1][Freq][AmpF][DV][Trial][:]
-    
-    print('Done.')
-    return(None)
-
-    
-def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
-        ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4, 
-        StimType='Sound'):
-    """
-    Analyze ABRs from data recorded with OpenEphys. A '*ABRs.hdf5' file will be 
-    saved in cwd, containing:
-        - ABRs dict, where data will be saved as 
-          ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
-              Ear = 0 (right) or 1 (left)
-              Freq = index of DataInfo['NoiseFrequency']
-              AmpF = index of DataInfo['SoundAmpF']['Freq']
-              DVCoord = string with DV coordinate at the moment of recording
-              Trial = Trial number - 1 (so if it is one trial, Trial=0)
-              
-        - XValues array, for x axis of the plot;
-        
-        - DataInfo dict, where all info will be saved.
-    
-    For this function to work:
-        - The Kwik folders must be in 'KwikFiles/';
-        - There must be a *Exp.hdf5 file containing all experimental settings 
-          (see Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
-    """
-    print('set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    DirList = glob.glob('KwikFiles/*'); DirList.sort()
-    
-    print('Load DataInfo...')
-    DataInfo, Exps = LoadHdf5Files.ExpDataInfo(FileName, DirList, StimType, 
-                                               Var='Exps')
-    
-    print('Preallocate memory...')
-    ABRs = [[], []]
-    ABRs[0] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-    ABRs[1] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-    for Freq in range(len(DataInfo['NoiseFrequency'])):
-        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
-              + str(DataInfo['NoiseFrequency'][Freq][1])
-        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
-        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
-    del(Freq)
-    
-    for RecFolder in Exps:
-        print('Load files...')
-        FilesList = glob.glob(''.join([RecFolder, '/*']))
-        Files = {}
-        for File in FilesList:
-            if '.kwd' in File:
-                try:
-                    Raw = Kwik.load(File, 'all')
-                    Files['kwd'] = File
-                except OSError:
-                        print('File ', File, " is corrupted :'(")
-        
-        ExpInfo = LoadHdf5Files.ExpExpInfo(FileName, DirList, RecFolder)
-        
-        print('Check if files are ok...')
-        if 'Raw' not in locals():
-            print('.kwd file is corrupted. Skipping dataset...')
-            continue
-        
-        print('Data from ', RecFolder, ' loaded.')
-        
-        if '0' not in list(Raw['data'].keys()):
-            print('Rec numbers are wrong. Fixing...')
-            for iKey in Raw.keys():
-                Recs = list(Raw[iKey].keys())
-                Recs = [int(_) for _ in Recs]; Min = min(Recs)
-                
-                for Key in Recs:
-                    Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
-                
-            print('Fixed.')
-        
-        Rate = Raw['info']['0']['sample_rate']
-
-        NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
-        NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
-        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-        XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
-                  list((range(NoOfSamplesAfter)/Rate)*10**3)
-        
-        Lf2, Lf1 = signal.butter(FilterOrder, FilterLow/(Rate/2), 'highpass')
-        Hf2, Hf1 = signal.butter(FilterOrder, FilterHigh/(Rate/2), 'lowpass')
-        
-        for Rec in range(len(Raw['data'])):
-            RecChNo = Raw['data'][str(Rec)].shape[1]
-#            TTLCh = Raw['data'][str(Rec)][:, ABRTTLCh + (RecChNo-9)]
-            TTLCh = Raw['data'][str(Rec)][:, -1]
-            Threshold = max(TTLCh)/5
-            TTLs = []
-            for _ in range(1, len(TTLCh)):
-                if TTLCh[_] > Threshold:
-                    if TTLCh[_-1] < Threshold:
-                        TTLs.append(_)
-            
-            rABR = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLs))]
-            lABR = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLs))]
-            sTTL = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLs))]
-            
-            print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            for TTL in range(len(TTLs)):
-                TTLLoc = int(TTLs[TTL])
-                Start = TTLLoc-NoOfSamplesBefore
-                End = TTLLoc+NoOfSamplesAfter
-                
-                rABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
-                            Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
-                
-                lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1] * \
-                            Raw['channel_bit_volts'][str(Rec)][ABRCh[1]-1]
-                
-                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
-                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
-                
-                del(TTLLoc, Start, End)
-            
-            # Mean
-            rABR = np.mean(rABR, axis=0)
-            lABR = np.mean(lABR, axis=0)
-#            rData = np.mean(rABR, axis=0)
-#            lData = np.mean(lABR, axis=0)
-            
-            rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
-            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
-#            rData = signal.filtfilt(Hf2, Hf1, rData, padlen=0)
-#            lData = signal.filtfilt(Hf2, Hf1, lData, padlen=0)
-            
-            if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [lABR]
-            else:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(rABR)
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(lABR)
-    
-    if 'XValues' in locals():
-        print('Saving data to ' + FileName)
-        GroupName = 'ABRs-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        with h5py.File(FileName) as F:
-            if 'ABRs' in F.keys():
-                F[GroupName] = F['ABRs']; del(F['ABRs'])
-            
-            F.create_group('ABRs')
-            F['ABRs'].attrs['XValues'] = XValues
-            F['ABRs'].create_group('Right'); F['ABRs'].create_group('Left')
-                
-            for Freq in range(len(ABRs[0])):
-                for AmpF in range(len(ABRs[0][Freq])):
-                    for DV in ABRs[0][Freq][AmpF].keys():
-                        Path = str(Freq) + '/' + \
-                               str(AmpF) + '/' + \
-                               DV
-                        
-                        F['ABRs']['Right'].create_group(Path)
-                        F['ABRs']['Left'].create_group(Path)
-                        del(Path)
-                        
-                        for Trial in range(len(ABRs[0][Freq][AmpF][DV])):
-                            F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
-                                ABRs[0][Freq][AmpF][DV][Trial][:]
-                            F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
-                                ABRs[1][Freq][AmpF][DV][Trial][:]
-    
-    print('Done.')
-    return(None)
+##            rData = signal.filtfilt(Hf2, Hf1, rData, padlen=0)
+##            lData = signal.filtfilt(Hf2, Hf1, lData, padlen=0)
+#            
+#            if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
+#                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
+#                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [lABR]
+#            else:
+#                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(rABR)
+#                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(lABR)
+#    
+#    if 'XValues' in locals():
+#        print('Saving data to ' + FileName)
+#        GroupName = 'ABRs-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+#        with h5py.File(FileName) as F:
+#            if 'ABRs' in F.keys():
+#                F[GroupName] = F['ABRs']; del(F['ABRs'])
+#            
+#            F.create_group('ABRs')
+#            F['ABRs'].attrs['XValues'] = XValues
+#            F['ABRs'].create_group('Right'); F['ABRs'].create_group('Left')
+#                
+#            for Freq in range(len(ABRs[0])):
+#                for AmpF in range(len(ABRs[0][Freq])):
+#                    for DV in ABRs[0][Freq][AmpF].keys():
+#                        Path = str(Freq) + '/' + \
+#                               str(AmpF) + '/' + \
+#                               DV
+#                        
+#                        F['ABRs']['Right'].create_group(Path)
+#                        F['ABRs']['Left'].create_group(Path)
+#                        del(Path)
+#                        
+#                        for Trial in range(len(ABRs[0][Freq][AmpF][DV])):
+#                            F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
+#                                ABRs[0][Freq][AmpF][DV][Trial][:]
+#                            F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
+#                                ABRs[1][Freq][AmpF][DV][Trial][:]
+#    
+#    print('Done.')
+#    return(None)
 
 
 def PlotABR(FileName):
@@ -515,7 +519,7 @@ def PlotABR(FileName):
         
         XValues = F['ABRs'].attrs['XValues'][:]
     
-    SoundIntensity = LoadHdf5Files.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
+    SoundIntensity = Hdf5F.SoundMeasurement(DataInfo['CalibrationFile'], 'SoundIntensity')
     
     SetLaTexPlot()
     print('Plotting...')
@@ -719,7 +723,7 @@ def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
 #                with shelve.open(File[:-3]) as Shelve: 
 #                    DataInfo = Shelve['DataInfo']
         
-        DataInfo = LoadHdf5Files.GPIASDataInfo(FileName, DirList)
+        DataInfo = Hdf5F.GPIASDataInfo(FileName, DirList)
         
         print('Check if files are ok...')
         if 'Raw' not in locals():
@@ -900,7 +904,7 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL=50,
                 print('File', File, "is corrupted :'(")
         
     
-    DataInfo = LoadHdf5Files.GPIASDataInfo(FileName)
+    DataInfo = Hdf5F.GPIASDataInfo(FileName)
     
     print('Check if files are ok...')
     if 'Raw' not in locals():
@@ -1041,7 +1045,7 @@ def PlotGPIAS(FileList):
 
 def PlotGPIAS2(FileName):
     print('Loading data...')
-    DataInfo = LoadHdf5Files.GPIASDataInfo(FileName)
+    DataInfo = Hdf5F.GPIASDataInfo(FileName)
     with h5py.File(FileName) as F:
         Keys = list(F.keys())
     
@@ -1101,7 +1105,7 @@ def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1,
     SoundCh = 0; SoundSqCh = 1
     
     print('Load DataInfo...')
-    DataInfo= LoadHdf5Files.ExpDataInfo(FileName, list(RecFolder), 'Sound')
+    DataInfo= Hdf5F.ExpDataInfo(FileName, list(RecFolder), 'Sound')
     
     print('Load files...')
     FilesList = glob.glob(''.join([RecFolder, '/*']))

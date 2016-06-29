@@ -24,8 +24,7 @@ ABRCh = [1, 2]         # [RightChannel, LeftChannel], if order matters
 ABRTimeBeforeTTL = 3    # in ms
 ABRTimeAfterTTL = 9    # in ms
 ABRTTLCh = 1            # TTL ch for ABR
-FilterLow = 300         # High-pass frequency for bandpass filter
-FilterHigh = 3000       # Low-pass frequency
+FilterFreq = [300, 3000]         # frequency for filter
 FilterOrder = 5         # butter order
 StimType = 'Sound'      # Stimulation type: 'Sound', 'Laser' or ['Sound', 'Laser'] 
 
@@ -51,9 +50,9 @@ PiezoCh = 1
 GPIASTTLCh = 2
 GPIASTimeBeforeTTL = 20    # in ms
 GPIASTimeAfterTTL = 100    # in ms
-FilterLow = 65       # High-pass frequency for bandpass filter
-FilterHigh = 300     # Low-pass frequency
-FilterOrder = 4       # butter order
+FilterLow = 70       # High-pass frequency for bandpass filter
+FilterHigh = 400     # Low-pass frequency
+FilterOrder = 3       # butter order
 RecFolder = 1
 
 import glob

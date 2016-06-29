@@ -21,7 +21,7 @@ board as an analog I/O board.
 """
 
 import array
-import LoadHdf5Files
+import Hdf5F
 import math
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -37,7 +37,7 @@ SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/20160418173048-SBAmpFs.hdf5'
 ## Lower-level functions
 def dBToAmpF(Intensities, CalibrationFile):
     print('Converting dB to AmpF...')
-    SoundIntensity = LoadHdf5Files.SoundMeasurement(CalibrationFile, 
+    SoundIntensity = Hdf5F.SoundMeasurement(CalibrationFile, 
                                                     'SoundIntensity')
     
     SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
@@ -364,7 +364,7 @@ def SoundStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
-    SBOutAmpF = LoadHdf5Files.SoundCalibration(SBAmpFsFile, SoundBoard,
+    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                                'SBOutAmpF')
     
     SoundPulse = GenNoise(Rate, SoundPulseDur)
@@ -396,7 +396,7 @@ def LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, SoundBoard,
     """ Generate square pulses in one channel that works as TTL for laser 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
-    SBOutAmpF = LoadHdf5Files.SoundCalibration(SBAmpFsFile, SoundBoard,
+    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                                'SBOutAmpF')
     
     LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
@@ -424,7 +424,7 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
     """ Generate sound pulses in one channel and TTLs for sound and laser in 
     the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
     
-    SBOutAmpF = LoadHdf5Files.SoundCalibration(SBAmpFsFile, SoundBoard,
+    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                                'SBOutAmpF')
     
     LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
@@ -593,7 +593,7 @@ def MicrOscilloscope(Rate, SoundBoard, XLim, YLim, FramesPerBuf=512):
     """ Read data from sound board input and plot it until the windows is 
     closed. """
     
-    SBInAmpF = LoadHdf5Files.SoundCalibration(SBAmpFsFile, SoundBoard,
+    SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                               'SBInAmpF')
     
     r = pyaudio.PyAudio()
@@ -631,7 +631,7 @@ def MicrOscilloscopeRec(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512):
     """ Read data from sound board input, record it to a video and plot it 
     until the windows is closed (with a delay). """
     
-    SBInAmpF = LoadHdf5Files.SoundCalibration(SBAmpFsFile, SoundBoard,
+    SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                               'SBInAmpF')
     
     r = pyaudio.PyAudio()

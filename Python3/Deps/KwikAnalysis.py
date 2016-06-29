@@ -153,6 +153,7 @@ def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLsPerRec):
 #        
 #        return(TTLNo, sTTLNo)
         TTLs = TTLsPerRec[Rec]
+        return(TTLs)
 
 
 def RemoveDateFromFolderName():
@@ -189,14 +190,19 @@ def SetLaTexPlot():
     return(None)
 
 
-def SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter):
+def SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter, 
+                 AnalogTTLs):
     for TTL in range(len(TTLs)):
-        TTLLoc = int(TTLs[TTL])        
+        if AnalogTTLs:
+            TTLLoc = int(TTLs[TTL])
+        else:
+            RawTime = list(Raw['timestamps'][str(Rec)])
+            TTLLoc = RawTime.index(TTLs[TTL]/Rate)
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
 
-        ABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
-                   Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+        ABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] #* \
+#                   Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
         
     return(ABR)
 
@@ -268,7 +274,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
             Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
             TTLsPerRec, TTLRising = GetTTLInfo(Events, EventRec, ABRTTLCh, 
                                                Files)[2:]
-        
+        TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
         Rate = Raw['info']['0']['sample_rate']
         NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
         NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
@@ -280,7 +286,6 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         for Rec in range(len(Raw['data'])):
             TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLsPerRec)
             ABR = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
-#            RawTime = list(Raw['timestamps'][str(Rec)])
             
             print('Slicing and filtering ABRs Rec ', str(Rec), '...')
 #            for TTL in range(sTTLNo, TTLNo[Rec+1]):
@@ -687,7 +692,7 @@ def PlotABR2(FileName):
 
 
 def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
-          FilterHigh=300, FilterOrder=4, GPIASTTLCh=1, PiezoCh=1):
+          FilterHigh=300, FilterOrder=4, GPIASTTLCh=2, PiezoCh=1):
     
     print('set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
@@ -943,7 +948,7 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL=50,
             print('Bad recording. Skipping...')
             continue
         
-        Threshold = max(TTLCh)/5
+        Threshold = max(TTLCh)/2
         TTLs = []
         for _ in range(1, len(TTLCh)):
             if TTLCh[_] > Threshold:
@@ -956,7 +961,8 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL=50,
             Start = TTLLoc-NoOfSamplesBefore
             End = TTLLoc+NoOfSamplesAfter
             
-            gData = Raw['data'][str(Rec)][Start:End, PiezoCh-1]
+            gData = Raw['data'][str(Rec)][Start:End, PiezoCh-1] * \
+                    Raw['channel_bit_volts'][str(Rec)][PiezoCh-1] * 1000 # mV
 #                gData = [float(gData[_]) for _ in range(NoOfSamples)]
             gData = abs(signal.hilbert(gData))
             gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)

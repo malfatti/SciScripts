@@ -201,8 +201,8 @@ def SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter,
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
 
-        ABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] #* \
-#                   Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+        ABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
+                   Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
         
     return(ABR)
 
@@ -437,6 +437,14 @@ def PlotABR2(FileName):
     
     Keys = list(ABRs[0][0][0].keys())
     for Key in Keys:
+        upYLim = [0] * len(ABRs[0][0][0][Key]); downYLim = upYLim[:]
+        
+        for Trial in range(len(ABRs[0][0][0][Key])):
+            upYLim[Trial] = max(ABRs[0][Freq][0][Key][Trial])
+            downYLim[Trial] = min(ABRs[0][Freq][0][Key][Trial])
+        
+        upYLim = max(upYLim); downYLim = min(downYLim)
+        
         for Trial in range(len(ABRs[0][0][0][Key])):
             for Freq in range(len(ABRs[0])):
                 Fig, Axes = plt.subplots(len(ABRs[0][0]), 
@@ -449,8 +457,8 @@ def PlotABR2(FileName):
                     DataInfo['SoundAmpF'][KeyHz][
                         DataInfo['SoundAmpF'][KeyHz].index(0.0)
                                                 ] = 0
-                upYLim = max(ABRs[0][Freq][0][Key][Trial])
-                downYLim = min(ABRs[0][Freq][0][Key][Trial])
+#                upYLim = max(ABRs[0][Freq][0][Key][Trial])
+#                downYLim = min(ABRs[0][Freq][0][Key][Trial])
                 for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
                     FigTitle = KeyHz + ' Hz, trial ' + str(Trial+1)
                     YLabel = 'Voltage [mV]'
@@ -882,9 +890,9 @@ def PlotGPIAS2(FileName):
         
         plt.figure(Freq)
         plt.plot(XValues, GPIAS[Freq][0], 
-                 color='r', label=Line0Label)
+                 color='r', label=Line0Label, lw=2)
         plt.plot(XValues, GPIAS[Freq][1], 
-                 color='b', label=Line1Label)
+                 color='b', label=Line1Label, lw=2)
         plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
                     lw=0, label=SpanLabel)
 

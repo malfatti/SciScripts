@@ -21,9 +21,9 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'CaMKIIahM4Dn08'
+AnimalName = 'CaMKIIahM4Dn09'
 
-CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
                   '20160419093139-SoundMeasurement/' + \
                   '20160419093139-SoundMeasurement.hdf5'
 
@@ -50,8 +50,8 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [65]
-PulseIntensity = [110]
+BackgroundIntensity = [75]
+PulseIntensity = [120]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
@@ -164,7 +164,7 @@ SoundBackgroundAfterPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur,
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 print('Creating SoundBetweenStimDur...')
-SBSUnitDur = 0.5; SoundPulseDur = SBSUnitDur
+SBSUnitDur = 1; SoundPulseDur = SBSUnitDur
 SoundPulseNo = round(SoundBetweenStimDur[1]/SBSUnitDur)
 SoundAmpF = SoundBackgroundAmpF
 SoundBetweenStim = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
@@ -194,7 +194,7 @@ FreqOrder = [[0]]
 for Hz in range(len(Freqs)):
     Trials = [0, 1]
     random.shuffle(Trials)
-    print(str(Hz), 'of', str(len(Freqs)))
+    print(str(Hz+1), 'of', str(len(Freqs)))
     
     for Trial in Trials:
         RealFreq = Freqs[Hz]; RealTrial = FreqSlot[Hz*2+Trial]

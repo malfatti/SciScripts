@@ -95,6 +95,40 @@ def GPIASDataInfo(FileName):
         return(DataInfo)
 
 
+def LoadABRs(FileName):
+    with h5py.File(FileName) as F:
+        Key = list(F.keys()); Key.remove('DataInfo'); Key = Key[-1]
+        
+        ABRs = [0]*len(F[Key])
+        for Freq in range(len(F[Key])):
+            ABRs[Freq] = [0]*len(F[Key][str(Freq)])
+            
+            for AmpF in range(len(F[Key][str(Freq)])):
+                ABRs[Freq][AmpF] = {}
+                
+                for DV in F[Key][str(Freq)][str(AmpF)].keys():
+                    ABRs[Freq][AmpF][DV] = [0]*len(F[Key][str(Freq)][str(AmpF)][DV])
+                    
+                    for Trial in range(len(F[Key][str(Freq)][str(AmpF)][DV])):
+                        ABRs[Freq][AmpF][DV][Trial] = F[Key][str(Freq)][str(AmpF)][DV][str(Trial)][:]
+        
+        XValues = F[Key].attrs['XValues'][:]
+        
+    return(ABRs, XValues)
+
+
+def LoadDict(FileName, GroupName):
+    Dict = {}
+    with h5py.File(FileName) as F:
+        for Key, Value in F[GroupName].attrs.items():
+            if isinstance(Value, Number):
+                Dict[Key] = float(Value)
+            else:
+                Dict[Key] = Value
+    
+    return(Dict)
+
+
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
     with h5py.File(SBAmpFsFile) as h5: 
         Var = h5[SoundBoard][Key][0]
@@ -148,17 +182,15 @@ def WriteABRs(FileName, ABRs, XValues):
         F.create_group(Group)
         F[Group].attrs['XValues'] = XValues
             
-        for Freq in range(len(ABRs[0])):
-            for AmpF in range(len(ABRs[0][Freq])):
-                for DV in ABRs[0][Freq][AmpF].keys():
-                    Path = str(Freq) + '/' + \
-                           str(AmpF) + '/' + \
-                           DV
+        for Freq in range(len(ABRs)):
+            for AmpF in range(len(ABRs[Freq])):
+                for DV in ABRs[Freq][AmpF].keys():
+                    Path = str(Freq) + '/' + str(AmpF) + '/' + DV
                     
                     F[Group].create_group(Path)
                     del(Path)
                     
-                    for Trial in range(len(ABRs[0][Freq][AmpF][DV])):
+                    for Trial in range(len(ABRs[Freq][AmpF][DV])):
                         F[Group][str(Freq)][str(AmpF)][DV][str(Trial)] = \
                             ABRs[Freq][AmpF][DV][Trial][:]
     

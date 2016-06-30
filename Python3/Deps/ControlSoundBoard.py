@@ -32,7 +32,7 @@ from scipy import signal
 import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
-SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/20160418173048-SBAmpFs.hdf5'
+SBAmpFsFile = '/home/cerebro/Malfatti/Test/20160418173048-SBAmpFs.hdf5'
 
 ## Lower-level functions
 def dBToAmpF(Intensities, CalibrationFile):

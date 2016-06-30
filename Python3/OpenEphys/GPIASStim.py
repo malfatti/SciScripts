@@ -50,7 +50,7 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [75]
+BackgroundIntensity = [70]
 PulseIntensity = [120]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].

@@ -53,7 +53,7 @@ GPIASTimeAfterTTL = 100    # in ms
 FilterLow = 70       # High-pass frequency for bandpass filter
 FilterHigh = 400     # Low-pass frequency
 FilterOrder = 3       # butter order
-RecFolder = 2
+RecFolder = 1
 
 import glob
 import KwikAnalysis

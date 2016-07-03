@@ -34,11 +34,11 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'Test'
+AnimalName = 'CaMKIIahM4Dn06'
 Rate = 128000
 BaudRate = 38400
 
-CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
                   '20160419093139-SoundMeasurement/' + \
                   '20160419093139-SoundMeasurement.hdf5'
 
@@ -58,11 +58,11 @@ SoundPulseDur = 0.003
 # Silence after pulse
 SoundPostPauseDur = 0.093
 # Amount of pulses per block
-SoundPulseNo = 40
+SoundPulseNo = 529
 # Number of blocks
 SoundStimBlockNo = 1
 # Duration of pause between blocks
-SoundPauseBetweenStimBlocksDur = 3
+SoundPauseBetweenStimBlocksDur = 10
 # Intensities tested, in order, in dB. Supports floats :)
 Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
 #Intensities = [80, 65]
@@ -130,8 +130,8 @@ Arduino = ControlArduino.CreateObj(BaudRate)
 Sound, PlaySound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
                                                SoundPulseNo, SoundAmpF, 
                                                NoiseFrequency, TTLAmpF, 
-                                               CalibrationFile, SoundBoard, 
-                                               'AllPulses', SoundPrePauseDur, 
+                                               SoundBoard, 'AllPulses', 
+                                               SoundPrePauseDur, 
                                                SoundPostPauseDur, 
                                                SoundStimBlockNo, 
                                                SoundPauseBetweenStimBlocksDur)

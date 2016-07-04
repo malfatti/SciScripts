@@ -63,7 +63,7 @@ def ExpDataInfo(FileName, DirList, StimType, Var='DataInfo'):
 def ExpExpInfo(FileName, RecFolder, DirList):
     ExpInfo = {}
     with h5py.File(FileName) as F:
-        Key = str(DirList.index(RecFolder))
+        Key = "{0:02d}".format(DirList.index(RecFolder))
         ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
         ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
     

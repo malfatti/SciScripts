@@ -34,7 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn06'
+AnimalName = 'CaMKIIahM4Dn09'
 Rate = 128000
 BaudRate = 38400
 
@@ -64,7 +64,8 @@ SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 10
 # Intensities tested, in order, in dB. Supports floats :)
-Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
+#Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
+Intensities = [80, 70, 60, 50]
 #Intensities = [80, 65]
 #Intensities = [100, 75, 70]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
@@ -114,7 +115,7 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate',
                                        'CalibrationFile', 'FileName'])
 
 with h5py.File(FileName) as h5:
-    h5.create_group('DataInfo')
+#    h5.create_group('DataInfo')
     h5.create_group('ExpInfo')
     for Key, Value in DataInfo.items():
         h5['DataInfo'].attrs[Key] = Value
@@ -164,7 +165,7 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 #%% Run sound
 
-DVCoord = 'Out'
+DVCoord = '3000'
 #Freq = 4
 #Freq = int(Freq)
 while True:
@@ -178,20 +179,21 @@ while True:
         break
     
     print('Running...')
-    Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
-    for AmpF in range(len(SoundAmpF[Key])):
-        print('Playing', str(NoiseFrequency[Freq]), 'at', 
-              str(Intensities[AmpF]), 'dB')
-        
-        Arduino.write(b'P')
-        PlaySound(Freq, AmpF)
-        Arduino.write(b'P')
-        Stimulation.write(SoundPauseBetweenStimBlocks)
-    
+#    Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+#    for AmpF in range(len(SoundAmpF[Key])):
+#        print('Playing', str(NoiseFrequency[Freq]), 'at', 
+#              str(Intensities[AmpF]), 'dB')
+#        
+#        Arduino.write(b'P')
+#        PlaySound(Freq, AmpF)
+#        Arduino.write(b'P')
+#        Stimulation.write(SoundPauseBetweenStimBlocks)
+#    
     print('Done. Saving info...')
     with h5py.File(FileName) as h5:
-        h5['ExpInfo'].create_group(str(len(list(h5['ExpInfo']))))
-        Key = list(h5['ExpInfo'].keys())[-1]
+        Key = "{0:02d}".format(len(list(h5['ExpInfo'])))
+        h5['ExpInfo'].create_group(Key)
+#        Key = list(h5['ExpInfo'].keys())[-1]
         
         h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
         h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord

@@ -20,7 +20,7 @@
 
 ## Set experiment details
 
-ABRCh = [1, 2]         # [RightChannel, LeftChannel], if order matters
+ABRCh = [1]         # [RightChannel, LeftChannel], if order matters
 ABRTimeBeforeTTL = 3    # in ms
 ABRTimeAfterTTL = 9    # in ms
 ABRTTLCh = 1            # TTL ch for ABR

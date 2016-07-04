@@ -99,12 +99,33 @@ def LoadOEFiles(RecFolder, DirList):
     FilesList = glob.glob(''.join([RecFolder, '/*']))
     Files = {}
     for File in FilesList:
-        if '.kwd' in File:
+        if '7.raw.kwd' in File:
             try:
                 Raw = Kwik.load(File, 'all')
                 Files['kwd'] = File
             except OSError:
-                    print('File ', File, " is corrupted :'(")
+                    print('File', File, "is corrupted :'(")
+            except KeyError: 
+                # Old OE versions do not have channel_bit_volts
+                print('No channel_bit_volts in the file! Assuming')
+                f = h5py.File(File, 'r')
+                data['info'] = {Rec: f['recordings'][Rec].attrs 
+                                for Rec in f['recordings'].keys()}
+                
+                data['channel_bit_volts'] = {Rec: f['recordings'][Rec]\
+                                                   ['application_data']\
+                                                   ['channel_bit_volts']
+                                             for Rec in f['recordings'].keys()}
+                
+                data['data'] = {Rec: f['recordings'][Rec]['data']
+                                for Rec in f['recordings'].keys()}
+                
+                data['timestamps'] = {Rec: ((
+                                            np.arange(0,data['data'][Rec].shape[0])
+                                            + data['info'][Rec]['start_time'])
+                                           / data['info'][Rec]['sample_rate'])
+                                           for Rec in f['recordings']}
+            
             
         elif '.kwe' in File:
             try:
@@ -122,12 +143,13 @@ def LoadOEFiles(RecFolder, DirList):
         
         elif '.kwx' in File:
             try:
-                Events = Kwik.load(File)
+                Spks = Kwik.load(File)
                 Files['kwx'] = File
             except OSError:
                 print('File ', File, " is corrupted :'(")
+                Spks = []
     
-    return(Raw, Events, Files)
+    return(Raw, Events, Spks, Files)
 
 
 def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLsPerRec):
@@ -250,9 +272,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     
     for RecFolder in Exps:
         if AnalogTTLs:
-            Raw, _, Files = LoadOEFiles(RecFolder, DirList)
+            Raw, _, _, Files = LoadOEFiles(RecFolder, DirList)
         else:
-            Raw, Events, Files = LoadOEFiles(RecFolder, DirList)
+            Raw, Events, _, Files = LoadOEFiles(RecFolder, DirList)
         
         ExpInfo = Hdf5F.ExpExpInfo(FileName, RecFolder, DirList)
         

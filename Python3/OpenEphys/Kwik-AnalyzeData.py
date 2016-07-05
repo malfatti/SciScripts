@@ -26,7 +26,8 @@ ABRTimeAfterTTL = 9    # in ms
 ABRTTLCh = 1            # TTL ch for ABR
 FilterFreq = [300, 3000]         # frequency for filter
 FilterOrder = 5         # butter order
-StimType = 'Sound'      # Stimulation type: 'Sound', 'Laser' or ['Sound', 'Laser'] 
+StimType = 'Sound'      # Stimulation type: 'Sound', 'Laser' or ['Sound', 'Laser']
+Processor = '107'       # '107' for RHA and '100' for OE
 
 #==========#==========#==========#==========#
 

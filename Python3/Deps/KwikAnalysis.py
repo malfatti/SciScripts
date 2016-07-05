@@ -94,12 +94,12 @@ def GetTTLInfo(Events, EventRec, ABRTTLCh, Files):
     return(TTLChs, TTLRecs, TTLsPerRec, TTLRising)
 
 
-def LoadOEFiles(RecFolder, DirList):
+def LoadOEFiles(RecFolder, DirList, Processor):
     print('Load files...')
     FilesList = glob.glob(''.join([RecFolder, '/*']))
     Files = {}
     for File in FilesList:
-        if '7.raw.kwd' in File:
+        if Processor+'.raw.kwd' in File:
             try:
                 Raw = Kwik.load(File, 'all')
                 Files['kwd'] = File
@@ -107,24 +107,22 @@ def LoadOEFiles(RecFolder, DirList):
                     print('File', File, "is corrupted :'(")
             except KeyError: 
                 # Old OE versions do not have channel_bit_volts
-                print('No channel_bit_volts in the file! Assuming')
-                f = h5py.File(File, 'r')
-                data['info'] = {Rec: f['recordings'][Rec].attrs 
-                                for Rec in f['recordings'].keys()}
+                print('No channel_bit_volts in the file! Assuming 1Bit = 0.195µV')
+                F = h5py.File(File, 'r')
+                Raw['info'] = {Rec: F['recordings'][Rec].attrs 
+                                for Rec in F['recordings'].keys()}
                 
-                data['channel_bit_volts'] = {Rec: f['recordings'][Rec]\
-                                                   ['application_data']\
-                                                   ['channel_bit_volts']
-                                             for Rec in f['recordings'].keys()}
+                Raw['channel_bit_volts'] = {Rec: 0.195
+                                             for Rec in F['recordings'].keys()}
                 
-                data['data'] = {Rec: f['recordings'][Rec]['data']
-                                for Rec in f['recordings'].keys()}
+                Raw['data'] = {Rec: F['recordings'][Rec]['data']
+                                for Rec in F['recordings'].keys()}
                 
-                data['timestamps'] = {Rec: ((
-                                            np.arange(0,data['data'][Rec].shape[0])
-                                            + data['info'][Rec]['start_time'])
-                                           / data['info'][Rec]['sample_rate'])
-                                           for Rec in f['recordings']}
+                Raw['timestamps'] = {Rec: ((
+                                            np.arange(0,Raw['data'][Rec].shape[0])
+                                            + Raw['info'][Rec]['start_time'])
+                                           / Raw['info'][Rec]['sample_rate'])
+                                           for Rec in F['recordings']}
             
             
         elif '.kwe' in File:
@@ -233,7 +231,7 @@ def SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter,
 
 def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
         ABRTTLCh=1, FilterFreq=[300, 3000], FilterOrder=4, StimType='Sound', 
-        AnalogTTLs=False):
+        Processor='100', AnalogTTLs=False):
     """
     Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
@@ -272,9 +270,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     
     for RecFolder in Exps:
         if AnalogTTLs:
-            Raw, _, _, Files = LoadOEFiles(RecFolder, DirList)
+            Raw, _, _, Files = LoadOEFiles(RecFolder, DirList, Processor)
         else:
-            Raw, Events, _, Files = LoadOEFiles(RecFolder, DirList)
+            Raw, Events, _, Files = LoadOEFiles(RecFolder, DirList, Processor)
         
         ExpInfo = Hdf5F.ExpExpInfo(FileName, RecFolder, DirList)
         
@@ -349,6 +347,7 @@ def PlotABR(FileName):
                                             'SoundIntensity')
     
     SetLaTexPlot()
+    
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
@@ -418,58 +417,21 @@ def PlotABR2(FileName):
     """
     
     print('Loading data...')
-    DataInfo = {}
-    with h5py.File(FileName) as F:
-        for Key, Value in F['DataInfo'].items():
-            DataInfo['SoundAmpF'] = {}
-            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
-                DataInfo['SoundAmpF'][aKey] = aValue[:]
-        
-        for bKey, bValue in F['DataInfo'].attrs.items():
-            if isinstance(bValue, Number):
-                DataInfo[bKey] = float(bValue)
-            else:
-                DataInfo[bKey] = bValue
-        
-        ABRs = [[], []]
-        ABRs[0] = [0]*len(F['ABRs']['Right'])
-        ABRs[1] = [0]*len(F['ABRs']['Left'])
-        for Freq in range(len(F['ABRs']['Right'])):
-            ABRs[0][Freq] = [0]*len(F['ABRs']['Right'][str(Freq)])
-            ABRs[1][Freq] = [0]*len(F['ABRs']['Left'][str(Freq)])
-            
-            for AmpF in range(len(F['ABRs']['Right'][str(Freq)])):
-                ABRs[0][Freq][AmpF] = {}; ABRs[1][Freq][AmpF] = {}
-                
-                for DV in F['ABRs']['Right'][str(Freq)][str(AmpF)].keys():
-                    ABRs[0][Freq][AmpF][DV] = [0]*len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV])
-                    ABRs[1][Freq][AmpF][DV] = [0]*len(F['ABRs']['Left'][str(Freq)][str(AmpF)][DV])
-                    
-                    for Trial in range(len(F['ABRs']['Right'][str(Freq)][str(AmpF)][DV])):
-                        ABRs[0][Freq][AmpF][DV][Trial] = F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
-                        ABRs[1][Freq][AmpF][DV][Trial] = F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)][:]
-        
-        XValues = F['ABRs'].attrs['XValues'][:]
+    DataInfo = Hdf5F.ExpDataInfo(FileName, [0], [0], Var='DataInfo')
+    ABRs, XValues = Hdf5F.LoadABRs(FileName)
     
     SetLaTexPlot()
+    
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
               for _ in range(len(ABRs[0][0]))]
     
-    Keys = list(ABRs[0][0][0].keys())
+    Keys = list(ABRs[0][0].keys())
     for Key in Keys:
-        upYLim = [0] * len(ABRs[0][0][0][Key]); downYLim = upYLim[:]
-        
-        for Trial in range(len(ABRs[0][0][0][Key])):
-            upYLim[Trial] = max(ABRs[0][Freq][0][Key][Trial])
-            downYLim[Trial] = min(ABRs[0][Freq][0][Key][Trial])
-        
-        upYLim = max(upYLim); downYLim = min(downYLim)
-        
-        for Trial in range(len(ABRs[0][0][0][Key])):
-            for Freq in range(len(ABRs[0])):
-                Fig, Axes = plt.subplots(len(ABRs[0][0]), 
+        for Trial in range(len(ABRs[0][0][Key])):
+            for Freq in range(len(ABRs)):
+                Fig, Axes = plt.subplots(len(ABRs[Freq]), 
                                      sharex=True, figsize=(8, 12))
                 
                 KeyHz = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
@@ -481,6 +443,14 @@ def PlotABR2(FileName):
                                                 ] = 0
 #                upYLim = max(ABRs[0][Freq][0][Key][Trial])
 #                downYLim = min(ABRs[0][Freq][0][Key][Trial])
+                upYLim = [0] * len(ABRs[Freq][0][Key]); downYLim = upYLim[:]
+        
+                for Trial in range(len(ABRs[Freq][0][Key])):
+                    upYLim[Trial] = max(ABRs[Freq][0][Key][Trial])
+                    downYLim[Trial] = min(ABRs[Freq][0][Key][Trial])
+                
+                upYLim = max(upYLim); downYLim = min(downYLim)
+                
                 for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
                     FigTitle = KeyHz + ' Hz, trial ' + str(Trial+1)
                     YLabel = 'Voltage [mV]'

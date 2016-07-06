@@ -34,6 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
+=== Divide SoundPauseBetweenStim in 1s+rest and play both ===
 AnimalName = 'CaMKIIahM4Dn09'
 Rate = 128000
 BaudRate = 38400
@@ -179,21 +180,20 @@ while True:
         break
     
     print('Running...')
-#    Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
-#    for AmpF in range(len(SoundAmpF[Key])):
-#        print('Playing', str(NoiseFrequency[Freq]), 'at', 
-#              str(Intensities[AmpF]), 'dB')
-#        
-#        Arduino.write(b'P')
-#        PlaySound(Freq, AmpF)
-#        Arduino.write(b'P')
-#        Stimulation.write(SoundPauseBetweenStimBlocks)
-#    
+    Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+    for AmpF in range(len(SoundAmpF[Key])):
+        print('Playing', str(NoiseFrequency[Freq]), 'at', 
+              str(Intensities[AmpF]), 'dB')
+        
+        Arduino.write(b'P')
+        PlaySound(Freq, AmpF)
+        Stimulation.write(SoundPauseBetweenStimBlocks)
+        Arduino.write(b'P')
+    
     print('Done. Saving info...')
     with h5py.File(FileName) as h5:
         Key = "{0:02d}".format(len(list(h5['ExpInfo'])))
         h5['ExpInfo'].create_group(Key)
-#        Key = list(h5['ExpInfo'].keys())[-1]
         
         h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
         h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord

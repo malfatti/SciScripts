@@ -33,7 +33,6 @@ from scipy import signal
 ## Lower-level functions
 
 def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
-    print('Filtering signal...')
     if Type not in ['bandpass', 'lowpass', 'highpass']:
         print("Choose 'bandpass', 'lowpass' or 'highpass'.")
     
@@ -50,23 +49,25 @@ def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
 
 
 def GetRecKeys(Raw, Events, AnalogTTLs):
-    if '0' not in list(Raw['data'].keys()):
-        print('Rec numbers are wrong. Fixing...')
-        for iKey in Raw.keys():
-            Recs = list(Raw[iKey].keys())
-            Recs = [int(_) for _ in Recs]; Min = min(Recs)
+    for Processor in Raw.keys():
+        if '0' not in list(Raw[Processor]['data'].keys()):
+            print('Rec numbers are wrong. Fixing...')
+            for iKey in Raw[Processor].keys():
+                Recs = list(Raw[Processor][iKey].keys())
+                Recs = [int(_) for _ in Recs]; Min = min(Recs)
+                
+                for Key in Recs:
+                    Raw[Processor][iKey][str(Key-Min)] = \
+                        Raw[Processor][iKey].pop(str(Key))
+                
+                if AnalogTTLs:
+                    return(Raw)
+                else:
+                    EventRec = Events['TTLs']['recording'][:]
+                    for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
+                    return(Raw, EventRec)
             
-            for Key in Recs:
-                Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
-            
-            if AnalogTTLs:
-                return(Raw)
-            else:
-                EventRec = Events['TTLs']['recording'][:]
-                for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
-                return(Raw, EventRec)
-        
-        print('Fixed.')
+            print('Fixed.')
     
     else:
         if AnalogTTLs:
@@ -94,65 +95,9 @@ def GetTTLInfo(Events, EventRec, ABRTTLCh, Files):
     return(TTLChs, TTLRecs, TTLsPerRec, TTLRising)
 
 
-def LoadOEFiles(RecFolder, DirList, Processor):
-    print('Load files...')
-    FilesList = glob.glob(''.join([RecFolder, '/*']))
-    Files = {}
-    for File in FilesList:
-        if Processor+'.raw.kwd' in File:
-            try:
-                Raw = Kwik.load(File, 'all')
-                Files['kwd'] = File
-            except OSError:
-                    print('File', File, "is corrupted :'(")
-            except KeyError: 
-                # Old OE versions do not have channel_bit_volts
-                print('No channel_bit_volts in the file! Assuming 1Bit = 0.195µV')
-                F = h5py.File(File, 'r')
-                Raw['info'] = {Rec: F['recordings'][Rec].attrs 
-                                for Rec in F['recordings'].keys()}
-                
-                Raw['channel_bit_volts'] = {Rec: 0.195
-                                             for Rec in F['recordings'].keys()}
-                
-                Raw['data'] = {Rec: F['recordings'][Rec]['data']
-                                for Rec in F['recordings'].keys()}
-                
-                Raw['timestamps'] = {Rec: ((
-                                            np.arange(0,Raw['data'][Rec].shape[0])
-                                            + Raw['info'][Rec]['start_time'])
-                                           / Raw['info'][Rec]['sample_rate'])
-                                           for Rec in F['recordings']}
-            
-            
-        elif '.kwe' in File:
-            try:
-                Events = Kwik.load(File)
-                Files['kwe'] = File
-            except OSError:
-                print('File ', File, " is corrupted :'(")
-            
-        elif '.kwik' in File:
-            try:
-                Events = Kwik.load(File)
-                Files['kwik'] = File
-            except OSError:
-                print('File ', File, " is corrupted :'(")
-        
-        elif '.kwx' in File:
-            try:
-                Spks = Kwik.load(File)
-                Files['kwx'] = File
-            except OSError:
-                print('File ', File, " is corrupted :'(")
-                Spks = []
-    
-    return(Raw, Events, Spks, Files)
-
-
-def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLsPerRec):
+def QuantifyTTLsPerRec(ABRTTLCh, Raw, Proc, Rec, AnalogTTLs, TTLsPerRec):
     if AnalogTTLs:
-        TTLCh = Raw['data'][str(Rec)][:, -1]
+        TTLCh = Raw[Proc]['data'][str(Rec)][:, ABRTTLCh-1]
         Threshold = max(TTLCh)/5
         TTLs = []
         for _ in range(1, len(TTLCh)):
@@ -210,28 +155,49 @@ def SetLaTexPlot():
     return(None)
 
 
-def SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter, 
-                 AnalogTTLs):
+def FixTTLs(Array, TTLsToFix):
+    for TTL in TTLsToFix:
+        nInd = np.random.randint(1, 100)
+        while nInd == TTL:
+            nInd = np.random.randint(0, 100)
+        
+        print('TTL', str(TTL), 'was replaced by', str(nInd))
+        Array[TTL] = Array[nInd]
+    
+    return(Array)
+
+
+def SliceData(Array, Data, Proc, Rec, TTLs, ABRCh, NoOfSamplesBefore, 
+              NoOfSamplesAfter, AnalogTTLs):
+    TTLsToFix = []
     for TTL in range(len(TTLs)):
         if AnalogTTLs:
             TTLLoc = int(TTLs[TTL])
         else:
-            RawTime = list(Raw['timestamps'][str(Rec)])
+            RawTime = list(Data[Proc]['timestamps'][str(Rec)])
             TTLLoc = RawTime.index(TTLs[TTL]/Rate)
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
-
-        ABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
-                   Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+        if Start < 0:
+            Start = 0; End = End+(Start*-1)
+            TTLsToFix.append(TTL)
         
-    return(ABR)
+        Array[TTL] = Data[Proc]['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
+                   Data[Proc]['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+        
+        if len(Array[TTL]) != End-Start:
+            TTLsToFix.append(TTL)
+            
+    Array = FixTTLs(Array, TTLsToFix)
+        
+    return(Array)
 
 
 ## Higher-level functions
 
 def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
         ABRTTLCh=1, FilterFreq=[300, 3000], FilterOrder=4, StimType='Sound', 
-        Processor='100', AnalogTTLs=False):
+        AnalogTTLs=False):
     """
     Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
@@ -270,9 +236,9 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     
     for RecFolder in Exps:
         if AnalogTTLs:
-            Raw, _, _, Files = LoadOEFiles(RecFolder, DirList, Processor)
+            Raw, _, _, Files = Kwik.load_all_files(RecFolder)
         else:
-            Raw, Events, _, Files = LoadOEFiles(RecFolder, DirList, Processor)
+            Raw, Events, _, Files = Kwik.load_all_files(RecFolder)
         
         ExpInfo = Hdf5F.ExpExpInfo(FileName, RecFolder, DirList)
         
@@ -288,14 +254,26 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         
         print('Data from ', RecFolder, ' loaded.')
         
+        ProcChs = {Proc: len(Raw[Proc]['data']['0'][1,:]) 
+                   for Proc in Raw.keys()}
+        
+        for Proc, Chs in ProcChs.items():
+            if Chs == max(ProcChs.values()):
+                OEProc = Proc
+            else:
+                RHAProc = Proc
+        
+        if 'RHAProc' not in locals(): RHAProc = OEProc
+        
         if AnalogTTLs:
             Raw = GetRecKeys(Raw, [0], AnalogTTLs)
+            TTLsPerRec = []
         else:
             Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
             TTLsPerRec, TTLRising = GetTTLInfo(Events, EventRec, ABRTTLCh, 
                                                Files)[2:]
-        TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
-        Rate = Raw['info']['0']['sample_rate']
+#            TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
+        Rate = Raw[OEProc]['info']['0']['sample_rate']
         NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
         NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
         NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
@@ -303,21 +281,21 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
                   list((range(NoOfSamplesAfter)/Rate)*10**3)
         
-        for Rec in range(len(Raw['data'])):
-            TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLsPerRec)
+        for Rec in range(len(Raw[OEProc]['data'])):
+            TTLs = QuantifyTTLsPerRec(ABRTTLCh, Raw, OEProc, Rec, AnalogTTLs, 
+                                      TTLsPerRec)
             ABR = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
             
             print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-#            for TTL in range(sTTLNo, TTLNo[Rec+1]):
-#                TTLLoc = RawTime.index(TTLRising[TTL])
-            ABR = SliceABRData(Raw, Rec, TTLs, ABRCh, NoOfSamplesBefore, 
-                               NoOfSamplesAfter)
+            ABR = SliceData(ABR, Raw, RHAProc, Rec, TTLs, ABRCh, 
+                            NoOfSamplesBefore, NoOfSamplesAfter, AnalogTTLs)
+            
             for TTL in range(len(TTLs)):
                 ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
                                         FilterOrder, 'highpass')
             
-            ABR = np.mean(ABR, axis=0)            
-            ABR = FilterSignal(ABR, Rate, [min(FilterFreq)], FilterOrder, 
+            ABR = np.mean(ABR, axis=0)
+            ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
                                'lowpass')
             
             if ExpInfo['DVCoord'] not in ABRs[ExpInfo['Hz']][Rec]:
@@ -425,7 +403,7 @@ def PlotABR2(FileName):
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
-              for _ in range(len(ABRs[0][0]))]
+              for _ in range(len(ABRs[0]))]
     
     Keys = list(ABRs[0][0].keys())
     for Key in Keys:
@@ -461,7 +439,7 @@ def PlotABR2(FileName):
                     Ind1 = list(XValues).index(0)
                     Ind2 = list(XValues).index(3)
                     
-                    Axes[AmpF].plot(XValues, ABRs[0][Freq][AmpF][Key][Trial], 
+                    Axes[AmpF].plot(XValues, ABRs[Freq][AmpF][Key][Trial], 
                                     color=Colors[AmpF][0], label=LineLabel)
                     
                     Axes[AmpF].axvspan(XValues[Ind1], XValues[Ind2], 

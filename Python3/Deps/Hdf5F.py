@@ -63,6 +63,7 @@ def ExpDataInfo(FileName, DirList, StimType, Var='DataInfo'):
 def ExpExpInfo(FileName, RecFolder, DirList):
     ExpInfo = {}
     with h5py.File(FileName) as F:
+#        Key = str(DirList.index(RecFolder))
         Key = "{0:02d}".format(DirList.index(RecFolder))
         ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
         ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
@@ -97,7 +98,15 @@ def GPIASDataInfo(FileName):
 
 def LoadABRs(FileName):
     with h5py.File(FileName) as F:
-        Key = list(F.keys()); Key.remove('DataInfo'); Key = Key[-1]
+        Keys = [Key for Key in F.keys() if 'ABRs' in Key]; Keys.sort()
+        if len(Keys) > 1:
+            print('Choose dataset to load:')
+            for Ind, Key in enumerate(Keys):
+                print(str(Ind), '=' , Key)
+            Key = input(': ')
+            Key = Keys[int(Key)]
+        else:
+            Key = Keys[0]
         
         ABRs = [0]*len(F[Key])
         for Freq in range(len(F[Key])):

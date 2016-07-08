@@ -18,12 +18,13 @@
 """
 
 import h5py
+import numpy as np
 from datetime import datetime
 from numbers import Number
 
 
 def CheckGroup(FileName, Group):
-    with h5py.File(FileName) as F:
+    with h5py.File(FileName, 'r') as F:
         if Group in F.keys():
             print(Group + ' already exists.')
             print('Running this will erase previous analysis. Be careful!')
@@ -36,33 +37,18 @@ def CheckGroup(FileName, Group):
             return(True)
 
 
-def ExpDataInfo(FileName, DirList, StimType, Var='DataInfo'):
-    DataInfo = {}
-    with h5py.File(FileName) as F:
-        for Key, Value in F['DataInfo'].items():
-            DataInfo['SoundAmpF'] = {}
-            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
-                DataInfo['SoundAmpF'][aKey] = aValue[:]
-        
-        for bKey, bValue in F['DataInfo'].attrs.items():
-            if isinstance(bValue, Number):
-                DataInfo[bKey] = float(bValue)
-            else:
-                DataInfo[bKey] = bValue
-        
-        if Var == 'DataInfo':
-            return(DataInfo)
-        else:
-            Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
-                    if F['ExpInfo'][Exp].attrs['StimType'][0].decode() 
-                    == StimType]
+def LoadExpPerStim(StimType, DirList, FileName):
+    with h5py.File(FileName, 'r') as F:
+        Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
+                if F['ExpInfo'][Exp].attrs['StimType'][0].decode() 
+                == StimType]
             
-            return(DataInfo, Exps)
+    return(Exps)
 
 
-def ExpExpInfo(FileName, RecFolder, DirList):
+def ExpExpInfo(RecFolder, DirList, FileName):
     ExpInfo = {}
-    with h5py.File(FileName) as F:
+    with h5py.File(FileName, 'r') as F:
 #        Key = str(DirList.index(RecFolder))
         Key = "{0:02d}".format(DirList.index(RecFolder))
         ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
@@ -73,7 +59,7 @@ def ExpExpInfo(FileName, RecFolder, DirList):
 
 def GPIASDataInfo(FileName):
     DataInfo = {}
-    with h5py.File(FileName) as F:
+    with h5py.File(FileName, 'r') as F:
         for Key, Value in F['DataInfo'].items():
             DataInfo['SoundBackgroundAmpF'] = {}
             DataInfo['SoundPulseAmpF'] = {}
@@ -97,7 +83,7 @@ def GPIASDataInfo(FileName):
 
 
 def LoadABRs(FileName):
-    with h5py.File(FileName) as F:
+    with h5py.File(FileName, 'r') as F:
         Keys = [Key for Key in F.keys() if 'ABRs' in Key]; Keys.sort()
         if len(Keys) > 1:
             print('Choose dataset to load:')
@@ -126,27 +112,32 @@ def LoadABRs(FileName):
     return(ABRs, XValues)
 
 
-def LoadDict(FileName, GroupName):
+def LoadDict(Path, FileName, Attrs=True):
     Dict = {}
-    with h5py.File(FileName) as F:
-        for Key, Value in F[GroupName].attrs.items():
-            if isinstance(Value, Number):
-                Dict[Key] = float(Value)
-            else:
-                Dict[Key] = Value
-    
-    return(Dict)
+    with h5py.File(FileName, 'r') as F:
+        if Attrs:
+            for Key, Value in F[Path].attrs.items():
+                if isinstance(Value, Number):
+                    Dict[Key] = float(Value)
+                else:
+                    Dict[Key] = Value
+        
+        else:
+            for Key, Value in F[Path].items():
+                Dict[Key] = Value[:]
+        
+        return(Dict)
 
 
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
-    with h5py.File(SBAmpFsFile) as h5: 
+    with h5py.File(SBAmpFsFile, 'r') as h5: 
         Var = h5[SoundBoard][Key][0]
     return(Var)
 
 
 def SoundMeasurement(FileName, Var='SoundIntensity'):
     DataInfo = {}; SoundIntensity = {}
-    with h5py.File(FileName) as h5:
+    with h5py.File(FileName, 'r') as h5:
         if Var in ['DataInfo', 'SoundRec', 'SoundIntensity']:
             for Key,Val in h5['SoundRec'].attrs.items():
                 DataInfo[Key] = Val
@@ -183,8 +174,8 @@ def SoundMeasurement(FileName, Var='SoundIntensity'):
             print('Supported variables: DataInfo, SoundRec, SoundIntensity.')
 
 
-def WriteABRs(FileName, ABRs, XValues):
-    print('Saving data to ' + FileName)
+def WriteABRs(ABRs, XValues, FileName):
+    print('Writing data to', FileName, '...', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
     Group = 'ABRs-' + Now
     with h5py.File(FileName) as F:
@@ -203,6 +194,35 @@ def WriteABRs(FileName, ABRs, XValues):
                         F[Group][str(Freq)][str(AmpF)][DV][str(Trial)] = \
                             ABRs[Freq][AmpF][DV][Trial][:]
     
+    print('Done.')
+    return(None)
+
+
+def WriteDict(Dict, Path, FileName):
+    print('Writing dictionary at', Path, '...', end='')
+    with h5py.File(FileName) as F:
+        if Path not in F: F.create_group(Path)
+        
+        for Key, Value in Dict.items():
+            F[Path].attrs[Key] = Value
+    
+    print('Done.')
+    return(None)
+
+
+def WriteExpInfo(StimType, DVCoord, Freq, FileName):
+    print('Writing ExpInfo...', end='')
+    with h5py.File(FileName) as F:
+        if '/ExpInfo' not in F: F.create_group('ExpInfo')
+        
+        Key = "{0:02d}".format(len(list(F['ExpInfo'])))
+        F['ExpInfo'].create_group(Key)
+        
+        F['ExpInfo'][Key].attrs['StimType'] = [np.string_(StimType)]
+        F['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
+        F['ExpInfo'][Key].attrs['Hz'] = Freq
+    
+    print('Done.')
     return(None)
 
 

@@ -34,8 +34,7 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-=== Divide SoundPauseBetweenStim in 1s+rest and play both ===
-AnimalName = 'CaMKIIahM4Dn09'
+AnimalName = 'CaMKIIahM4Dn04'
 Rate = 128000
 BaudRate = 38400
 
@@ -59,22 +58,21 @@ SoundPulseDur = 0.003
 # Silence after pulse
 SoundPostPauseDur = 0.093
 # Amount of pulses per block
-SoundPulseNo = 529
+SoundPulseNo = 200
 # Number of blocks
-SoundStimBlockNo = 1
+SoundStimBlockNo = 5
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 10
 # Intensities tested, in order, in dB. Supports floats :)
 #Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
-Intensities = [80, 70, 60, 50]
-#Intensities = [80, 65]
-#Intensities = [100, 75, 70]
+#Intensities = [80, 70, 60, 50]
+Intensities = [80]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
-                  [12000, 14000], [14000, 16000]]
-#NoiseFrequency = [[8000, 10000]]
+#NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
+#                  [12000, 14000], [14000, 16000]]
+NoiseFrequency = [[8000, 10000]]
 
 ## Laser
 # Silence before pulse
@@ -94,7 +92,7 @@ LaserPauseBetweenStimBlocksDur = 5
 import ControlArduino
 import ControlSoundBoard
 import datetime
-import h5py
+import Hdf5F
 import numpy as np
 
 Date = datetime.datetime.now()
@@ -103,29 +101,23 @@ FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName,
 
 SoundAmpF = ControlSoundBoard.dBToAmpF(Intensities, CalibrationFile)
 
-DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 
-                                       'BaudRate', 'SoundPrePauseDur', 
-                                       'SoundPulseDur', 'SoundPostPauseDur', 
-                                       'SoundPulseNo', 'SoundStimBlockNo', 
-                                       'SoundPauseBetweenStimBlocksDur', 
-                                       'Intensities', 'NoiseFrequency', 
-                                       'LaserPrePauseDur', 'LaserPulseDur', 
-                                       'LaserPostPauseDur', 'LaserPulseNo', 
-                                       'LaserStimBlockNo', 
-                                       'LaserPauseBetweenStimBlocksDur', 
-                                       'CalibrationFile', 'FileName'])
+DataInfo = dict((Name, eval(Name)) 
+                for Name in ['AnimalName', 'Rate', 'BaudRate', 
+                             'SoundPrePauseDur', 'SoundPulseDur', 
+                             'SoundPostPauseDur', 'SoundPulseNo', 
+                             'SoundStimBlockNo', 
+                             'SoundPauseBetweenStimBlocksDur', 'Intensities', 
+                             'NoiseFrequency', 
+#                             'LaserPrePauseDur', 'LaserPulseDur', 
+#                             'LaserPostPauseDur', 'LaserPulseNo', 
+#                             'LaserStimBlockNo', 
+#                             'LaserPauseBetweenStimBlocksDur', 
+                             'CalibrationFile', 'FileName'])
 
-with h5py.File(FileName) as h5:
-#    h5.create_group('DataInfo')
-    h5.create_group('ExpInfo')
-    for Key, Value in DataInfo.items():
-        h5['DataInfo'].attrs[Key] = Value
-    
-    h5['DataInfo'].create_group('SoundAmpF')
-    for Key, Value in SoundAmpF.items():
-        h5['DataInfo']['SoundAmpF'][Key] = Value
+Hdf5F.WriteDict(DataInfo, '/DataInfo', FileName)
+Hdf5F.WriteDict(SoundAmpF, '/DataInfo/SoundAmpF', FileName)
 
-Arduino = ControlArduino.CreateObj(BaudRate)
+#Arduino = ControlArduino.CreateObj(BaudRate)
 
 
 #%% Prepare sound stimulation
@@ -165,10 +157,10 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 
 #%% Run sound
-
 DVCoord = '3000'
 #Freq = 4
 #Freq = int(Freq)
+
 while True:
     print('Remember to change folder name in OE!')
     Freq = input('Choose Freq index [0-' + str(len(NoiseFrequency)-1) + ']: ')
@@ -190,16 +182,7 @@ while True:
         Stimulation.write(SoundPauseBetweenStimBlocks)
         Arduino.write(b'P')
     
-    print('Done. Saving info...')
-    with h5py.File(FileName) as h5:
-        Key = "{0:02d}".format(len(list(h5['ExpInfo'])))
-        h5['ExpInfo'].create_group(Key)
-        
-        h5['ExpInfo'][Key].attrs['StimType'] = [np.string_('Sound')]
-        h5['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
-        h5['ExpInfo'][Key].attrs['Hz'] = Freq
-    
-    print('Saved.')
+    Hdf5F.WriteExpInfo('Sound', DVCoord, Freq, FileName)
     print('Played Freq', str(Freq), 'at', DVCoord, 'µm DV')
 
 #%% Run laser

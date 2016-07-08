@@ -31,6 +31,33 @@ from scipy import signal
 
 
 ## Lower-level functions
+def GetProbeChOrder(ProbeTip, ProbeHead, Connector):
+    """
+    Get probe channels order. It doesn't matter what logic you follow to order 
+    your connector channels, but you MUST follow the same logic for your probe 
+    head.
+    
+    I the probe tip channels top-down or bottom-up, the resulting 
+    channel map will be ordered accordingly.
+    
+    Example:
+        CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
+        RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
+        A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+               'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+        
+        ChannelMap = GetChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
+    """
+    ChNo = len(ProbeTip)
+    ChMap = [0]*ChNo
+    
+    for Ch in range(ChNo):
+        TipCh = ProbeTip[Ch] # What channel should be the Ch
+        HeadCh = ProbeHead.index(TipCh) # Where Ch is in ProbeHead
+        ChMap[Ch] = Connector[HeadCh] # Channels in depth order
+    
+    return(ChMap)
+
 
 def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
     if Type not in ['bandpass', 'lowpass', 'highpass']:
@@ -194,10 +221,9 @@ def SliceData(Array, Data, Proc, Rec, TTLs, ABRCh, NoOfSamplesBefore,
 
 
 ## Higher-level functions
-
 def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
         ABRTTLCh=1, FilterFreq=[300, 3000], FilterOrder=4, StimType='Sound', 
-        AnalogTTLs=False):
+        AnalogTTLs=False, Board='OE'):
     """
     Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
@@ -218,13 +244,13 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         - There must be a *Exp.hdf5 file containing all experimental settings 
           (see Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
     """
-    print('set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    DirList = glob.glob('KwikFiles/*'); DirList.sort()
     
     print('Load DataInfo...')
-    DataInfo, Exps = Hdf5F.ExpDataInfo(FileName, DirList, StimType, 
-                                               Var='Exps')
+    DirList = glob.glob('KwikFiles/*'); DirList.sort()
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName)
+    Exps = Hdf5F.LoadExpPerStim('Sound', DirList, FileName)
+    
     
     print('Preallocate memory...')
     ABRs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
@@ -240,7 +266,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         else:
             Raw, Events, _, Files = Kwik.load_all_files(RecFolder)
         
-        ExpInfo = Hdf5F.ExpExpInfo(FileName, RecFolder, DirList)
+        ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
         
         print('Check if files are ok...')
         if 'Raw' not in locals():
@@ -265,6 +291,10 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         
         if 'RHAProc' not in locals(): RHAProc = OEProc
         
+        if Board == 'OE': ABRProc = OEProc
+        elif Board == 'RHA': ABRProc = RHAProc
+        else: print("Choose Board as 'OE' or 'RHA'.")
+        
         if AnalogTTLs:
             Raw = GetRecKeys(Raw, [0], AnalogTTLs)
             TTLsPerRec = []
@@ -287,7 +317,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
             ABR = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
             
             print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            ABR = SliceData(ABR, Raw, RHAProc, Rec, TTLs, ABRCh, 
+            ABR = SliceData(ABR, Raw, ABRProc, Rec, TTLs, ABRCh, 
                             NoOfSamplesBefore, NoOfSamplesAfter, AnalogTTLs)
             
             for TTL in range(len(TTLs)):
@@ -303,7 +333,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
             else:
                 ABRs[ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(ABR)
     
-    Hdf5F.WriteABRs(FileName, ABRs, XValues)
+    Hdf5F.WriteABRs(ABRs, XValues, FileName)
     
     print('Done.')
     return(None)
@@ -318,8 +348,11 @@ def PlotABR2(FileName):
     have a working LaTex installation and dvipng package installed.
     """
     
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
+    
     print('Loading data...')
-    DataInfo = Hdf5F.ExpDataInfo(FileName, [0], [0], Var='DataInfo')
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName)
     ABRs, XValues = Hdf5F.LoadABRs(FileName)
     
     SetLaTexPlot()
@@ -334,7 +367,9 @@ def PlotABR2(FileName):
         for Trial in range(len(ABRs[0][0][Key])):
             for Freq in range(len(ABRs)):
                 Fig, Axes = plt.subplots(len(ABRs[Freq]), 
-                                     sharex=True, figsize=(8, 12))
+                                         sharex=True, 
+                                         figsize=(8, 
+                                            1.5*len(DataInfo['Intensities'])))
                 
                 KeyHz = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
                         + str(DataInfo['NoiseFrequency'][Freq][1])
@@ -353,8 +388,9 @@ def PlotABR2(FileName):
                 
                 upYLim = max(upYLim); downYLim = min(downYLim)
                 
-                for AmpF in range(len(DataInfo['SoundAmpF'][KeyHz])):
-                    FigTitle = KeyHz + ' Hz, trial ' + str(Trial+1)
+                for AmpF in range(len(DataInfo['Intensities'])):
+                    FigTitle = KeyHz + ' Hz, DV ' + Key + \
+                               ', trial ' + str(Trial+1)
                     YLabel = 'Voltage [mV]'
                     XLabel = 'Time [ms]'
                     LineLabel = str(DataInfo['Intensities'][AmpF]) + ' dB'

@@ -20,7 +20,7 @@
 
 ## Set experiment details
 
-ABRCh = [1]         # [RightChannel, LeftChannel], if order matters
+ABRCh = [10]         # [RightChannel, LeftChannel], if order matters
 ABRTimeBeforeTTL = 3    # in ms
 ABRTimeAfterTTL = 9    # in ms
 ABRTTLCh = 17            # TTL ch for ABR
@@ -28,6 +28,7 @@ FilterFreq = [300, 3000]         # frequency for filter
 FilterOrder = 5         # butter order
 AnalogTTLs = True
 StimType = 'Sound'      # Stimulation type: 'Sound', 'Laser' or ['Sound', 'Laser']
+Board = 'OE'
 
 #==========#==========#==========#==========#
 
@@ -37,7 +38,7 @@ import KwikAnalysis
 FileName = glob.glob('*.hdf5'); FileName = FileName[0]
 
 KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
-                 FilterFreq, FilterOrder, StimType, AnalogTTLs)
+                 FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
 
 KwikAnalysis.PlotABR2(FileName)
 

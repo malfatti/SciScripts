@@ -143,13 +143,13 @@ def GenTTL(Rate, PulseDur, TTLAmpF, SoundBoard, SBOutAmpF, PrePauseDur=0,
 
 def InterleaveChannels(Right, Left, SoundAmpF, NoiseFrequency):
     print('Interleaving channels...')
-    if len(Right) == 1:
+    if Right == [0]:
         List = [0]*(2*len(Left))
         for _ in range(len(Left)):
             List[_ *2] = 0
             List[_ *2+1] = Left[_]
     
-    elif len(Left) == 1:
+    elif Left == [0]:
         List = [0]*(2*len(Left))
         for _ in range(len(Left)):
             List[_ *2] = Right[_]

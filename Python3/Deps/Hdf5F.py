@@ -123,10 +123,18 @@ def LoadDict(Path, FileName, Attrs=True):
                     Dict[Key] = Value
         
         else:
+            
             for Key, Value in F[Path].items():
                 Dict[Key] = Value[:]
         
         return(Dict)
+
+
+def LoadDataset(Path, FileName):
+    with h5py.File(FileName, 'r') as F:
+        Dataset = F[Path][:]
+    
+    return(Dataset)
 
 
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):

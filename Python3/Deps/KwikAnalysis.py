@@ -31,6 +31,25 @@ from scipy import signal
 
 
 ## Lower-level functions
+def GetProc(Raw, Board):
+    ProcChs = {Proc: len(Raw[Proc]['data']['0'][1,:]) 
+               for Proc in Raw.keys()}
+    
+    for Proc, Chs in ProcChs.items():
+        if Chs == max(ProcChs.values()):
+            OEProc = Proc
+        else:
+            RHAProc = Proc
+    
+    if 'RHAProc' not in locals(): RHAProc = OEProc
+    
+    if Board == 'OE': Proc = OEProc
+    elif Board == 'RHA': Proc = RHAProc
+    else: print("Choose Board as 'OE' or 'RHA'."); return(None)
+    
+    return(OEProc, RHAProc, Proc)
+
+
 def GetProbeChOrder(ProbeTip, ProbeHead, Connector):
     """
     Get probe channels order. It doesn't matter what logic you follow to order 
@@ -122,10 +141,10 @@ def GetTTLInfo(Events, EventRec, ABRTTLCh, Files):
     return(TTLChs, TTLRecs, TTLsPerRec, TTLRising)
 
 
-def QuantifyTTLsPerRec(ABRTTLCh, Raw, Proc, Rec, AnalogTTLs, TTLsPerRec):
+def QuantifyTTLsPerRec(ChTTL, Raw, Proc, Rec, AnalogTTLs, TTLsPerRec):
     if AnalogTTLs:
-        TTLCh = Raw[Proc]['data'][str(Rec)][:, ABRTTLCh-1]
-        Threshold = max(TTLCh)/5
+        TTLCh = Raw[Proc]['data'][str(Rec)][:, ChTTL-1]
+        Threshold = max(TTLCh)/2
         TTLs = []
         for _ in range(1, len(TTLCh)):
             if TTLCh[_] > Threshold:
@@ -194,7 +213,7 @@ def FixTTLs(Array, TTLsToFix):
     return(Array)
 
 
-def SliceData(Array, Data, Proc, Rec, TTLs, ABRCh, NoOfSamplesBefore, 
+def SliceData(Array, Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore, 
               NoOfSamplesAfter, AnalogTTLs):
     TTLsToFix = []
     for TTL in range(len(TTLs)):
@@ -209,8 +228,8 @@ def SliceData(Array, Data, Proc, Rec, TTLs, ABRCh, NoOfSamplesBefore,
             Start = 0; End = End+(Start*-1)
             TTLsToFix.append(TTL)
         
-        Array[TTL] = Data[Proc]['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
-                   Data[Proc]['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
+        Array[TTL] = Data[Proc]['data'][str(Rec)][Start:End, DataCh[0]-1] * \
+                   Data[Proc]['channel_bit_volts'][str(Rec)][DataCh[0]-1]
         
         if len(Array[TTL]) != End-Start:
             TTLsToFix.append(TTL)
@@ -220,10 +239,31 @@ def SliceData(Array, Data, Proc, Rec, TTLs, ABRCh, NoOfSamplesBefore,
     return(Array)
 
 
+def SliceShuffledData(Array, Data, DataInfo, Proc, Rec, TTLs, DataCh, 
+                      NoOfSamplesBefore, NoOfSamplesAfter, AnalogTTLs):
+    for TTL in range(len(TTLs)):
+        if AnalogTTLs:
+            TTLLoc = int(TTLs[TTL])
+        else:
+            RawTime = list(Data[Proc]['timestamps'][str(Rec)])
+            TTLLoc = RawTime.index(TTLs[TTL]/Rate)
+        Start = TTLLoc-NoOfSamplesBefore
+        End = TTLLoc+NoOfSamplesAfter
+        
+        TmpArray = Data['data'][str(Rec)][Start:End, DataCh[0]-1] * \
+                   Data['channel_bit_volts'][str(Rec)][DataCh[0]-1] * 1000 # mV
+        
+        Freq = DataInfo['FreqOrder'][Rec][0]; 
+        Trial = DataInfo['FreqOrder'][Rec][1];
+        Array[Freq][Trial] = TmpArray[:]
+        
+        del(TTLLoc, Start, End, Freq, Trial, TmpArray)
+    
+    return(Array)
 ## Higher-level functions
-def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
-        ABRTTLCh=1, FilterFreq=[300, 3000], FilterOrder=4, StimType='Sound', 
-        AnalogTTLs=False, Board='OE'):
+def ABR(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
+        ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
+        StimType='Sound', AnalogTTLs=False, Board='OE'):
     """
     Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
@@ -280,20 +320,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
         
         print('Data from ', RecFolder, ' loaded.')
         
-        ProcChs = {Proc: len(Raw[Proc]['data']['0'][1,:]) 
-                   for Proc in Raw.keys()}
-        
-        for Proc, Chs in ProcChs.items():
-            if Chs == max(ProcChs.values()):
-                OEProc = Proc
-            else:
-                RHAProc = Proc
-        
-        if 'RHAProc' not in locals(): RHAProc = OEProc
-        
-        if Board == 'OE': ABRProc = OEProc
-        elif Board == 'RHA': ABRProc = RHAProc
-        else: print("Choose Board as 'OE' or 'RHA'.")
+        OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
         
         if AnalogTTLs:
             Raw = GetRecKeys(Raw, [0], AnalogTTLs)
@@ -339,7 +366,7 @@ def ABR(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12,
     return(None)
 
     
-def PlotABR2(FileName):
+def PlotABR(FileName):
     """ 
     This function will plot the data from *Stim.hdf5. Make sure FileName is a 
     string with the path to only one file.
@@ -466,7 +493,12 @@ def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
 #                with shelve.open(File[:-3]) as Shelve: 
 #                    DataInfo = Shelve['DataInfo']
         
-        DataInfo = Hdf5F.GPIASDataInfo(FileName, DirList)
+        DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+        DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
+                                             '/DataInfo/SoundBackgroundAmpF', 
+                                             FileName, Attrs=False)
+        DataInfo['SoundPulseAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundPulseAmpF', 
+                                                    FileName, Attrs=False)
         
         print('Check if files are ok...')
         if 'Raw' not in locals():
@@ -598,65 +630,40 @@ def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
     return(None)
 
 
-def GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL=50, 
-                    GPIASTimeAfterTTL=150, FilterLow=3, FilterHigh=300, 
-                    FilterOrder=4, GPIASTTLCh=1, PiezoCh=1):
+def GPIASAnalogTTLs(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1, 
+                    GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
+                    FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
+                    Board='OE'):
     
     print('set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
     DirList = glob.glob('KwikFiles/*'); DirList.sort()
     RecFolder = DirList[RecFolder-1]
     
     print('Load files...')
-    FilesList = glob.glob(''.join([RecFolder, '/*']))
-    Files = {}
-    for File in FilesList:
-        if '.kwd' in File:
-            try:
-                Raw = Kwik.load(File, 'all')
-                Files['kwd'] = File
-            except OSError:
-                    print('File', File, "is corrupted :'(")
-            except KeyError: 
-                # Old OE versions do not have channel_bit_volts
-                print('No channel_bit_volts in the file!')
-                with h5py.File(File, 'r') as F:
-                    Raw = {}
-                    Raw['info'] = {Rec: F['recordings'][Rec].attrs 
-                                   for Rec in F['recordings'].keys()}
-                    Raw['data'] = {Rec: F['recordings'][Rec]['data']
-                                   for Rec in F['recordings'].keys()}
-                    Raw['timestamps'] = {Rec: ((
-                                    np.arange(0,Raw['data'][Rec].shape[0])
-                                    + Raw['info'][Rec]['start_time'])
-                                   / Raw['info'][Rec]['sample_rate'])
-                                         for Rec in F['recordings']}
-            
-        elif '.kwe' in File:
-            try:
-                Events = Kwik.load(File)
-                Files['kwe'] = File
-            except OSError:
-                print('File', File, "is corrupted :'(")
-            
-        elif '.kwik' in File:
-            try:
-                Events = Kwik.load(File)
-                Files['kwik'] = File
-            except OSError:
-                print('File', File, "is corrupted :'(")
-        
+    if AnalogTTLs:
+        Raw, _, _, Files = Kwik.load_all_files(RecFolder)
+    else:
+        Raw, Events, _, Files = Kwik.load_all_files(RecFolder)
     
-    DataInfo = Hdf5F.GPIASDataInfo(FileName)
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
+                                         '/DataInfo/SoundBackgroundAmpF', 
+                                         FileName, Attrs=False)
+    DataInfo['SoundPulseAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundPulseAmpF', 
+                                                FileName, Attrs=False)
+    
+    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
     
     print('Check if files are ok...')
     if 'Raw' not in locals():
         print('.kwd file is corrupted. Skipping dataset...')
         raise SystemExit
     
-    if 'Events' not in locals():
-        print('.kwe/.kwik file is corrupted. Skipping dataset...')
-        raise SystemExit
+    if not AnalogTTLs:
+        if 'Events' not in locals():
+            print('.kwe/.kwik file is corrupted. Skipping dataset...')
+            raise SystemExit
     
     if 'DataInfo' not in locals():
         print('No data info. Skipping dataset...')
@@ -669,77 +676,83 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL=50,
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
     
-    Rate = Raw['info']['0']['sample_rate']
+    
+    if AnalogTTLs:
+        Raw = GetRecKeys(Raw, [0], AnalogTTLs)
+        TTLsPerRec = []
+    else:
+        Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
+        TTLsPerRec, TTLRising = GetTTLInfo(Events, EventRec, GPIASTTLCh, 
+                                           Files)[2:]
+    
+    OEProc, _, GPIASProc = GetProc(Raw, Board)
+    
+    Rate = Raw[OEProc]['info']['0']['sample_rate']
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
     NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
     XValues = (range(-NoOfSamplesBefore, 
                      NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
     
-    print('Set filter...')
-    passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
-    f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
-    
-    for Rec in range(len(Raw['data'])):
-        TTLCh = Raw['data'][str(Rec)][:, -1]
-        if len(TTLCh) == 0:
-            print('Bad recording. Skipping...')
-            continue
+    for Rec in range(len(Raw[OEProc]['data'])):
+        TTLs = QuantifyTTLsPerRec(GPIASTTLCh, Raw, OEProc, Rec, AnalogTTLs, 
+                                  TTLsPerRec)
         
-        Threshold = max(TTLCh)/2
-        TTLs = []
-        for _ in range(1, len(TTLCh)):
-            if TTLCh[_] > Threshold:
-                if TTLCh[_-1] < Threshold:
-                    TTLs.append(_)
+        Freq = DataInfo['FreqOrder'][Rec][0]; 
+        Trial = DataInfo['FreqOrder'][Rec][1];
         
         print('Slicing and filtering Rec ', str(Rec), '...')
-        for TTL in range(len(TTLs)):
-            TTLLoc = int(TTLs[TTL])
-            Start = TTLLoc-NoOfSamplesBefore
-            End = TTLLoc+NoOfSamplesAfter
-            
-            gData = Raw['data'][str(Rec)][Start:End, PiezoCh-1] * \
-                    Raw['channel_bit_volts'][str(Rec)][PiezoCh-1] * 1000 # mV
-#                gData = [float(gData[_]) for _ in range(NoOfSamples)]
-            gData = abs(signal.hilbert(gData))
-            gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
-            
-            Freq = DataInfo['FreqOrder'][Rec][0]; 
-            Trial = DataInfo['FreqOrder'][Rec][1];
-            GPIAS[Freq][Trial] = gData[:]
-            
-            del(TTLLoc, Start, End, Freq, Trial, gData)
+        GPIAS[Freq][Trial] = SliceData(GPIAS[Freq][Trial], Raw, GPIASProc, Rec, 
+                                       TTLs, GPIASCh, NoOfSamplesBefore, 
+                                       NoOfSamplesAfter, AnalogTTLs)
+        
+        GPIAS[Freq][Trial] = GPIAS[Freq][Trial][0][:]
     
     for Freq in range(len(DataInfo['NoiseFrequency'])):
+        # Separate Gap/NoGap
         gData = GPIAS[Freq][:]
         NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
         GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
         NoGapSum = list(map(sum, zip(*NoGapAll)))
         GapSum = list(map(sum, zip(*GapAll)))
         
+        # Average
         gData = [0, 0]
         gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
         gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
+        
+        # Hilbert
+        gData[0] = abs(signal.hilbert(gData[0]))
+        gData[1] = abs(signal.hilbert(gData[1]))
+        
+        # Bandpass filter
+        gData[0] = FilterSignal(gData[0], Rate, FilterFreq, FilterOrder, 
+                                                            'bandpass')
+        gData[1] = FilterSignal(gData[1], Rate, FilterFreq, FilterOrder, 
+                                                            'bandpass')
+        
+        # SavGol smooth
         gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
         gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
-        GPIAS[Freq] = gData[:]
+        
+        GPIAS[Freq] = {}
+        GPIAS[Freq]['Gap'] = gData[1][:]; GPIAS[Freq]['NoGap'] = gData[0][:]
         
         del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
     
     if 'XValues' in locals():
         print('Saving data to ' + FileName)
-        GroupName = 'GPIAS-' + RecFolder[10:] + '-' + \
-                    datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        Now = datetime.now().strftime("%Y%m%d%H%M%S")
+        Group = 'GPIAS-' + RecFolder[10:] + '-' + Now
         with h5py.File(FileName) as F:
-            F.create_group(GroupName)
-            F[GroupName].attrs['XValues'] = XValues
+            F.create_group(Group)
+            F[Group].attrs['XValues'] = XValues
 
             for Freq in range(len(GPIAS)):
-                F[GroupName].create_group(str(Freq))
+                F[Group].create_group(str(Freq))
                 
-                F[GroupName][str(Freq)]['NoGap'] = GPIAS[Freq][0]
-                F[GroupName][str(Freq)]['Gap'] = GPIAS[Freq][1]
+                F[Group][str(Freq)]['NoGap'] = GPIAS[Freq]['NoGap']
+                F[Group][str(Freq)]['Gap'] = GPIAS[Freq]['Gap']
         
         print('Done.')
     
@@ -748,6 +761,7 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL=50,
 
 
 def PlotGPIAS(FileList):
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
     for File in FileList:
         print('Loading data from GPIAS.db ...')
 #        with shelve.open(File[:-3]) as Shelve:

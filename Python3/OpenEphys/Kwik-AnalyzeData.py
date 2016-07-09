@@ -21,9 +21,9 @@
 ## Set experiment details
 
 ABRCh = [10]         # [RightChannel, LeftChannel], if order matters
+ABRTTLCh = 17            # TTL ch for ABR
 ABRTimeBeforeTTL = 3    # in ms
 ABRTimeAfterTTL = 9    # in ms
-ABRTTLCh = 17            # TTL ch for ABR
 FilterFreq = [300, 3000]         # frequency for filter
 FilterOrder = 5         # butter order
 AnalogTTLs = True
@@ -37,23 +37,23 @@ import KwikAnalysis
 
 FileName = glob.glob('*.hdf5'); FileName = FileName[0]
 
-KwikAnalysis.ABR(FileName, ABRCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, ABRTTLCh, 
+KwikAnalysis.ABR(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
                  FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
 
-KwikAnalysis.PlotABR2(FileName)
+KwikAnalysis.PlotABR(FileName)
 
 
 #%% GPIASs
 
 ## Set experiment details
 
-PiezoCh = 1
+GPIASCh = [1]
 GPIASTTLCh = 2
 GPIASTimeBeforeTTL = 20    # in ms
 GPIASTimeAfterTTL = 100    # in ms
-FilterLow = 70       # High-pass frequency for bandpass filter
-FilterHigh = 400     # Low-pass frequency
+FilterFreq = [70, 400]     # frequency for filter
 FilterOrder = 3       # butter order
+AnalogTTLs = True
 RecFolder = 1
 
 import glob

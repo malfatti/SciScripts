@@ -119,25 +119,25 @@ def GetRecKeys(Raw, Events, AnalogTTLs):
         else: EventRec = Events['TTLs']['recording']; return(Raw, EventRec)
 
 
-def GetTTLInfo(Events, EventRec, ABRTTLCh, Files):
+def GetTTLInfo(Events, EventRec, TTLCh):
     print('Get TTL data...')
     EventID = Events['TTLs']['user_data']['eventID']
     EventCh = Events['TTLs']['user_data']['event_channels']
     EventSample = Events['TTLs']['time_samples']
 
-    TTLChs = np.nonzero(np.bincount(EventCh))[0]
+#    TTLChs = np.nonzero(np.bincount(EventCh))[0]
     TTLRecs = np.nonzero(np.bincount(EventRec))[0]
     TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
                          if EventRec[_] == _Rec 
-                         and EventCh[_] ==  ABRTTLCh-1 
+                         and EventCh[_] == TTLCh-1 
                          and EventID[_] == 1]
                   for _Rec in TTLRecs}
-    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
+#    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], TTLCh-1)
     
-    return(TTLChs, TTLRecs, TTLsPerRec, TTLRising)
+    return(TTLsPerRec)
 
 
-def QuantifyTTLsPerRec(ChTTL, Raw, Proc, Rec, AnalogTTLs, TTLsPerRec):
+def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[]):
     if AnalogTTLs:
         TTLCh = Raw[Proc]['data'][str(Rec)][:, ChTTL-1]
         Threshold = max(TTLCh)/2
@@ -159,8 +159,9 @@ def QuantifyTTLsPerRec(ChTTL, Raw, Proc, Rec, AnalogTTLs, TTLsPerRec):
 #            sTTLNo = TTLNo[Rec] + 1
 #        
 #        return(TTLNo, sTTLNo)
+        RawTime = [_*Rate for _ in Raw['timestamps'][Rec]]
         TTLs = TTLsPerRec[Rec]
-        return(TTLs)
+        return(RawTime, TTLs)
 
 
 def RemoveDateFromFolderName():
@@ -223,14 +224,14 @@ def FixTTLs(Array, TTLsToFix):
     return(Array)
 
 
-def SliceData(Array, Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore, 
-              NoOfSamplesAfter, AnalogTTLs):
+def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore, 
+              NoOfSamplesAfter, AnalogTTLs, RawTime=[]):
+    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
     TTLsToFix = []
+    
     for TTL in range(len(TTLs)):
         if AnalogTTLs: TTLLoc = int(TTLs[TTL])
-        else:
-            RawTime = list(Data[Proc]['timestamps'][str(Rec)])
-            TTLLoc = RawTime.index(TTLs[TTL])#/Rate)
+        else: TTLLoc = int(RawTime.index(TTLs[TTL]))#)/Rate)
         
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
@@ -296,12 +297,11 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
         
         OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
         
-        if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs); TTLsPerRec = []
+        if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
         else:
             Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
-            TTLsPerRec, TTLRising = GetTTLInfo(Events, EventRec, ABRTTLCh, 
-                                               Files)[2:]
-#            TTLRising = Kwik.get_rising_edge_times(Files['kwe'], ABRTTLCh-1)
+            TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
+        
         Rate = Raw[OEProc]['info']['0']['sample_rate']
         NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
         NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
@@ -311,13 +311,20 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
                   list((range(NoOfSamplesAfter)/Rate)*10**3)
         
         for Rec in range(len(Raw[OEProc]['data'])):
-            TTLs = QuantifyTTLsPerRec(ABRTTLCh, Raw, OEProc, Rec, AnalogTTLs, 
-                                      TTLsPerRec)
-            ABR = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
-            
             print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            ABR = SliceData(ABR, Raw, ABRProc, Rec, TTLs, ABRCh, 
-                            NoOfSamplesBefore, NoOfSamplesAfter, AnalogTTLs)
+            
+            if AnalogTTLs:
+                TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ABRTTLCh, 
+                                          OEProc)
+                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
+                                NoOfSamplesBefore, NoOfSamplesAfter, 
+                                AnalogTTLs)
+            else:
+                RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
+                                                   TTLsPerRec=TTLsPerRec)
+                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
+                                NoOfSamplesBefore, NoOfSamplesAfter, 
+                                AnalogTTLs, RawTime)
             
             for TTL in range(len(TTLs)):
                 ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
@@ -336,7 +343,7 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     return(None)
 
     
-def PlotABR(FileName):
+def ABRPlot(FileName):
     """ 
     This function will plot the data from *Stim.hdf5. Make sure FileName is a 
     string with the path to only one file.
@@ -420,180 +427,6 @@ def PlotABR(FileName):
                 Fig.savefig(FigName, format='svg')
 
 
-def GPIASAAA(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
-          FilterHigh=300, FilterOrder=4, GPIASTTLCh=2, PiezoCh=1):
-    
-    print('set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    DirList = glob.glob('KwikFiles/*'); DirList.sort()
-    
-    for RecFolder in DirList:
-        print('Load files...')
-        FilesList = glob.glob(''.join([RecFolder, '/*']))
-        Files = {}
-        for File in FilesList:
-            if '.kwd' in File:
-                try:
-                    Raw = Kwik.load(File, 'all')
-                    Files['kwd'] = File
-                except OSError:
-                        print('File ', File, " is corrupted :'(")
-                
-            elif '.kwe' in File:
-                try:
-                    Events = Kwik.load(File)
-                    Files['kwe'] = File
-                except OSError:
-                    print('File ', File, " is corrupted :'(")
-                
-            elif '.kwik' in File:
-                try:
-                    Events = Kwik.load(File)
-                    Files['kwik'] = File
-                except OSError:
-                    print('File ', File, " is corrupted :'(")
-            
-#            elif '.db' in File:
-#                with shelve.open(File[:-3]) as Shelve: 
-#                    DataInfo = Shelve['DataInfo']
-        
-        DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-        DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
-                                             '/DataInfo/SoundBackgroundAmpF', 
-                                             FileName, Attrs=False)
-        DataInfo['SoundPulseAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundPulseAmpF', 
-                                                    FileName, Attrs=False)
-        
-        print('Check if files are ok...')
-        if 'Raw' not in locals():
-            print('.kwd file is corrupted. Skipping dataset...')
-            continue
-        
-        if 'Events' not in locals():
-            print('.kwe/.kwik file is corrupted. Skipping dataset...')
-            continue
-        
-        if 'DataInfo' not in locals():
-            print('No data info. Skipping dataset...')
-            continue
-        
-        print('Data from ', RecFolder, ' loaded.')
-        
-        print('Preallocate memory...')
-        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-        for Freq in range(len(DataInfo['NoiseFrequency'])):
-            GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
-        
-#        AllTTLs = GPIAS.copy()
-        
-        print('Get TTL data...')
-        EventID = Events['TTLs']['user_data']['eventID']
-        EventCh = Events['TTLs']['user_data']['event_channels']
-        EventRec = Events['TTLs']['recording']
-        EventSample = Events['TTLs']['time_samples']
-        
-        TTLChs = np.nonzero(np.bincount(EventCh))[0]
-        TTLRecs = np.nonzero(np.bincount(EventRec))[0]
-        TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
-                             if EventRec[_] == _Rec 
-                             and EventCh[_] ==  GPIASTTLCh-1 
-                             and EventID[_] == 1]
-                      for _Rec in TTLRecs}
-        TTLsDPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
-                             if EventRec[_] == _Rec 
-                             and EventCh[_] ==  GPIASTTLCh-1 
-                             and EventID[_] == 0]
-                      for _Rec in TTLRecs}
-        TTLRising = Kwik.get_rising_edge_times(Files['kwe'], GPIASTTLCh-1)
-        
-        Rate = Raw['info']['0']['sample_rate']
-        NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
-        NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
-        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-        XValues = (range(-NoOfSamplesBefore, 
-                         NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
-        
-        print('Set filter...')
-        passband = [FilterLow/(Rate/2), FilterHigh/(Rate/2)]
-        f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
-        
-        for Rec in range(len(Raw['data'])):
-            TTLNo = [0]
-            for _ in range(1, len(TTLsPerRec)+1):
-                TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
-
-            TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
-            
-            RawTime = list(Raw['timestamps'][str(Rec)])
-            
-            if Rec == 0:
-                sTTLNo = 0
-            else:
-                sTTLNo = TTLNo[Rec] + 1
-            
-            print('Slicing and filtering Rec ', str(Rec), '...')
-            for TTL in range(sTTLNo, TTLNo[Rec+1]):
-                TTLLoc = RawTime.index(TTLRising[TTL])
-                    
-                Start = TTLLoc-NoOfSamplesBefore
-                End = TTLLoc+NoOfSamplesAfter
-                
-                Index = TTL-sTTLNo
-                
-                gData = Raw['data'][str(Rec)][Start:End, PiezoCh-1]
-#                gData = [float(gData[_]) for _ in range(NoOfSamples)]
-                gData = abs(signal.hilbert(gData))
-                gData = signal.filtfilt(f2, f1, gData, padtype='odd', padlen=0)
-                
-                Freq = DataInfo['FreqOrder'][Rec][0]; 
-                Trial = DataInfo['FreqOrder'][Rec][1];
-                GPIAS[Freq][Trial] = gData[:]
-#                AllTTLs[Freq][Trial] = [TTLStart, TTLEnd]
-                
-                del(TTLLoc, Start, End, Freq, Trial, gData)
-        
-        for Freq in range(len(DataInfo['NoiseFrequency'])):
-            gData = GPIAS[Freq][:]
-            NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
-            GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
-            NoGapSum = list(map(sum, zip(*NoGapAll)))
-            GapSum = list(map(sum, zip(*GapAll)))
-            
-            gData = [0, 0]
-            gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
-            gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
-            gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
-            gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
-            GPIAS[Freq] = gData[:]
-            
-#            tData = AllTTLs[Freq][:]
-#            TTLNoGapAll = [tData[_] for _ in range(len(tData)) if _%2 == 0]
-#            TTLGapAll = [tData[_] for _ in range(len(tData)) if _%2 != 0]
-#            TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
-#            TTLGapSum = list(map(sum, zip(*TTLGapAll)))
-#            
-#            tData = [0, 0]
-#            tData[0] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLNoGapSum]
-#            tData[1] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLGapSum]
-#            AllTTLs[Freq] = tData[:]
-            
-            del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
-#            del(TTLNoGapAll, TTLGapAll, TTLNoGapSum, TTLGapSum, tData)
-            
-        FileName = DataInfo['AnimalName'] + '-GPIAS-' + RecFolder[10:]
-        print('Saving data to ' + FileName)
-#        with shelve.open(FileName) as Shelve:
-#            Shelve['GPIAS'] = GPIAS
-#            Shelve['AllTTLs'] = AllTTLs
-#            Shelve['XValues'] = XValues
-#            Shelve['RecFolder'] = RecFolder
-#            Shelve['DataInfo'] = DataInfo
-        print('Done.')
-    
-    print('Finished.')
-    return(None)
-
-
 def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1, 
                   GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
                   FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
@@ -618,20 +451,15 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
     
-    if AnalogTTLs:
-        Raw, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
-    else:
-        Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
+    if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
+    else: Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
     
-    if AnalogTTLs:
-        Raw = GetRecKeys(Raw, [0], AnalogTTLs)
-        TTLsPerRec = []
+    if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
     else:
         Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
-        TTLsPerRec, TTLRising = GetTTLInfo(Events, EventRec, GPIASTTLCh, 
-                                           Files)[2:]
+        TTLsPerRec = GetTTLInfo(Events, EventRec, GPIASTTLCh)
     
-    OEProc, _, GPIASProc = GetProc(Raw, Board)
+    OEProc = GetProc(Raw, Board)[0]
     
     Rate = Raw[OEProc]['info']['0']['sample_rate']
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
@@ -641,16 +469,21 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
                      NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
     
     for Rec in range(len(Raw[OEProc]['data'])):
-        TTLs = QuantifyTTLsPerRec(GPIASTTLCh, Raw, OEProc, Rec, AnalogTTLs, 
-                                  TTLsPerRec)
-        
+        print('Slicing and filtering Rec ', str(Rec), '...')
         Freq = DataInfo['FreqOrder'][Rec][0]; 
         Trial = DataInfo['FreqOrder'][Rec][1];
         
-        print('Slicing and filtering Rec ', str(Rec), '...')
-        GPIAS[Freq][Trial] = SliceData(GPIAS[Freq][Trial], Raw, GPIASProc, Rec, 
-                                       TTLs, GPIASCh, NoOfSamplesBefore, 
-                                       NoOfSamplesAfter, AnalogTTLs)
+        if AnalogTTLs:
+            TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, GPIASTTLCh, OEProc)
+            GPIAS[Freq][Trial] = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, 
+                                           NoOfSamplesBefore, NoOfSamplesAfter, 
+                                           AnalogTTLs)
+        else:
+            RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
+                                               TTLsPerRec=TTLsPerRec)
+            GPIAS[Freq][Trial] = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, 
+                                           NoOfSamplesBefore, NoOfSamplesAfter, 
+                                           AnalogTTLs, RawTime)
         
         GPIAS[Freq][Trial] = GPIAS[Freq][Trial][0][:]
     
@@ -690,47 +523,7 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     return(None)
 
 
-def PlotGPIAS(FileList):
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    for File in FileList:
-        print('Loading data from GPIAS.db ...')
-#        with shelve.open(File[:-3]) as Shelve:
-#            GPIAS = Shelve['GPIAS']
-#            AllTTLs = Shelve['AllTTLs']
-#            XValues = Shelve['XValues']
-#            DataInfo = Shelve['DataInfo']
-        
-        print('Plotting...')
-        for Freq in range(len(DataInfo['NoiseFrequency'])):
-            FigTitle = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
-            Line0Label = 'No\ Gap'; Line1Label = 'Gap'
-            SpanLabel = 'Sound\ Pulse'
-            XLabel = 'time\ [ms]'; YLabel = 'voltage\ [mV]'
-            
-            plt.figure(Freq)
-            plt.plot(XValues, GPIAS[Freq][0], 
-                     color='r', label='$'+Line0Label+'$')
-            plt.plot(XValues, GPIAS[Freq][1], 
-                     color='b', label='$'+Line1Label+'$')
-            plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
-                        color='k', alpha=0.5, lw=0, label='$'+SpanLabel+'$')
-#            plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
-#                        color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
-            
-            SetPlot(AxesObj=plt.axes(), Axes=True)
-            SetPlot(FigObj=plt, FigTitle=FigTitle, Plot=True)
-            plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
-            plt.legend(loc='lower right')
-            
-            FigName = 'Figs/' + File[:-3] + '-' + \
-                      str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + \
-                      str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg'
-            
-            plt.savefig(FigName, format='svg')
-        print('Done.')
-
-
-def PlotGPIAS2(FileName):
+def GPIASPlot(FileName):
     print('Loading data...')
     
     ## DataInfo
@@ -780,141 +573,62 @@ def PlotGPIAS2(FileName):
     print('Done.')
 
 
-def TTLsLatency(FileName, SoundCh=1, SoundSqCh=2, SoundTTLCh=1, 
-                TimeBeforeTTL=5, TimeAfterTTL=8):
+def TTLsLatency(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1, 
+                TimeBeforeTTL=5, TimeAfterTTL=8, AnalogTTLs=False):
     print('set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     RecFolder = glob.glob('KwikFiles/*'); RecFolder = RecFolder[0]
-    SoundCh = 0; SoundSqCh = 1
+#    SoundCh = 0; TTLSqCh = 1 # Override
     
-    print('Load DataInfo...')
-    DataInfo= Hdf5F.ExpDataInfo(FileName, list(RecFolder), 'Sound')
+    TTLsLatency = {}    
+    Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)    
+    OEProc = GetProc(Raw, 'OE')[0]
     
-    print('Load files...')
-    FilesList = glob.glob(''.join([RecFolder, '/*']))
-    Files = {}
-    for File in FilesList:
-        if '.kwd' in File:
-            try:
-                Raw = Kwik.load(File, 'all')
-                Files['kwd'] = File
-            except OSError:
-                    print('File ', File, " is corrupted :'(")
-            
-        elif '.kwe' in File:
-            try:
-                Events = Kwik.load(File)
-                Files['kwe'] = File
-            except OSError:
-                print('File ', File, " is corrupted :'(")
-            
-        elif '.kwik' in File:
-            try:
-                Events = Kwik.load(File)
-                Files['kwik'] = File
-            except OSError:
-                print('File ', File, " is corrupted :'(")
-    
-    print('Check if files are ok...')
-    if 'Raw' not in locals():
-        print('.kwd file is corrupted  >:(')
-        raise SystemExit
-    
-    if 'Events' not in locals():
-        print('.kwd file is corrupted  >:(')
-        raise SystemExit
-    
-    print('Data from ', RecFolder, ' loaded.')
-    
-    if '0' not in list(Raw['data'].keys()):
-        print('Rec numbers are wrong. Fixing...')
-        for iKey in Raw.keys():
-            Recs = list(Raw[iKey].keys())
-            Recs = [int(_) for _ in Recs]; Min = min(Recs)
-            
-            EventRec = Events['TTLs']['recording'][:]
-            for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
-            
-            for Key in Recs:
-                Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
-            
-        print('Fixed.')
-    else:
-        EventRec = Events['TTLs']['recording']
-    
-    print('Get TTL data...')
-    EventID = Events['TTLs']['user_data']['eventID']
-    EventCh = Events['TTLs']['user_data']['event_channels']
-    EventSample = Events['TTLs']['time_samples']
-
-    TTLChs = np.nonzero(np.bincount(EventCh))[0]
-    TTLRecs = np.nonzero(np.bincount(EventRec))[0]
-    TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
-                         if EventRec[_] == _Rec 
-                         and EventCh[_] == SoundTTLCh-1 
-                         and EventID[_] == 1]
-                  for _Rec in TTLRecs}
-    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], SoundTTLCh-1)
+    Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
+    TTLsPerRec = GetTTLInfo(Events, EventRec, TTLCh)
     
     Rate = Raw['info']['0']['sample_rate']
     NoOfSamplesBefore = TimeBeforeTTL*int(Rate*10**-3)
     NoOfSamplesAfter = TimeAfterTTL*int(Rate*10**-3)
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
     
-    XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
-              list((range(NoOfSamplesAfter)/Rate)*10**3)
+    XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*1000) + \
+              list((range(NoOfSamplesAfter)/Rate)*1000)
     
-    TTLNo = [0]
-    for _ in range(1, len(TTLsPerRec)+1):
-        TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
-    TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
-    
-    RawTime = list(Raw['timestamps']['0'])
-    
-    SoundPulse = [[0 for _ in range(NoOfSamples)] 
-                  for _ in range(len(TTLsPerRec[0]))]
-    SoundSq = SoundPulse[:]
-    
-    print('Slicing data...')
-    for TTL in range(len(TTLsPerRec[0])):
-        TTLLoc = RawTime.index(TTLRising[TTL])
-        Start = TTLLoc-NoOfSamplesBefore
-        End = TTLLoc+NoOfSamplesAfter
-        try:
-            SoundPulse[TTL] = Raw['data']['0'][Start:End, SoundCh]
-            SoundSq[TTL] = Raw['data']['0'][Start:End, SoundSqCh]
-        except ValueError:
-            print('ValueError: Slice outside data limits. Skipping', 
-                  str(TTL), '...')
-            continue
+    for Rec in range(len(Raw[OEProc]['data'])):
+        RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
+                                           TTLsPerRec=TTLsPerRec)
         
-        del(TTLLoc, Start, End)
-    
-    SoundSqDelay = [[0] for _ in range(len(SoundSq))]    
-    for TTL in range(len(SoundSq)):
-        Threshold = max(SoundSq[TTL])/5
-        Peaks = []
-        for _ in range(len(SoundSq[TTL])):
-            if SoundSq[TTL][_] > Threshold:
-                if SoundSq[TTL][_-1] < Threshold:
-                    Peaks.append(_)
+        SoundPulse = [[0 for _ in range(NoOfSamples)] 
+                      for _ in range(len(TTLs))]
+        TTLSq = SoundPulse[:]
         
-        SoundSqDelay[TTL] = ((Peaks[0] - NoOfSamplesBefore) / (Rate/1000))*-1
-        del(Peaks)
+        SoundPulse = SliceData(SoundPulse, Raw, OEProc, Rec, TTLs,SoundCh, 
+                               NoOfSamplesBefore, NoOfSamplesAfter, 
+                               AnalogTTLs, RawTime)
+        TTLSq = SliceData(TTLSq, Raw, OEProc, Rec, TTLs,TTLSqCh, 
+                          NoOfSamplesBefore, NoOfSamplesAfter, 
+                          AnalogTTLs, RawTime)
     
-    print('Saving data to ' + FileName + ' ...')
-    GroupName = 'Analysis-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    with h5py.File(FileName) as F:
-        if 'Analysis' in F.keys():
-            F[GroupName] = F['Analysis']; del(F['Analysis'])
+        TTLSqDelay = [[0] for _ in range(len(TTLSq))]    
+        for TTL in range(len(TTLSq)):
+            Peaks = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs=True, TTLSqCh, 
+                                       OEProc)
+            
+            if len(Peaks) != 1: 
+                print('Bad TTL detection. Skipping TTL...')
+                TTLSqDelay[TTL] = float('NaN')
+                continue
+            
+            TTLSqDelay[TTL] = ((Peaks[0] - NoOfSamplesBefore) / (Rate/1000))*-1
+            del(Peaks)
         
-        F.create_group('Analysis')
-        F['Analysis']['SoundPulse'] = SoundPulse
-        F['Analysis']['SoundSq'] = SoundSq
-        F['Analysis']['SoundSqDelay'] = SoundSqDelay
-        F['Analysis']['XValues'] = XValues
+        TTLsLatency[str(Rec)] = dict((Name, eval(Name)) 
+                                     for Name in ['SoundPulse', 'TTLSq', 
+                                                  'TTLSqSoundDelay'])
     
-    print('Done.')
+    Hdf5F.WriteTTLsLatency(TTLsLatency, XValues, FileName)
+    
     return(None)
 
 
@@ -937,7 +651,7 @@ def PlotTTLsLatency(FileName):
             else:
                 DataInfo[bKey] = bValue
     
-    SetLaTexPlot()
+    SetPlot(Params=True)
     
     for _ in range(len(SoundPulse)):
         plt.figure(1); plt.plot(XValues, SoundPulse[_])

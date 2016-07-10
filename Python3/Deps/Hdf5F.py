@@ -244,13 +244,17 @@ def WriteABRs(ABRs, XValues, FileName):
     return(None)
 
 
-def WriteDict(Dict, Path, FileName):
+def WriteDict(Dict, Path, FileName, Attrs=True):
     print('Writing dictionary at', Path+'... ', end='')
     with h5py.File(FileName) as F:
         if Path not in F: F.create_group(Path)
         
-        for Key, Value in Dict.items():
-            F[Path].attrs[Key] = Value
+        if Attrs:
+            for Key, Value in Dict.items():
+                F[Path].attrs[Key] = Value
+        else:
+            for Key, Value in Dict.items():
+                F[Path][Key] = Value
     
     print('Done.')
     return(None)
@@ -289,4 +293,20 @@ def WriteGPIAS(GPIAS, RecFolder, XValues, FileName):
     print('Done.')
     return(None)
 
+
+def WriteTTLslatency(TTLsLatency, XValues, FileName):
+    print('Writing data to', FileName+'... ', end='')
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    Group = 'TTLsLatency-' + Now
+    with h5py.File(FileName) as F:
+        for Rec in TTLsLatency.keys():
+            Path = '/' + Group + '/' + Rec; F.create_group(Path)
+            
+            for Key, Value in TTLsLatency[Rec].items():
+                F[Path][Key] = Value
+                
+        F[Group]['XValues'] = XValues
+    
+    print('Done.')
+    return(None)
 

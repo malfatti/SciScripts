@@ -301,14 +301,10 @@ def ABR(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     del(Freq)
     
     for RecFolder in Exps:
-        if AnalogTTLs:
-            Raw, _, _, Files = Kwik.load_all_files(RecFolder)
-        else:
-            Raw, Events, _, Files = Kwik.load_all_files(RecFolder)
         
         ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
         
-        print('Check if files are ok...')
+        
         if 'Raw' not in locals():
             print('.kwd file is corrupted. Skipping dataset...')
             continue
@@ -656,14 +652,7 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
         DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
     
     print('Check if files are ok...')
-    if 'Raw' not in locals():
-        print('.kwd file is corrupted. Skipping dataset...')
-        raise SystemExit
     
-    if not AnalogTTLs:
-        if 'Events' not in locals():
-            print('.kwe/.kwik file is corrupted. Skipping dataset...')
-            raise SystemExit
     
     if 'DataInfo' not in locals():
         print('No data info. Skipping dataset...')

@@ -18,6 +18,7 @@
 """
 
 import h5py
+import Kwik
 import numpy as np
 from datetime import datetime
 from numbers import Number
@@ -137,6 +138,28 @@ def LoadDataset(Path, FileName):
     return(Dataset)
 
 
+def LoadOEFiles(RecFolder, AnalogTTLs):
+    if AnalogTTLs:
+        Raw, _, Spks, Files = Kwik.load_all_files(RecFolder)
+    else:
+        Raw, Events, Spks, Files = Kwik.load_all_files(RecFolder)
+    
+    print('Check if files are ok...')
+    if 'Raw' in locals():
+        print('.kwd file is corrupted. Skipping dataset...')
+        return(None)
+    
+    if not AnalogTTLs:
+        if 'Events' not in locals():
+            print('.kwe/.kwik file is corrupted. Skipping dataset...')
+            return(None)
+    
+    print('Data from ', RecFolder, ' loaded.')
+    
+    if AnalogTTLs: return(Raw, Spks, Files)
+    else: return(Raw, Events, Spks, Files)
+
+
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
     with h5py.File(SBAmpFsFile, 'r') as h5: 
         Var = h5[SoundBoard][Key][0]
@@ -229,6 +252,24 @@ def WriteExpInfo(StimType, DVCoord, Freq, FileName):
         F['ExpInfo'][Key].attrs['StimType'] = [np.string_(StimType)]
         F['ExpInfo'][Key].attrs['DVCoord'] = DVCoord
         F['ExpInfo'][Key].attrs['Hz'] = Freq
+    
+    print('Done.')
+    return(None)
+
+
+def WriteGPIAS(GPIAS, RecFolder, XValues, FileName):
+    print('Writing data to', FileName, '...', end='')
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    Group = 'GPIAS-' + RecFolder[10:] + '-' + Now
+    with h5py.File(FileName) as F:
+        F.create_group(Group)
+        F[Group].attrs['XValues'] = XValues
+        
+        for Freq in range(len(GPIAS)):
+            F[Group].create_group(str(Freq))
+            
+            F[Group][str(Freq)]['NoGap'] = GPIAS[Freq]['NoGap']
+            F[Group][str(Freq)]['Gap'] = GPIAS[Freq]['Gap']
     
     print('Done.')
     return(None)

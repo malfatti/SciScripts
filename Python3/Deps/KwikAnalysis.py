@@ -740,23 +740,7 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
         
         del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
     
-    if 'XValues' in locals():
-        print('Saving data to ' + FileName)
-        Now = datetime.now().strftime("%Y%m%d%H%M%S")
-        Group = 'GPIAS-' + RecFolder[10:] + '-' + Now
-        with h5py.File(FileName) as F:
-            F.create_group(Group)
-            F[Group].attrs['XValues'] = XValues
-
-            for Freq in range(len(GPIAS)):
-                F[Group].create_group(str(Freq))
-                
-                F[Group][str(Freq)]['NoGap'] = GPIAS[Freq]['NoGap']
-                F[Group][str(Freq)]['Gap'] = GPIAS[Freq]['Gap']
-        
-        print('Done.')
-    
-    print('All data saved.')
+    Hdf5F.WriteGPIAS(GPIAS, RecFolder, XValues, FileName)
     return(None)
 
 

@@ -118,34 +118,49 @@ def LoadDict(Path, FileName, Attrs=True):
     with h5py.File(FileName, 'r') as F:
         if Attrs:
             for Key, Value in F[Path].attrs.items():
-                if isinstance(Value, Number):
-                    Dict[Key] = float(Value)
-                else:
-                    Dict[Key] = Value
+                if isinstance(Value, Number): Dict[Key] = float(Value)
+                else: Dict[Key] = Value
         
         else:
             
-            for Key, Value in F[Path].items():
-                Dict[Key] = Value[:]
-        
-        return(Dict)
+            for Key, Value in F[Path].items(): Dict[Key] = Value[:]
+    
+    return(Dict)
 
 
 def LoadDataset(Path, FileName):
-    with h5py.File(FileName, 'r') as F:
-        Dataset = F[Path][:]
-    
+    with h5py.File(FileName, 'r') as F: Dataset = F[Path][:]
     return(Dataset)
 
 
+def LoadGPIAS(FileName):
+    with h5py.File(FileName, 'r') as F:
+        Keys = [Key for Key in F.keys() if 'GPIAS' in Key]; Keys.sort()
+        if len(Keys) > 1:
+            print('Choose dataset to load:')
+            for Ind, Key in enumerate(Keys):
+                print(str(Ind), '=' , Key)
+            Key = input(': ')
+            Key = Keys[int(Key)]
+        else: Key = Keys[0]
+        
+        XValues = F[Key].attrs['XValues']
+        
+        GPIAS = [[0] for _ in range(len(F[Key]))]
+        for Freq in range(len(GPIAS)):
+            GPIAS[Freq] = {}
+            GPIAS[Freq]['NoGap'] = F[Key][str(Freq)]['NoGap'][:]
+            GPIAS[Freq]['Gap'] = F[Key][str(Freq)]['Gap'][:]
+    
+    return(GPIAS, XValues)
+
+
 def LoadOEFiles(RecFolder, AnalogTTLs):
-    if AnalogTTLs:
-        Raw, _, Spks, Files = Kwik.load_all_files(RecFolder)
-    else:
-        Raw, Events, Spks, Files = Kwik.load_all_files(RecFolder)
+    if AnalogTTLs: Raw, _, Spks, Files = Kwik.load_all_files(RecFolder)
+    else: Raw, Events, Spks, Files = Kwik.load_all_files(RecFolder)
     
     print('Check if files are ok...')
-    if 'Raw' in locals():
+    if 'Raw' not in locals():
         print('.kwd file is corrupted. Skipping dataset...')
         return(None)
     
@@ -206,7 +221,7 @@ def SoundMeasurement(FileName, Var='SoundIntensity'):
 
 
 def WriteABRs(ABRs, XValues, FileName):
-    print('Writing data to', FileName, '...', end='')
+    print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
     Group = 'ABRs-' + Now
     with h5py.File(FileName) as F:
@@ -230,7 +245,7 @@ def WriteABRs(ABRs, XValues, FileName):
 
 
 def WriteDict(Dict, Path, FileName):
-    print('Writing dictionary at', Path, '...', end='')
+    print('Writing dictionary at', Path+'... ', end='')
     with h5py.File(FileName) as F:
         if Path not in F: F.create_group(Path)
         
@@ -242,7 +257,7 @@ def WriteDict(Dict, Path, FileName):
 
 
 def WriteExpInfo(StimType, DVCoord, Freq, FileName):
-    print('Writing ExpInfo...', end='')
+    print('Writing ExpInfo to', FileName+'... ', end='')
     with h5py.File(FileName) as F:
         if '/ExpInfo' not in F: F.create_group('ExpInfo')
         
@@ -258,7 +273,7 @@ def WriteExpInfo(StimType, DVCoord, Freq, FileName):
 
 
 def WriteGPIAS(GPIAS, RecFolder, XValues, FileName):
-    print('Writing data to', FileName, '...', end='')
+    print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
     Group = 'GPIAS-' + RecFolder[10:] + '-' + Now
     with h5py.File(FileName) as F:

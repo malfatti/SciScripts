@@ -36,10 +36,8 @@ def GetProc(Raw, Board):
                for Proc in Raw.keys()}
     
     for Proc, Chs in ProcChs.items():
-        if Chs == max(ProcChs.values()):
-            OEProc = Proc
-        else:
-            RHAProc = Proc
+        if Chs == max(ProcChs.values()): OEProc = Proc
+        else: RHAProc = Proc
     
     if 'RHAProc' not in locals(): RHAProc = OEProc
     
@@ -110,17 +108,15 @@ def GetRecKeys(Raw, Events, AnalogTTLs):
                     return(Raw)
                 else:
                     EventRec = Events['TTLs']['recording'][:]
-                    for _ in range(len(EventRec)): EventRec[_] = EventRec[_] - Min
+                    for _ in range(len(EventRec)): 
+                        EventRec[_] = EventRec[_] - Min
                     return(Raw, EventRec)
             
             print('Fixed.')
     
     else:
-        if AnalogTTLs:
-            return(Raw)
-        else:
-            EventRec = Events['TTLs']['recording']
-            return(Raw, EventRec)
+        if AnalogTTLs: return(Raw)
+        else: EventRec = Events['TTLs']['recording']; return(Raw, EventRec)
 
 
 def GetTTLInfo(Events, EventRec, ABRTTLCh, Files):
@@ -148,8 +144,8 @@ def QuantifyTTLsPerRec(ChTTL, Raw, Proc, Rec, AnalogTTLs, TTLsPerRec):
         TTLs = []
         for _ in range(1, len(TTLCh)):
             if TTLCh[_] > Threshold:
-                if TTLCh[_-1] < Threshold:
-                    TTLs.append(_)
+                if TTLCh[_-1] < Threshold: TTLs.append(_)
+        
         return(TTLs)
     else:
 #        TTLNo = [0]
@@ -181,22 +177,37 @@ def RemoveDateFromFolderName():
     return(None)
 
 
-def SetLaTexPlot():
-    print('Set plot...')
-    Params = {'backend': 'TkAgg',
-              'text.usetex': True, 'text.latex.unicode': True,
-#              'text.latex.preamble': '\\usepackage{siunitx}',
-              
-              'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
-              'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
-              'xtick.labelsize': 'small', 'xtick.direction': 'out',
-              'ytick.labelsize': 'small', 'ytick.direction': 'out',
-              'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
-              'figure.titlesize': 'large', 'figure.titleweight': 'normal',
-              
-              'image.cmap': 'cubehelix', 'savefig.transparent': True,
-              'svg.fonttype': 'path'}
-    rcParams.update(Params)
+def SetPlot(AxesObj=(), FigObj=(), FigTitle='', Params=False, Plot=False, 
+            Axes=False):
+    if Params:
+        print('Set plot parameters...')
+        Params = {'backend': 'TkAgg',
+                  'text.usetex': True, 'text.latex.unicode': True,
+    #              'text.latex.preamble': '\\usepackage{siunitx}',
+                  
+                  'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
+                  'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
+                  'xtick.labelsize': 'small', 'xtick.direction': 'out',
+                  'ytick.labelsize': 'small', 'ytick.direction': 'out',
+                  'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
+                  'figure.titlesize': 'large', 'figure.titleweight': 'normal',
+                  
+                  'image.cmap': 'cubehelix', 'savefig.transparent': True,
+                  'svg.fonttype': 'path'}
+        rcParams.update(Params)
+    
+    elif Plot:
+        FigObj.suptitle(FigTitle); FigObj.tight_layout(); 
+        FigObj.subplots_adjust(top=0.925)
+    
+    elif Axes:
+        AxesObj.spines['right'].set_visible(False)
+        AxesObj.spines['top'].set_visible(False)
+        AxesObj.yaxis.set_ticks_position('left')
+        AxesObj.xaxis.set_ticks_position('bottom')
+        AxesObj.locator_params(tight=True)
+    
+    else: print("'Params', 'Plot' or 'Axes' must be True.")
     
     return(None)
 
@@ -204,8 +215,7 @@ def SetLaTexPlot():
 def FixTTLs(Array, TTLsToFix):
     for TTL in TTLsToFix:
         nInd = np.random.randint(1, 100)
-        while nInd == TTL:
-            nInd = np.random.randint(0, 100)
+        while nInd == TTL: nInd = np.random.randint(0, 100)
         
         print('TTL', str(TTL), 'was replaced by', str(nInd))
         Array[TTL] = Array[nInd]
@@ -217,53 +227,31 @@ def SliceData(Array, Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore,
               NoOfSamplesAfter, AnalogTTLs):
     TTLsToFix = []
     for TTL in range(len(TTLs)):
-        if AnalogTTLs:
-            TTLLoc = int(TTLs[TTL])
+        if AnalogTTLs: TTLLoc = int(TTLs[TTL])
         else:
             RawTime = list(Data[Proc]['timestamps'][str(Rec)])
-            TTLLoc = RawTime.index(TTLs[TTL]/Rate)
+            TTLLoc = RawTime.index(TTLs[TTL])#/Rate)
+        
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
-        if Start < 0:
-            Start = 0; End = End+(Start*-1)
-            TTLsToFix.append(TTL)
         
-        Array[TTL] = Data[Proc]['data'][str(Rec)][Start:End, DataCh[0]-1] * \
-                   Data[Proc]['channel_bit_volts'][str(Rec)][DataCh[0]-1]
+        if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
         
-        if len(Array[TTL]) != End-Start:
-            TTLsToFix.append(TTL)
+        Array[TTL] = Data[Proc]['data'][str(Rec)][Start:End, DataCh[0]-1] \
+                     * Data[Proc]['channel_bit_volts'][str(Rec)][DataCh[0]-1] \
+                     * 1000 # in mV
+        
+        if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
             
     Array = FixTTLs(Array, TTLsToFix)
         
     return(Array)
 
 
-def SliceShuffledData(Array, Data, DataInfo, Proc, Rec, TTLs, DataCh, 
-                      NoOfSamplesBefore, NoOfSamplesAfter, AnalogTTLs):
-    for TTL in range(len(TTLs)):
-        if AnalogTTLs:
-            TTLLoc = int(TTLs[TTL])
-        else:
-            RawTime = list(Data[Proc]['timestamps'][str(Rec)])
-            TTLLoc = RawTime.index(TTLs[TTL]/Rate)
-        Start = TTLLoc-NoOfSamplesBefore
-        End = TTLLoc+NoOfSamplesAfter
-        
-        TmpArray = Data['data'][str(Rec)][Start:End, DataCh[0]-1] * \
-                   Data['channel_bit_volts'][str(Rec)][DataCh[0]-1] * 1000 # mV
-        
-        Freq = DataInfo['FreqOrder'][Rec][0]; 
-        Trial = DataInfo['FreqOrder'][Rec][1];
-        Array[Freq][Trial] = TmpArray[:]
-        
-        del(TTLLoc, Start, End, Freq, Trial, TmpArray)
-    
-    return(Array)
 ## Higher-level functions
-def ABR(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
-        ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
-        StimType='Sound', AnalogTTLs=False, Board='OE'):
+def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
+                ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
+                StimType='Sound', AnalogTTLs=False, Board='OE'):
     """
     Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
@@ -301,26 +289,14 @@ def ABR(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     del(Freq)
     
     for RecFolder in Exps:
-        
         ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
         
-        
-        if 'Raw' not in locals():
-            print('.kwd file is corrupted. Skipping dataset...')
-            continue
-        
-        if not AnalogTTLs:
-            if 'Events' not in locals():
-                print('.kwe/.kwik file is corrupted. Skipping dataset...')
-                continue
-        
-        print('Data from ', RecFolder, ' loaded.')
+        if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
+        else: Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
         
         OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
         
-        if AnalogTTLs:
-            Raw = GetRecKeys(Raw, [0], AnalogTTLs)
-            TTLsPerRec = []
+        if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs); TTLsPerRec = []
         else:
             Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
             TTLsPerRec, TTLRising = GetTTLInfo(Events, EventRec, ABRTTLCh, 
@@ -357,8 +333,6 @@ def ABR(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
                 ABRs[ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(ABR)
     
     Hdf5F.WriteABRs(ABRs, XValues, FileName)
-    
-    print('Done.')
     return(None)
 
     
@@ -378,7 +352,7 @@ def PlotABR(FileName):
     DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName)
     ABRs, XValues = Hdf5F.LoadABRs(FileName)
     
-    SetLaTexPlot()
+    SetPlot(Params=True)
     
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
@@ -414,8 +388,7 @@ def PlotABR(FileName):
                 for AmpF in range(len(DataInfo['Intensities'])):
                     FigTitle = KeyHz + ' Hz, DV ' + Key + \
                                ', trial ' + str(Trial+1)
-                    YLabel = 'Voltage [mV]'
-                    XLabel = 'Time [ms]'
+                    YLabel = 'Voltage [mV]'; XLabel = 'Time [ms]'
                     LineLabel = str(DataInfo['Intensities'][AmpF]) + ' dB'
                     SpanLabel = 'Sound pulse'
                     
@@ -429,30 +402,25 @@ def PlotABR(FileName):
                                        color='k', alpha=0.3, lw=0, 
                                        label=SpanLabel)
                     
+                    SetPlot(AxesObj=Axes[AmpF], Axes=True)
                     Axes[AmpF].legend(loc='lower right', frameon=False)
-                    Axes[AmpF].spines['right'].set_visible(False)
-                    Axes[AmpF].spines['top'].set_visible(False)
                     Axes[AmpF].spines['bottom'].set_visible(False)
                     Axes[AmpF].spines['left'].set_bounds(round(0), round(1))
-                    Axes[AmpF].yaxis.set_ticks_position('left')
                     Axes[AmpF].xaxis.set_ticks_position('none')
                     Axes[AmpF].set_ylabel(YLabel)
                     Axes[AmpF].set_ylim(downYLim, upYLim)
-                    Axes[AmpF].locator_params(tight=True)
                     
                 Axes[-1].spines['bottom'].set_visible(True)
                 Axes[-1].set_xlabel(XLabel)
                 Axes[-1].spines['bottom'].set_bounds(round(0), round(1))
-                Fig.suptitle(FigTitle)
-                Fig.tight_layout()
-                Fig.subplots_adjust(top=0.95)
+                SetPlot(FigObj=Fig, FigTitle=FigTitle, Plot=True)
                 
                 FigName = 'Figs/' + FileName[:-15] + '-ABR_DV' +  Key + \
                           '_Trial' + str(Trial) + '_Freq' + KeyHz + '.svg'
                 Fig.savefig(FigName, format='svg')
 
 
-def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
+def GPIASAAA(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
           FilterHigh=300, FilterOrder=4, GPIASTTLCh=2, PiezoCh=1):
     
     print('set paths...')
@@ -626,20 +594,14 @@ def GPIAS(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3,
     return(None)
 
 
-def GPIASAnalogTTLs(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1, 
-                    GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
-                    FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
-                    Board='OE'):
+def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1, 
+                  GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
+                  FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
+                  Board='OE'):
     
     print('set paths...')
     DirList = glob.glob('KwikFiles/*'); DirList.sort()
     RecFolder = DirList[RecFolder-1]
-    
-    print('Load files...')
-    if AnalogTTLs:
-        Raw, _, _, Files = Kwik.load_all_files(RecFolder)
-    else:
-        Raw, Events, _, Files = Kwik.load_all_files(RecFolder)
     
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
@@ -651,20 +613,15 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
         DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
     
-    print('Check if files are ok...')
-    
-    
-    if 'DataInfo' not in locals():
-        print('No data info. Skipping dataset...')
-        raise SystemExit
-    
-    print('Data from ', RecFolder, ' loaded.')
-    
     print('Preallocate memory...')
     GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
     
+    if AnalogTTLs:
+        Raw, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
+    else:
+        Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
     
     if AnalogTTLs:
         Raw = GetRecKeys(Raw, [0], AnalogTTLs)
@@ -702,11 +659,11 @@ def GPIASAnalogTTLs(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
         gData = GPIAS[Freq][:]
         NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
         GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
-        NoGapSum = list(map(sum, zip(*NoGapAll)))
-        GapSum = list(map(sum, zip(*GapAll)))
         
         # Average
         gData = [0, 0]
+        NoGapSum = list(map(sum, zip(*NoGapAll)))
+        GapSum = list(map(sum, zip(*GapAll)))
         gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
         gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
         
@@ -759,72 +716,67 @@ def PlotGPIAS(FileList):
                         color='k', alpha=0.5, lw=0, label='$'+SpanLabel+'$')
 #            plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
 #                        color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
-            plt.suptitle('$'+FigTitle+'$')
+            
+            SetPlot(AxesObj=plt.axes(), Axes=True)
+            SetPlot(FigObj=plt, FigTitle=FigTitle, Plot=True)
             plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
             plt.legend(loc='lower right')
-            plt.locator_params(tight=True)
-            plt.axes().spines['right'].set_visible(False)
-            plt.axes().spines['top'].set_visible(False)
-            plt.axes().yaxis.set_ticks_position('left')
-            plt.axes().xaxis.set_ticks_position('bottom')
-            plt.savefig('Figs/' + File[:-3] + '-' + 
-                        str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + 
-                        str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg', 
-                        format='svg')
+            
+            FigName = 'Figs/' + File[:-3] + '-' + \
+                      str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + \
+                      str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg'
+            
+            plt.savefig(FigName, format='svg')
         print('Done.')
 
 
 def PlotGPIAS2(FileName):
     print('Loading data...')
-    DataInfo = Hdf5F.GPIASDataInfo(FileName)
-    with h5py.File(FileName) as F:
-        Keys = list(F.keys())
     
-    Keys.remove('DataInfo')
+    ## DataInfo
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
+                                         '/DataInfo/SoundBackgroundAmpF', 
+                                         FileName, Attrs=False)
+    DataInfo['SoundPulseAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundPulseAmpF', 
+                                                FileName, Attrs=False)
     
-    SetLaTexPlot()
+    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
     
-#    for Key in Keys:
-    Key = Keys[-1]
-    with h5py.File(FileName) as F:
-        XValues = F[Key].attrs['XValues']
-        
-        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-        for Freq in range(len(GPIAS)):
-            GPIAS[Freq] = [[], []]
-            GPIAS[Freq][0] = F[Key][str(Freq)]['NoGap'][:]
-            GPIAS[Freq][1] = F[Key][str(Freq)]['Gap'][:]
+    ## GPIAS
+    GPIAS, XValues = Hdf5F.LoadGPIAS(FileName)
     
+    SetPlot(Params=True)
     print('Plotting...')
     Ind1 = list(XValues).index(0)
     Ind2 = list(XValues).index(int(DataInfo['SoundLoudPulseDur']*1000))
     
     for Freq in range(len(DataInfo['NoiseFrequency'])):
-        FigTitle = str(DataInfo['NoiseFrequency'][Freq]) + ' Hz'
-        Line0Label = 'No Gap'; Line1Label = 'Gap'
+        FreqKey = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
+                  str(DataInfo['NoiseFrequency'][Freq][1])
+        
+        FigTitle = FreqKey + ' Hz'
+        LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
         SpanLabel = 'Sound Pulse'
         XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
         
         plt.figure(Freq)
-        plt.plot(XValues, GPIAS[Freq][0], 
-                 color='r', label=Line0Label, lw=2)
-        plt.plot(XValues, GPIAS[Freq][1], 
-                 color='b', label=Line1Label, lw=2)
+        plt.plot(XValues, GPIAS[Freq]['NoGap'], 
+                 color='r', label=LineNoGapLabel, lw=2)
+        plt.plot(XValues, GPIAS[Freq]['Gap'], 
+                 color='b', label=LineGapLabel, lw=2)
         plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
                     lw=0, label=SpanLabel)
 
-        plt.suptitle(FigTitle)
+        SetPlot(AxesObj=plt.axes(), Axes=True)
+        SetPlot(FigObj=plt, FigTitle=FigTitle, Plot=True)
         plt.ylabel(YLabel); plt.xlabel(XLabel)
         plt.legend(loc='lower right')
-        plt.locator_params(tight=True)
-        plt.axes().spines['right'].set_visible(False)
-        plt.axes().spines['top'].set_visible(False)
-        plt.axes().yaxis.set_ticks_position('left')
-        plt.axes().xaxis.set_ticks_position('bottom')
-        plt.savefig('Figs/' + FileName[:-9] + '-' + 
-                    str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + 
-                    str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg', 
-                    format='svg')
+        
+        FigName = 'Figs/' + FileName[:-5] + '-' + FreqKey + '.svg'
+        plt.savefig(FigName, format='svg')
+        
     print('Done.')
 
 

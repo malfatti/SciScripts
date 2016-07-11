@@ -573,7 +573,7 @@ def GPIASPlot(FileName):
     print('Done.')
 
 
-def TTLsLatency(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1, 
+def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1, 
                 TimeBeforeTTL=5, TimeAfterTTL=8, AnalogTTLs=False):
     print('set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
@@ -632,24 +632,8 @@ def TTLsLatency(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
     return(None)
 
 
-def PlotTTLsLatency(FileName):
-    DataInfo = {}
-    with h5py.File(FileName) as F:
-        SoundPulse = F['Analysis']['SoundPulse'][:]
-        SoundSq = F['Analysis']['SoundSq'][:]
-        SoundSqDelay = F['Analysis']['SoundSqDelay'][:]
-        XValues = list(F['Analysis']['XValues'])
-    
-        for Key, Value in F['DataInfo'].items():
-            DataInfo['SoundAmpF'] = {}
-            for aKey, aValue in F['DataInfo']['SoundAmpF'].items():
-                DataInfo['SoundAmpF'][aKey] = aValue[:]
-        
-        for bKey, bValue in F['DataInfo'].attrs.items():
-            if isinstance(bValue, Number):
-                DataInfo[bKey] = float(bValue)
-            else:
-                DataInfo[bKey] = bValue
+def TTLsLatencyPlot(FileName):
+    TTLsLatency, XValues = Hdf5.LoadTTLsLatency(FileName)
     
     SetPlot(Params=True)
     
@@ -668,10 +652,9 @@ def PlotTTLsLatency(FileName):
     plt.figure(3); plt.plot(BinEdges[:-1], Hist)
     plt.axvspan(BinEdges[sIndex], BinEdges[eIndex], color='k', alpha=0.5, lw=0,
                 label=str(Perc) + '\% of pulses with latency $<$ 3µs') 
+    
+    SetPlot(FigObj=plt, FigName='TTLs latencies', Plot=True)
+    SetPlot(AxesObj=plt.axes(), Axes=True)
     plt.legend(loc='upper right')
-    plt.locator_params(tight=True)
-    plt.axes().spines['right'].set_visible(False)
-    plt.axes().spines['top'].set_visible(False)
-    plt.axes().yaxis.set_ticks_position('left')
-    plt.axes().xaxis.set_ticks_position('bottom')
+    
     plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.svg', format='svg')

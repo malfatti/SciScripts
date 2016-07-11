@@ -175,6 +175,9 @@ def LoadOEFiles(RecFolder, AnalogTTLs):
     else: return(Raw, Events, Spks, Files)
 
 
+def LoadTTLsLatency(FileName):
+    
+
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
     with h5py.File(SBAmpFsFile, 'r') as h5: 
         Var = h5[SoundBoard][Key][0]

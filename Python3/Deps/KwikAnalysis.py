@@ -612,8 +612,9 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
     
         TTLSqDelay = [[0] for _ in range(len(TTLSq))]    
         for TTL in range(len(TTLSq)):
-            Peaks = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs=True, TTLSqCh, 
-                                       OEProc)
+            AnalogTTLs = True
+            Peaks = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, TTLSqCh, OEProc)
+            AnalogTTLs = False
             
             if len(Peaks) != 1: 
                 print('Bad TTL detection. Skipping TTL...')
@@ -625,7 +626,7 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
         
         TTLsLatency[str(Rec)] = dict((Name, eval(Name)) 
                                      for Name in ['SoundPulse', 'TTLSq', 
-                                                  'TTLSqSoundDelay'])
+                                                  'TTLSqDelay'])
     
     Hdf5F.WriteTTLsLatency(TTLsLatency, XValues, FileName)
     
@@ -633,15 +634,15 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
 
 
 def TTLsLatencyPlot(FileName):
-    TTLsLatency, XValues = Hdf5.LoadTTLsLatency(FileName)
+    TTLsLatency, XValues = Hdf5F.LoadTTLsLatency(FileName)
     
     SetPlot(Params=True)
     
-    for _ in range(len(SoundPulse)):
-        plt.figure(1); plt.plot(XValues, SoundPulse[_])
-        plt.figure(2); plt.plot(XValues, SoundSq[_])
+    for _ in range(len(TTLsLatency['SoundPulse'])):
+        plt.figure(1); plt.plot(XValues, TTLsLatency['SoundPulse'][_])
+        plt.figure(2); plt.plot(XValues, TTLsLatency['TTLSq'][_])
     
-    Hist, BinEdges = np.histogram(SoundSqDelay, bins=200)
+    Hist, BinEdges = np.histogram(TTLsLatency['TTLSqDelay'], bins=200)
     Threshold = (DataInfo['SoundPulseDur']/100)*1000
     Threshold = 0.08
     sIndex = min(range(len(BinEdges)), 
@@ -653,7 +654,7 @@ def TTLsLatencyPlot(FileName):
     plt.axvspan(BinEdges[sIndex], BinEdges[eIndex], color='k', alpha=0.5, lw=0,
                 label=str(Perc) + '\% of pulses with latency $<$ 3µs') 
     
-    SetPlot(FigObj=plt, FigName='TTLs latencies', Plot=True)
+    SetPlot(FigObj=plt, FigTitle='TTLs latencies', Plot=True)
     SetPlot(AxesObj=plt.axes(), Axes=True)
     plt.legend(loc='upper right')
     

@@ -16,47 +16,71 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.       
 
 This is a script to record sound from sound board input in sinchrony with a 
-DAQ. Next, it calculates the intensity in RMS and dB for each frequency at each
+DAq. Next, it calculates the intensity in RMS and dB for each frequency at each
 amplification factor. In our setup, we use this to calibrate the audio 
 equipment.
 """
 
 #%% Set parameters of the experiment
 
-Rate = 128000
+Rate = 128000; BaudRate = 38400
+SoundBoard = 'Intel_oAnalog-iAnalog' # Use a board used in SoundBoardCalibration.py
 
-# Amplification factors. Set the same in the DAQ.
-SoundAmpF =  [2, 1.75, 1.5, 1.25, 1, 0.9, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 
-              0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.08, 0.06, 0.04, 
-              0.03, 0.02, 0.015, 0.01, 0.008, 0.006, 0.005, 0.004, 0.003, 
-              0.002, 0.001, 0]
-# Noise frequency. Set the same in the DAQ.
+# Noise frequency. Set the same in the DAq.
 NoiseFrequency = [[8000, 10000], [10000, 12000], [12000, 14000], 
                   [14000, 16000], [16000, 18000]]
 # Time to record in seconds.
 TimeRec = 2
 # Mic sensitivity, from mic datasheet, in dB re V/Pa.
 MicSens_dB = -47.46
+
+SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
 #==========#==========#==========#==========#
 
 import array
-#import ControlSoundBoard
+import ControlArduino
 import datetime
+import h5py
 import math
 import matplotlib.pyplot as plt
-import os
+from os import makedirs
 import pandas
-import pickle
+#import pickle
 import pyaudio
-import serial
-import serial.tools.list_ports
+#import serial
+#import serial.tools.list_ports
 from scipy import signal
 
-Date = datetime.datetime.now()
-Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurementDAQ'])
-os.makedirs(Folder)
 
-DataInfo = [Rate, SoundAmpF, NoiseFrequency, TimeRec, MicSens_dB, Folder]
+with h5py.File(SBAmpFsFile) as h5:
+    SBOutAmpF = h5[SoundBoard].attrs['SBOutAmpF']
+    SBInAmpF = h5[SoundBoard].attrs['SBInAmpF']
+
+def FRange(Start, End, Step):
+    Range = [round(x/(1/Step), 5) 
+             for x in range(round(Start/Step), round(End/Step), -1)]
+    return(Range)
+
+MicSens_VPa = 10**(MicSens_dB/20)
+
+# Set the same SoundAmpF in the DAq
+#SoundAmpF = FRange(2, 1, 0.1) + FRange(1, 0.4, 0.05) + \
+#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
+#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
+#            FRange(0.001, 0, 0.00002) + [0]
+SoundAmpF = [2, 1.5, 1, 0.5]
+
+
+Date = datetime.datetime.now()
+Folder = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-SoundMeasurementDAq'])
+
+## Prepare dict w/ experimental setup
+FileName = Folder + '/' + Folder + '.hdf5'
+DataInfo = dict((Name, eval(Name)) for Name in ['Rate', 'SoundAmpF', 
+                                                'NoiseFrequency', 'TimeRec', 
+                                                'MicSens_dB', 'MicSens_VPa',
+                                                'SBOutAmpF', 'SBInAmpF',
+                                                'Folder'])
 
 # Define in/out objects
 q = pyaudio.PyAudio()
@@ -66,8 +90,9 @@ Reading = q.open(format=pyaudio.paFloat32,
                      input=True,
                      output=False)
 
-Port = serial.tools.list_ports.comports()
-Arduino = serial.Serial(Port[-1][0], 19200)
+#Port = serial.tools.list_ports.comports()
+#Arduino = serial.Serial(Port[-1][0], 19200)
+#Arduino = ControlArduino.CreateObj(BaudRate)
 
 # Preallocate memory
 Time =  Rate * (TimeRec+1)
@@ -77,24 +102,28 @@ for Freq in range(len(NoiseFrequency)):
     SoundRec[Freq] = [[]*_ for _ in range(len(SoundAmpF))]
 
 #%% Run!
+fTime = (len(SoundAmpF)*len(NoiseFrequency)*3)/60
 print('Sound measurement running...')
 for Freq in range(len(NoiseFrequency)):
     for AmpF in range(len(SoundAmpF)):
-        Arduino.write(b'A')
+#        Arduino.write(b'A')
         SoundRec[Freq][AmpF] = Reading.read(Time)
 print('Done playing/recording. Saving data...')
 
 ## Save!!!
+makedirs(Folder, exist_ok=True)
+with h5py.File(FileName) as h5:
+    h5.create_group('SoundRec')
+    for Freq in range(len(SoundRec)):
+        Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+        h5['SoundRec'].create_group(Key)
+        for AmpF in range(len(SoundRec[Freq])):
+            h5['SoundRec'][Key].create_dataset(str(SoundAmpF[AmpF]), 
+                                                data=array.array('f', SoundRec[Freq][AmpF]))
+    
+    for Key, Value in DataInfo.items():
+        h5['SoundRec'].attrs[Key] = Value
 
-File = open(Folder+'/'+'SoundRec.pckl', 'wb')
-pickle.dump(SoundRec, File)
-File.close()
-del(File)
-
-File = open(Folder+'/'+'DataInfo.pckl', 'wb')
-pickle.dump(DataInfo, File)
-File.close()
-del(File)
 print('Data saved.')
 
 #%% Analysis

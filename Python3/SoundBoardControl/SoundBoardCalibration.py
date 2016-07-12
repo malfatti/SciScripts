@@ -38,6 +38,7 @@ Rate = 128000; Freq = 1000; WaveDur = 10
 SoundBoard = 'Intel_oAnalog-iAnalog'
 
 import ControlSoundBoard
+from datetime import datetime
 import h5py
 
 #%% Output
@@ -46,7 +47,7 @@ ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
 
 #%% Input
 Repetitions = 20
-SBOutAmpF = 1.7
+SBOutAmpF = 2
 
 Data = [[] for _ in range(Repetitions)]
 SBInAmpF = [[] for _ in range(Repetitions)]
@@ -60,9 +61,9 @@ SBInAmpF = sum(SBInAmpF)/len(SBInAmpF)
 print('SBInAmpF = ', str(SBInAmpF))
 
 #%% Save
-#Date = datetime.datetime.now()
-#FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
-FileName = '20160418173048-SBAmpFs.hdf5'
+Date = datetime.now()
+FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
+#FileName = '20160418173048-SBAmpFs.hdf5'
 with h5py.File(FileName) as h5:
     h5.create_group(SoundBoard)
     h5[SoundBoard].attrs['SBOutAmpF'] = SBOutAmpF
@@ -71,3 +72,7 @@ with h5py.File(FileName) as h5:
 with h5py.File(FileName) as h5:
     a = h5[SoundBoard].attrs['SBOutAmpF']
     b = h5[SoundBoard].attrs['SBInAmpF']
+
+"""
+Malfatti = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
+"""

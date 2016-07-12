@@ -17,17 +17,19 @@
 
 """
 
-import datetime
-import glob
-import h5py
-import Kwik
+##import datetime
+##import h5py
+##import Kwik
+#from numbers import Number
+
 import Hdf5F
+import numpy as np
+from os import getcwd, makedirs, rename
+from glob import glob
 from matplotlib import rcParams
 from matplotlib import pyplot as plt
-from numbers import Number
-import numpy as np
-import os
-from scipy import signal
+from scipy import io, signal
+from subprocess import call
 
 
 ## Lower-level functions
@@ -63,7 +65,7 @@ def GetProbeChOrder(ProbeTip, ProbeHead, Connector):
         A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
                'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
         
-        ChannelMap = GetChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
+        ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
     """
     ChNo = len(ProbeTip)
     ChMap = [0]*ChNo
@@ -137,7 +139,8 @@ def GetTTLInfo(Events, EventRec, TTLCh):
     return(TTLsPerRec)
 
 
-def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[]):
+def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[], 
+                       Rate=[]):
     if AnalogTTLs:
         TTLCh = Raw[Proc]['data'][str(Rec)][:, ChTTL-1]
         Threshold = max(TTLCh)/2
@@ -167,11 +170,11 @@ def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[]):
 def RemoveDateFromFolderName():
     RenameFolders = input('Rename folders in KwikFiles/* (BE CAREFUL)? [y/N] ')
     if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
-        DirList = glob.glob('KwikFiles/*'); DirList.sort()
+        DirList = glob('KwikFiles/*'); DirList.sort()
         for FolderName in DirList:
             NewFolderName = ''.join([FolderName[:10], FolderName[21:]])
             NewFolderName = NewFolderName.replace("-", "")
-            os.rename(FolderName, NewFolderName)
+            rename(FolderName, NewFolderName)
             print(FolderName, ' moved to ', NewFolderName)
         del(RenameFolders, DirList, FolderName, NewFolderName)    
     
@@ -225,7 +228,7 @@ def FixTTLs(Array, TTLsToFix):
 
 
 def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore, 
-              NoOfSamplesAfter, AnalogTTLs, RawTime=[]):
+              NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime=[]):
     Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
     TTLsToFix = []
     
@@ -275,7 +278,7 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     """
     
     print('Load DataInfo...')
-    DirList = glob.glob('KwikFiles/*'); DirList.sort()
+    DirList = glob('KwikFiles/*'); DirList.sort()
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName)
     Exps = Hdf5F.LoadExpPerStim('Sound', DirList, FileName)
@@ -292,8 +295,8 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     for RecFolder in Exps:
         ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
         
-        if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
-        else: Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
+        if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+        else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
         
         OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
         
@@ -318,7 +321,7 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
                                           OEProc)
                 ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
                                 NoOfSamplesBefore, NoOfSamplesAfter, 
-                                AnalogTTLs)
+                                NoOfSamples, AnalogTTLs)
             else:
                 RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
                                                    TTLsPerRec=TTLsPerRec)
@@ -352,7 +355,7 @@ def ABRPlot(FileName):
     have a working LaTex installation and dvipng package installed.
     """
     
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
+    makedirs('Figs', exist_ok=True)    # Figs folder
     
     print('Loading data...')
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
@@ -433,7 +436,7 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
                   Board='OE'):
     
     print('set paths...')
-    DirList = glob.glob('KwikFiles/*'); DirList.sort()
+    DirList = glob('KwikFiles/*'); DirList.sort()
     RecFolder = DirList[RecFolder-1]
     
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
@@ -451,8 +454,8 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     for Freq in range(len(DataInfo['NoiseFrequency'])):
         GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
     
-    if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
-    else: Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)
+    if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+    else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
     
     if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
     else:
@@ -477,13 +480,13 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
             TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, GPIASTTLCh, OEProc)
             GPIAS[Freq][Trial] = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, 
                                            NoOfSamplesBefore, NoOfSamplesAfter, 
-                                           AnalogTTLs)
+                                           NoOfSamples, AnalogTTLs)
         else:
             RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
                                                TTLsPerRec=TTLsPerRec)
             GPIAS[Freq][Trial] = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, 
                                            NoOfSamplesBefore, NoOfSamplesAfter, 
-                                           AnalogTTLs, RawTime)
+                                           NoOfSamples, AnalogTTLs, RawTime)
         
         GPIAS[Freq][Trial] = GPIAS[Freq][Trial][0][:]
     
@@ -524,8 +527,9 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
 
 
 def GPIASPlot(FileName):
-    print('Loading data...')
+    makedirs('Figs', exist_ok=True)    # Figs folder
     
+    print('Loading data...')
     ## DataInfo
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
@@ -576,12 +580,11 @@ def GPIASPlot(FileName):
 def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1, 
                 TimeBeforeTTL=5, TimeAfterTTL=8, AnalogTTLs=False):
     print('set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    RecFolder = glob.glob('KwikFiles/*'); RecFolder = RecFolder[0]
+    RecFolder = glob('KwikFiles/*'); RecFolder = RecFolder[0]
 #    SoundCh = 0; TTLSqCh = 1 # Override
     
     TTLsLatency = {}    
-    Raw, Events, _, Files = Hdf5F.LoadOEFiles(RecFolder, AnalogTTLs)    
+    Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)    
     OEProc = GetProc(Raw, 'OE')[0]
     
     Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
@@ -605,10 +608,10 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
         
         SoundPulse = SliceData(SoundPulse, Raw, OEProc, Rec, TTLs,SoundCh, 
                                NoOfSamplesBefore, NoOfSamplesAfter, 
-                               AnalogTTLs, RawTime)
+                               NoOfSamples, AnalogTTLs, RawTime)
         TTLSq = SliceData(TTLSq, Raw, OEProc, Rec, TTLs,TTLSqCh, 
                           NoOfSamplesBefore, NoOfSamplesAfter, 
-                          AnalogTTLs, RawTime)
+                          NoOfSamples, AnalogTTLs, RawTime)
     
         TTLSqDelay = [[0] for _ in range(len(TTLSq))]    
         for TTL in range(len(TTLSq)):
@@ -634,28 +637,135 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
 
 
 def TTLsLatencyPlot(FileName):
-    TTLsLatency, XValues = Hdf5F.LoadTTLsLatency(FileName)
+    makedirs('Figs', exist_ok=True)    # Figs folder
+#    
+#    TTLsLatency, XValues = Hdf5F.LoadTTLsLatency(FileName)
+#    
+#    SetPlot(Params=True)
+#    
+#    for _ in range(len(TTLsLatency['SoundPulse'])):
+#        plt.figure(1); plt.plot(XValues, TTLsLatency['SoundPulse'][_])
+#        plt.figure(2); plt.plot(XValues, TTLsLatency['TTLSq'][_])
+#    
+#    Hist, BinEdges = np.histogram(TTLsLatency['TTLSqDelay'], bins=200)
+#    Threshold = (DataInfo['SoundPulseDur']/100)*1000
+#    Threshold = 0.08
+#    sIndex = min(range(len(BinEdges)), 
+#                 key=lambda i: abs(BinEdges[i]-Threshold*-1))
+#    eIndex = min(range(len(BinEdges)), 
+#                 key=lambda i: abs(BinEdges[i]-Threshold))
+#    Sum = sum(Hist); Perc = Sum/len(SoundSq) * 100
+#    plt.figure(3); plt.plot(BinEdges[:-1], Hist)
+#    plt.axvspan(BinEdges[sIndex], BinEdges[eIndex], color='k', alpha=0.5, lw=0,
+#                label=str(Perc) + '\% of pulses with latency $<$ 3µs') 
+#    
+#    SetPlot(FigObj=plt, FigTitle='TTLs latencies', Plot=True)
+#    SetPlot(AxesObj=plt.axes(), Axes=True)
+#    plt.legend(loc='upper right')
+#    
+#    plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.svg', format='svg')
+
+
+def UnitAnalysis(FileName, UnitTTLCh=-1, PSTHTimeBeforeTTL=0, PSTHTimeAfterTTL=300, AnalogTTLs=False, Board='OE', OverrideRec=[]):
+    print('Load DataInfo...')
+    DirList = glob('KwikFiles/*'); DirList.sort()
+    Exps = Hdf5F.LoadExpPerStim('Sound', DirList, FileName)
     
-    SetPlot(Params=True)
+    CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
+    A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+           'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+    ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
     
-    for _ in range(len(TTLsLatency['SoundPulse'])):
-        plt.figure(1); plt.plot(XValues, TTLsLatency['SoundPulse'][_])
-        plt.figure(2); plt.plot(XValues, TTLsLatency['TTLSq'][_])
+    print('Preallocate memory...')
+    Units = {}
     
-    Hist, BinEdges = np.histogram(TTLsLatency['TTLSqDelay'], bins=200)
-    Threshold = (DataInfo['SoundPulseDur']/100)*1000
-    Threshold = 0.08
-    sIndex = min(range(len(BinEdges)), 
-                 key=lambda i: abs(BinEdges[i]-Threshold*-1))
-    eIndex = min(range(len(BinEdges)), 
-                 key=lambda i: abs(BinEdges[i]-Threshold))
-    Sum = sum(Hist); Perc = Sum/len(SoundSq) * 100
-    plt.figure(3); plt.plot(BinEdges[:-1], Hist)
-    plt.axvspan(BinEdges[sIndex], BinEdges[eIndex], color='k', alpha=0.5, lw=0,
-                label=str(Perc) + '\% of pulses with latency $<$ 3µs') 
-    
-    SetPlot(FigObj=plt, FigTitle='TTLs latencies', Plot=True)
-    SetPlot(AxesObj=plt.axes(), Axes=True)
-    plt.legend(loc='upper right')
-    
-    plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.svg', format='svg')
+    for FInd, RecFolder in enumerate(Exps):        
+        if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+        else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+        
+        OEProc = GetProc(Raw, Board)[0]
+        
+        Path = getcwd() + '/' + RecFolder +'/SepCh/'
+        makedirs(Path, exist_ok=True)
+        
+        Rate = Raw[OEProc]['info']['0']['sample_rate']
+        NoOfSamplesBefore = int(round((PSTHTimeBeforeTTL*Rate)*10**-3))
+        NoOfSamplesAfter = int(round((PSTHTimeAfterTTL*Rate)*10**-3))
+        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+        XValues = (range(-NoOfSamplesBefore, 
+                         NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
+        
+        FIndS = "{0:02d}".format(FInd)
+        Units[FIndS] = {}
+        for Rec in range(len(Raw[OEProc]['data'])):
+            if OverrideRec != []: Rec = OverrideRec
+            RecS = "{0:02d}".format(Rec)
+            
+            Data = [Raw[OEProc]['data'][str(Rec)][:, _-1] * 0.195 
+                    for _ in ChannelMap]
+            
+            TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, UnitTTLCh, OEProc)
+            
+            for Ind, Ch in enumerate(Data):
+                MatName = 'Exp' + Files['100_kwd'][-13:-8] + '_' + \
+                          RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
+#                print(MatName)
+                io.savemat(Path+MatName, {'data': Ch})
+            
+            FileList = glob(Path+'*.mat'); FileList.sort()
+            TxtFile = open(Path+'Files.txt', 'w')
+            for File in FileList: TxtFile.write(File[-20:]+'\n')
+            TxtFile.close()
+            
+            MLab = '/home/malfatti/Software/Programs/MatLabR2015a/bin/matlab'
+            CmdCd = 'cd ' + Path + '; '
+            CmdCluster = 'try, SampleRate='+str(int(Rate))+'; Get_spikes;' +\
+                         'Do_clustering(SampleRate); end; quit'
+            call([MLab, '-r', CmdCd+CmdCluster])
+            
+            ClusterList = glob(Path+'times_*'); ClusterList.sort()
+            
+            Units[FIndS][RecS] = {}
+            for CInd, File in enumerate(ClusterList):
+                Clusters = io.loadmat(File)
+                
+                ClusterClasses = np.unique(Clusters['cluster_class'][:,0])
+                Ch = "{0:02d}".format(CInd); 
+                
+                Units[FIndS][RecS][Ch] = {}
+                Units[FIndS][RecS][Ch]['NoOfSpks'] = [np.zeros(len(XValues)) 
+                                         for _ in range(len(ClusterClasses))]
+                Units[FIndS][RecS][Ch]['SpkWF'] = [[] 
+                                         for _ in range(len(ClusterClasses))]
+                
+                for Cluster in range(len(ClusterClasses)):
+                    ClassIndex = Clusters['cluster_class'][:,0] == Cluster
+                    
+                    for TTL in range(len(TTLs)):
+                        Firing = Clusters['cluster_class'][ClassIndex, 1] \
+                                 - TTLs[TTL]
+                        Firing = Firing[(Firing >= XValues[0]) * 
+                                        (Firing < XValues[-1])]
+                        SpkCount = np.histogram(Firing, 
+                                                np.hstack((XValues, 300)))[0]
+                        
+                        Units[FIndS][RecS][Ch]['NoOfSpks'][Cluster] = \
+                            Units[FIndS][RecS][Ch]['NoOfSpks'][Cluster] \
+                            + SpkCount
+                        
+                        del(Firing, SpkCount)
+                    
+                    Units[FIndS][RecS][Ch]['SpkWF'][Cluster] = \
+                        Clusters['spikes'][ClassIndex,:]
+            
+                del(Clusters)
+            
+            del(Data, TTLs)
+        
+        del(Raw)
+        
+    Hdf5F.WriteUnits(Units, XValues, FileName)
+        
+#                    plt.bar(XValues, NoOfSpks[Cluster])
+#                    plt.plot(Spk.transpose(), 'g')
+#                    plt.plot(np.mean(Spk, axis=0), 'k')

@@ -2,28 +2,11 @@
 """
 Just drafts
 """
-from os import chdir, getcwd, makedirs
-from scipy import io
-from subprocess import call
-
-Data = Raw[OEProc]['data'][str(Rec)][:]*0.195
-Path = getcwd() + '/' + RecFolder+'/SepCh/'
-makedirs(Path, exist_ok=True)
-
-Data_SepCh = [Data[:, _] for _ in range(Data.shape[1]-1)]
-
-File = open(Path+'Files.txt', 'w')
-for Ind, Ch in enumerate(Data_SepCh):
-    MatName = 'Exp' + Files['100_kwd'][-13:-8] + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
-    File.write(MatName+'\n')
-    io.savemat(Path+MatName, {'data': Ch})
-File.close()
-
-MLab = '/home/cerebro/Software/MatLabR2014a/bin/matlab'
-Cmd1 = 'cd ' + Path + '; '
-Cmd2 = 'try, Get_spikes; end; quit'
-Cmd3 = 'try, Do_clustering; end; quit'
-call([MLab, '-r', Cmd1+Cmd2]); call([MLab, '-r', Cmd1+Cmd3])
+F = h5py.File(FileName)
+for key in F['ExpInfo'].keys():
+    N = "{0:02d}".format(int(key))
+    F['ExpInfo'][N] = F['ExpInfo'][key]
+    del(F['ExpInfo'][key])
 
 def GPIASAAA(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
           FilterHigh=300, FilterOrder=4, GPIASTTLCh=2, PiezoCh=1):

@@ -150,8 +150,8 @@ def InterleaveChannels(Right, Left, SoundAmpF, NoiseFrequency):
             List[_ *2+1] = Left[_]
     
     elif Left == [0]:
-        List = [0]*(2*len(Left))
-        for _ in range(len(Left)):
+        List = [0]*(2*len(Right))
+        for _ in range(len(Right)):
             List[_ *2] = Right[_]
             List[_ *2+1] = 0
     
@@ -670,7 +670,7 @@ def MicrOscilloscopeRec(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512):
 
 def SoundCalOut(Rate, Freq, WaveDur):
     """ Generate a sine wave from 1 to -1 """
-    SoundPulseNo = WaveDur/0.1
+    SoundPulseNo = round(WaveDur/0.1)
     
     Pulse = GenSineWave(Rate, Freq, 1, 0.1)
     List = InterleaveChannels(Pulse, [0], [0], [0])
@@ -688,7 +688,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
 
 def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF):
     """ Generate sine wave (1V to -1V) and read 1s of it. """
-    SoundPulseNo = WaveDur/0.1
+    SoundPulseNo = round(WaveDur/0.1)
     
     Pulse = GenSineWave(Rate, Freq, SBOutAmpF, 0.1)
     List = InterleaveChannels(Pulse, [0], [0], [0])

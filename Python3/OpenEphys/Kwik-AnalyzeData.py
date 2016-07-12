@@ -32,10 +32,10 @@ Board = 'OE'
 
 #==========#==========#==========#==========#
 
-import glob
+from glob import glob
 import KwikAnalysis
 
-FileName = glob.glob('*.hdf5'); FileName = FileName[0]
+FileName = glob('*.hdf5'); FileName = FileName[0]
 
 KwikAnalysis.ABR(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
                  FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
@@ -78,3 +78,14 @@ TimeBeforeTTL = 10   # in ms
 TimeAfterTTL = 10    # in ms
 
 FileName = glob.glob('*.hdf5'); FileName = FileName[0]
+
+#%% Units
+UnitTTLCh=17
+UnitTimeBeforeTTL=0
+UnitTimeAfterTTL=300
+AnalogTTLs=True
+Board='OE'
+
+from glob import glob
+
+FileName = glob('*.hdf5'); FileName = FileName[0]

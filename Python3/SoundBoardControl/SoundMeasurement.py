@@ -172,21 +172,21 @@ del(Sound, Stimulation, q, Reading)
 print('Data saved.')
 
 
-## Analysis
+#%% Analysis
 # If needed:
 #import array
 #import datetime
 #import glob
 #import h5py
-#import LoadHdf5Files
+#import Hdf5F
 #import math
 #from matplotlib import rcParams
 #import matplotlib.pyplot as plt
 #import numpy as np
 #import pandas
 #from scipy import signal
-#DataInfo = LoadHdf5Files.SoundMeasurement(FileName, 'DataInfo')
-#SoundRec = LoadHdf5Files.SoundMeasurement(FileName, 'SoundRec')
+#DataInfo = Hdf5F.SoundMeasurement(FileName, 'DataInfo')
+#SoundRec = Hdf5F.SoundMeasurement(FileName, 'SoundRec')
 
 print('Calculating LSD, RMS and dBSLP...')
 RecordingData = [0]*len(DataInfo['NoiseFrequency'])
@@ -202,8 +202,9 @@ for Freq in range(len(DataInfo['NoiseFrequency'])):
         print('Saving data for ', DataInfo['NoiseFrequency'][Freq], 
               ' at ', DataInfo['SoundAmpF'][AmpF])
         
-        RecordingData[Freq][AmpF] = array.array('f', 
-                                                b''.join(SoundRec[Freq][AmpF]))
+#        RecordingData[Freq][AmpF] = array.array('f', 
+#                                                b''.join(SoundRec[Freq][AmpF]))
+        RecordingData[Freq][AmpF] = array.array('f', SoundRec[Freq][AmpF])
         
         SliceStart = int(DataInfo['Rate']*0.25)-1
         SliceEnd = SliceStart + int(DataInfo['Rate']*1)

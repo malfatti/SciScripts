@@ -155,7 +155,7 @@ def LoadGPIAS(FileName):
     return(GPIAS, XValues)
 
 
-def LoadOEFiles(RecFolder, AnalogTTLs):
+def LoadOEKwik(RecFolder, AnalogTTLs):
     if AnalogTTLs: Raw, _, Spks, Files = Kwik.load_all_files(RecFolder)
     else: Raw, Events, Spks, Files = Kwik.load_all_files(RecFolder)
     
@@ -314,3 +314,17 @@ def WriteTTLslatency(TTLsLatency, XValues, FileName):
     print('Done.')
     return(None)
 
+
+def WriteUnits(Units, XValues, FileName):
+    print('Writing data to', FileName+'... ', end='')
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    Group = 'TTLsLatency-' + Now
+    with h5py.File(FileName) as F:
+        for FKey in Units.keys():
+            for RKey in Units[FKey]:
+                for Ch in Units[FKey][RKey]:
+                    Path = '/'+FKey+'/'+RKey+'/'+Ch
+                    F.create_group(Path)
+                    for Key, Data in Units[FKey][RKey].items():
+                        
+                    Units[FKey][RKey][Ch]['SpkWF']

@@ -2,12 +2,91 @@
 """
 Just drafts
 """
+#%%
+#Spk = Units['Sound_NaCl']['00']['00']['Ch05']['SpkWF'][:]
+#Hist = Units['Sound_NaCl']['00']['00']['Ch05']['NoOfSpks'][:]
+UnitRec = Test['Sound_NaCl']['02']['00']
+#UnitRec = Units[Stim][FIndS][RecS]
+Thrash = {}
+for Key in UnitRec:    
+    ClusterNo = len(UnitRec[Key]['SpkWF'])
+    if ClusterNo == 0: print(Key, 'is lost'); continue
+    
+    Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
+    
+    for Cluster in range(ClusterNo):
+        SpkNo = len(UnitRec[Key]['SpkWF'][Cluster])
+        print(str(SpkNo), 'Spks in cluster', str(Cluster))
+        print('Max of', max(UnitRec[Key]['NoOfSpks'][Cluster]),  'Spks in PSTH')
+        
+        if max(UnitRec[Key]['NoOfSpks'][Cluster]) < 4: 
+            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
+            continue
+        
+        if not SpkNo:
+            print('No Spk data on cluster', str(Cluster) + '. Skipping...')
+            Thrash[Key] = UnitRec[Key].copy()
+            continue
+        
+        if SpkNo > 100: SpkNo = 100
+        
+        for Spike in range(SpkNo):
+            if ClusterNo == 1: Axes[0].plot(UnitRec[Key]['SpkWF'][Cluster][Spike], 'r')
+            else: Axes[Cluster][0].plot(UnitRec[Key]['SpkWF'][Cluster][Spike], 'r')
+        
+        if ClusterNo == 1:
+            Axes[0].plot(np.mean(UnitRec[Key]['SpkWF'][Cluster], axis=0), 'k')
+            Axes[1].bar(XValues, UnitRec[Key]['NoOfSpks'][Cluster])
+        else:
+            Axes[Cluster][0].plot(np.mean(UnitRec[Key]['SpkWF'][Cluster]), 'k')
+            Axes[Cluster][1].bar(XValues, UnitRec[Key]['NoOfSpks'][Cluster])
+
+for SKey in Units.keys():
+            for FKey in Units[SKey].keys():
+                for RKey in Units[SKey][FKey]:
+                    for Ch in Units[SKey][FKey][RKey]:
+                        for Key, Data in Units[SKey][FKey][RKey][Ch].items():
+                            plt.figure()
+                            
+                            plt.plot(Data)
+
+#%%
 F = h5py.File(FileName)
 for key in F['ExpInfo'].keys():
     N = "{0:02d}".format(int(key))
     F['ExpInfo'][N] = F['ExpInfo'][key]
     del(F['ExpInfo'][key])
 
+for ind, key in enumerate(F['ExpInfo'].keys()):
+    if ind <5: F['ExpInfo'][key].attrs['StimType'] = np.string_(['Sound_NaCl'])
+    else: F['ExpInfo'][key].attrs['StimType'] = np.string_(['Sound_CNO'])
+F.close()
+
+
+
+#%%
+#import h5py
+#from glob import glob
+
+Files = glob('*/*.hdf5'); Files.sort()
+AnalysisFile = Files[0][:14] + '-Analysis.hdf5'
+
+Analysis = h5py.File(AnalysisFile)
+
+for Ind, File in enumerate(Files):
+    F = h5py.File(File)
+    for Key in F.keys():
+        for Exp in ['ABRs-', 'GPIAS']:
+            if Exp in Key:
+                F.copy('/'+Key, Analysis)
+                del(F[Key])
+    F.close()
+
+print(list(Analysis.keys()))
+Analysis.close()
+
+
+#%%
 def GPIASAAA(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3, 
           FilterHigh=300, FilterOrder=4, GPIASTTLCh=2, PiezoCh=1):
     
@@ -183,180 +262,124 @@ def GPIASAAA(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3
 
 
 
-
-
-def ABRAnalogTTLs(FileName, ABRCh=[1, 16], ABRTimeBeforeTTL=0, ABRTimeAfterTTL=12, 
-        ABRTTLCh=1, FilterLow=300, FilterHigh=3000, FilterOrder=4, 
-        StimType='Sound'):
-    """
-    Analyze ABRs from data recorded with OpenEphys. A '*ABRs.hdf5' file will be 
-    saved in cwd, containing:
-        - ABRs dict, where data will be saved as 
-          ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
-              Ear = 0 (right) or 1 (left)
-              Freq = index of DataInfo['NoiseFrequency']
-              AmpF = index of DataInfo['SoundAmpF']['Freq']
-              DVCoord = string with DV coordinate at the moment of recording
-              Trial = Trial number - 1 (so if it is one trial, Trial=0)
-              
-        - XValues array, for x axis of the plot;
-        
-        - DataInfo dict, where all info will be saved.
-    
-    For this function to work:
-        - The Kwik folders must be in 'KwikFiles/';
-        - There must be a *Exp.hdf5 file containing all experimental settings 
-          (see Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
-    """
-    print('set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    DirList = glob.glob('KwikFiles/*'); DirList.sort()
-    
+def UnitAnalysis(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0, 
+                 PSTHTimeAfterTTL=300, StimType=['Sound'], AnalogTTLs=False, 
+                 Board='OE', OverrideRec=[]):
     print('Load DataInfo...')
-    DataInfo, Exps = Hdf5F.ExpDataInfo(FileName, DirList, StimType, 
-                                               Var='Exps')
+    DirList = glob('KwikFiles/*'); DirList.sort()
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     
-    print('Preallocate memory...')
-    ABRs = [[], []]
-    ABRs[0] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-    ABRs[1] = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-    for Freq in range(len(DataInfo['NoiseFrequency'])):
-        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
-              + str(DataInfo['NoiseFrequency'][Freq][1])
-        ABRs[0][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
-        ABRs[1][Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
-    del(Freq)
+    CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
+    A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+           'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+    ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
     
-    for RecFolder in Exps:
-        print('Load files...')
-        FilesList = glob.glob(''.join([RecFolder, '/*']))
-        Files = {}
-        for File in FilesList:
-            if '.kwd' in File:
-                try:
-                    Raw = Kwik.load(File, 'all')
-                    Files['kwd'] = File
-                except OSError:
-                        print('File ', File, " is corrupted :'(")
+    Units = {}
+    for Stim in StimType:
+        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+        Units[Stim] = {}
         
-        ExpInfo = Hdf5F.ExpExpInfo(FileName, RecFolder, DirList)
+        if isinstance(StimTTLCh, dict): UnitTTLCh = StimTTLCh[Stim]
+        else: UnitTTLCh = StimTTLCh
         
-        print('Check if files are ok...')
-        if 'Raw' not in locals():
-            print('.kwd file is corrupted. Skipping dataset...')
-            continue
-        
-        print('Data from ', RecFolder, ' loaded.')
-        
-        if '0' not in list(Raw['data'].keys()):
-            print('Rec numbers are wrong. Fixing...')
-            for iKey in Raw.keys():
-                Recs = list(Raw[iKey].keys())
-                Recs = [int(_) for _ in Recs]; Min = min(Recs)
-                
-                for Key in Recs:
-                    Raw[iKey][str(Key-Min)] = Raw[iKey].pop(str(Key))
-                
-            print('Fixed.')
-        
-        Rate = Raw['info']['0']['sample_rate']
-
-        NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
-        NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
-        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-        XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
-                  list((range(NoOfSamplesAfter)/Rate)*10**3)
-        
-        Lf2, Lf1 = signal.butter(FilterOrder, FilterLow/(Rate/2), 'highpass')
-        Hf2, Hf1 = signal.butter(FilterOrder, FilterHigh/(Rate/2), 'lowpass')
-        
-        for Rec in range(len(Raw['data'])):
-#            RecChNo = Raw['data'][str(Rec)].shape[1]
-#            TTLCh = Raw['data'][str(Rec)][:, ABRTTLCh + (RecChNo-9)]
-            TTLCh = Raw['data'][str(Rec)][:, -1]
-            Threshold = max(TTLCh)/5
-            TTLs = []
-            for _ in range(1, len(TTLCh)):
-                if TTLCh[_] > Threshold:
-                    if TTLCh[_-1] < Threshold:
-                        TTLs.append(_)
+        for FInd, RecFolder in enumerate(Exps):        
+            if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+            else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
             
-            rABR = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLs))]
-            lABR = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLs))]
-            sTTL = [[0 for _ in range(NoOfSamples)] 
-                    for _ in range(len(TTLs))]
+            OEProc = GetProc(Raw, Board)[0]
             
-            print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            for TTL in range(len(TTLs)):
-                TTLLoc = int(TTLs[TTL])
-                Start = TTLLoc-NoOfSamplesBefore
-                End = TTLLoc+NoOfSamplesAfter
-                
-                rABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[0]-1] * \
-                            Raw['channel_bit_volts'][str(Rec)][ABRCh[0]-1]
-                
-#                lABR[TTL] = Raw['data'][str(Rec)][Start:End, ABRCh[1]-1] * \
-#                            Raw['channel_bit_volts'][str(Rec)][ABRCh[1]-1]
-                
-                rABR[TTL] = signal.filtfilt(Lf2, Lf1, rABR[TTL], padlen=0)
-#                lABR[TTL] = signal.filtfilt(Lf2, Lf1, lABR[TTL], padlen=0)
-                
-                del(TTLLoc, Start, End)
+            Path = getcwd() + '/' + RecFolder +'/SepCh/'
+            makedirs(Path, exist_ok=True)
             
-            # Mean
-            try:
-                rABR = np.mean(rABR, axis=0)
-            except ValueError:
-                print('Last TTL was lost :(')
-                rABR[-1] = rABR[-2]
-                rABR = np.mean(rABR, axis=0)
-            lABR = np.mean(lABR, axis=0)
-#            rData = np.mean(rABR, axis=0)
-#            lData = np.mean(lABR, axis=0)
+            Rate = Raw[OEProc]['info']['0']['sample_rate']
+            NoOfSamplesBefore = int(round((PSTHTimeBeforeTTL*Rate)*10**-3))
+            NoOfSamplesAfter = int(round((PSTHTimeAfterTTL*Rate)*10**-3))
+            NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+            XValues = (range(-NoOfSamplesBefore, 
+                             NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
             
-            rABR = signal.filtfilt(Hf2, Hf1, rABR, padlen=0)
-#            lABR = signal.filtfilt(Hf2, Hf1, lABR, padlen=0)
-#            rData = signal.filtfilt(Hf2, Hf1, rData, padlen=0)
-#            lData = signal.filtfilt(Hf2, Hf1, lData, padlen=0)
-            
-            if ExpInfo['DVCoord'] not in ABRs[0][ExpInfo['Hz']][Rec]:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [rABR]
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [lABR]
-            else:
-                ABRs[0][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(rABR)
-                ABRs[1][ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(lABR)
-    
-    if 'XValues' in locals():
-        print('Saving data to ' + FileName)
-        GroupName = 'ABRs-' + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        with h5py.File(FileName) as F:
-            if 'ABRs' in F.keys():
-                F[GroupName] = F['ABRs']; del(F['ABRs'])
-            
-            F.create_group('ABRs')
-            F['ABRs'].attrs['XValues'] = XValues
-            F['ABRs'].create_group('Right'); F['ABRs'].create_group('Left')
+            FIndS = "{0:02d}".format(FInd)
+            Units[Stim][FIndS] = {}
+            for Rec in range(len(Raw[OEProc]['data'])):
+                if OverrideRec != []: Rec = OverrideRec
+                RecS = "{0:02d}".format(Rec)
                 
-            for Freq in range(len(ABRs[0])):
-                for AmpF in range(len(ABRs[0][Freq])):
-                    for DV in ABRs[0][Freq][AmpF].keys():
-                        Path = str(Freq) + '/' + \
-                               str(AmpF) + '/' + \
-                               DV
+                print('Separating channels according to ChannelMap...')
+                Data = [Raw[OEProc]['data'][str(Rec)][:, _-1] * 
+                        Raw[OEProc]['channel_bit_volts'][str(Rec)][_-1] * 1000
+                        for _ in ChannelMap]
+                
+                TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, UnitTTLCh, 
+                                          OEProc)
+                
+                print('Writing files for clustering... ', end='')
+                FileList = []
+                for Ind, Ch in enumerate(Data):
+                    MatName = 'Exp' + Files['100_kwd'][-13:-8] + '_' + \
+                              RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
+                    
+                    FileList.append(MatName)
+                    io.savemat(Path+MatName, {'data': Ch})
+                
+                TxtFile = open(Path+'Files.txt', 'w')
+                for File in FileList: TxtFile.write(File+'\n')
+                TxtFile.close()
+                print('Done.')
+                
+                CallWaveClus(Rate, Path)
+                ClusterList = glob(Path+'times_*'); ClusterList.sort()
+                
+                Units[Stim][FIndS][RecS] = {}
+                print('Preparing histograms and spike waveforms...')
+                for File in ClusterList:
+                    Clusters = io.loadmat(File)
+                    
+                    ClusterClasses = np.unique(Clusters['cluster_class'][:,0])
+                    Ch = File[-8:-4] 
+                    
+                    Units[Stim][FIndS][RecS][Ch] = {}
+                    Units[Stim][FIndS][RecS][Ch]['NoOfSpks'] = [
+                                        np.zeros(len(XValues)) 
+                                        for _ in range(len(ClusterClasses))]
+                    
+                    Units[Stim][FIndS][RecS][Ch]['SpkWF'] = [
+                                        [] for _ in range(len(ClusterClasses))]
+                    
+                    for Cluster in range(len(ClusterClasses)):
+                        ClassIndex = Clusters['cluster_class'][:,0] == Cluster
+                        if not len(Clusters['spikes'][ClassIndex,:]): continue
                         
-                        F['ABRs']['Right'].create_group(Path)
-                        F['ABRs']['Left'].create_group(Path)
-                        del(Path)
+                        for TTL in range(len(TTLs)):
+                            Firing = Clusters['cluster_class'][ClassIndex, 1] \
+                                     - TTLs[TTL]
+                            Firing = Firing[(Firing >= XValues[0]) * 
+                                            (Firing < XValues[-1])]
+                            SpkCount = np.histogram(Firing, 
+                                                    np.hstack((XValues, 300)))[0]
+                            
+                            Units[Stim][FIndS][RecS][Ch]['NoOfSpks'][Cluster] = \
+                              Units[Stim][FIndS][RecS][Ch]['NoOfSpks'][Cluster] \
+                              + SpkCount
+                            
+                            del(Firing, SpkCount)
                         
-                        for Trial in range(len(ABRs[0][Freq][AmpF][DV])):
-                            F['ABRs']['Right'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
-                                ABRs[0][Freq][AmpF][DV][Trial][:]
-                            F['ABRs']['Left'][str(Freq)][str(AmpF)][DV][str(Trial)] = \
-                                ABRs[1][Freq][AmpF][DV][Trial][:]
+                        Units[Stim][FIndS][RecS][Ch]['SpkWF'][Cluster] = \
+                                        Clusters['spikes'][ClassIndex,:]
+                    
+                    print(Ch, 'have', str(len(ClusterClasses)), 'clusters')
+                    del(Clusters)
+                
+                del(Data, TTLs)
+                print('Cleaning...')
+                ToDelete = glob(Path+'*')
+                for File in ToDelete: remove(File)
+                if OverrideRec != []: break
+            
+            del(Raw)
+            removedirs(Path)
     
-    print('Done.')
+    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+    Hdf5F.WriteUnits(Units, XValues, AnalysisFile)
     return(None)
 
 

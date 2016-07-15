@@ -41,8 +41,7 @@ def CheckGroup(FileName, Group):
 def LoadExpPerStim(StimType, DirList, FileName):
     with h5py.File(FileName, 'r') as F:
         Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
-                if F['ExpInfo'][Exp].attrs['StimType'][0].decode() 
-                == StimType]
+                if np.string_(StimType) in F['ExpInfo'][Exp].attrs['StimType']]
             
     return(Exps)
 
@@ -56,6 +55,20 @@ def ExpExpInfo(RecFolder, DirList, FileName):
         ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
     
     return(ExpInfo)
+
+
+def GetExpKeys(ExpStr, OpenedFile):
+    Keys = [Key for Key in OpenedFile.keys() if ExpStr in Key]; Keys.sort()
+    if len(Keys) > 1:
+        print('Choose dataset to load:')
+        for Ind, Key in enumerate(Keys):
+            print(str(Ind), '=' , Key)
+        Key = input(': ')
+        Key = Keys[int(Key)]
+    else:
+        Key = Keys[0]
+    
+    return(Key)
 
 
 def GPIASDataInfo(FileName):
@@ -85,15 +98,7 @@ def GPIASDataInfo(FileName):
 
 def LoadABRs(FileName):
     with h5py.File(FileName, 'r') as F:
-        Keys = [Key for Key in F.keys() if 'ABRs' in Key]; Keys.sort()
-        if len(Keys) > 1:
-            print('Choose dataset to load:')
-            for Ind, Key in enumerate(Keys):
-                print(str(Ind), '=' , Key)
-            Key = input(': ')
-            Key = Keys[int(Key)]
-        else:
-            Key = Keys[0]
+        Key = GetExpKeys('ABRs', F)
         
         ABRs = [0]*len(F[Key])
         for Freq in range(len(F[Key])):
@@ -111,6 +116,29 @@ def LoadABRs(FileName):
         XValues = F[Key].attrs['XValues'][:]
         
     return(ABRs, XValues)
+
+
+def LoadClusters(FileName):
+    with h5py.File(FileName, 'r') as F:
+        Key = GetExpKeys('SpkClusters', F)
+        
+        Clusters = {}
+        for RKey in Clusters.keys():
+            Clusters[RKey] = {}
+            
+            for CKey in Clusters[RKey].keys():
+                Path = '/'+Key+'/'+RKey+'/'+CKey
+                
+                Clusters[RKey][CKey] = {}
+                Clusters[RKey][CKey]['ClusterClass'] = F[Path]['ClusterClass'][:]
+                Clusters[RKey][CKey]['Timestamps'] = F[Path]['Timestamps'][:]
+                Clusters[RKey][CKey]['Spikes'] = F[Path]['Spikes'][:]
+                
+                Clusters[RKey][CKey]['Info'] = {}
+                Clusters[RKey][CKey]['Info']['Parameters'] = F[Path]['Spikes'].attrs['Parameters'][:]
+#                Clusters[RKey][CKey]['Info']['InSpk'] = F[Path]['Spikes'].attrs['InSpk'][:]
+    
+    return(Clusters)
 
 
 def LoadDict(Path, FileName, Attrs=True):
@@ -135,15 +163,7 @@ def LoadDataset(Path, FileName):
 
 def LoadGPIAS(FileName):
     with h5py.File(FileName, 'r') as F:
-        Keys = [Key for Key in F.keys() if 'GPIAS' in Key]; Keys.sort()
-        if len(Keys) > 1:
-            print('Choose dataset to load:')
-            for Ind, Key in enumerate(Keys):
-                print(str(Ind), '=' , Key)
-            Key = input(': ')
-            Key = Keys[int(Key)]
-        else: Key = Keys[0]
-        
+        Key = GetExpKeys('GPIAS', F)
         XValues = F[Key].attrs['XValues']
         
         GPIAS = [[0] for _ in range(len(F[Key]))]
@@ -177,6 +197,34 @@ def LoadOEKwik(RecFolder, AnalogTTLs):
 
 def LoadTTLsLatency(FileName):
     Test
+
+
+def LoadUnits(FileName):
+    with h5py.File(FileName, 'r') as F:
+        Key = GetExpKeys('Units', F)
+        XValues = F[Key].attrs['XValues'][:]
+        
+        Units = {}
+        for SKey in F[Key].keys():
+            Units[SKey] = {}
+            
+            for FKey in F[Key][SKey].keys():
+                Units[SKey][FKey] = {}
+                
+                for RKey in F[Key][SKey][FKey].keys():
+                    Units[SKey][FKey][RKey] = {}
+                    
+                    for Ch in F[Key][SKey][FKey][RKey].keys():
+                        Units[SKey][FKey][RKey][Ch] = {}
+                        Path = '/'+Key+'/'+SKey+'/'+FKey+'/'+RKey+'/'+Ch
+                        
+                        SpkWFNo = len(list(F[Path]['SpkWF'].keys()))
+                        Units[SKey][FKey][RKey][Ch]['SpkWF'] = [[] for _ in range(SpkWFNo)]
+                        for DKey in F[Path]['SpkWF'].keys():
+                            Units[SKey][FKey][RKey][Ch]['SpkWF'][int(DKey)] = F[Path]['SpkWF'][DKey][:]
+                        Units[SKey][FKey][RKey][Ch]['NoOfSpks'] = F[Path]['NoOfSpks'][:]
+    
+    return(Units, XValues)
 
 
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
@@ -243,6 +291,27 @@ def WriteABRs(ABRs, XValues, FileName):
                     for Trial in range(len(ABRs[Freq][AmpF][DV])):
                         F[Group][str(Freq)][str(AmpF)][DV][str(Trial)] = \
                             ABRs[Freq][AmpF][DV][Trial][:]
+    
+    print('Done.')
+    return(None)
+
+
+def WriteClusters(Clusters, FileName):
+    print('Writing data to', FileName+'... ', end='')
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    Group = 'SpkClusters-' + Now
+    with h5py.File(FileName) as F:
+        for RKey in Clusters.keys():
+            for CKey in Clusters[RKey].keys():
+                Path = '/'+Group+'/'+RKey+'/'+CKey
+                if Path not in F: F.create_group(Path)
+                
+                F[Path]['ClusterClass'] = Clusters[RKey][CKey]['ClusterClass']
+                F[Path]['Timestamps'] = Clusters[RKey][CKey]['Timestamps']
+                F[Path]['Spikes'] = Clusters[RKey][CKey]['Spikes']
+                
+                F[Path]['Spikes'].attrs['Parameters'] = Clusters[RKey][CKey]['Info']['Parameters']
+#                F[Path]['Spikes'].attrs['InSpk'] = Clusters[RKey][CKey]['Info']['InSpk']
     
     print('Done.')
     return(None)
@@ -318,13 +387,31 @@ def WriteTTLslatency(TTLsLatency, XValues, FileName):
 def WriteUnits(Units, XValues, FileName):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Group = 'TTLsLatency-' + Now
+    Group = 'Units-' + Now
+    Thrash = []
     with h5py.File(FileName) as F:
-        for FKey in Units.keys():
-            for RKey in Units[FKey]:
-                for Ch in Units[FKey][RKey]:
-                    Path = '/'+FKey+'/'+RKey+'/'+Ch
-                    F.create_group(Path)
-                    for Key, Data in Units[FKey][RKey].items():
+        for SKey in Units.keys():
+            for FKey in Units[SKey].keys():
+                for RKey in Units[SKey][FKey].keys():
+                    for Ch in Units[SKey][FKey][RKey].keys():
+                        Path = '/'+Group+'/'+SKey+'/'+FKey+'/'+RKey+'/'+Ch
+                        if Path not in F: F.create_group(Path)
+                        if Path+'/SpkWF' not in F: F.create_group(Path+'/SpkWF')
                         
-                    Units[FKey][RKey][Ch]['SpkWF']
+                        ClusterNo = len(Units[SKey][FKey][RKey][Ch]['SpkWF'])
+                        for Cluster in range(ClusterNo):
+                            for Key, Spk in enumerate(Units[SKey][FKey][RKey][Ch]['SpkWF'][Cluster]):
+                                if not len(Spk):
+                                    Thrash.append([Path, Cluster, Key])
+                                    del(Units[SKey][FKey][RKey][Ch]['SpkWF'][Cluster][Key])
+                                    continue
+                                F[Path]['SpkWF'][str(Cluster)][str(Key)] = Spk
+                        
+                        F[Path]['NoOfSpks'] = Units[SKey][FKey][RKey][Ch]['NoOfSpks']
+        
+        F[Group].attrs['XValues'] = XValues
+    
+    if Thrash: 
+        for _ in Thrash: print(_)
+    
+    return(None)

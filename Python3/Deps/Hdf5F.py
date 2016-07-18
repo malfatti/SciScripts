@@ -38,12 +38,20 @@ def CheckGroup(FileName, Group):
             return(True)
 
 
-def LoadExpPerStim(StimType, DirList, FileName):
-    with h5py.File(FileName, 'r') as F:
-        Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
-                if np.string_(StimType) in F['ExpInfo'][Exp].attrs['StimType']]
+def DeleteGroup(Group, FileName):
+    with h5py.File(FileName) as F:
+        Delete = True
+        while Delete:
+            Key = GetExpKeys(Group, F)
             
-    return(Exps)
+            Ans = input('Delete key ' + Key + '? [y/N] ')
+            if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: del(F[Key])
+            else: break
+            
+            Ans = input('Delete another dataset? [y/N] ')
+            if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: Delete = True
+            else: Delete = False
+    return(None)
 
 
 def ExpExpInfo(RecFolder, DirList, FileName):
@@ -60,7 +68,7 @@ def ExpExpInfo(RecFolder, DirList, FileName):
 def GetExpKeys(ExpStr, OpenedFile):
     Keys = [Key for Key in OpenedFile.keys() if ExpStr in Key]; Keys.sort()
     if len(Keys) > 1:
-        print('Choose dataset to load:')
+        print('Choose dataset:')
         for Ind, Key in enumerate(Keys):
             print(str(Ind), '=' , Key)
         Key = input(': ')
@@ -123,10 +131,10 @@ def LoadClusters(FileName):
         Key = GetExpKeys('SpkClusters', F)
         
         Clusters = {}
-        for RKey in Clusters.keys():
+        for RKey in F[Key].keys():
             Clusters[RKey] = {}
             
-            for CKey in Clusters[RKey].keys():
+            for CKey in F[Key][RKey].keys():
                 Path = '/'+Key+'/'+RKey+'/'+CKey
                 
                 Clusters[RKey][CKey] = {}
@@ -134,8 +142,8 @@ def LoadClusters(FileName):
                 Clusters[RKey][CKey]['Timestamps'] = F[Path]['Timestamps'][:]
                 Clusters[RKey][CKey]['Spikes'] = F[Path]['Spikes'][:]
                 
-                Clusters[RKey][CKey]['Info'] = {}
-                Clusters[RKey][CKey]['Info']['Parameters'] = F[Path]['Spikes'].attrs['Parameters'][:]
+#                Clusters[RKey][CKey]['Info'] = {}
+#                Clusters[RKey][CKey]['Info']['Parameters'] = F[Path]['Spikes'].attrs['Parameters'][:]
 #                Clusters[RKey][CKey]['Info']['InSpk'] = F[Path]['Spikes'].attrs['InSpk'][:]
     
     return(Clusters)
@@ -159,6 +167,14 @@ def LoadDict(Path, FileName, Attrs=True):
 def LoadDataset(Path, FileName):
     with h5py.File(FileName, 'r') as F: Dataset = F[Path][:]
     return(Dataset)
+
+
+def LoadExpPerStim(StimType, DirList, FileName):
+    with h5py.File(FileName, 'r') as F:
+        Exps = [DirList[int(Exp)] for Exp in F['ExpInfo'].keys() 
+                if np.string_(StimType) in F['ExpInfo'][Exp].attrs['StimType']]
+            
+    return(Exps)
 
 
 def LoadGPIAS(FileName):
@@ -201,8 +217,10 @@ def LoadTTLsLatency(FileName):
 
 def LoadUnits(FileName):
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('Units', F)
-        XValues = F[Key].attrs['XValues'][:]
+        Key = GetExpKeys('UnitRec', F)
+        
+        if 'XValues' in F[Key].attrs.keys(): 
+            XValues = F[Key].attrs['XValues'][:]
         
         Units = {}
         for SKey in F[Key].keys():
@@ -218,11 +236,34 @@ def LoadUnits(FileName):
                         Units[SKey][FKey][RKey][Ch] = {}
                         Path = '/'+Key+'/'+SKey+'/'+FKey+'/'+RKey+'/'+Ch
                         
-                        SpkWFNo = len(list(F[Path]['SpkWF'].keys()))
-                        Units[SKey][FKey][RKey][Ch]['SpkWF'] = [[] for _ in range(SpkWFNo)]
-                        for DKey in F[Path]['SpkWF'].keys():
-                            Units[SKey][FKey][RKey][Ch]['SpkWF'][int(DKey)] = F[Path]['SpkWF'][DKey][:]
-                        Units[SKey][FKey][RKey][Ch]['NoOfSpks'] = F[Path]['NoOfSpks'][:]
+                        if 'Spks' in F[Path].keys():
+                            ClusterNo = len(list(F[Path]['Spks'].keys()))
+                            Units[SKey][FKey][RKey][Ch]['Spks'] = [[] for _ in range(ClusterNo)]
+                            for Cluster in F[Path]['Spks'].keys():
+                                SpkNo = len(list(F[Path]['Spks'][Cluster].keys()))
+                                Units[SKey][FKey][RKey][Ch]['Spks'][int(Cluster)-1] = [[] for _ in range(SpkNo)]
+                                
+                                for Spk in F[Path]['Spks'][Cluster].keys():
+                                    Units[SKey][FKey][RKey][Ch]['Spks'][int(Cluster)-1][int(Spk)] = F[Path]['Spks'][Cluster][Spk][:]
+                            
+                            if F[Path]['Spks'].attrs.keys():
+                                Units[SKey][FKey][RKey][Ch]['Spks_Info'] = {}
+                                for VarKey, VarValue in F[Path]['Spks'].attrs.items():
+                                    if isinstance(VarValue, Number): 
+                                        Units[SKey][FKey][RKey][Ch]['Spks_Info'][VarKey] = float(VarValue)
+                                    else: 
+                                        Units[SKey][FKey][RKey][Ch]['Spks_Info'][VarKey] = VarValue
+                        
+                        if 'PSTH' in F[Path].keys():
+                            Units[SKey][FKey][RKey][Ch]['PSTH'] = F[Path]['PSTH'][:]
+                            
+                            if F[Path]['PSTH'].attrs.keys():
+                                Units[SKey][FKey][RKey][Ch]['PSTH_Info'] = {}
+                                for VarKey, VarValue in F[Path]['PSTH'].attrs.items():
+                                    if isinstance(VarValue, Number): 
+                                        Units[SKey][FKey][RKey][Ch]['PSTH_Info'][VarKey] = float(VarValue)
+                                    else: 
+                                        Units[SKey][FKey][RKey][Ch]['PSTH_Info'][VarKey] = VarValue
     
     return(Units, XValues)
 
@@ -310,7 +351,9 @@ def WriteClusters(Clusters, FileName):
                 F[Path]['Timestamps'] = Clusters[RKey][CKey]['Timestamps']
                 F[Path]['Spikes'] = Clusters[RKey][CKey]['Spikes']
                 
-                F[Path]['Spikes'].attrs['Parameters'] = Clusters[RKey][CKey]['Info']['Parameters']
+#                F[Path].create_group('Parameters')
+#                for Ind, Val in enumerate(Clusters[RKey][CKey]['Info']['Parameters']):
+#                    F[Path]['Parameters'].attrs[str(Ind)] = Val
 #                F[Path]['Spikes'].attrs['InSpk'] = Clusters[RKey][CKey]['Info']['InSpk']
     
     print('Done.')
@@ -384,10 +427,9 @@ def WriteTTLslatency(TTLsLatency, XValues, FileName):
     return(None)
 
 
-def WriteUnits(Units, XValues, FileName):
+def WriteUnits(Units, Var, FileName, XValues=[]):
     print('Writing data to', FileName+'... ', end='')
-    Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Group = 'Units-' + Now
+    Group = 'UnitRec'
     Thrash = []
     with h5py.File(FileName) as F:
         for SKey in Units.keys():
@@ -396,20 +438,35 @@ def WriteUnits(Units, XValues, FileName):
                     for Ch in Units[SKey][FKey][RKey].keys():
                         Path = '/'+Group+'/'+SKey+'/'+FKey+'/'+RKey+'/'+Ch
                         if Path not in F: F.create_group(Path)
-                        if Path+'/SpkWF' not in F: F.create_group(Path+'/SpkWF')
                         
-                        ClusterNo = len(Units[SKey][FKey][RKey][Ch]['SpkWF'])
-                        for Cluster in range(ClusterNo):
-                            for Key, Spk in enumerate(Units[SKey][FKey][RKey][Ch]['SpkWF'][Cluster]):
-                                if not len(Spk):
-                                    Thrash.append([Path, Cluster, Key])
-                                    del(Units[SKey][FKey][RKey][Ch]['SpkWF'][Cluster][Key])
-                                    continue
-                                F[Path]['SpkWF'][str(Cluster)][str(Key)] = Spk
+                        if Var == 'Spks':
+                            if Path+'/Spks' not in F: 
+                                F.create_group(Path+'/Spks')
+                            
+                            ClusterNo = len(Units[SKey][FKey][RKey][Ch]['Spks'])
+                            for Cluster in range(ClusterNo):
+                                for Key, Spk in enumerate(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster]):
+                                    if not len(Spk):
+                                        Thrash.append([Path, Cluster, Key])
+                                        del(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster][Key])
+                                        continue
+                                    if Path+'/Spks/'+str(Cluster) not in F:
+                                        F[Path]['Spks'].create_group(str(Cluster))
+                                    F[Path]['Spks'][str(Cluster)][str(Key)] = Spk
                         
-                        F[Path]['NoOfSpks'] = Units[SKey][FKey][RKey][Ch]['NoOfSpks']
+                        elif Var == 'PSTH':
+                            if '/'+Path+'/PSTH' in F: del(F[Path]['PSTH'])
+                            F[Path]['PSTH'] = Units[SKey][FKey][RKey][Ch]['PSTH']
+                        
+                        elif Var == 'SpksInfo':
+                            for VarKey, VarValue in Units[SKey][FKey][RKey][Ch]['Spks_Info'].items():
+                                F[Path]['Spks'].attrs[VarKey] = VarValue
+                        
+                        elif Var == 'PSTHInfo':
+                            for VarKey, VarValue in Units[SKey][FKey][RKey][Ch]['PSTH_Info'].items():
+                                F[Path]['PSTH'].attrs[VarKey] = VarValue
         
-        F[Group].attrs['XValues'] = XValues
+        if XValues != []: F[Group].attrs['XValues'] = XValues
     
     if Thrash: 
         for _ in Thrash: print(_)

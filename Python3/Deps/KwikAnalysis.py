@@ -28,7 +28,6 @@ from os import getcwd, makedirs, remove, removedirs, rename
 from glob import glob
 from matplotlib import rcParams
 from matplotlib import pyplot as plt
-from multiprocessing import Process
 from scipy import io, signal
 from subprocess import call
 
@@ -757,20 +756,21 @@ def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Ov
                     Clusters[RecS][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
                     Clusters[RecS][Ch]['Spikes'] = ClusterFile['spikes'][:]
                     
-                    Clusters[RecS][Ch]['Info'] = {}
-                    Clusters[RecS][Ch]['Info']['Parameters'] = ClusterFile['par'][:]
+#                    Clusters[RecS][Ch]['Info'] = {}
+#                    Clusters[RecS][Ch]['Info']['Parameters'] = ClusterFile['par']
 #                    Clusters[RecS][Ch]['Info']['InSpk'] = ClusterFile['inspk'][:]
+                
+                if OverrideRec != []: break
             
             Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
             ToDelete = glob(Path+'*')
             for File in ToDelete: remove(File)
-            
-        removedirs(Path)
+            removedirs(Path)
                     
                     
 
 
-def UnitAnalysis(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0, 
+def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0, 
                  PSTHTimeAfterTTL=300, StimType=['Sound'], AnalogTTLs=False, 
                  Board='OE', OverrideRec=[]):
     print('Load DataInfo...')
@@ -785,7 +785,7 @@ def UnitAnalysis(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
         if isinstance(StimTTLCh, dict): UnitTTLCh = StimTTLCh[Stim]
         else: UnitTTLCh = StimTTLCh
         
-        for FInd, RecFolder in enumerate(Exps):        
+        for FInd, RecFolder in enumerate(Exps):
             if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
             else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
             
@@ -814,38 +814,31 @@ def UnitAnalysis(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
                 Units[Stim][FIndS][RecS] = {}
                 print('Preparing histograms and spike waveforms...')
                 for CKey in Clusters[RecS].keys():
-                    ClassesNo = len(Clusters['ClusterClasses'])
+                    Classes = np.unique(Clusters[RecS][CKey]['ClusterClass'])
                     Units[Stim][FIndS][RecS][CKey] = {}
-                    Units[Stim][FIndS][RecS][CKey]['NoOfSpks'] = [
+                    Units[Stim][FIndS][RecS][CKey]['PSTH'] = [
                                         np.zeros(len(XValues)) 
-                                        for _ in range(ClassesNo)]
+                                        for _ in range(len(Classes))]
                     
-                    Units[Stim][FIndS][RecS][CKey]['SpkWF'] = [
-                                        [] for _ in range(ClassesNo)]
-                    
-                    for Cluster in range(ClassesNo):
-                        ClassIndex = Clusters['ClusterClasses'] == Cluster
-                        if not len(Clusters['Spikes'][ClassIndex,:]): continue
+                    for Cluster in range(len(Classes)):
+                        ClassIndex = Clusters[RecS][CKey]['ClusterClass'] == Cluster
+                        if not len(Clusters[RecS][CKey]['Spikes'][ClassIndex,:]): continue
                         
                         for TTL in range(len(TTLs)):
-                            Firing = Clusters['Timestamps'][ClassIndex] \
+                            Firing = Clusters[RecS][CKey]['Timestamps'][ClassIndex] \
                                      - (TTLs[TTL]/(Rate/1000))
                             Firing = Firing[(Firing >= XValues[0]) * 
                                             (Firing < XValues[-1])]
                             SpkCount = np.histogram(Firing, 
                                                     np.hstack((XValues, 300)))[0]
                             
-                            Units[Stim][FIndS][RecS][CKey]['NoOfSpks'][Cluster] = \
-                              Units[Stim][FIndS][RecS][CKey]['NoOfSpks'][Cluster] \
+                            Units[Stim][FIndS][RecS][CKey]['PSTH'][Cluster] = \
+                              Units[Stim][FIndS][RecS][CKey]['PSTH'][Cluster] \
                               + SpkCount
                             
                             del(Firing, SpkCount)
-                        
-                        SpkNo = len(Clusters['Spikes'][ClassIndex,:])
-                        Units[Stim][FIndS][RecS][CKey]['SpkWF'][Cluster] = \
-                                          Clusters['Spikes'][ClassIndex,:][:]
                     
-                    print(CKey+':', str(ClassesNo), 'clusters,', str(SpkNo), 'spikes.')
+                    print(CKey+':', str(len(Classes)), 'clusters.')
                 
                 del(TTLs)
                 if OverrideRec != []: break
@@ -854,7 +847,59 @@ def UnitAnalysis(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
 #            removedirs(Path)
     
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Hdf5F.WriteUnits(Units, XValues, AnalysisFile)
+    Hdf5F.WriteUnits(Units, 'PSTH', AnalysisFile, XValues)
+    return(None)
+
+
+def UnitsSpks(FileName, StimType=['Sound'], Board='OE', OverrideRec=[]):
+    print('Load DataInfo...')
+    DirList = glob('KwikFiles/*'); DirList.sort()
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    
+    Units = {}
+    for Stim in StimType:
+        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+        Units[Stim] = {}
+        
+        for FInd, RecFolder in enumerate(Exps):
+            Raw = Hdf5F.LoadOEKwik(RecFolder, 'Raw')[0]
+            OEProc = GetProc(Raw, Board)[0]
+            
+            Path = getcwd() + '/' + RecFolder +'/SepCh/'
+            ClusterFile = Path[:-6]+'SpkClusters.hdf5'
+            Clusters = Hdf5F.LoadClusters(ClusterFile)
+            
+            FIndS = "{0:02d}".format(FInd)
+            Units[Stim][FIndS] = {}
+            for Rec in range(len(Raw[OEProc]['data'])):
+                if OverrideRec != []: Rec = OverrideRec
+                RecS = "{0:02d}".format(Rec)
+                
+                Units[Stim][FIndS][RecS] = {}
+                for CKey in Clusters[RecS].keys():
+                    Classes = np.unique(Clusters[RecS][CKey]['ClusterClass'])
+                    
+                    Units[Stim][FIndS][RecS][CKey] = {}                    
+                    Units[Stim][FIndS][RecS][CKey]['Spks'] = [
+                                        [] for _ in range(len(Classes))]
+                    
+                    for Cluster in range(len(Classes)):
+                        ClassIndex = Clusters[RecS][CKey]['ClusterClass'] == Cluster
+                        if not len(Clusters[RecS][CKey]['Spikes'][ClassIndex,:]): continue
+                        
+                        SpkNo = len(Clusters[RecS][CKey]['Spikes'][ClassIndex,:])
+                        Units[Stim][FIndS][RecS][CKey]['Spks'][Cluster] = \
+                                          Clusters[RecS][CKey]['Spikes'][ClassIndex,:][:]
+                    
+                        print(CKey+':', str(len(Classes)), 'clusters,', str(SpkNo), 'spikes.')
+                
+                if OverrideRec != []: break
+            
+            del(Raw, Clusters)
+#            removedirs(Path)
+    
+    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+    Hdf5F.WriteUnits(Units, 'Spks', AnalysisFile)
     return(None)
 
 

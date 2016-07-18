@@ -3,53 +3,72 @@
 Just drafts
 """
 #%%
-#Spk = Units['Sound_NaCl']['00']['00']['Ch05']['SpkWF'][:]
+#Spk = Units['Sound_NaCl']['00']['00']['Ch05']['Spks'][:]
 #Hist = Units['Sound_NaCl']['00']['00']['Ch05']['NoOfSpks'][:]
-UnitRec = Test['Sound_NaCl']['02']['00']
+UnitRec = Units['Sound_NaCl']['00']['00']
 #UnitRec = Units[Stim][FIndS][RecS]
 Thrash = {}
 for Key in UnitRec:    
-    ClusterNo = len(UnitRec[Key]['SpkWF'])
+    ClusterNo = len(UnitRec[Key]['Spks'])
     if ClusterNo == 0: print(Key, 'is lost'); continue
     
     Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
     
     for Cluster in range(ClusterNo):
-        SpkNo = len(UnitRec[Key]['SpkWF'][Cluster])
+        SpkNo = len(UnitRec[Key]['Spks'][Cluster])
         print(str(SpkNo), 'Spks in cluster', str(Cluster))
-        print('Max of', max(UnitRec[Key]['NoOfSpks'][Cluster]),  'Spks in PSTH')
-        
-        if max(UnitRec[Key]['NoOfSpks'][Cluster]) < 4: 
-            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
-            continue
+        print('Max of', max(UnitRec[Key]['PSTH'][Cluster]),  'Spks in PSTH')
         
         if not SpkNo:
             print('No Spk data on cluster', str(Cluster) + '. Skipping...')
             Thrash[Key] = UnitRec[Key].copy()
             continue
         
+        PSTHPeak = max(UnitRec[Key]['PSTH'][Cluster])
+        PSTHMean = np.mean(UnitRec[Key]['PSTH'][Cluster])
+        PSTHStd = np.std(UnitRec[Key]['PSTH'][Cluster])
+#        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
+#            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
+#            continue
+        
         if SpkNo > 100: SpkNo = 100
         
         for Spike in range(SpkNo):
-            if ClusterNo == 1: Axes[0].plot(UnitRec[Key]['SpkWF'][Cluster][Spike], 'r')
-            else: Axes[Cluster][0].plot(UnitRec[Key]['SpkWF'][Cluster][Spike], 'r')
+            if ClusterNo == 1: Axes[0].plot(UnitRec[Key]['Spks'][Cluster][Spike], 'r')
+            else: Axes[Cluster][0].plot(UnitRec[Key]['Spks'][Cluster][Spike], 'r')
         
         if ClusterNo == 1:
-            Axes[0].plot(np.mean(UnitRec[Key]['SpkWF'][Cluster], axis=0), 'k')
-            Axes[1].bar(XValues, UnitRec[Key]['NoOfSpks'][Cluster])
+            Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean)+\
+                              ' Std='+str(PSTHStd))
+            Axes[0].plot(np.mean(UnitRec[Key]['Spks'][Cluster], axis=0), 'k')
+            Axes[1].bar(XValues, UnitRec[Key]['PSTH'][Cluster])
         else:
-            Axes[Cluster][0].plot(np.mean(UnitRec[Key]['SpkWF'][Cluster]), 'k')
-            Axes[Cluster][1].bar(XValues, UnitRec[Key]['NoOfSpks'][Cluster])
+            Axes[Cluster][0].set_title('Peak='+str(PSTHPeak)+' Mean='+\
+                                       str(PSTHMean)+' Std='+str(PSTHStd))
+            Axes[Cluster][0].plot(np.mean(UnitRec[Key]['Spks'][Cluster]), 'k')
+            Axes[Cluster][1].bar(XValues, UnitRec[Key]['PSTH'][Cluster])
 
-for SKey in Units.keys():
-            for FKey in Units[SKey].keys():
-                for RKey in Units[SKey][FKey]:
-                    for Ch in Units[SKey][FKey][RKey]:
-                        for Key, Data in Units[SKey][FKey][RKey][Ch].items():
-                            plt.figure()
-                            
-                            plt.plot(Data)
 
+#UnitRec = Units['Sound_NaCl']['00']['00']
+##UnitRec = Units[Stim][FIndS][RecS]
+#Thrash = {}; PSTHStd = []
+#for Key in UnitRec:    
+#    ClusterNo = len(UnitRec[Key]['Spks'])
+#    if ClusterNo == 0: print(Key, 'is lost'); continue
+#    
+#    Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
+#    
+#    for Cluster in range(ClusterNo):
+#        SpkNo = len(UnitRec[Key]['Spks'][Cluster])
+#        print(str(SpkNo), 'Spks in cluster', str(Cluster))
+#        print('Max of', max(UnitRec[Key]['PSTH'][Cluster]),  'Spks in PSTH')
+#        
+#        if not SpkNo:
+#            print('No Spk data on cluster', str(Cluster) + '. Skipping...')
+#            Thrash[Key] = UnitRec[Key].copy()
+#            continue
+#        
+#        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
 #%%
 F = h5py.File(FileName)
 for key in F['ExpInfo'].keys():
@@ -259,127 +278,4 @@ def GPIASAAA(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3
     
     print('Finished.')
     return(None)
-
-
-
-def UnitAnalysis(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0, 
-                 PSTHTimeAfterTTL=300, StimType=['Sound'], AnalogTTLs=False, 
-                 Board='OE', OverrideRec=[]):
-    print('Load DataInfo...')
-    DirList = glob('KwikFiles/*'); DirList.sort()
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    
-    CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
-    A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-           'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
-    ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
-    
-    Units = {}
-    for Stim in StimType:
-        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
-        Units[Stim] = {}
-        
-        if isinstance(StimTTLCh, dict): UnitTTLCh = StimTTLCh[Stim]
-        else: UnitTTLCh = StimTTLCh
-        
-        for FInd, RecFolder in enumerate(Exps):        
-            if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            
-            OEProc = GetProc(Raw, Board)[0]
-            
-            Path = getcwd() + '/' + RecFolder +'/SepCh/'
-            makedirs(Path, exist_ok=True)
-            
-            Rate = Raw[OEProc]['info']['0']['sample_rate']
-            NoOfSamplesBefore = int(round((PSTHTimeBeforeTTL*Rate)*10**-3))
-            NoOfSamplesAfter = int(round((PSTHTimeAfterTTL*Rate)*10**-3))
-            NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-            XValues = (range(-NoOfSamplesBefore, 
-                             NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
-            
-            FIndS = "{0:02d}".format(FInd)
-            Units[Stim][FIndS] = {}
-            for Rec in range(len(Raw[OEProc]['data'])):
-                if OverrideRec != []: Rec = OverrideRec
-                RecS = "{0:02d}".format(Rec)
-                
-                print('Separating channels according to ChannelMap...')
-                Data = [Raw[OEProc]['data'][str(Rec)][:, _-1] * 
-                        Raw[OEProc]['channel_bit_volts'][str(Rec)][_-1] * 1000
-                        for _ in ChannelMap]
-                
-                TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, UnitTTLCh, 
-                                          OEProc)
-                
-                print('Writing files for clustering... ', end='')
-                FileList = []
-                for Ind, Ch in enumerate(Data):
-                    MatName = 'Exp' + Files['100_kwd'][-13:-8] + '_' + \
-                              RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
-                    
-                    FileList.append(MatName)
-                    io.savemat(Path+MatName, {'data': Ch})
-                
-                TxtFile = open(Path+'Files.txt', 'w')
-                for File in FileList: TxtFile.write(File+'\n')
-                TxtFile.close()
-                print('Done.')
-                
-                CallWaveClus(Rate, Path)
-                ClusterList = glob(Path+'times_*'); ClusterList.sort()
-                
-                Units[Stim][FIndS][RecS] = {}
-                print('Preparing histograms and spike waveforms...')
-                for File in ClusterList:
-                    Clusters = io.loadmat(File)
-                    
-                    ClusterClasses = np.unique(Clusters['cluster_class'][:,0])
-                    Ch = File[-8:-4] 
-                    
-                    Units[Stim][FIndS][RecS][Ch] = {}
-                    Units[Stim][FIndS][RecS][Ch]['NoOfSpks'] = [
-                                        np.zeros(len(XValues)) 
-                                        for _ in range(len(ClusterClasses))]
-                    
-                    Units[Stim][FIndS][RecS][Ch]['SpkWF'] = [
-                                        [] for _ in range(len(ClusterClasses))]
-                    
-                    for Cluster in range(len(ClusterClasses)):
-                        ClassIndex = Clusters['cluster_class'][:,0] == Cluster
-                        if not len(Clusters['spikes'][ClassIndex,:]): continue
-                        
-                        for TTL in range(len(TTLs)):
-                            Firing = Clusters['cluster_class'][ClassIndex, 1] \
-                                     - TTLs[TTL]
-                            Firing = Firing[(Firing >= XValues[0]) * 
-                                            (Firing < XValues[-1])]
-                            SpkCount = np.histogram(Firing, 
-                                                    np.hstack((XValues, 300)))[0]
-                            
-                            Units[Stim][FIndS][RecS][Ch]['NoOfSpks'][Cluster] = \
-                              Units[Stim][FIndS][RecS][Ch]['NoOfSpks'][Cluster] \
-                              + SpkCount
-                            
-                            del(Firing, SpkCount)
-                        
-                        Units[Stim][FIndS][RecS][Ch]['SpkWF'][Cluster] = \
-                                        Clusters['spikes'][ClassIndex,:]
-                    
-                    print(Ch, 'have', str(len(ClusterClasses)), 'clusters')
-                    del(Clusters)
-                
-                del(Data, TTLs)
-                print('Cleaning...')
-                ToDelete = glob(Path+'*')
-                for File in ToDelete: remove(File)
-                if OverrideRec != []: break
-            
-            del(Raw)
-            removedirs(Path)
-    
-    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Hdf5F.WriteUnits(Units, XValues, AnalysisFile)
-    return(None)
-
 

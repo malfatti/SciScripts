@@ -86,28 +86,25 @@ PSTHTimeAfterTTL = 300
 StimType = ['Sound_NaCl', 'Sound_CNO']
 AnalogTTLs=True
 Board='OE'
-OverrideRec = 0
+OverrideRec = []
 
 from glob import glob
 import KwikAnalysis
 
 FileName = glob('*.hdf5'); FileName = FileName[0]
 
-KwikAnalysis.ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, 
-                           Board='OE', OverrideRec=[])
-KwikAnalysis.UnitAnalysis(FileName, StimTTLCh, PSTHTimeBeforeTTL, 
+KwikAnalysis.UnitsPSTH(FileName, StimTTLCh, PSTHTimeBeforeTTL, 
                           PSTHTimeAfterTTL, StimType, AnalogTTLs, Board, 
                           OverrideRec)
 
+KwikAnalysis.UnitsSpks(FileName, StimType, Board, OverrideRec)
 #%% Clustering
 StimTTLCh = 17
-PSTHTimeBeforeTTL = 0
-PSTHTimeAfterTTL = 300
 StimType0 = ['Sound_NaCl']
 StimType1 = ['Sound_CNO']
 AnalogTTLs=True
 Board='OE'
-OverrideRec = 0
+OverrideRec = []
 
 import KwikAnalysis
 from glob import glob
@@ -118,4 +115,5 @@ FileName = glob('*.hdf5'); FileName = FileName[0]
 Clus_NaCl = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType0, AnalogTTLs, Board, OverrideRec))
 Clus_CNO = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType1, AnalogTTLs, Board, OverrideRec))
 Clus_NaCl.start(); Clus_CNO.start()
+print('NaClPid =', str(Clus_NaCl.pid)); print('CNOPid =', str(Clus_CNO.pid))
 Clus_NaCl.join(); Clus_CNO.join()

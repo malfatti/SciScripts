@@ -3,11 +3,6 @@
 Just drafts
 """
 #%%
-#Spk = Units['Sound_NaCl']['00']['00']['Ch05']['Spks'][:]
-#Hist = Units['Sound_NaCl']['00']['00']['Ch05']['NoOfSpks'][:]
-UnitRec = Units['Sound_NaCl']['00']['00']
-#UnitRec = Units[Stim][FIndS][RecS]
-Thrash = {}
 for Key in UnitRec:    
     ClusterNo = len(UnitRec[Key]['Spks'])
     if ClusterNo == 0: print(Key, 'is lost'); continue
@@ -26,7 +21,6 @@ for Key in UnitRec:
         
         PSTHPeak = max(UnitRec[Key]['PSTH'][Cluster])
         PSTHMean = np.mean(UnitRec[Key]['PSTH'][Cluster])
-        PSTHStd = np.std(UnitRec[Key]['PSTH'][Cluster])
 #        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
 #            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
 #            continue
@@ -38,8 +32,7 @@ for Key in UnitRec:
             else: Axes[Cluster][0].plot(UnitRec[Key]['Spks'][Cluster][Spike], 'r')
         
         if ClusterNo == 1:
-            Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean)+\
-                              ' Std='+str(PSTHStd))
+            Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean))
             Axes[0].plot(np.mean(UnitRec[Key]['Spks'][Cluster], axis=0), 'k')
             Axes[1].bar(XValues, UnitRec[Key]['PSTH'][Cluster])
         else:

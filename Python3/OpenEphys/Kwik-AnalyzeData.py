@@ -35,7 +35,7 @@ Board = 'OE'
 from glob import glob
 import KwikAnalysis
 
-FileName = glob('*.hdf5'); FileName = FileName[0]
+FileName = glob('*.hdf5')[0]
 
 KwikAnalysis.ABR(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
                  FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
@@ -77,7 +77,7 @@ SoundTTLCh = 1
 TimeBeforeTTL = 10   # in ms
 TimeAfterTTL = 10    # in ms
 
-FileName = glob.glob('*.hdf5'); FileName = FileName[0]
+FileName = glob.glob('*.hdf5')[0]
 
 #%% Units
 StimTTLCh = 17
@@ -86,31 +86,43 @@ PSTHTimeAfterTTL = 300
 StimType = ['Sound_NaCl', 'Sound_CNO']
 AnalogTTLs=True
 Board='OE'
-OverrideRec = []
+#Override = {}
+Override0 = {'Rec':0, 'Stim':StimType[0]}
+Override1 = {'Rec':0, 'Stim':StimType[1]}
 
-from glob import glob
 import KwikAnalysis
+from glob import glob
+from multiprocessing import Process
 
-FileName = glob('*.hdf5'); FileName = FileName[0]
+AnalysisFile = glob('../*.hdf5')[0]; FileName = glob('*.hdf5')[0]
 
-KwikAnalysis.UnitsPSTH(FileName, StimTTLCh, PSTHTimeBeforeTTL, 
-                          PSTHTimeAfterTTL, StimType, AnalogTTLs, Board, 
-                          OverrideRec)
+#KwikAnalysis.UnitsPSTH(FileName, StimTTLCh, PSTHTimeBeforeTTL, 
+#                          PSTHTimeAfterTTL, StimType, AnalogTTLs, Board, 
+#                          Override)
+#
+#KwikAnalysis.UnitsSpks(FileName, StimType, Board, Override)
 
-KwikAnalysis.UnitsSpks(FileName, StimType, Board, OverrideRec)
+Unit_NaCl = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(AnalysisFile, FileName, Override0))
+Unit_CNO = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(AnalysisFile, FileName, Override1))
+Unit_NaCl.start(); Unit_CNO.start()
+print('NaClPid =', str(Unit_NaCl.pid)); print('CNOPid =', str(Unit_CNO.pid))
+Unit_NaCl.join(); Unit_CNO.join()
+
+
 #%% Clustering
 StimTTLCh = 17
 StimType0 = ['Sound_NaCl']
 StimType1 = ['Sound_CNO']
 AnalogTTLs=True
 Board='OE'
-OverrideRec = []
+Override = {}
+#Override = {'Rec'}
 
 import KwikAnalysis
 from glob import glob
 from multiprocessing import Process
 
-FileName = glob('*.hdf5'); FileName = FileName[0]
+FileName = glob('*.hdf5')[0]
 
 Clus_NaCl = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType0, AnalogTTLs, Board, OverrideRec))
 Clus_CNO = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType1, AnalogTTLs, Board, OverrideRec))

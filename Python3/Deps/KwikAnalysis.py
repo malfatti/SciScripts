@@ -206,8 +206,7 @@ def SetPlot(AxesObj=(), FigObj=(), FigTitle='', Params=False, Plot=False,
             Axes=False):
     if Params:
         print('Set plot parameters...')
-        Params = {'backend': 'TkAgg',
-                  'text.usetex': True, 'text.latex.unicode': True,
+        Params = {'text.usetex': True, 'text.latex.unicode': True,
     #              'text.latex.preamble': '\\usepackage{siunitx}',
                   
                   'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
@@ -694,7 +693,7 @@ def TTLsLatencyPlot(FileName):
 #    plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.svg', format='svg')
 
 
-def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', OverrideRec=[]):
+def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Override={}):
     print('Load DataInfo...')
     DirList = glob('KwikFiles/*'); DirList.sort()
     
@@ -719,7 +718,9 @@ def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Ov
             
             Clusters = {}
             for Rec in range(len(Raw[OEProc]['data'])):
-                if OverrideRec != []: Rec = OverrideRec
+                if Override != {}: 
+                    if 'Rec' in Override.keys():
+                        Rec = "{0:02d}".format(Override['Rec'])
                 RecS = "{0:02d}".format(Rec)
                 
                 print('Separating channels according to ChannelMap...')
@@ -760,7 +761,8 @@ def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Ov
 #                    Clusters[RecS][Ch]['Info']['Parameters'] = ClusterFile['par']
 #                    Clusters[RecS][Ch]['Info']['InSpk'] = ClusterFile['inspk'][:]
                 
-                if OverrideRec != []: break
+                if Override != {}: 
+                    if 'Rec' in Override.keys(): break
             
             Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
             ToDelete = glob(Path+'*')
@@ -772,7 +774,7 @@ def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Ov
 
 def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0, 
                  PSTHTimeAfterTTL=300, StimType=['Sound'], AnalogTTLs=False, 
-                 Board='OE', OverrideRec=[]):
+                 Board='OE', Override={}):
     print('Load DataInfo...')
     DirList = glob('KwikFiles/*'); DirList.sort()
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
@@ -791,8 +793,8 @@ def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
             
             OEProc = GetProc(Raw, Board)[0]
             
-            Path = getcwd() + '/' + RecFolder +'/SepCh/'
-            ClusterFile = Path[:-6]+'SpkClusters.hdf5'
+            Path = getcwd() + '/' + RecFolder
+            ClusterFile = Path + '/SpkClusters.hdf5'
             Clusters = Hdf5F.LoadClusters(ClusterFile)
             
             Rate = Raw[OEProc]['info']['0']['sample_rate']
@@ -805,7 +807,9 @@ def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
             FIndS = "{0:02d}".format(FInd)
             Units[Stim][FIndS] = {}
             for Rec in range(len(Raw[OEProc]['data'])):
-                if OverrideRec != []: Rec = OverrideRec
+                if Override != {}: 
+                    if 'Rec' in Override.keys():
+                        Rec = "{0:02d}".format(Override['Rec'])
                 RecS = "{0:02d}".format(Rec)
                 
                 TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, UnitTTLCh, 
@@ -841,17 +845,100 @@ def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
                     print(CKey+':', str(len(Classes)), 'clusters.')
                 
                 del(TTLs)
-                if OverrideRec != []: break
+                if Override != {}: 
+                    if 'Rec' in Override.keys(): break
             
             del(Raw, Clusters)
-#            removedirs(Path)
     
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Hdf5F.WriteUnits(Units, 'PSTH', AnalysisFile, XValues)
+    Hdf5F.WriteUnits(Units, AnalysisFile, XValues)
     return(None)
 
 
-def UnitsSpks(FileName, StimType=['Sound'], Board='OE', OverrideRec=[]):
+def UnitsPSTHInfo(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0, 
+                  PSTHTimeAfterTTL=300, StimType=['Sound'], AnalogTTLs=False, 
+                  Board='OE', Override={}):
+    print('Load DataInfo...')
+    DirList = glob('KwikFiles/*'); DirList.sort()
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    
+    Units = {}
+    for Stim in StimType:
+        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+        Units[Stim] = {}
+        
+        if isinstance(StimTTLCh, dict): UnitTTLCh = StimTTLCh[Stim]
+        else: UnitTTLCh = StimTTLCh
+        
+        for FInd, RecFolder in enumerate(Exps):
+            if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+            else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+            
+            OEProc = GetProc(Raw, Board)[0]
+            
+            Path = getcwd() + '/' + RecFolder
+            ClusterFile = Path + '/SpkClusters.hdf5'
+            Clusters = Hdf5F.LoadClusters(ClusterFile)
+            
+            Rate = Raw[OEProc]['info']['0']['sample_rate']
+            NoOfSamplesBefore = int(round((PSTHTimeBeforeTTL*Rate)*10**-3))
+            NoOfSamplesAfter = int(round((PSTHTimeAfterTTL*Rate)*10**-3))
+            NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+            XValues = (range(-NoOfSamplesBefore, 
+                             NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
+            
+            FIndS = "{0:02d}".format(FInd)
+            Units[Stim][FIndS] = {}
+            for Rec in range(len(Raw[OEProc]['data'])):
+                if Override != {}: 
+                    if 'Rec' in Override.keys():
+                        Rec = "{0:02d}".format(Override['Rec'])
+                RecS = "{0:02d}".format(Rec)
+                
+                TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, UnitTTLCh, 
+                                          OEProc)
+                
+                Units[Stim][FIndS][RecS] = {}
+                print('Preparing histograms and spike waveforms...')
+                for CKey in Clusters[RecS].keys():
+                    Classes = np.unique(Clusters[RecS][CKey]['ClusterClass'])
+                    Units[Stim][FIndS][RecS][CKey] = {}
+                    Units[Stim][FIndS][RecS][CKey]['PSTH_Info'] = [
+                                        np.zeros(len(XValues)) 
+                                        for _ in range(len(Classes))]
+                    
+                    for Cluster in range(len(Classes)):
+                        ClassIndex = Clusters[RecS][CKey]['ClusterClass'] == Cluster
+                        if not len(Clusters[RecS][CKey]['Spikes'][ClassIndex,:]): continue
+                        
+                        for TTL in range(len(TTLs)):
+                            Firing = Clusters[RecS][CKey]['Timestamps'][ClassIndex] \
+                                     - (TTLs[TTL]/(Rate/1000))
+                            Firing = Firing[(Firing >= XValues[0]) * 
+                                            (Firing < XValues[-1])]
+                            SpkCount = np.histogram(Firing, 
+                                                    np.hstack((XValues, 300)))[0]
+                            
+                            Units[Stim][FIndS][RecS][CKey]['PSTH'][Cluster] = \
+                              Units[Stim][FIndS][RecS][CKey]['PSTH'][Cluster] \
+                              + SpkCount
+                            
+                            del(Firing, SpkCount)
+                    
+                    print(CKey+':', str(len(Classes)), 'clusters.')
+                
+                del(TTLs)
+                if Override != {}: 
+                    if 'Rec' in Override.keys(): break
+            
+            del(Raw, Clusters)
+    
+    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+    Hdf5F.WriteUnits(Units, AnalysisFile, XValues)
+    return(None)
+
+
+def UnitsSpks(FileName, StimType=['Sound'], Board='OE', Override={}):
     print('Load DataInfo...')
     DirList = glob('KwikFiles/*'); DirList.sort()
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
@@ -865,14 +952,16 @@ def UnitsSpks(FileName, StimType=['Sound'], Board='OE', OverrideRec=[]):
             Raw = Hdf5F.LoadOEKwik(RecFolder, 'Raw')[0]
             OEProc = GetProc(Raw, Board)[0]
             
-            Path = getcwd() + '/' + RecFolder +'/SepCh/'
-            ClusterFile = Path[:-6]+'SpkClusters.hdf5'
+            Path = getcwd() + '/' + RecFolder 
+            ClusterFile = Path + '/SpkClusters.hdf5'
             Clusters = Hdf5F.LoadClusters(ClusterFile)
             
             FIndS = "{0:02d}".format(FInd)
             Units[Stim][FIndS] = {}
             for Rec in range(len(Raw[OEProc]['data'])):
-                if OverrideRec != []: Rec = OverrideRec
+                if Override != {}: 
+                    if 'Rec' in Override.keys():
+                        Rec = "{0:02d}".format(Override['Rec'])
                 RecS = "{0:02d}".format(Rec)
                 
                 Units[Stim][FIndS][RecS] = {}
@@ -893,13 +982,69 @@ def UnitsSpks(FileName, StimType=['Sound'], Board='OE', OverrideRec=[]):
                     
                         print(CKey+':', str(len(Classes)), 'clusters,', str(SpkNo), 'spikes.')
                 
-                if OverrideRec != []: break
+                if Override != {}: 
+                    if 'Rec' in Override.keys(): break
             
             del(Raw, Clusters)
-#            removedirs(Path)
     
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Hdf5F.WriteUnits(Units, 'Spks', AnalysisFile)
+    Hdf5F.WriteUnits(Units, AnalysisFile)
     return(None)
 
 
+def UnitsSpksPSTH_ToSVG(AnalysisFile, FileName, Override):
+    SetPlot(Params=True)
+    
+    Units, XValues = Hdf5F.LoadUnits(AnalysisFile, Override)
+    
+    Thrash = {}
+    for SKey in Units:
+        for FKey in Units[SKey]:
+            for RKey in Units[SKey][FKey]:
+                for Ch in Units[SKey][FKey][RKey]:
+                    ClusterNo = len(Units[SKey][FKey][RKey][Ch]['Spks'])
+                    if ClusterNo == 0: print(Ch, 'is lost'); continue
+                    
+                    Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
+                    
+                    for Cluster in range(ClusterNo):
+                        SpkNo = len(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster])
+                        print(str(SpkNo), 'Spks in cluster', str(Cluster))
+                        print('Max of', max(Units[SKey][FKey][RKey][Ch]['PSTH'][Cluster]),  
+                              'Spks in PSTH')
+                        
+                        if not SpkNo:
+                            print('No Spk data on cluster', str(Cluster) + '. Skipping...')
+                            Thrash[SKey+FKey+RKey+Ch] = Units[SKey][FKey][RKey][Ch].copy()
+                            continue
+                        
+        #                PSTHPeak = max(Units[SKey][FKey][RKey]['PSTH'][Cluster])
+        #                PSTHMean = np.mean(Units[SKey][FKey][RKey]['PSTH'][Cluster])
+                #        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
+                #            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
+                #            continue
+                        
+                        if SpkNo > 100: SpkNo = np.arange(100); np.random.shuffle(SpkNo)
+                        else: SpkNo = np.arange(SpkNo)
+                        
+                        for Spike in SpkNo:
+                            if ClusterNo == 1: Axes[0].plot(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster][Spike], 'r')
+                            else: Axes[Cluster][0].plot(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster][Spike], 'r')
+                        
+                        if ClusterNo == 1:
+    #                        Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean))
+                            Axes[0].plot(np.mean(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster], axis=0), 'k')
+                            Axes[1].bar(XValues, Units[SKey][FKey][RKey][Ch]['PSTH'][Cluster])
+                        else:
+        #                    Axes[Cluster][0].set_title('Peak='+str(PSTHPeak)+' Mean='+\
+        #                                               str(PSTHMean)+' Std='+str(PSTHStd))
+                            Axes[Cluster][0].plot(np.mean(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster]), 'k')
+                            Axes[Cluster][1].bar(XValues, Units[SKey][FKey][RKey][Ch]['PSTH'][Cluster])
+                    
+                    Fig.suptitle(Ch)
+                    FigName = 'Figs/' + FileName[:-15] + '-UnitRec_' + SKey + '_Folder' + FKey + '_Rec' + RKey + '_' + Ch + '.svg'
+                    print('Writing to', FigName+'... ', end='')
+                    Fig.savefig(FigName, format='svg')
+                    print('Done.')
+                    del(Fig, Axes, SpkNo)
+                    del(Units[SKey][FKey][RKey][Ch]['Spks'], Units[SKey][FKey][RKey][Ch]['PSTH'])

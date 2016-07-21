@@ -96,17 +96,45 @@ from multiprocessing import Process
 
 AnalysisFile = glob('../*.hdf5')[0]; FileName = glob('*.hdf5')[0]
 
-#KwikAnalysis.UnitsPSTH(FileName, StimTTLCh, PSTHTimeBeforeTTL, 
-#                          PSTHTimeAfterTTL, StimType, AnalogTTLs, Board, 
-#                          Override)
-#
-#KwikAnalysis.UnitsSpks(FileName, StimType, Board, Override)
+UnitsPSTH_NaCl = Process(target=KwikAnalysis.UnitsPSTH, args=(
+                                                           FileName, StimTTLCh, 
+                                                           PSTHTimeBeforeTTL, 
+                                                           PSTHTimeAfterTTL, 
+                                                           StimType, AnalogTTLs, 
+                                                           Board, Override0))
+UnitsPSTH_CNO = Process(target=KwikAnalysis.UnitsPSTH, args=(
+                                                           FileName, StimTTLCh, 
+                                                           PSTHTimeBeforeTTL, 
+                                                           PSTHTimeAfterTTL, 
+                                                           StimType, AnalogTTLs, 
+                                                           Board, Override1))
+UnitsSpks_NaCl = Process(target=KwikAnalysis.UnitsSpks, args=(
+                                                           FileName, StimType, 
+                                                           Board, Override0))
+UnitsSpks_CNO = Process(target=KwikAnalysis.UnitsSpks, args=(
+                                                           FileName, StimType, 
+                                                           Board, Override1))
+UnitsPlot_NaCl = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(
+                                                           AnalysisFile, 
+                                                           FileName, Override0))
+UnitsPlot_CNO = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(
+                                                           AnalysisFile, 
+                                                           FileName, Override0))
 
-Unit_NaCl = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(AnalysisFile, FileName, Override0))
-Unit_CNO = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(AnalysisFile, FileName, Override1))
-Unit_NaCl.start(); Unit_CNO.start()
-print('NaClPid =', str(Unit_NaCl.pid)); print('CNOPid =', str(Unit_CNO.pid))
-Unit_NaCl.join(); Unit_CNO.join()
+UnitsPSTH_NaCl.start(); UnitsPSTH_CNO.start()
+print('NaClPid =', str(UnitsPSTH_NaCl.pid))
+print('CNOPid =', str(UnitsPSTH_CNO.pid))
+UnitsPSTH_NaCl.join(); UnitsPSTH_CNO.join()
+
+UnitsSpks_NaCl.start(); UnitsSpks_CNO.start()
+print('NaClPid =', str(UnitsSpks_NaCl.pid))
+print('CNOPid =', str(UnitsSpks_CNO.pid))
+UnitsSpks_NaCl.join(); UnitsSpks_CNO.join()
+
+UnitsPlot_NaCl.start(); UnitsPlot_CNO.start()
+print('NaClPid =', str(UnitsPlot_NaCl.pid))
+print('CNOPid =', str(UnitsPlot_CNO.pid))
+UnitsPlot_NaCl.join(); UnitsPlot_CNO.join()
 
 
 #%% Clustering

@@ -24,10 +24,11 @@
 
 import Hdf5F
 import numpy as np
-from os import getcwd, makedirs, remove, removedirs, rename
+import os
 from glob import glob
 from matplotlib import rcParams
 from matplotlib import pyplot as plt
+from multiprocessing import Process
 from scipy import io, signal
 from subprocess import call
 
@@ -195,11 +196,28 @@ def RemoveDateFromFolderName():
         for FolderName in DirList:
             NewFolderName = ''.join([FolderName[:10], FolderName[21:]])
             NewFolderName = NewFolderName.replace("-", "")
-            rename(FolderName, NewFolderName)
+            os.rename(FolderName, NewFolderName)
             print(FolderName, ' moved to ', NewFolderName)
         del(RenameFolders, DirList, FolderName, NewFolderName)    
     
     return(None)
+
+
+def SepSpksPerCluster(Clusters, Ch):
+    Classes = np.unique(Clusters['ClusterClass'])
+    Dict = {}                    
+    Dict['Spks'] = [[] for _ in range(len(Classes))]
+    
+    for Cluster in range(len(Classes)):
+        ClassIndex = Clusters['ClusterClass'] == Cluster
+        if not len(Clusters['Spikes'][ClassIndex,:]): continue
+        
+        SpkNo = len(Clusters['Spikes'][ClassIndex,:])
+        Dict['Spks'][Cluster] =  Clusters['Spikes'][ClassIndex,:][:]
+    
+        print(Ch+':', str(len(Classes)), 'clusters,', str(SpkNo), 'spikes.')
+    
+    return(Dict)
 
 
 def SetPlot(AxesObj=(), FigObj=(), FigTitle='', Params=False, Plot=False, 
@@ -274,6 +292,53 @@ def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore,
     
     print('Done.')
     return(Array)
+
+
+def UnitPlotPerCh(ChDict, Ch, XValues, FigName):
+    ClusterNo = len(ChDict['Spks'])
+    if ClusterNo == 0: print(Ch, 'is lost'); return(None)
+    
+    Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
+    
+    for Cluster in range(ClusterNo):
+        SpkNo = len(ChDict['Spks'][Cluster])
+        print(str(SpkNo), 'Spks in cluster', str(Cluster))
+        print('Max of', max(ChDict['PSTH'][Cluster]),  
+              'Spks in PSTH')
+        
+#                        if not SpkNo:
+#                            print('No Spk data on cluster', str(Cluster) + '. Skipping...')
+#                            Thrash[SKey+FKey+RKey+Ch] = Units[SKey][FKey][RKey][Ch].copy()
+#                            continue
+        
+#                PSTHPeak = max(Units[SKey][FKey][RKey]['PSTH'][Cluster])
+#                PSTHMean = np.mean(Units[SKey][FKey][RKey]['PSTH'][Cluster])
+#        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
+#            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
+#            continue
+        
+        if SpkNo > 100: SpkNo = np.arange(100); np.random.shuffle(SpkNo)
+        else: SpkNo = np.arange(SpkNo)
+        
+        for Spike in SpkNo:
+            if ClusterNo == 1: Axes[0].plot(ChDict['Spks'][Cluster][Spike], 'r')
+            else: Axes[Cluster][0].plot(ChDict['Spks'][Cluster][Spike], 'r')
+        
+        if ClusterNo == 1:
+#                        Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean))
+            Axes[0].plot(np.mean(ChDict['Spks'][Cluster], axis=0), 'k')
+            Axes[1].bar(XValues, ChDict['PSTH'][Cluster])
+        else:
+#                    Axes[Cluster][0].set_title('Peak='+str(PSTHPeak)+' Mean='+\
+#                                               str(PSTHMean)+' Std='+str(PSTHStd))
+            Axes[Cluster][0].plot(np.mean(ChDict['Spks'][Cluster]), 'k')
+            Axes[Cluster][1].bar(XValues, ChDict['PSTH'][Cluster])
+    
+    Fig.suptitle(Ch)
+    print('Writing to', FigName+'... ', end='')
+    Fig.savefig(FigName, format='svg')
+    print('Done.')
+    return(None)
 
 
 ## Higher-level functions
@@ -380,7 +445,7 @@ def ABRPlot(FileName):
     have a working LaTex installation and dvipng package installed.
     """
     
-    makedirs('Figs', exist_ok=True)    # Figs folder
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
     
     print('Loading data...')
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
@@ -554,7 +619,7 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
 
 
 def GPIASPlot(FileName):
-    makedirs('Figs', exist_ok=True)    # Figs folder
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
     
     print('Loading data...')
     ## DataInfo
@@ -664,7 +729,7 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
 
 
 def TTLsLatencyPlot(FileName):
-    makedirs('Figs', exist_ok=True)    # Figs folder
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
 #    
 #    TTLsLatency, XValues = Hdf5F.LoadTTLsLatency(FileName)
 #    
@@ -711,8 +776,8 @@ def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Ov
             
             OEProc = GetProc(Raw, Board)[0]
             
-            Path = getcwd() + '/' + RecFolder +'/SepCh/'
-            makedirs(Path, exist_ok=True)
+            Path = os.getcwd() + '/' + RecFolder +'/SepCh/'
+            os.makedirs(Path, exist_ok=True)
             
             Rate = Raw[OEProc]['info']['0']['sample_rate']
             
@@ -766,8 +831,8 @@ def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Ov
             
             Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
             ToDelete = glob(Path+'*')
-            for File in ToDelete: remove(File)
-            removedirs(Path)
+            for File in ToDelete: os.remove(File)
+            os.removedirs(Path)
                     
                     
 
@@ -793,7 +858,7 @@ def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
             
             OEProc = GetProc(Raw, Board)[0]
             
-            Path = getcwd() + '/' + RecFolder
+            Path = os.getcwd() + '/' + RecFolder
             ClusterFile = Path + '/SpkClusters.hdf5'
             Clusters = Hdf5F.LoadClusters(ClusterFile)
             
@@ -876,7 +941,7 @@ def UnitsPSTHInfo(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
             
             OEProc = GetProc(Raw, Board)[0]
             
-            Path = getcwd() + '/' + RecFolder
+            Path = os.getcwd() + '/' + RecFolder
             ClusterFile = Path + '/SpkClusters.hdf5'
             Clusters = Hdf5F.LoadClusters(ClusterFile)
             
@@ -945,6 +1010,10 @@ def UnitsSpks(FileName, StimType=['Sound'], Board='OE', Override={}):
     
     Units = {}
     for Stim in StimType:
+        if Override != {}: 
+            if 'Stim' in Override.keys():
+                Stim = Override['Stim']
+        
         Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
         Units[Stim] = {}
         
@@ -952,7 +1021,7 @@ def UnitsSpks(FileName, StimType=['Sound'], Board='OE', Override={}):
             Raw = Hdf5F.LoadOEKwik(RecFolder, 'Raw')[0]
             OEProc = GetProc(Raw, Board)[0]
             
-            Path = getcwd() + '/' + RecFolder 
+            Path = os.getcwd() + '/' + RecFolder 
             ClusterFile = Path + '/SpkClusters.hdf5'
             Clusters = Hdf5F.LoadClusters(ClusterFile)
             
@@ -965,27 +1034,17 @@ def UnitsSpks(FileName, StimType=['Sound'], Board='OE', Override={}):
                 RecS = "{0:02d}".format(Rec)
                 
                 Units[Stim][FIndS][RecS] = {}
-                for CKey in Clusters[RecS].keys():
-                    Classes = np.unique(Clusters[RecS][CKey]['ClusterClass'])
-                    
-                    Units[Stim][FIndS][RecS][CKey] = {}                    
-                    Units[Stim][FIndS][RecS][CKey]['Spks'] = [
-                                        [] for _ in range(len(Classes))]
-                    
-                    for Cluster in range(len(Classes)):
-                        ClassIndex = Clusters[RecS][CKey]['ClusterClass'] == Cluster
-                        if not len(Clusters[RecS][CKey]['Spikes'][ClassIndex,:]): continue
-                        
-                        SpkNo = len(Clusters[RecS][CKey]['Spikes'][ClassIndex,:])
-                        Units[Stim][FIndS][RecS][CKey]['Spks'][Cluster] = \
-                                          Clusters[RecS][CKey]['Spikes'][ClassIndex,:][:]
-                    
-                        print(CKey+':', str(len(Classes)), 'clusters,', str(SpkNo), 'spikes.')
+                for Ch in Clusters[RecS].keys():
+                    Units[Stim][FIndS][RecS][Ch] = SepSpksPerCluster(Clusters, 
+                                                                     Ch)
                 
                 if Override != {}: 
                     if 'Rec' in Override.keys(): break
             
             del(Raw, Clusters)
+        
+        if Override != {}: 
+            if 'Stim' in Override.keys(): break
     
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
     Hdf5F.WriteUnits(Units, AnalysisFile)
@@ -997,54 +1056,14 @@ def UnitsSpksPSTH_ToSVG(AnalysisFile, FileName, Override):
     
     Units, XValues = Hdf5F.LoadUnits(AnalysisFile, Override)
     
-    Thrash = {}
+#    Thrash = {}
     for SKey in Units:
         for FKey in Units[SKey]:
             for RKey in Units[SKey][FKey]:
                 for Ch in Units[SKey][FKey][RKey]:
-                    ClusterNo = len(Units[SKey][FKey][RKey][Ch]['Spks'])
-                    if ClusterNo == 0: print(Ch, 'is lost'); continue
-                    
-                    Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
-                    
-                    for Cluster in range(ClusterNo):
-                        SpkNo = len(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster])
-                        print(str(SpkNo), 'Spks in cluster', str(Cluster))
-                        print('Max of', max(Units[SKey][FKey][RKey][Ch]['PSTH'][Cluster]),  
-                              'Spks in PSTH')
-                        
-                        if not SpkNo:
-                            print('No Spk data on cluster', str(Cluster) + '. Skipping...')
-                            Thrash[SKey+FKey+RKey+Ch] = Units[SKey][FKey][RKey][Ch].copy()
-                            continue
-                        
-        #                PSTHPeak = max(Units[SKey][FKey][RKey]['PSTH'][Cluster])
-        #                PSTHMean = np.mean(Units[SKey][FKey][RKey]['PSTH'][Cluster])
-                #        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
-                #            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
-                #            continue
-                        
-                        if SpkNo > 100: SpkNo = np.arange(100); np.random.shuffle(SpkNo)
-                        else: SpkNo = np.arange(SpkNo)
-                        
-                        for Spike in SpkNo:
-                            if ClusterNo == 1: Axes[0].plot(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster][Spike], 'r')
-                            else: Axes[Cluster][0].plot(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster][Spike], 'r')
-                        
-                        if ClusterNo == 1:
-    #                        Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean))
-                            Axes[0].plot(np.mean(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster], axis=0), 'k')
-                            Axes[1].bar(XValues, Units[SKey][FKey][RKey][Ch]['PSTH'][Cluster])
-                        else:
-        #                    Axes[Cluster][0].set_title('Peak='+str(PSTHPeak)+' Mean='+\
-        #                                               str(PSTHMean)+' Std='+str(PSTHStd))
-                            Axes[Cluster][0].plot(np.mean(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster]), 'k')
-                            Axes[Cluster][1].bar(XValues, Units[SKey][FKey][RKey][Ch]['PSTH'][Cluster])
-                    
-                    Fig.suptitle(Ch)
                     FigName = 'Figs/' + FileName[:-15] + '-UnitRec_' + SKey + '_Folder' + FKey + '_Rec' + RKey + '_' + Ch + '.svg'
-                    print('Writing to', FigName+'... ', end='')
-                    Fig.savefig(FigName, format='svg')
-                    print('Done.')
-                    del(Fig, Axes, SpkNo)
-                    del(Units[SKey][FKey][RKey][Ch]['Spks'], Units[SKey][FKey][RKey][Ch]['PSTH'])
+                    UnitPlot = Process(target=UnitPlotPerCh, 
+                                       args=(Units[SKey][FKey][RKey][Ch], Ch, XValues, FigName))
+                    UnitPlot.start(); print('PID =', UnitPlot.pid)
+                    UnitPlot.join()
+

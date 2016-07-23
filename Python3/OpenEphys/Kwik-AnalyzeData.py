@@ -37,10 +37,10 @@ import KwikAnalysis
 
 FileName = glob('*.hdf5')[0]
 
-KwikAnalysis.ABR(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
+KwikAnalysis.ABRAnalysis(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
                  FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
 
-KwikAnalysis.PlotABR(FileName)
+KwikAnalysis.ABRPlot(FileName)
 
 
 #%% GPIASs
@@ -86,7 +86,7 @@ PSTHTimeAfterTTL = 300
 StimType = ['Sound_NaCl', 'Sound_CNO']
 AnalogTTLs=True
 Board='OE'
-#Override = {}
+#Override = {'Rec':0}
 Override0 = {'Rec':0, 'Stim':StimType[0]}
 Override1 = {'Rec':0, 'Stim':StimType[1]}
 
@@ -94,7 +94,7 @@ import KwikAnalysis
 from glob import glob
 from multiprocessing import Process
 
-AnalysisFile = glob('../*.hdf5')[0]; FileName = glob('*.hdf5')[0]
+FileName = glob('*.hdf5')[0]
 
 UnitsPSTH_NaCl = Process(target=KwikAnalysis.UnitsPSTH, args=(
                                                            FileName, StimTTLCh, 
@@ -114,22 +114,29 @@ UnitsSpks_NaCl = Process(target=KwikAnalysis.UnitsSpks, args=(
 UnitsSpks_CNO = Process(target=KwikAnalysis.UnitsSpks, args=(
                                                            FileName, StimType, 
                                                            Board, Override1))
+
+UnitsPSTH_NaCl.start(); print('NaClPid =', str(UnitsPSTH_NaCl.pid))
+UnitsPSTH_NaCl.join()
+
+UnitsPSTH_CNO.start(); print('CNOPid =', str(UnitsPSTH_CNO.pid))
+UnitsPSTH_CNO.join()
+
+
+UnitsSpks_NaCl.start(); print('NaClPid =', str(UnitsSpks_NaCl.pid))
+UnitsSpks_NaCl.join()
+
+UnitsSpks_CNO.start(); print('CNOPid =', str(UnitsSpks_CNO.pid))
+UnitsSpks_CNO.join()
+
+
+AnalysisFile = glob('../*.hdf5')[0]
 UnitsPlot_NaCl = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(
                                                            AnalysisFile, 
                                                            FileName, Override0))
 UnitsPlot_CNO = Process(target=KwikAnalysis.UnitsSpksPSTH_ToSVG, args=(
                                                            AnalysisFile, 
-                                                           FileName, Override0))
+                                                           FileName, Override1))
 
-UnitsPSTH_NaCl.start(); UnitsPSTH_CNO.start()
-print('NaClPid =', str(UnitsPSTH_NaCl.pid))
-print('CNOPid =', str(UnitsPSTH_CNO.pid))
-UnitsPSTH_NaCl.join(); UnitsPSTH_CNO.join()
-
-UnitsSpks_NaCl.start(); UnitsSpks_CNO.start()
-print('NaClPid =', str(UnitsSpks_NaCl.pid))
-print('CNOPid =', str(UnitsSpks_CNO.pid))
-UnitsSpks_NaCl.join(); UnitsSpks_CNO.join()
 
 UnitsPlot_NaCl.start(); UnitsPlot_CNO.start()
 print('NaClPid =', str(UnitsPlot_NaCl.pid))
@@ -152,8 +159,8 @@ from multiprocessing import Process
 
 FileName = glob('*.hdf5')[0]
 
-Clus_NaCl = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType0, AnalogTTLs, Board, OverrideRec))
-Clus_CNO = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType1, AnalogTTLs, Board, OverrideRec))
+Clus_NaCl = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType0, AnalogTTLs, Board, Override))
+Clus_CNO = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType1, AnalogTTLs, Board, Override))
 Clus_NaCl.start(); Clus_CNO.start()
 print('NaClPid =', str(Clus_NaCl.pid)); print('CNOPid =', str(Clus_CNO.pid))
 Clus_NaCl.join(); Clus_CNO.join()

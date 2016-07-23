@@ -3,6 +3,55 @@
 Just drafts
 """
 #%%
+import Hdf5F
+import numpy as np
+import os
+from glob import glob
+from multiprocessing import Process
+from scipy import io, signal
+from subprocess import call
+
+StimTTLCh = 17
+PSTHTimeBeforeTTL = 0
+PSTHTimeAfterTTL = 300
+StimType = ['Sound_NaCl', 'Sound_CNO']
+AnalogTTLs=True
+Board='OE'
+#Override = {'Rec':0}
+Override0 = {'Rec':0, 'Stim':StimType[0]}
+Override1 = {'Rec':0, 'Stim':StimType[1]}
+Override=Override0
+
+FileName = glob('*.hdf5')[0]
+
+FInd=0
+Ch = 'Ch01'
+
+
+#%%
+Backend = 'Qt5Agg'
+from matplotlib import rcParams; rcParams.update({'backend': Backend})
+from matplotlib import pyplot as plt
+from random import random
+from time import time
+
+a = list(range(7500)); b = [random() for _ in range(7500)]
+
+Time = []
+for aa in range(5):
+    Start = time(); plt.bar(a,b); Time.append(time() - Start)
+    print(str(aa), '=', str(Time[aa]))
+
+Time = sum(Time)/5
+print(Backend, '=', str(Time))
+
+Tk = 8.832437372207641
+Qt4 =  27.928475093841552
+
+
+#%%
+
+
 for Key in UnitRec:    
     ClusterNo = len(UnitRec[Key]['Spks'])
     if ClusterNo == 0: print(Key, 'is lost'); continue

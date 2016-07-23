@@ -217,6 +217,7 @@ def LoadTTLsLatency(FileName):
 
 
 def LoadUnits(FileName, Override={}):
+    XValues = []
     with h5py.File(FileName, 'r') as F:
         Key = GetExpKeys('UnitRec', F)
         
@@ -247,14 +248,13 @@ def LoadUnits(FileName, Override={}):
                         print('Loading', Path+'...')
                         
                         if 'Spks' in F[Path].keys():
-                            ClusterNo = len(list(F[Path]['Spks'].keys()))
-                            Units[SKey][FKey][RKey][Ch]['Spks'] = [[] for _ in range(ClusterNo)]
+                            Units[SKey][FKey][RKey][Ch]['Spks'] = {}
                             for Cluster in F[Path]['Spks'].keys():
                                 SpkNo = len(list(F[Path]['Spks'][Cluster].keys()))
-                                Units[SKey][FKey][RKey][Ch]['Spks'][int(Cluster)-1] = [[] for _ in range(SpkNo)]
+                                Units[SKey][FKey][RKey][Ch]['Spks'][Cluster] = [[] for _ in range(SpkNo)]
                                 
                                 for Spk in F[Path]['Spks'][Cluster].keys():
-                                    Units[SKey][FKey][RKey][Ch]['Spks'][int(Cluster)-1][int(Spk)] = F[Path]['Spks'][Cluster][Spk][:]
+                                    Units[SKey][FKey][RKey][Ch]['Spks'][Cluster][int(Spk)] = F[Path]['Spks'][Cluster][Spk][:]
                             
                             if F[Path]['Spks'].attrs.keys():
                                 Units[SKey][FKey][RKey][Ch]['Spks_Info'] = {}
@@ -265,7 +265,10 @@ def LoadUnits(FileName, Override={}):
                                         Units[SKey][FKey][RKey][Ch]['Spks_Info'][VarKey] = VarValue
                         
                         if 'PSTH' in F[Path].keys():
-                            Units[SKey][FKey][RKey][Ch]['PSTH'] = F[Path]['PSTH'][:]
+                            Units[SKey][FKey][RKey][Ch]['PSTH'] = {}
+                            
+                            for VarKey in F[Path]['PSTH'].keys():
+                                Units[SKey][FKey][RKey][Ch]['PSTH'][VarKey] = F[Path]['PSTH'][VarKey][:]
                             
                             if F[Path]['PSTH'].attrs.keys():
                                 Units[SKey][FKey][RKey][Ch]['PSTH_Info'] = {}
@@ -457,23 +460,25 @@ def WriteUnits(Units, FileName, XValues=[]):
                         
                         for Var in Units[SKey][FKey][RKey][Ch].keys():
                             if Var == 'Spks':
+                                if '/'+Path+'/Spks' in F: del(F[Path]['Spks'])
                                 if Path+'/Spks' not in F: 
                                     F.create_group(Path+'/Spks')
                                 
-                                ClusterNo = len(Units[SKey][FKey][RKey][Ch]['Spks'])
-                                for Cluster in range(ClusterNo):
-                                    for Key, Spk in enumerate(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster]):
+                                for Class in Units[SKey][FKey][RKey][Ch]['Spks'].keys():
+                                    for Key, Spk in enumerate(Units[SKey][FKey][RKey][Ch]['Spks'][Class]):
                                         if not len(Spk):
-                                            Thrash.append([Path, Cluster, Key])
-                                            del(Units[SKey][FKey][RKey][Ch]['Spks'][Cluster][Key])
+                                            Thrash.append([Path, Class, Key])
+                                            del(Units[SKey][FKey][RKey][Ch]['Spks'][Class][Key])
                                             continue
-                                        if Path+'/Spks/'+str(Cluster) not in F:
-                                            F[Path]['Spks'].create_group(str(Cluster))
-                                        F[Path]['Spks'][str(Cluster)][str(Key)] = Spk
+                                        if Path+'/Spks/'+Class not in F:
+                                            F[Path]['Spks'].create_group(Class)
+                                        F[Path]['Spks'][Class][str(Key)] = Spk
                             
                             elif Var == 'PSTH':
                                 if '/'+Path+'/PSTH' in F: del(F[Path]['PSTH'])
-                                F[Path]['PSTH'] = Units[SKey][FKey][RKey][Ch]['PSTH']
+                                F[Path].create_group('PSTH')
+                                for VarKey in Units[SKey][FKey][RKey][Ch][Var].keys():
+                                    F[Path]['PSTH'][VarKey] = Units[SKey][FKey][RKey][Ch]['PSTH'][VarKey][:]
                             
                             elif Var == 'Spks_Info':
                                 for VarKey, VarValue in Units[SKey][FKey][RKey][Ch][Var].items():
@@ -486,7 +491,7 @@ def WriteUnits(Units, FileName, XValues=[]):
                             else:
                                 print(Var, 'not supported')
         
-        if XValues != []: F[Group].attrs['XValues'] = XValues
+        if len(XValues): F[Group].attrs['XValues'] = XValues
     
     if Thrash: 
         for _ in Thrash: print(_)

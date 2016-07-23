@@ -17,7 +17,6 @@
 
 """
 
-##import datetime
 ##import h5py
 ##import Kwik
 #from numbers import Number
@@ -25,6 +24,7 @@
 import Hdf5F
 import numpy as np
 import os
+from datetime import datetime
 from glob import glob
 from multiprocessing import Process
 from scipy import io, signal
@@ -145,11 +145,12 @@ def GetTTLInfo(Events, EventRec, TTLCh):
 
 #    TTLChs = np.nonzero(np.bincount(EventCh))[0]
     TTLRecs = np.nonzero(np.bincount(EventRec))[0]
-    TTLsPerRec = {_Rec: [EventSample[_] for _ in range(len(EventRec)) 
-                         if EventRec[_] == _Rec 
+    TTLRecs = ["{0:02d}".format(_) for _ in TTLRecs]
+    TTLsPerRec = {Rec: [EventSample[_] for _ in range(len(EventRec)) 
+                         if EventRec[_] == int(Rec)
                          and EventCh[_] == TTLCh-1 
                          and EventID[_] == 1]
-                  for _Rec in TTLRecs}
+                  for Rec in TTLRecs}
 #    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], TTLCh-1)
     
     return(TTLsPerRec)
@@ -159,7 +160,7 @@ def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[],
                        Rate=[]):
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:
-        TTLCh = Raw[Proc]['data'][str(Rec)][:, ChTTL-1]
+        TTLCh = Raw[Proc]['data'][Rec][:, ChTTL-1]
         Threshold = max(TTLCh)/2
         TTLs = []
         for _ in range(1, len(TTLCh)):
@@ -180,7 +181,7 @@ def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[],
 #            sTTLNo = TTLNo[Rec] + 1
 #        
 #        return(TTLNo, sTTLNo)
-        RawTime = [_*Rate for _ in Raw['timestamps'][Rec]]
+        RawTime = [_*Rate for _ in Raw['timestamps'][int(Rec)]]
         TTLs = TTLsPerRec[Rec]
         
         print('Done.')
@@ -286,8 +287,8 @@ def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore,
         
         if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
         
-        Array[TTL] = Data[Proc]['data'][str(Rec)][Start:End, DataCh[0]-1] \
-                     * Data[Proc]['channel_bit_volts'][str(Rec)][DataCh[0]-1] \
+        Array[TTL] = Data[Proc]['data'][Rec][Start:End, DataCh[0]-1] \
+                     * Data[Proc]['channel_bit_volts'][Rec][DataCh[0]-1] \
                      * 1000 # in mV
         
         if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
@@ -356,7 +357,7 @@ def UnitPlotPerCh(ChDict, Ch, XValues, FigName, FigTitle):
 ## Higher-level functions
 def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
                 ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
-                StimType='Sound', AnalogTTLs=False, Board='OE'):
+                StimType='Sound', AnalogTTLs=False, Board='OE', Override={}):
     """
     Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
@@ -381,70 +382,97 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     print('Load DataInfo...')
     DirList = glob('KwikFiles/*'); DirList.sort()
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName)
-    Exps = Hdf5F.LoadExpPerStim('Sound', DirList, FileName)
-    
-    
-    print('Preallocate memory...')
-    ABRs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-    for Freq in range(len(DataInfo['NoiseFrequency'])):
-        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
-              + str(DataInfo['NoiseFrequency'][Freq][1])
-        ABRs[Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
-    del(Freq)
-    
-    for RecFolder in Exps:
-        ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
-        
-        if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-        else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-        
-        OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
-        
-        if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
-        else:
-            Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
-            TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
-        
-        Rate = Raw[OEProc]['info']['0']['sample_rate']
-        NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
-        NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
-        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-
-        XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*10**3) + \
-                  list((range(NoOfSamplesAfter)/Rate)*10**3)
-        
-        for Rec in range(len(Raw[OEProc]['data'])):
-            print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            
-            if AnalogTTLs:
-                TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ABRTTLCh, 
-                                          OEProc)
-                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
-                                NoOfSamplesBefore, NoOfSamplesAfter, 
-                                NoOfSamples, AnalogTTLs)
-            else:
-                RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
-                                                   TTLsPerRec=TTLsPerRec)
-                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
-                                NoOfSamplesBefore, NoOfSamplesAfter, 
-                                AnalogTTLs, RawTime)
-            
-            for TTL in range(len(TTLs)):
-                ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
-                                        FilterOrder, 'highpass')
-            
-            ABR = np.mean(ABR, axis=0)
-            ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
-                               'lowpass')
-            
-            if ExpInfo['DVCoord'] not in ABRs[ExpInfo['Hz']][Rec]:
-                ABRs[ExpInfo['Hz']][Rec][ExpInfo['DVCoord']] = [ABR]
-            else:
-                ABRs[ExpInfo['Hz']][Rec][ExpInfo['DVCoord']].append(ABR)
-    
+    DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName, 
+                                           Attrs=False)
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Hdf5F.WriteABRs(ABRs, XValues, AnalysisFile)
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    Here = os.getcwd().split(sep='/')[-1]
+    Group = Here + '-ABRs_' + Now
+    
+#    print('Preallocate memory...')
+#    ABRs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+#    for Freq in range(len(DataInfo['NoiseFrequency'])):
+#        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
+#              + str(DataInfo['NoiseFrequency'][Freq][1])
+#        ABRs[Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
+#    del(Freq)
+    
+#    ABRs = {}
+    
+    for Stim in StimType:
+        if Override != {}: 
+            if 'Stim' in Override.keys(): Stim = Override['Stim']
+        
+        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+#        ABRs[Stim] = {}; XValues = {}
+        
+        for RecFolder in Exps:
+            ABRs = {}; Info = {}
+            ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
+            
+            if AnalogTTLs: 
+                Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+            else: 
+                Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+            
+            OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
+            
+            if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
+            else:
+                Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
+                TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
+            
+            Rate = Raw[OEProc]['info']['0']['sample_rate']
+            NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
+            NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
+            NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+            
+            Info['Frequency'] = ''.join([
+                            str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][0]),
+                            '-',
+                            str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][1])])
+            Info['XValues'] = list((range((NoOfSamplesBefore)*-1, 0)
+                                   /Rate)*10**3) + \
+                              list((range(NoOfSamplesAfter)/Rate)*10**3)
+            
+#            ABRs[Stim][ExpInfo['Hz']] = {}
+            
+            for Rec in Raw[OEProc]['data'].keys():
+                print('Slicing and filtering ABRs Rec ', str(Rec), '...')
+                
+                if AnalogTTLs:
+                    TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ABRTTLCh, 
+                                              OEProc)
+                    ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
+                                    NoOfSamplesBefore, NoOfSamplesAfter, 
+                                    NoOfSamples, AnalogTTLs)
+                else:
+                    RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
+                                                       TTLsPerRec=TTLsPerRec)
+                    ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
+                                    NoOfSamplesBefore, NoOfSamplesAfter, 
+                                    AnalogTTLs, RawTime)
+                
+                for TTL in range(len(TTLs)):
+                    ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
+                                            FilterOrder, 'highpass')
+                
+                ABR = np.mean(ABR, axis=0)
+                ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
+                                   'lowpass')
+                
+                dB = str(DataInfo['Intensities'][int(Rec)]) + 'dB'
+                ABRs[dB] = ABR[:]; del(ABR)
+            
+            Path = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
+            Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
+#                ABRs[ExpInfo['Hz']][RecS] = {}
+#                if ExpInfo['DVCoord'] in ABRs[ExpInfo['Hz']][Rec].keys():
+#                    ABRs[ExpInfo['Hz']][RecS][ExpInfo['DVCoord']].append(ABR)
+#                else:
+#                    ABRs[ExpInfo['Hz']][RecS][ExpInfo['DVCoord']] = [ABR]
+    
+#    Hdf5F.WriteABRs(ABRs, XValues, AnalysisFile)
     return(None)
 
     
@@ -576,8 +604,8 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     XValues = (range(-NoOfSamplesBefore, 
                      NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
     
-    for Rec in range(len(Raw[OEProc]['data'])):
-        print('Slicing and filtering Rec ', str(Rec), '...')
+    for Rec in Raw[OEProc]['data'].keys():
+        print('Slicing and filtering Rec ', Rec, '...')
         Freq = DataInfo['FreqOrder'][Rec][0]; 
         Trial = DataInfo['FreqOrder'][Rec][1];
         
@@ -708,7 +736,7 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
     XValues = list((range((NoOfSamplesBefore)*-1, 0)/Rate)*1000) + \
               list((range(NoOfSamplesAfter)/Rate)*1000)
     
-    for Rec in range(len(Raw[OEProc]['data'])):
+    for Rec in Raw[OEProc]['data'].keys():
         RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
                                            TTLsPerRec=TTLsPerRec)
         
@@ -737,9 +765,9 @@ def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1,
             TTLSqDelay[TTL] = ((Peaks[0] - NoOfSamplesBefore) / (Rate/1000))*-1
             del(Peaks)
         
-        TTLsLatency[str(Rec)] = dict((Name, eval(Name)) 
-                                     for Name in ['SoundPulse', 'TTLSq', 
-                                                  'TTLSqDelay'])
+        TTLsLatency[Rec] = dict((Name, eval(Name)) 
+                                for Name in ['SoundPulse', 'TTLSq', 
+                                             'TTLSqDelay'])
     
     Hdf5F.WriteTTLsLatency(TTLsLatency, XValues, FileName)
     
@@ -804,15 +832,15 @@ def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Ov
             Rate = Raw[OEProc]['info']['0']['sample_rate']
             
             Clusters = {}
-            for Rec in range(len(Raw[OEProc]['data'])):
+            for Rec in Raw[OEProc]['data'].keys():
                 if Override != {}: 
                     if 'Rec' in Override.keys():
                         Rec = Override['Rec']
-                RecS = "{0:02d}".format(Rec)
+                RecS = "{0:02d}".format(int(Rec))
                 
                 print('Separating channels according to ChannelMap...')
-                Data = [Raw[OEProc]['data'][str(Rec)][:, _-1] * 
-                        Raw[OEProc]['channel_bit_volts'][str(Rec)][_-1] * 1000
+                Data = [Raw[OEProc]['data'][Rec][:, _-1] * 
+                        Raw[OEProc]['channel_bit_volts'][Rec][_-1] * 1000
                         for _ in ChannelMap]
                                 
                 print('Writing files for clustering... ', end='')
@@ -897,11 +925,11 @@ def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0,
             
             FIndS = "{0:02d}".format(FInd)
             Units[Stim][FIndS] = {}
-            for Rec in range(len(Raw[OEProc]['data'])):
+            for Rec in Raw[OEProc]['data'].keys():
                 if Override != {}: 
                     if 'Rec' in Override.keys():
                         Rec = Override['Rec']
-                RecS = "{0:02d}".format(Rec)
+                RecS = "{0:02d}".format(int(Rec))
                 
                 TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, UnitTTLCh, 
                                           OEProc)
@@ -1059,11 +1087,11 @@ def UnitsSpks(FileName, StimType=['Sound'], Board='OE', Override={}):
             
             FIndS = "{0:02d}".format(FInd)
             Units[Stim][FIndS] = {}
-            for Rec in range(len(Raw[OEProc]['data'])):
+            for Rec in Raw[OEProc]['data'].keys():
                 if Override != {}: 
                     if 'Rec' in Override.keys():
                         Rec = Override['Rec']
-                RecS = "{0:02d}".format(Rec)
+                RecS = "{0:02d}".format(int(Rec))
                 
                 Units[Stim][FIndS][RecS] = {}
                 for Ch in Clusters[RecS].keys():

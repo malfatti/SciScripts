@@ -20,6 +20,7 @@
 import h5py
 import Kwik
 import numpy as np
+import os
 from datetime import datetime
 from numbers import Number
 
@@ -104,26 +105,34 @@ def GPIASDataInfo(FileName):
         return(DataInfo)
 
 
-def LoadABRs(FileName):
+def LoadABRs(FileName, Path='all'):
     with h5py.File(FileName, 'r') as F:
         Key = GetExpKeys('ABRs', F)
         
-        ABRs = [0]*len(F[Key])
-        for Freq in range(len(F[Key])):
-            ABRs[Freq] = [0]*len(F[Key][str(Freq)])
-            
-            for AmpF in range(len(F[Key][str(Freq)])):
-                ABRs[Freq][AmpF] = {}
+        if Path == 'all':
+            ABRs = {}
+            for Stim in F[Key].keys():
+                ABRs[Stim] = {}
                 
-                for DV in F[Key][str(Freq)][str(AmpF)].keys():
-                    ABRs[Freq][AmpF][DV] = [0]*len(F[Key][str(Freq)][str(AmpF)][DV])
+                for DV in F[Key][Stim].keys():
+                    ABRs[Stim][DV] = {}
                     
-                    for Trial in range(len(F[Key][str(Freq)][str(AmpF)][DV])):
-                        ABRs[Freq][AmpF][DV][Trial] = F[Key][str(Freq)][str(AmpF)][DV][str(Trial)][:]
-        
-        XValues = F[Key].attrs['XValues'][:]
-        
-    return(ABRs, XValues)
+                    for Freq in F[Key][Stim][DV].keys():
+                        ABRs[Stim][DV][Freq] = {}
+                        
+                        for Trial in F[Key][Stim][DV][Freq].keys():
+                            ABRs[Stim][DV][Freq][Trial] = {}
+                            XValues = F[Key][Stim][DV][Freq][Trial].attrs['XValues']
+                            ABRs[Stim][DV][Freq][Trial]['XValues'] = XValues[:]
+                            
+                            for dB, ABR in F[Key][Stim][DV][Freq][Trial].items():
+                                ABRs[Stim][DV][Freq][Trial][dB] = ABR[:]
+        else:
+            ABRs = {}
+            ABRs['ABR'] = F[Key][Path][:]
+            ABRs['XValues']
+    
+    return(ABRs)
 
 
 def LoadClusters(FileName):
@@ -213,7 +222,8 @@ def LoadOEKwik(RecFolder, AnalogTTLs):
 
 
 def LoadTTLsLatency(FileName):
-    Test
+    
+    return(None)
 
 
 def LoadUnits(FileName, Override={}):
@@ -332,7 +342,24 @@ def SoundMeasurement(FileName, Var='SoundIntensity'):
             print('Supported variables: DataInfo, SoundRec, SoundIntensity.')
 
 
-def WriteABRs(ABRs, XValues, FileName):
+def WriteABR(ABRs, XValues, Group, Path, FileName):
+    print('Writing data to', FileName, 'in', Path+'... ', end='')
+    Path = Group + '/' + Path
+    with h5py.File(FileName) as F:
+        if Path not in F: F.create_group(Path)
+        Trial = len(F[Path].keys()); Trial = "{0:02d}".format(Trial)
+        F[Path].create_group(Trial)
+        
+        for Key, Value in ABRs.items():
+            F[Path][Trial][Key] = Value
+        
+        F[Path][Trial].attrs['XValues'] = XValues
+    
+    print('Done.')
+    return(None)
+
+
+def WriteABRs(ABRs, XValues, GroupName, FileName):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
     Group = 'ABRs-' + Now
@@ -440,7 +467,7 @@ def WriteTTLslatency(TTLsLatency, XValues, FileName):
             for Key, Value in TTLsLatency[Rec].items():
                 F[Path][Key] = Value
                 
-        F[Group]['XValues'] = XValues
+        F[Group].attrs['XValues'] = XValues
     
     print('Done.')
     return(None)

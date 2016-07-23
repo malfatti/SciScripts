@@ -27,7 +27,7 @@ ABRTimeAfterTTL = 9    # in ms
 FilterFreq = [300, 3000]         # frequency for filter
 FilterOrder = 5         # butter order
 AnalogTTLs = True
-StimType = 'Sound'      # Stimulation type: 'Sound', 'Laser' or ['Sound', 'Laser']
+StimType = ['Sound_NaCl', 'Sound_CNO']
 Board = 'OE'
 
 #==========#==========#==========#==========#
@@ -39,7 +39,7 @@ FileName = glob('*.hdf5')[0]
 
 KwikAnalysis.ABRAnalysis(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
                  FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
-
+#%%
 KwikAnalysis.ABRPlot(FileName)
 
 
@@ -86,9 +86,9 @@ PSTHTimeAfterTTL = 300
 StimType = ['Sound_NaCl', 'Sound_CNO']
 AnalogTTLs=True
 Board='OE'
-#Override = {'Rec':0}
-Override0 = {'Rec':0, 'Stim':StimType[0]}
-Override1 = {'Rec':0, 'Stim':StimType[1]}
+#Override = {'Rec':'0'}
+Override0 = {'Rec':'0', 'Stim':StimType[0]}
+Override1 = {'Rec':'0', 'Stim':StimType[1]}
 
 import KwikAnalysis
 from glob import glob

@@ -36,11 +36,11 @@ from glob import glob
 import KwikAnalysis
 
 FileName = glob('*.hdf5')[0]
-
 KwikAnalysis.ABRAnalysis(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
                  FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
-#%%
-KwikAnalysis.ABRPlot(FileName)
+
+AnalysisFile = glob('../*.hdf5')[0]
+KwikAnalysis.ABRPlot(AnalysisFile)
 
 
 #%% GPIASs

@@ -121,18 +121,19 @@ def LoadABRs(FileName, Path='all'):
                         ABRs[Stim][DV][Freq] = {}
                         
                         for Trial in F[Key][Stim][DV][Freq].keys():
-                            ABRs[Stim][DV][Freq][Trial] = {}
+                            ABRs[Stim][DV][Freq][Trial] = {}; 
+                            XValues = ABRs.copy()
+                            
                             XValues = F[Key][Stim][DV][Freq][Trial].attrs['XValues']
-                            ABRs[Stim][DV][Freq][Trial]['XValues'] = XValues[:]
+                            XValues[Stim][DV][Freq][Trial]['XValues'] = XValues[:]
                             
                             for dB, ABR in F[Key][Stim][DV][Freq][Trial].items():
                                 ABRs[Stim][DV][Freq][Trial][dB] = ABR[:]
         else:
-            ABRs = {}
-            ABRs['ABR'] = F[Key][Path][:]
-            ABRs['XValues']
+            ABRs = F[Key][Path][:]
+            XValues = F[Key][Path].attrs['XValues'][:]
     
-    return(ABRs)
+    return(ABRs, XValues)
 
 
 def LoadClusters(FileName):

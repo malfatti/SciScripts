@@ -478,11 +478,12 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     
 def ABRPlot(FileName):
     """ 
-    This function will plot the data from *Stim.hdf5. Make sure FileName is a 
-    string with the path to only one file.
+    This function will plot the data from ../*Analysis.hdf5. Make sure 
+    FileName is a string with the path to only one file.
     
-    Also, LaTeX will render all the text in the plots. For this, make sure you 
-    have a working LaTex installation and dvipng package installed.
+    Also, LaTeX will render all the text in the plots (see SetPlot function). 
+    For this, make sure you have a working LaTex installation and dvipng 
+    package installed.
     """
     
     os.makedirs('Figs', exist_ok=True)    # Figs folder
@@ -490,7 +491,7 @@ def ABRPlot(FileName):
     print('Loading data...')
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName)
-    ABRs, XValues = Hdf5F.LoadABRs(FileName)
+    ABRs = Hdf5F.LoadABRs(FileName)
     
     Params = SetPlot(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
@@ -501,6 +502,51 @@ def ABRPlot(FileName):
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
     Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
               for _ in range(len(ABRs[0]))]
+    
+    for Stim in ABRs.keys():
+        for DVCoord in ABRs[Stim].keys():
+            for Freq in ABRs[Stim][DVCoord].keys():
+                for Trial in ABRs[Stim][DVCoord][Freq].keys():                    
+                    YLim = []
+                    
+                    for ABR in ABRs[Stim][DVCoord][Freq][Trial].values():
+                        YLim.append(max(ABR)); YLim.append(min(ABR))
+                    
+                    YLim = [min(YLim), max(YLim)]
+                    XValues = ABRs[Stim][DVCoord][Freq][Trial]['XValues'][:]
+                    Intensities = list(ABRs['Sound_CNO']['3430']['8000-10000']['00'])
+                    Intensities.sort(reverse=True)
+                    
+                    Fig, Axes = plt.subplots(len(ABRs[Freq]), sharex=True, 
+                                             figsize=(8, 1.5*len(Intensities)))
+                    
+                    for dB, ABR in ABRs[Stim][DVCoord][Freq][Trial].items():
+                        FigTitle = Freq + ' Hz, DV ' + DVCoord + \
+                                   ', trial ' + str(Trial+1)
+                        YLabel = 'Voltage [mV]'; XLabel = 'Time [ms]'
+                        LineLabel = dB
+                        SpanLabel = 'Sound pulse'
+                        
+                        dBInd = Intensities.index(dB)
+                        
+                        Ind1 = list(XValues).index(0)
+                        Ind2 = list(XValues).index(3)
+                        
+                        Axes[dBInd].axvspan(XValues[Ind1], XValues[Ind2], 
+                                           color='k', alpha=0.3, lw=0, 
+                                           label=SpanLabel)
+                        
+                        Axes[dBInd].plot(XValues, ABRs[Freq][AmpF][Key][Trial], 
+                                        color=Colors[dBInd][0], label=LineLabel)
+                        
+                        SetPlot(AxesObj=Axes[dBInd], Axes=True)
+                        Axes[dBInd].legend(loc='lower right', frameon=False)
+                        Axes[dBInd].spines['bottom'].set_visible(False)
+                        Axes[dBInd].spines['left'].set_bounds(round(0), round(1))
+                        Axes[dBInd].xaxis.set_ticks_position('none')
+                        Axes[dBInd].set_ylabel(YLabel)
+                        Axes[dBInd].set_ylim(min(YLim), max(YLim))
+                        
     
     Keys = list(ABRs[0][0].keys())
     for Key in Keys:

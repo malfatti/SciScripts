@@ -32,15 +32,15 @@ Board = 'OE'
 
 #==========#==========#==========#==========#
 
-from glob import glob
 import KwikAnalysis
+from glob import glob
 
 FileName = glob('*.hdf5')[0]
 KwikAnalysis.ABRAnalysis(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAfterTTL, 
                  FilterFreq, FilterOrder, StimType, AnalogTTLs, Board)
 
 AnalysisFile = glob('../*.hdf5')[0]
-KwikAnalysis.ABRPlot(AnalysisFile)
+KwikAnalysis.ABRPlot(AnalysisFile, FileName, Visible=True)
 
 
 #%% GPIASs
@@ -56,17 +56,19 @@ FilterOrder = 3       # butter order
 AnalogTTLs = True
 RecFolder = 1
 
-import glob
+#==========#==========#==========#==========#
+
 import KwikAnalysis
+from glob import glob
 
-FileName = glob.glob('*.hdf5'); FileName.sort()
-FileName = FileName[RecFolder-1]
+FileName = glob('*.hdf5'); FileName.sort(); FileName = FileName[RecFolder-1]
+KwikAnalysis.GPIASAnalogTTLs(RecFolder, FileName, GPIASCh, GPIASTTLCh, 
+                             GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterFreq, 
+                             FilterOrder, AnalogTTLs)
 
-KwikAnalysis.GPIASAnalogTTLs(RecFolder, FileName, GPIASTimeBeforeTTL, 
-                             GPIASTimeAfterTTL, FilterLow, FilterHigh, 
-                             FilterOrder, GPIASTTLCh, PiezoCh)
+AnalysisFile = glob('../*.hdf5')[0]
+KwikAnalysis.GPIASPlot(FileName, Visible=True)
 
-KwikAnalysis.PlotGPIAS2(FileName)
 
 #%% TTLsLatencyTest
 
@@ -79,6 +81,31 @@ TimeAfterTTL = 10    # in ms
 
 FileName = glob.glob('*.hdf5')[0]
 
+
+#%% Clustering
+StimTTLCh = 17
+StimType0 = ['Sound_NaCl']
+StimType1 = ['Sound_CNO']
+AnalogTTLs=True
+Board='OE'
+Override = {}
+#Override = {'Rec'}
+
+#==========#==========#==========#==========#
+
+import KwikAnalysis
+from glob import glob
+from multiprocessing import Process
+
+FileName = glob('*.hdf5')[0]
+
+Clus_NaCl = Process(target=KwikAnalysis.ClusterizeSpks, args=(FileName, StimType0, AnalogTTLs, Board, Override))
+Clus_CNO = Process(target=KwikAnalysis.ClusterizeSpks, args=(FileName, StimType1, AnalogTTLs, Board, Override))
+Clus_NaCl.start(); Clus_CNO.start()
+print('NaClPid =', str(Clus_NaCl.pid)); print('CNOPid =', str(Clus_CNO.pid))
+Clus_NaCl.join(); Clus_CNO.join()
+
+
 #%% Units
 StimTTLCh = 17
 PSTHTimeBeforeTTL = 0
@@ -89,6 +116,8 @@ Board='OE'
 #Override = {'Rec':'0'}
 Override0 = {'Rec':'0', 'Stim':StimType[0]}
 Override1 = {'Rec':'0', 'Stim':StimType[1]}
+
+#==========#==========#==========#==========#
 
 import KwikAnalysis
 from glob import glob
@@ -143,24 +172,3 @@ print('NaClPid =', str(UnitsPlot_NaCl.pid))
 print('CNOPid =', str(UnitsPlot_CNO.pid))
 UnitsPlot_NaCl.join(); UnitsPlot_CNO.join()
 
-
-#%% Clustering
-StimTTLCh = 17
-StimType0 = ['Sound_NaCl']
-StimType1 = ['Sound_CNO']
-AnalogTTLs=True
-Board='OE'
-Override = {}
-#Override = {'Rec'}
-
-import KwikAnalysis
-from glob import glob
-from multiprocessing import Process
-
-FileName = glob('*.hdf5')[0]
-
-Clus_NaCl = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType0, AnalogTTLs, Board, Override))
-Clus_CNO = Process(target=KwikAnalysis.ClusterizeAll, args=(FileName, StimType1, AnalogTTLs, Board, Override))
-Clus_NaCl.start(); Clus_CNO.start()
-print('NaClPid =', str(Clus_NaCl.pid)); print('CNOPid =', str(Clus_CNO.pid))
-Clus_NaCl.join(); Clus_CNO.join()

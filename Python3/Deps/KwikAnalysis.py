@@ -287,9 +287,8 @@ def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore,
         
         if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
         
-        Array[TTL] = Data[Proc]['data'][Rec][Start:End, DataCh[0]-1] \
-                     * Data[Proc]['channel_bit_volts'][Rec][DataCh[0]-1] \
-                     * 1000 # in mV
+        Array[TTL] = Data[Proc]['data'][Rec][Start:End, DataCh[0]-1] * \
+                     Data[Proc]['channel_bit_volts'][Rec][DataCh[0]-1] # in mV
         
         if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
             
@@ -382,29 +381,17 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     print('Load DataInfo...')
     DirList = glob('KwikFiles/*'); DirList.sort()
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName, 
-                                           Attrs=False)
+    
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
     Here = os.getcwd().split(sep='/')[-1]
     Group = Here + '-ABRs_' + Now
-    
-#    print('Preallocate memory...')
-#    ABRs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-#    for Freq in range(len(DataInfo['NoiseFrequency'])):
-#        Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
-#              + str(DataInfo['NoiseFrequency'][Freq][1])
-#        ABRs[Freq] = [{} for _ in range(len(DataInfo['SoundAmpF'][Key]))]
-#    del(Freq)
-    
-#    ABRs = {}
-    
+        
     for Stim in StimType:
         if Override != {}: 
             if 'Stim' in Override.keys(): Stim = Override['Stim']
         
         Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
-#        ABRs[Stim] = {}; XValues = {}
         
         for RecFolder in Exps:
             ABRs = {}; Info = {}
@@ -431,11 +418,9 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
                             str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][0]),
                             '-',
                             str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][1])])
-            Info['XValues'] = list((range((NoOfSamplesBefore)*-1, 0)
-                                   /Rate)*10**3) + \
-                              list((range(NoOfSamplesAfter)/Rate)*10**3)
             
-#            ABRs[Stim][ExpInfo['Hz']] = {}
+            Info['XValues'] = (range(-NoOfSamplesBefore, 
+                                     NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
             
             for Rec in Raw[OEProc]['data'].keys():
                 print('Slicing and filtering ABRs Rec ', str(Rec), '...')
@@ -466,17 +451,11 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
             
             Path = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
             Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
-#                ABRs[ExpInfo['Hz']][RecS] = {}
-#                if ExpInfo['DVCoord'] in ABRs[ExpInfo['Hz']][Rec].keys():
-#                    ABRs[ExpInfo['Hz']][RecS][ExpInfo['DVCoord']].append(ABR)
-#                else:
-#                    ABRs[ExpInfo['Hz']][RecS][ExpInfo['DVCoord']] = [ABR]
     
-#    Hdf5F.WriteABRs(ABRs, XValues, AnalysisFile)
     return(None)
 
     
-def ABRPlot(FileName):
+def ABRPlot(AnalysisFile, FileName, Visible=False):
     """ 
     This function will plot the data from ../*Analysis.hdf5. Make sure 
     FileName is a string with the path to only one file.
@@ -485,13 +464,10 @@ def ABRPlot(FileName):
     For this, make sure you have a working LaTex installation and dvipng 
     package installed.
     """
+    ABRs, XValues = Hdf5F.LoadABRs(AnalysisFile)
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     
     os.makedirs('Figs', exist_ok=True)    # Figs folder
-    
-    print('Loading data...')
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    DataInfo['SoundAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundAmpF', FileName)
-    ABRs = Hdf5F.LoadABRs(FileName)
     
     Params = SetPlot(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
@@ -500,44 +476,43 @@ def ABRPlot(FileName):
     
     print('Plotting...')
     Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
-    Colors = [[Colormaps[0](255-(_*20)), Colormaps[1](255-(_*20))] 
-              for _ in range(len(ABRs[0]))]
-    
     for Stim in ABRs.keys():
         for DVCoord in ABRs[Stim].keys():
             for Freq in ABRs[Stim][DVCoord].keys():
-                for Trial in ABRs[Stim][DVCoord][Freq].keys():                    
+                for Trial in ABRs[Stim][DVCoord][Freq].keys():
                     YLim = []
                     
                     for ABR in ABRs[Stim][DVCoord][Freq][Trial].values():
                         YLim.append(max(ABR)); YLim.append(min(ABR))
                     
-                    YLim = [min(YLim), max(YLim)]
-                    XValues = ABRs[Stim][DVCoord][Freq][Trial]['XValues'][:]
-                    Intensities = list(ABRs['Sound_CNO']['3430']['8000-10000']['00'])
+                    Intensities = list(ABRs[Stim][DVCoord][Freq][Trial])
                     Intensities.sort(reverse=True)
+                    TXValues = XValues[Stim][DVCoord][Freq][Trial][:]
                     
-                    Fig, Axes = plt.subplots(len(ABRs[Freq]), sharex=True, 
+                    Fig, Axes = plt.subplots(len(Intensities), sharex=True, 
                                              figsize=(8, 1.5*len(Intensities)))
                     
                     for dB, ABR in ABRs[Stim][DVCoord][Freq][Trial].items():
-                        FigTitle = Freq + ' Hz, DV ' + DVCoord + \
-                                   ', trial ' + str(Trial+1)
+                        FigTitle = ''.join([Freq, 'Hz, ', DVCoord, 
+                                            'DV, trial ', Trial])
                         YLabel = 'Voltage [mV]'; XLabel = 'Time [ms]'
                         LineLabel = dB
                         SpanLabel = 'Sound pulse'
                         
                         dBInd = Intensities.index(dB)
+                        Colors = [Colormaps[0](255-(dBInd*20)), 
+                                  Colormaps[1](255-(dBInd*20))]
                         
-                        Ind1 = list(XValues).index(0)
-                        Ind2 = list(XValues).index(3)
+                        Ind1 = list(TXValues).index(0)
+                        Ind2 = list(TXValues).index(
+                                           int(DataInfo['SoundPulseDur']*1000))
                         
-                        Axes[dBInd].axvspan(XValues[Ind1], XValues[Ind2], 
+                        Axes[dBInd].axvspan(TXValues[Ind1], TXValues[Ind2], 
                                            color='k', alpha=0.3, lw=0, 
                                            label=SpanLabel)
                         
-                        Axes[dBInd].plot(XValues, ABRs[Freq][AmpF][Key][Trial], 
-                                        color=Colors[dBInd][0], label=LineLabel)
+                        Axes[dBInd].plot(TXValues, ABR, color=Colors[0], 
+                                         label=LineLabel)
                         
                         SetPlot(AxesObj=Axes[dBInd], Axes=True)
                         Axes[dBInd].legend(loc='lower right', frameon=False)
@@ -547,66 +522,183 @@ def ABRPlot(FileName):
                         Axes[dBInd].set_ylabel(YLabel)
                         Axes[dBInd].set_ylim(min(YLim), max(YLim))
                         
+                    Axes[-1].spines['bottom'].set_visible(True)
+                    Axes[-1].set_xlabel(XLabel)
+                    Axes[-1].spines['bottom'].set_bounds(round(0), round(1))
+                    SetPlot(FigObj=Fig, FigTitle=FigTitle, Plot=True)
+                    
+                    FigName = ''.join(['Figs/', FileName[:-15], '-ABRs_', Stim, 
+                                       '_', DVCoord, 'DV_', Freq, 'Hz_', Trial, 
+                                       '.svg'])
+                    Fig.savefig(FigName, format='svg')
     
-    Keys = list(ABRs[0][0].keys())
-    for Key in Keys:
-        for Trial in range(len(ABRs[0][0][Key])):
-            for Freq in range(len(ABRs)):
-                Fig, Axes = plt.subplots(len(ABRs[Freq]), 
-                                         sharex=True, 
-                                         figsize=(8, 
-                                            1.5*len(DataInfo['Intensities'])))
-                
-                KeyHz = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' \
-                        + str(DataInfo['NoiseFrequency'][Freq][1])
-                
-                if 0.0 in DataInfo['SoundAmpF'][KeyHz]:
-                    DataInfo['SoundAmpF'][KeyHz][
-                        DataInfo['SoundAmpF'][KeyHz].index(0.0)
-                                                ] = 0
-#                upYLim = max(ABRs[0][Freq][0][Key][Trial])
-#                downYLim = min(ABRs[0][Freq][0][Key][Trial])
-                upYLim = [0] * len(ABRs[Freq][0][Key]); downYLim = upYLim[:]
-        
-                for Trial in range(len(ABRs[Freq][0][Key])):
-                    upYLim[Trial] = max(ABRs[Freq][0][Key][Trial])
-                    downYLim[Trial] = min(ABRs[Freq][0][Key][Trial])
-                
-                upYLim = max(upYLim); downYLim = min(downYLim)
-                
-                for AmpF in range(len(DataInfo['Intensities'])):
-                    FigTitle = KeyHz + ' Hz, DV ' + Key + \
-                               ', trial ' + str(Trial+1)
-                    YLabel = 'Voltage [mV]'; XLabel = 'Time [ms]'
-                    LineLabel = str(DataInfo['Intensities'][AmpF]) + ' dB'
+    if Visible: plt.show()
+    return(None)
+
+
+def ABRPlot3D(AnalysisFile, FileName, Visible=True):
+    """ 
+    This function will plot the data from ../*Analysis.hdf5. Make sure 
+    FileName is a string with the path to only one file.
+    
+    Also, LaTeX will render all the text in the plots (see SetPlot function). 
+    For this, make sure you have a working LaTex installation and dvipng 
+    package installed.
+    """
+    ABRs, XValues = Hdf5F.LoadABRs(AnalysisFile)
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    
+    os.makedirs('Figs', exist_ok=True)    # Figs folder
+    
+    Params = SetPlot(Params=True)
+    import matplotlib.tri as mtri
+    from matplotlib import rcParams; rcParams.update(Params)
+    from matplotlib import pyplot as plt
+    from mpl_toolkits.mplot3d.axes3d import Axes3D
+    
+    
+    print('Plotting...')
+    Colormaps = [plt.get_cmap('Reds'), plt.get_cmap('Blues')]
+    for Stim in ABRs.keys():
+        for DVCoord in ABRs[Stim].keys():
+            for Freq in ABRs[Stim][DVCoord].keys():
+                for Trial in ABRs[Stim][DVCoord][Freq].keys():
+                    FigTitle = ''.join([Freq, 'Hz, ', DVCoord, 
+                                        'DV, trial ', Trial])
+                    YLabel = 'Intensity [dBSPL]'; XLabel = 'Time [ms]'
+                    ZLabel = 'Voltage [mV]'
                     SpanLabel = 'Sound pulse'
                     
-                    Ind1 = list(XValues).index(0)
-                    Ind2 = list(XValues).index(3)
+                    Fig = plt.figure()
+                    Axes = Axes3D(Fig)
                     
-                    Axes[AmpF].plot(XValues, ABRs[Freq][AmpF][Key][Trial], 
-                                    color=Colors[AmpF][0], label=LineLabel)
+                    Intensities = list(ABRs[Stim][DVCoord][Freq][Trial])
+                    Intensities.sort(reverse=True)
+                    TXValues = XValues[Stim][DVCoord][Freq][Trial][:]
                     
-                    Axes[AmpF].axvspan(XValues[Ind1], XValues[Ind2], 
+                    Ind1 = list(TXValues).index(0)
+                    Ind2 = list(TXValues).index(
+                                       int(DataInfo['SoundPulseDur']*1000))
+                    
+                    Axes.axvspan(TXValues[Ind1], TXValues[Ind2], 
                                        color='k', alpha=0.3, lw=0, 
                                        label=SpanLabel)
                     
-                    SetPlot(AxesObj=Axes[AmpF], Axes=True)
-                    Axes[AmpF].legend(loc='lower right', frameon=False)
-                    Axes[AmpF].spines['bottom'].set_visible(False)
-                    Axes[AmpF].spines['left'].set_bounds(round(0), round(1))
-                    Axes[AmpF].xaxis.set_ticks_position('none')
-                    Axes[AmpF].set_ylabel(YLabel)
-                    Axes[AmpF].set_ylim(downYLim, upYLim)
+                    for LineIndex in range(len(Intensities)-1):
+                        dB0 = Intensities[LineIndex]
+                        dB1 = Intensities[LineIndex+1]
+                        
+                        ABR0 = ABRs[Stim][DVCoord][Freq][Trial][dB0][:]
+                        ABR1 = ABRs[Stim][DVCoord][Freq][Trial][dB1][:]
+                        
+                        X = np.concatenate([TXValues, TXValues])
+                        Y = [int(dB0[:-2])]*len(ABR0) + [int(dB1[:-2])]*len(ABR1)
+                        Z = np.concatenate([ABR0, ABR1])
+                        T = mtri.Triangulation(X, Y)
+                        
+                        Axes.plot_trisurf(X, Y, Z, triangles=T.triangles, 
+                                          cmap=Colormaps[0], edgecolor='none', 
+                                          antialiased=False)
                     
-                Axes[-1].spines['bottom'].set_visible(True)
-                Axes[-1].set_xlabel(XLabel)
-                Axes[-1].spines['bottom'].set_bounds(round(0), round(1))
-                SetPlot(FigObj=Fig, FigTitle=FigTitle, Plot=True)
+                    Axes.locator_params(tight=True)
+                    Axes.set_xlabel(XLabel); Axes.set_ylabel(YLabel)
+                    Axes.set_zlabel(ZLabel)
+                    Axes.grid(False)
+                    
+                    Fig.suptitle(FigTitle)#; Fig.tight_layout(); 
+                    
+                    FigName = ''.join(['Figs/', FileName[:-15], '-ABRs_', Stim, 
+                                       '_', DVCoord, 'DV_', Freq, 'Hz_', Trial, 
+                                       '.svg'])
+                    Fig.savefig(FigName, format='svg')
+    
+    if Visible: plt.show()
+    plt.show()
+                        
+    
+    return(None)
+
+
+def ClusterizeSpks(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', 
+                   Override={}):
+    print('Load DataInfo...')
+    DirList = glob('KwikFiles/*'); DirList.sort()
+    
+    CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
+    A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+           'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+    ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
+    
+    for Stim in StimType:
+        if Override != {}: 
+            if 'Stim' in Override.keys():
+                Stim = Override['Stim']
+        
+        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+        
+        for FInd, RecFolder in enumerate(Exps):        
+            if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+            else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+            
+            OEProc = GetProc(Raw, Board)[0]
+            
+            Path = os.getcwd() + '/' + RecFolder +'/SepCh/'
+            os.makedirs(Path, exist_ok=True)
+            
+            Rate = Raw[OEProc]['info']['0']['sample_rate']
+            
+            Clusters = {}
+            for Rec in Raw[OEProc]['data'].keys():
+                if Override != {}: 
+                    if 'Rec' in Override.keys():
+                        Rec = Override['Rec']
+                RecS = "{0:02d}".format(int(Rec))
                 
-                FigName = 'Figs/' + FileName[:-15] + '-ABR_DV' +  Key + \
-                          '_Trial' + str(Trial) + '_Freq' + KeyHz + '.svg'
-                Fig.savefig(FigName, format='svg')
+                print('Separating channels according to ChannelMap...')
+                Data = [Raw[OEProc]['data'][Rec][:, _-1] * 
+                        Raw[OEProc]['channel_bit_volts'][Rec][_-1] * 1000
+                        for _ in ChannelMap]
+                                
+                print('Writing files for clustering... ', end='')
+                FileList = []
+                for Ind, Ch in enumerate(Data):
+                    MatName = 'Exp' + Files['100_kwd'][-13:-8] + '_' + \
+                              RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
+                    
+                    FileList.append(MatName)
+                    io.savemat(Path+MatName, {'data': Ch})
+                
+                TxtFile = open(Path+'Files.txt', 'w')
+                for File in FileList: TxtFile.write(File+'\n')
+                TxtFile.close()
+                print('Done.')
+                
+                CallWaveClus(Rate, Path)
+                
+                ClusterList = glob(Path+'times_*'); ClusterList.sort()
+                ClusterList = [_ for _ in ClusterList if _[-11:-9] == RecS]
+                
+                Clusters[RecS] = {}
+                for File in ClusterList:
+                    Ch = File[-8:-4]
+                    
+                    ClusterFile = io.loadmat(File)
+                    Clusters[RecS][Ch] = {}
+                    Clusters[RecS][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
+                    Clusters[RecS][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
+                    Clusters[RecS][Ch]['Spikes'] = ClusterFile['spikes'][:]
+                    
+#                    Clusters[RecS][Ch]['Info'] = {}
+#                    Clusters[RecS][Ch]['Info']['Parameters'] = ClusterFile['par']
+#                    Clusters[RecS][Ch]['Info']['InSpk'] = ClusterFile['inspk'][:]
+                
+                if Override != {}: 
+                    if 'Rec' in Override.keys(): break
+            
+            Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
+            ToDelete = glob(Path+'*')
+            for File in ToDelete: os.remove(File)
+            os.removedirs(Path)
 
 
 def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1, 
@@ -619,19 +711,19 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     RecFolder = DirList[RecFolder-1]
     
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
-                                         '/DataInfo/SoundBackgroundAmpF', 
-                                         FileName, Attrs=False)
-    DataInfo['SoundPulseAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundPulseAmpF', 
-                                                FileName, Attrs=False)
+    
+    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+#    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+#    Here = os.getcwd().split(sep='/')[-1]
+#    Group = Here + '-ABRs_' + Now
     
     for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
         DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
     
-    print('Preallocate memory...')
-    GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-    for Freq in range(len(DataInfo['NoiseFrequency'])):
-        GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
+#    print('Preallocate memory...')
+#    GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+#    for Freq in range(len(DataInfo['NoiseFrequency'])):
+#        GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
     
     if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
     else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
@@ -647,59 +739,78 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
     NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-    XValues = (range(-NoOfSamplesBefore, 
-                     NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
+    
+    XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
+               /Rate)*10**3
+    
+    GPIAS = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
+             for Freq in DataInfo['NoiseFrequency']}
+    
+    for Freq in GPIAS.keys():
+        GPIAS[Freq]['NoGap'] = []; GPIAS[Freq]['Gap'] = []
     
     for Rec in Raw[OEProc]['data'].keys():
         print('Slicing and filtering Rec ', Rec, '...')
         Freq = DataInfo['FreqOrder'][Rec][0]; 
         Trial = DataInfo['FreqOrder'][Rec][1];
         
+        SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
+                         str(DataInfo['NoiseFrequency'][Freq][1])])
+        
+        if Trial%2 == 0: STrial = 'NoGap'
+        else: STrial = 'Gap'
+        
         if AnalogTTLs:
             TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, GPIASTTLCh, OEProc)
-            GPIAS[Freq][Trial] = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, 
-                                           NoOfSamplesBefore, NoOfSamplesAfter, 
-                                           NoOfSamples, AnalogTTLs)
+            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
         else:
             RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
                                                TTLsPerRec=TTLsPerRec)
-            GPIAS[Freq][Trial] = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, 
-                                           NoOfSamplesBefore, NoOfSamplesAfter, 
-                                           NoOfSamples, AnalogTTLs, RawTime)
+            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
-        GPIAS[Freq][Trial] = GPIAS[Freq][Trial][0][:]
+        if GPIAS[SFreq][STrial] == []: GPIAS[SFreq][STrial] = GD[:]
+        else: 
+            # Cumulative moving average
+            ElNo = len(GPIAS[SFreq][STrial])
+            GPIAS[SFreq][STrial] = ((np.mean(GPIAS[SFreq][STrial], axis=0)
+                                     *ElNo) + GD[:])/(ElNo+1)
     
-    for Freq in range(len(DataInfo['NoiseFrequency'])):
-        # Separate Gap/NoGap
-        gData = GPIAS[Freq][:]
-        NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
-        GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
-        
-        # Average
-        gData = [0, 0]
-        NoGapSum = list(map(sum, zip(*NoGapAll)))
-        GapSum = list(map(sum, zip(*GapAll)))
-        gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
-        gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
+    for Freq in GPIAS.keys():
+#        # Separate Gap/NoGap
+#        gData = GPIAS[Freq][:]
+#        NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
+#        GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
+#        
+#        # Average
+#        gData = [0, 0]
+#        NoGapSum = list(map(sum, zip(*NoGapAll)))
+#        GapSum = list(map(sum, zip(*GapAll)))
+#        gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
+#        gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
         
         # Hilbert
-        gData[0] = abs(signal.hilbert(gData[0]))
-        gData[1] = abs(signal.hilbert(gData[1]))
+        GPIAS[Freq]['NoGap'] = abs(signal.hilbert(GPIAS[Freq]['NoGap']))
+        GPIAS[Freq]['Gap'] = abs(signal.hilbert(GPIAS[Freq]['Gap']))
         
         # Bandpass filter
-        gData[0] = FilterSignal(gData[0], Rate, FilterFreq, FilterOrder, 
-                                                            'bandpass')
-        gData[1] = FilterSignal(gData[1], Rate, FilterFreq, FilterOrder, 
-                                                            'bandpass')
+        GPIAS[Freq]['NoGap'] = FilterSignal(GPIAS[Freq]['NoGap'], Rate, 
+                                            FilterFreq, FilterOrder, 
+                                            'bandpass')
+        GPIAS[Freq]['Gap'] = FilterSignal(GPIAS[Freq]['Gap'], Rate, FilterFreq, 
+                                          FilterOrder, 'bandpass')
         
         # SavGol smooth
-        gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
-        gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
+        GPIAS[Freq]['NoGap'] = signal.savgol_filter(GPIAS[Freq]['NoGap'], 5, 2, 
+                                                    mode='nearest')
+        GPIAS[Freq]['Gap'] = signal.savgol_filter(GPIAS[Freq]['Gap'], 5, 2, 
+                                                  mode='nearest')
         
-        GPIAS[Freq] = {}
-        GPIAS[Freq]['Gap'] = gData[1][:]; GPIAS[Freq]['NoGap'] = gData[0][:]
+#        GPIAS[Freq] = {}
+#        GPIAS[Freq]['Gap'] = gData[1][:]; GPIAS[Freq]['NoGap'] = gData[0][:]
         
-        del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
+#        del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
     
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
     Hdf5F.WriteGPIAS(GPIAS, RecFolder, XValues, AnalysisFile)
@@ -707,20 +818,12 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     return(None)
 
 
-def GPIASPlot(FileName):
+def GPIASPlot(FileName, Visible=False):
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     
     print('Loading data...')
     ## DataInfo
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    DataInfo['SoundBackgroundAmpF'] = Hdf5F.LoadDict(
-                                         '/DataInfo/SoundBackgroundAmpF', 
-                                         FileName, Attrs=False)
-    DataInfo['SoundPulseAmpF'] = Hdf5F.LoadDict('/DataInfo/SoundPulseAmpF', 
-                                                FileName, Attrs=False)
-    
-    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
     
     ## GPIAS
     GPIAS, XValues = Hdf5F.LoadGPIAS(FileName)
@@ -733,32 +836,32 @@ def GPIASPlot(FileName):
     Ind1 = list(XValues).index(0)
     Ind2 = list(XValues).index(int(DataInfo['SoundLoudPulseDur']*1000))
     
-    for Freq in range(len(DataInfo['NoiseFrequency'])):
-        FreqKey = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
-                  str(DataInfo['NoiseFrequency'][Freq][1])
-        
-        FigTitle = FreqKey + ' Hz'
+    for Freq in GPIAS.keys():
+        FigTitle = Freq + ' Hz'
         LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
         SpanLabel = 'Sound Pulse'
         XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
         
-        plt.figure(Freq)
+        plt.figure()
+        plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
+                    lw=0, label=SpanLabel)
         plt.plot(XValues, GPIAS[Freq]['NoGap'], 
                  color='r', label=LineNoGapLabel, lw=2)
         plt.plot(XValues, GPIAS[Freq]['Gap'], 
                  color='b', label=LineGapLabel, lw=2)
-        plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
-                    lw=0, label=SpanLabel)
 
         SetPlot(AxesObj=plt.axes(), Axes=True)
         SetPlot(FigObj=plt, FigTitle=FigTitle, Plot=True)
         plt.ylabel(YLabel); plt.xlabel(XLabel)
         plt.legend(loc='lower right')
         
-        FigName = 'Figs/' + FileName[:-5] + '-' + FreqKey + '.svg'
+        FigName = 'Figs/' + FileName[:-5] + '-' + Freq + '.svg'
         plt.savefig(FigName, format='svg')
-        
+    
+    if Visible: plt.show()
+    
     print('Done.')
+    return(None)
 
 
 def TTLsLatencyAnalysis(FileName, SoundCh=1, TTLSqCh=2, TTLCh=1, 
@@ -848,89 +951,7 @@ def TTLsLatencyPlot(FileName):
 #    plt.legend(loc='upper right')
 #    
 #    plt.savefig('Figs/SoundTTLLatencies-SoundBoardToOE.svg', format='svg')
-
-
-def ClusterizeAll(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', Override={}):
-    print('Load DataInfo...')
-    DirList = glob('KwikFiles/*'); DirList.sort()
-    
-    CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
-    A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-           'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
-    ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
-    
-    for Stim in StimType:
-        if Override != {}: 
-            if 'Stim' in Override.keys():
-                Stim = Override['Stim']
-        
-        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
-        
-        for FInd, RecFolder in enumerate(Exps):        
-            if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            
-            OEProc = GetProc(Raw, Board)[0]
-            
-            Path = os.getcwd() + '/' + RecFolder +'/SepCh/'
-            os.makedirs(Path, exist_ok=True)
-            
-            Rate = Raw[OEProc]['info']['0']['sample_rate']
-            
-            Clusters = {}
-            for Rec in Raw[OEProc]['data'].keys():
-                if Override != {}: 
-                    if 'Rec' in Override.keys():
-                        Rec = Override['Rec']
-                RecS = "{0:02d}".format(int(Rec))
-                
-                print('Separating channels according to ChannelMap...')
-                Data = [Raw[OEProc]['data'][Rec][:, _-1] * 
-                        Raw[OEProc]['channel_bit_volts'][Rec][_-1] * 1000
-                        for _ in ChannelMap]
-                                
-                print('Writing files for clustering... ', end='')
-                FileList = []
-                for Ind, Ch in enumerate(Data):
-                    MatName = 'Exp' + Files['100_kwd'][-13:-8] + '_' + \
-                              RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
-                    
-                    FileList.append(MatName)
-                    io.savemat(Path+MatName, {'data': Ch})
-                
-                TxtFile = open(Path+'Files.txt', 'w')
-                for File in FileList: TxtFile.write(File+'\n')
-                TxtFile.close()
-                print('Done.')
-                
-                CallWaveClus(Rate, Path)
-                
-                ClusterList = glob(Path+'times_*'); ClusterList.sort()
-                ClusterList = [_ for _ in ClusterList if _[-11:-9] == RecS]
-                
-                Clusters[RecS] = {}
-                for File in ClusterList:
-                    Ch = File[-8:-4]
-                    
-                    ClusterFile = io.loadmat(File)
-                    Clusters[RecS][Ch] = {}
-                    Clusters[RecS][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
-                    Clusters[RecS][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
-                    Clusters[RecS][Ch]['Spikes'] = ClusterFile['spikes'][:]
-                    
-#                    Clusters[RecS][Ch]['Info'] = {}
-#                    Clusters[RecS][Ch]['Info']['Parameters'] = ClusterFile['par']
-#                    Clusters[RecS][Ch]['Info']['InSpk'] = ClusterFile['inspk'][:]
-                
-                if Override != {}: 
-                    if 'Rec' in Override.keys(): break
-            
-            Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
-            ToDelete = glob(Path+'*')
-            for File in ToDelete: os.remove(File)
-            os.removedirs(Path)
-                    
-                    
+    return(None)
 
 
 def UnitsPSTH(FileName, StimTTLCh=-1, PSTHTimeBeforeTTL=0, 

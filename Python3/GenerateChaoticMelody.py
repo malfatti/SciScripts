@@ -40,8 +40,6 @@ import numpy
 import matplotlib as plot
 
 from mpl_toolkits.mplot3d.axes3d import Axes3D
-from itertools import groupby
-from operator import itemgetter
 
 ## Fourth-order Runge-Kutta integrator
 def rk4(odes, LorenzCoord, LorenzParameters, dt=0.01):

@@ -110,22 +110,21 @@ def LoadABRs(FileName, Path='all'):
         Key = GetExpKeys('ABRs', F)
         
         if Path == 'all':
-            ABRs = {}
+            ABRs = {}; XValues = {}
             for Stim in F[Key].keys():
-                ABRs[Stim] = {}
+                ABRs[Stim] = {}; XValues[Stim] = {}
                 
                 for DV in F[Key][Stim].keys():
-                    ABRs[Stim][DV] = {}
+                    ABRs[Stim][DV] = {}; XValues[Stim][DV] = {}
                     
                     for Freq in F[Key][Stim][DV].keys():
-                        ABRs[Stim][DV][Freq] = {}
+                        ABRs[Stim][DV][Freq] = {}; XValues[Stim][DV][Freq] = {}
                         
                         for Trial in F[Key][Stim][DV][Freq].keys():
-                            ABRs[Stim][DV][Freq][Trial] = {}; 
-                            XValues = ABRs.copy()
+                            ABRs[Stim][DV][Freq][Trial] = {}
                             
-                            XValues = F[Key][Stim][DV][Freq][Trial].attrs['XValues']
-                            XValues[Stim][DV][Freq][Trial]['XValues'] = XValues[:]
+                            XValuesArray = F[Key][Stim][DV][Freq][Trial].attrs['XValues']
+                            XValues[Stim][DV][Freq][Trial] = XValuesArray[:]
                             
                             for dB, ABR in F[Key][Stim][DV][Freq][Trial].items():
                                 ABRs[Stim][DV][Freq][Trial][dB] = ABR[:]
@@ -190,14 +189,15 @@ def LoadExpPerStim(StimType, DirList, FileName):
 
 def LoadGPIAS(FileName):
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('GPIAS', F)
-        XValues = F[Key].attrs['XValues']
+        Key = GetExpKeys('GPIAS_', F)
         
-        GPIAS = [[0] for _ in range(len(F[Key]))]
-        for Freq in range(len(GPIAS)):
+        GPIAS = {}
+        for Freq in F[Key].keys():
             GPIAS[Freq] = {}
-            GPIAS[Freq]['NoGap'] = F[Key][str(Freq)]['NoGap'][:]
-            GPIAS[Freq]['Gap'] = F[Key][str(Freq)]['Gap'][:]
+            GPIAS[Freq]['NoGap'] = F[Key][Freq]['NoGap'][:]
+            GPIAS[Freq]['Gap'] = F[Key][Freq]['Gap'][:]
+    
+    XValues = F[Key].attrs['XValues'][:]
     
     return(GPIAS, XValues)
 
@@ -425,6 +425,7 @@ def WriteDict(Dict, Path, FileName, Attrs=True):
 
 def WriteExpInfo(StimType, DVCoord, Freq, FileName):
     print('Writing ExpInfo to', FileName+'... ', end='')
+    
     with h5py.File(FileName) as F:
         if '/ExpInfo' not in F: F.create_group('ExpInfo')
         
@@ -442,16 +443,18 @@ def WriteExpInfo(StimType, DVCoord, Freq, FileName):
 def WriteGPIAS(GPIAS, RecFolder, XValues, FileName):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Group = 'GPIAS-' + RecFolder[10:] + '-' + Now
+    Here = os.getcwd().split(sep='/')[-1]
+    Group = Here + '_' + RecFolder[10:] + '-GPIAS_' + Now
+    
     with h5py.File(FileName) as F:
         F.create_group(Group)
         F[Group].attrs['XValues'] = XValues
         
-        for Freq in range(len(GPIAS)):
-            F[Group].create_group(str(Freq))
+        for Freq in GPIAS.keys():
+            if Freq not in F[Group]: F[Group].create_group(Freq)
             
-            F[Group][str(Freq)]['NoGap'] = GPIAS[Freq]['NoGap']
-            F[Group][str(Freq)]['Gap'] = GPIAS[Freq]['Gap']
+            F[Group][Freq]['NoGap'] = GPIAS[Freq]['NoGap']
+            F[Group][Freq]['Gap'] = GPIAS[Freq]['Gap']
     
     print('Done.')
     return(None)
@@ -460,17 +463,70 @@ def WriteGPIAS(GPIAS, RecFolder, XValues, FileName):
 def WriteTTLslatency(TTLsLatency, XValues, FileName):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Group = 'TTLsLatency-' + Now
+    Here = os.getcwd().split(sep='/')[-1]
+    Group = Here + '-TTLsLatency_' + Now
+    
     with h5py.File(FileName) as F:
+        F[Group].attrs['XValues'] = XValues
+        
         for Rec in TTLsLatency.keys():
             Path = '/' + Group + '/' + Rec; F.create_group(Path)
             
             for Key, Value in TTLsLatency[Rec].items():
                 F[Path][Key] = Value
-                
-        F[Group].attrs['XValues'] = XValues
     
     print('Done.')
+    return(None)
+
+def WriteUnitsPerCh(Units, Path, FileName, XValues=[]):
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    Here = os.getcwd().split(sep='/')[-1]
+    Group = Here + '-UnitRec_' + Now
+    UnitPath = '/' + Group + '/' + Path
+    
+    with h5py.File(FileName) as F:
+        Key = GetExpKeys('UnitRec_', F)
+        
+        if not Key: F.create_group(Group); Key = Group[:]
+        
+        for Ch in Units.keys():
+            Path = UnitPath + '/' + Ch
+            if Path not in F: F.create_group(Path)
+            
+            for Var in Units[Ch].keys():
+                if Var == 'Spks':
+                    if Path+'/'+Var in F: del(F[Path][Var])
+                    F[Path].create_group(Var)
+                    
+                    for Class in Units[Ch][Var].keys():
+                        for CKey, Spk in enumerate(Units[Ch][Var][Class]):
+                            if not len(Spk):
+                                del(Units[Ch][Var][Class][CKey])
+                                continue
+                            if Path+'/'+Var+'/'+Class not in F:
+                                F[Path][Var].create_group(Class)
+                            
+                            F[Path][Var][Class][str(CKey)] = Spk
+                
+                elif Var == 'PSTH':
+                    if Path+'/'+Var in F: del(F[Path][Var])
+                    F[Path].create_group(Var)
+                    for VarKey in Units[Ch][Var].keys():
+                        F[Path][Var][VarKey] = Units[Ch][Var][VarKey][:]
+                
+                elif Var == 'Spks_Info':
+                    for VarKey, VarValue in Units[Ch][Var].items():
+                        F[Path]['Spks'].attrs[VarKey] = VarValue
+                
+                elif Var == 'PSTH_Info':
+                    for VarKey, VarValue in Units[Ch][Var].items():
+                        F[Path]['PSTH'].attrs[VarKey] = VarValue
+                
+                else:
+                    print(Var, 'not supported')
+        
+        if len(XValues): F[Group].attrs['XValues'] = XValues
+        
     return(None)
 
 

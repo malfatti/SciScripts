@@ -298,7 +298,7 @@ def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore,
     return(Array)
 
 
-def UnitPlotPerCh(ChDict, Ch, XValues, FigName, FigTitle):
+def UnitPlotPerCh(ChDict, Ch, XValues, PulseDur, FigName, FigTitle):
     ClusterNo = len(ChDict['Spks'])
     if ClusterNo == 0: print(Ch, 'had no spikes :('); return(None)
     
@@ -307,7 +307,10 @@ def UnitPlotPerCh(ChDict, Ch, XValues, FigName, FigTitle):
     from matplotlib import pyplot as plt
     
     Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
-
+    SpksYLabel = 'Voltage [mV]'; SpksXLabel = 'Time [ms]'
+    PSTHYLabel = 'Number of spikes in channel'; PSTHXLabel = 'Time [ms]'
+    SpanLabel = 'Sound pulse'
+    
     for Class in ChDict['Spks'].keys():
         SpkNo = len(ChDict['Spks'][Class])
         print(str(SpkNo), 'Spks in cluster', Class)
@@ -335,16 +338,38 @@ def UnitPlotPerCh(ChDict, Ch, XValues, FigName, FigTitle):
         if ClusterNo == 1:
 #                        Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean))
             Axes[0].plot(np.mean(ChDict['Spks'][Class], axis=0), 'k')
-            Axes[1].bar(XValues, ChDict['PSTH'][Class])
+            Axes[1].bar(XValues, ChDict['PSTH'][Class], 'r')
+            
+            Ind1 = list(XValues).index(0)
+            Ind2 = list(XValues).index(int(PulseDur*1000))
+            
+            Axes[1].axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.3, 
+                            lw=0, label=SpanLabel)
+            
             SetPlot(AxesObj=Axes[0], Axes=True)
             SetPlot(AxesObj=Axes[1], Axes=True)
+            Axes[0].set_ylabel(SpksYLabel); Axes[0].set_xlabel(SpksXLabel)
+            Axes[1].set_ylabel(PSTHYLabel); Axes[1].set_xlabel(PSTHXLabel)
+            
         else:
 #                    Axes[Cluster][0].set_title('Peak='+str(PSTHPeak)+' Mean='+\
 #                                               str(PSTHMean)+' Std='+str(PSTHStd))
             Axes[int(Class)-1][0].plot(np.mean(ChDict['Spks'][Class], axis=0), 'k')
-            Axes[int(Class)-1][1].bar(XValues, ChDict['PSTH'][Class])
+            Axes[int(Class)-1][1].bar(XValues, ChDict['PSTH'][Class], 'r')
+            
+            Ind1 = list(XValues).index(0)
+            Ind2 = list(XValues).index(int(PulseDur*1000))
+            
+            Axes[int(Class)-1][1].axvspan(XValues[Ind1], XValues[Ind2], 
+                                          color='k', alpha=0.3, lw=0, 
+                                          label=SpanLabel)
+            
             SetPlot(AxesObj=Axes[int(Class)-1][0], Axes=True)
             SetPlot(AxesObj=Axes[int(Class)-1][1], Axes=True)
+            Axes[int(Class)-1][0].set_ylabel(SpksYLabel)
+            Axes[int(Class)-1][0].set_xlabel(SpksXLabel)
+            Axes[int(Class)-1][1].set_ylabel(PSTHYLabel)
+            Axes[int(Class)-1][1].set_xlabel(PSTHXLabel)
     
     SetPlot(FigObj=Fig, FigTitle=FigTitle, Plot=True)
     print('Writing to', FigName+'... ', end='')
@@ -536,7 +561,7 @@ def ABRPlot(AnalysisFile, FileName, Visible=False):
     return(None)
 
 
-def ABRPlot3D(AnalysisFile, FileName, Visible=True):
+def ABRPlot3D(AnalysisFile, FileName, Azimuth=-110, Elevation=50, Visible=True):
     """ 
     This function will plot the data from ../*Analysis.hdf5. Make sure 
     FileName is a string with the path to only one file.
@@ -545,9 +570,7 @@ def ABRPlot3D(AnalysisFile, FileName, Visible=True):
     For this, make sure you have a working LaTex installation and dvipng 
     package installed.
     """
-    ABRs, XValues = Hdf5F.LoadABRs(AnalysisFile)
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    
+    ABRs, XValues = Hdf5F.LoadABRs(AnalysisFile)    
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     
     Params = SetPlot(Params=True)
@@ -567,7 +590,6 @@ def ABRPlot3D(AnalysisFile, FileName, Visible=True):
                                         'DV, trial ', Trial])
                     YLabel = 'Intensity [dBSPL]'; XLabel = 'Time [ms]'
                     ZLabel = 'Voltage [mV]'
-                    SpanLabel = 'Sound pulse'
                     
                     Fig = plt.figure()
                     Axes = Axes3D(Fig)
@@ -575,14 +597,6 @@ def ABRPlot3D(AnalysisFile, FileName, Visible=True):
                     Intensities = list(ABRs[Stim][DVCoord][Freq][Trial])
                     Intensities.sort(reverse=True)
                     TXValues = XValues[Stim][DVCoord][Freq][Trial][:]
-                    
-                    Ind1 = list(TXValues).index(0)
-                    Ind2 = list(TXValues).index(
-                                       int(DataInfo['SoundPulseDur']*1000))
-                    
-                    Axes.axvspan(TXValues[Ind1], TXValues[Ind2], 
-                                       color='k', alpha=0.3, lw=0, 
-                                       label=SpanLabel)
                     
                     for LineIndex in range(len(Intensities)-1):
                         dB0 = Intensities[LineIndex]
@@ -598,23 +612,22 @@ def ABRPlot3D(AnalysisFile, FileName, Visible=True):
                         
                         Axes.plot_trisurf(X, Y, Z, triangles=T.triangles, 
                                           cmap=Colormaps[0], edgecolor='none', 
-                                          antialiased=False)
+                                          antialiased=False, shade=False)
                     
                     Axes.locator_params(tight=True)
                     Axes.set_xlabel(XLabel); Axes.set_ylabel(YLabel)
                     Axes.set_zlabel(ZLabel)
                     Axes.grid(False)
+                    Axes.view_init(Elevation, Azimuth)
                     
                     Fig.suptitle(FigTitle)#; Fig.tight_layout(); 
                     
-                    FigName = ''.join(['Figs/', FileName[:-15], '-ABRs_', Stim, 
+                    FigName = ''.join(['Figs/', FileName[:-15], '-ABRs3D_', Stim, 
                                        '_', DVCoord, 'DV_', Freq, 'Hz_', Trial, 
                                        '.svg'])
                     Fig.savefig(FigName, format='svg')
     
     if Visible: plt.show()
-    plt.show()
-                        
     
     return(None)
 
@@ -710,21 +723,12 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     DirList = glob('KwikFiles/*'); DirList.sort()
     RecFolder = DirList[RecFolder-1]
     
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)    
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-#    Now = datetime.now().strftime("%Y%m%d%H%M%S")
-#    Here = os.getcwd().split(sep='/')[-1]
-#    Group = Here + '-ABRs_' + Now
     
     for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
         DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
-    
-#    print('Preallocate memory...')
-#    GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-#    for Freq in range(len(DataInfo['NoiseFrequency'])):
-#        GPIAS[Freq] = [[0] for _ in range(round(DataInfo['NoOfTrials']*2))]
-    
+        
     if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
     else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
     
@@ -751,8 +755,8 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     
     for Rec in Raw[OEProc]['data'].keys():
         print('Slicing and filtering Rec ', Rec, '...')
-        Freq = DataInfo['FreqOrder'][Rec][0]; 
-        Trial = DataInfo['FreqOrder'][Rec][1];
+        Freq = DataInfo['FreqOrder'][int(Rec)][0]; 
+        Trial = DataInfo['FreqOrder'][int(Rec)][1];
         
         SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
                          str(DataInfo['NoiseFrequency'][Freq][1])])
@@ -778,18 +782,6 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
                                      *ElNo) + GD[:])/(ElNo+1)
     
     for Freq in GPIAS.keys():
-#        # Separate Gap/NoGap
-#        gData = GPIAS[Freq][:]
-#        NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
-#        GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
-#        
-#        # Average
-#        gData = [0, 0]
-#        NoGapSum = list(map(sum, zip(*NoGapAll)))
-#        GapSum = list(map(sum, zip(*GapAll)))
-#        gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
-#        gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
-        
         # Hilbert
         GPIAS[Freq]['NoGap'] = abs(signal.hilbert(GPIAS[Freq]['NoGap']))
         GPIAS[Freq]['Gap'] = abs(signal.hilbert(GPIAS[Freq]['Gap']))
@@ -807,10 +799,9 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
         GPIAS[Freq]['Gap'] = signal.savgol_filter(GPIAS[Freq]['Gap'], 5, 2, 
                                                   mode='nearest')
         
-#        GPIAS[Freq] = {}
-#        GPIAS[Freq]['Gap'] = gData[1][:]; GPIAS[Freq]['NoGap'] = gData[0][:]
-        
-#        del(NoGapAll, GapAll, NoGapSum, GapSum, gData)
+        # V to mV
+        GPIAS[Freq]['NoGap'] = GPIAS[Freq]['NoGap']*1000
+        GPIAS[Freq]['Gap'] = GPIAS[Freq]['Gap']*1000
     
     AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
     Hdf5F.WriteGPIAS(GPIAS, RecFolder, XValues, AnalysisFile)
@@ -818,7 +809,7 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
     return(None)
 
 
-def GPIASPlot(FileName, Visible=False):
+def GPIASPlot(AnalysisFile, FileName, Visible=False):
     os.makedirs('Figs', exist_ok=True)    # Figs folder
     
     print('Loading data...')
@@ -826,7 +817,7 @@ def GPIASPlot(FileName, Visible=False):
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     
     ## GPIAS
-    GPIAS, XValues = Hdf5F.LoadGPIAS(FileName)
+    GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile)
     
     Params = SetPlot(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
@@ -845,9 +836,9 @@ def GPIASPlot(FileName, Visible=False):
         plt.figure()
         plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
                     lw=0, label=SpanLabel)
-        plt.plot(XValues, GPIAS[Freq]['NoGap'], 
+        plt.plot(XValues, GPIAS[Freq]['NoGap'][0,:], 
                  color='r', label=LineNoGapLabel, lw=2)
-        plt.plot(XValues, GPIAS[Freq]['Gap'], 
+        plt.plot(XValues, GPIAS[Freq]['Gap'][0,:], 
                  color='b', label=LineGapLabel, lw=2)
 
         SetPlot(AxesObj=plt.axes(), Axes=True)
@@ -1180,6 +1171,7 @@ def UnitsSpks(FileName, StimType=['Sound'], Board='OE', Override={}):
 
 def UnitsSpksPSTH_ToSVG(AnalysisFile, FileName, Override):    
     Units, XValues = Hdf5F.LoadUnits(AnalysisFile, Override)
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     
 #    Thrash = {}
     for SKey in Units:
@@ -1189,7 +1181,7 @@ def UnitsSpksPSTH_ToSVG(AnalysisFile, FileName, Override):
                     FigName = 'Figs/' + FileName[:-15] + '-UnitRec_' + SKey + '_Folder' + FKey + '_Rec' + RKey + '_' + Ch + '.svg'
                     FigTitle = SKey.replace('_', '-') + ' ' + Ch
                     UnitPlot = Process(target=UnitPlotPerCh, 
-                                       args=(Units[SKey][FKey][RKey][Ch], Ch, XValues, FigName, FigTitle))
+                                       args=(Units[SKey][FKey][RKey][Ch], Ch, XValues, DataInfo['SoundPulseDur'], FigName, FigTitle))
                     UnitPlot.start(); print('PID =', UnitPlot.pid)
                     UnitPlot.join()
 

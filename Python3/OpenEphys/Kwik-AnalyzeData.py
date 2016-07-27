@@ -28,6 +28,7 @@ FilterFreq = [300, 3000]         # frequency for filter
 FilterOrder = 5         # butter order
 AnalogTTLs = True
 StimType = ['Sound_NaCl', 'Sound_CNO']
+#StimType = ['Sound']
 Board = 'OE'
 
 #==========#==========#==========#==========#
@@ -41,6 +42,7 @@ KwikAnalysis.ABRAnalysis(FileName, ABRCh, ABRTTLCh, ABRTimeBeforeTTL, ABRTimeAft
 
 AnalysisFile = glob('../*.hdf5')[0]
 KwikAnalysis.ABRPlot(AnalysisFile, FileName, Visible=True)
+KwikAnalysis.ABRPlot3D(AnalysisFile, FileName, Visible=True)
 
 
 #%% GPIASs
@@ -62,12 +64,12 @@ import KwikAnalysis
 from glob import glob
 
 FileName = glob('*.hdf5'); FileName.sort(); FileName = FileName[RecFolder-1]
-KwikAnalysis.GPIASAnalogTTLs(RecFolder, FileName, GPIASCh, GPIASTTLCh, 
+KwikAnalysis.GPIASAnalysis(RecFolder, FileName, GPIASCh, GPIASTTLCh, 
                              GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterFreq, 
                              FilterOrder, AnalogTTLs)
 
 AnalysisFile = glob('../*.hdf5')[0]
-KwikAnalysis.GPIASPlot(FileName, Visible=True)
+KwikAnalysis.GPIASPlot(AnalysisFile, FileName, Visible=True)
 
 
 #%% TTLsLatencyTest

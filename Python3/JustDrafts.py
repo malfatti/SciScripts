@@ -2,31 +2,6 @@
 """
 Just drafts
 """
-#%%
-import Hdf5F
-import numpy as np
-import os
-from glob import glob
-from multiprocessing import Process
-from scipy import io, signal
-from subprocess import call
-
-StimTTLCh = 17
-PSTHTimeBeforeTTL = 0
-PSTHTimeAfterTTL = 300
-StimType = ['Sound_NaCl', 'Sound_CNO']
-AnalogTTLs=True
-Board='OE'
-#Override = {'Rec':0}
-Override0 = {'Rec':0, 'Stim':StimType[0]}
-Override1 = {'Rec':0, 'Stim':StimType[1]}
-Override=Override0
-
-FileName = glob('*.hdf5')[0]
-
-FInd=0
-Ch = 'Ch01'
-
 
 #%%
 Backend = 'Qt5Agg'
@@ -50,78 +25,16 @@ Qt4 =  27.928475093841552
 
 
 #%%
-
-
-for Key in UnitRec:    
-    ClusterNo = len(UnitRec[Key]['Spks'])
-    if ClusterNo == 0: print(Key, 'is lost'); continue
-    
-    Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
-    
-    for Cluster in range(ClusterNo):
-        SpkNo = len(UnitRec[Key]['Spks'][Cluster])
-        print(str(SpkNo), 'Spks in cluster', str(Cluster))
-        print('Max of', max(UnitRec[Key]['PSTH'][Cluster]),  'Spks in PSTH')
-        
-        if not SpkNo:
-            print('No Spk data on cluster', str(Cluster) + '. Skipping...')
-            Thrash[Key] = UnitRec[Key].copy()
-            continue
-        
-        PSTHPeak = max(UnitRec[Key]['PSTH'][Cluster])
-        PSTHMean = np.mean(UnitRec[Key]['PSTH'][Cluster])
-#        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
-#            print('No peaks in PSTH. Skipping cluster', str(Cluster), '...')
-#            continue
-        
-        if SpkNo > 100: SpkNo = 100
-        
-        for Spike in range(SpkNo):
-            if ClusterNo == 1: Axes[0].plot(UnitRec[Key]['Spks'][Cluster][Spike], 'r')
-            else: Axes[Cluster][0].plot(UnitRec[Key]['Spks'][Cluster][Spike], 'r')
-        
-        if ClusterNo == 1:
-            Axes[0].set_title('Peak='+str(PSTHPeak)+' Mean='+str(PSTHMean))
-            Axes[0].plot(np.mean(UnitRec[Key]['Spks'][Cluster], axis=0), 'k')
-            Axes[1].bar(XValues, UnitRec[Key]['PSTH'][Cluster])
-        else:
-            Axes[Cluster][0].set_title('Peak='+str(PSTHPeak)+' Mean='+\
-                                       str(PSTHMean)+' Std='+str(PSTHStd))
-            Axes[Cluster][0].plot(np.mean(UnitRec[Key]['Spks'][Cluster]), 'k')
-            Axes[Cluster][1].bar(XValues, UnitRec[Key]['PSTH'][Cluster])
-
-
-#UnitRec = Units['Sound_NaCl']['00']['00']
-##UnitRec = Units[Stim][FIndS][RecS]
-#Thrash = {}; PSTHStd = []
-#for Key in UnitRec:    
-#    ClusterNo = len(UnitRec[Key]['Spks'])
-#    if ClusterNo == 0: print(Key, 'is lost'); continue
-#    
-#    Fig, Axes = plt.subplots(ClusterNo,2, figsize=(6, 3*ClusterNo))
-#    
-#    for Cluster in range(ClusterNo):
-#        SpkNo = len(UnitRec[Key]['Spks'][Cluster])
-#        print(str(SpkNo), 'Spks in cluster', str(Cluster))
-#        print('Max of', max(UnitRec[Key]['PSTH'][Cluster]),  'Spks in PSTH')
-#        
-#        if not SpkNo:
-#            print('No Spk data on cluster', str(Cluster) + '. Skipping...')
-#            Thrash[Key] = UnitRec[Key].copy()
-#            continue
-#        
-#        if max(UnitRec[Key]['PSTH'][Cluster]) < 4: 
-#%%
-F = h5py.File(FileName)
-for key in F['ExpInfo'].keys():
-    N = "{0:02d}".format(int(key))
-    F['ExpInfo'][N] = F['ExpInfo'][key]
-    del(F['ExpInfo'][key])
+import h5py
+with h5py.File(FileName) as F:
+    for key in F['ExpInfo'].keys():
+        N = "{0:02d}".format(int(key))
+        F['ExpInfo'][N] = F['ExpInfo'][key]
+        del(F['ExpInfo'][key])
 
 for ind, key in enumerate(F['ExpInfo'].keys()):
     if ind <5: F['ExpInfo'][key].attrs['StimType'] = np.string_(['Sound_NaCl'])
     else: F['ExpInfo'][key].attrs['StimType'] = np.string_(['Sound_CNO'])
-F.close()
 
 
 

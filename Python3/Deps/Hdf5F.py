@@ -197,7 +197,7 @@ def LoadGPIAS(FileName):
             GPIAS[Freq]['NoGap'] = F[Key][Freq]['NoGap'][:]
             GPIAS[Freq]['Gap'] = F[Key][Freq]['Gap'][:]
     
-    XValues = F[Key].attrs['XValues'][:]
+        XValues = F[Key].attrs['XValues'][:]
     
     return(GPIAS, XValues)
 

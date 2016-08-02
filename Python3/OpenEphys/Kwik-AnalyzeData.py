@@ -93,6 +93,10 @@ Board='OE'
 Override = {}
 #Override = {'Rec'}
 
+CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
+A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+       'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+
 #==========#==========#==========#==========#
 
 import KwikAnalysis
@@ -100,6 +104,7 @@ from glob import glob
 from multiprocessing import Process
 
 FileName = glob('*.hdf5')[0]
+ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
 
 Clus_NaCl = Process(target=KwikAnalysis.ClusterizeSpks, args=(FileName, StimType0, AnalogTTLs, Board, Override))
 Clus_CNO = Process(target=KwikAnalysis.ClusterizeSpks, args=(FileName, StimType1, AnalogTTLs, Board, Override))

@@ -2,6 +2,301 @@
 """
 Just drafts
 """
+#%%
+
+ABRCh = [10]         # [RightChannel, LeftChannel], if order matters
+ABRTTLCh = 17            # TTL ch for ABR
+ABRTimeBeforeTTL = 3    # in ms
+ABRTimeAfterTTL = 9    # in ms
+FilterFreq = [300, 3000]         # frequency for filter
+FilterOrder = 5         # butter order
+AnalogTTLs = True
+StimType = ['Sound_NaCl', 'Sound_CNO']
+#StimType = ['Sound']
+Board = 'OE'
+Override = {}
+
+import Hdf5F
+import numpy as np
+import os
+import struct
+import tarfile
+import wave
+from datetime import datetime
+from glob import glob
+from scipy import signal
+
+FileName = glob('*.hdf5')[0]
+
+def GetProc(Raw, Board):
+    print('Get proc no. for', Board, 'board... ', end='')
+    ProcChs = {Proc: len(Raw[Proc]['data']['0'][1,:]) 
+               for Proc in Raw.keys()}
+    
+    for Proc, Chs in ProcChs.items():
+        if Chs == max(ProcChs.values()): OEProc = Proc
+        else: RHAProc = Proc
+    
+    if 'RHAProc' not in locals(): RHAProc = OEProc
+    
+    if Board == 'OE': Proc = OEProc
+    elif Board == 'RHA': Proc = RHAProc
+    else: print("Choose Board as 'OE' or 'RHA'."); return(None)
+    
+    print('Done.')
+    return(OEProc, RHAProc, Proc)
+
+
+def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
+    if Type not in ['bandpass', 'lowpass', 'highpass']:
+        print("Choose 'bandpass', 'lowpass' or 'highpass'.")
+    
+    elif len(Frequency) not in [1, 2]:
+        print('Frequency must have 2 elements for bandpass; or 1 element for \
+        lowpass or highpass.')
+    
+    else:
+        passband = [_/(Rate/2) for _ in Frequency]
+        f2, f1 = signal.butter(FilterOrder, passband, Type)
+        Signal = signal.filtfilt(f2, f1, Signal, padtype='odd', padlen=0)
+        
+        return(Signal)
+
+
+def GetRecKeys(Raw, Events, AnalogTTLs):
+    for Processor in Raw.keys():
+        if '0' not in list(Raw[Processor]['data'].keys()):
+            print('Rec numbers are wrong. Fixing...')
+            for iKey in Raw[Processor].keys():
+                Recs = list(Raw[Processor][iKey].keys())
+                Recs = [int(_) for _ in Recs]; Min = min(Recs)
+                
+                for Key in Recs:
+                    Raw[Processor][iKey][str(Key-Min)] = \
+                        Raw[Processor][iKey].pop(str(Key))
+                
+                if AnalogTTLs:
+                    return(Raw)
+                else:
+                    EventRec = Events['TTLs']['recording'][:]
+                    for _ in range(len(EventRec)): 
+                        EventRec[_] = EventRec[_] - Min
+                    return(Raw, EventRec)
+            
+            print('Fixed.')
+    
+    else:
+        if AnalogTTLs: return(Raw)
+        else: EventRec = Events['TTLs']['recording']; return(Raw, EventRec)
+
+
+def GetTTLInfo(Events, EventRec, TTLCh):
+    print('Get TTL data...')
+    EventID = Events['TTLs']['user_data']['eventID']
+    EventCh = Events['TTLs']['user_data']['event_channels']
+    EventSample = Events['TTLs']['time_samples']
+
+#    TTLChs = np.nonzero(np.bincount(EventCh))[0]
+    TTLRecs = np.nonzero(np.bincount(EventRec))[0]
+    TTLRecs = ["{0:02d}".format(_) for _ in TTLRecs]
+    TTLsPerRec = {Rec: [EventSample[_] for _ in range(len(EventRec)) 
+                         if EventRec[_] == int(Rec)
+                         and EventCh[_] == TTLCh-1 
+                         and EventID[_] == 1]
+                  for Rec in TTLRecs}
+#    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], TTLCh-1)
+    
+    return(TTLsPerRec)
+
+
+def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[], 
+                       Rate=[]):
+    print('Get TTL timestamps... ', end='')
+    if AnalogTTLs:
+        TTLCh = Raw[Proc]['data'][Rec][:, ChTTL-1]
+        Threshold = max(TTLCh)/2
+        TTLs = []
+        for _ in range(1, len(TTLCh)):
+            if TTLCh[_] > Threshold:
+                if TTLCh[_-1] < Threshold: TTLs.append(_)
+        
+        print('Done.')
+        return(TTLs)
+    else:
+#        TTLNo = [0]
+#        for _ in range(1, len(TTLsPerRec)+1):
+#            TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
+#        TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
+#        
+#        if Rec == 0:
+#            sTTLNo = 0
+#        else:
+#            sTTLNo = TTLNo[Rec] + 1
+#        
+#        return(TTLNo, sTTLNo)
+        RawTime = [_*Rate for _ in Raw['timestamps'][int(Rec)]]
+        TTLs = TTLsPerRec[Rec]
+        
+        print('Done.')
+        return(RawTime, TTLs)
+
+
+def FixTTLs(Array, TTLsToFix):
+    for TTL in TTLsToFix:
+        nInd = np.random.randint(1, 100)
+        while nInd == TTL: nInd = np.random.randint(0, 100)
+        
+        print('TTL', str(TTL), 'was replaced by', str(nInd))
+        Array[TTL] = Array[nInd]
+    
+    return(Array)
+
+
+def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore, 
+              NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime=[]):
+    print('Slicing data around TTL...')
+    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
+    TTLsToFix = []
+    
+    for TTL in range(len(TTLs)):
+        if AnalogTTLs: TTLLoc = int(TTLs[TTL])
+        else: TTLLoc = int(RawTime.index(TTLs[TTL]))#)/Rate)
+        
+        Start = TTLLoc-NoOfSamplesBefore
+        End = TTLLoc+NoOfSamplesAfter
+        
+        if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
+        
+        Array[TTL] = Data[Proc]['data'][Rec][Start:End, DataCh[0]-1] * \
+                     Data[Proc]['channel_bit_volts'][Rec][DataCh[0]-1] # in mV
+        
+        if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
+            
+    Array = FixTTLs(Array, TTLsToFix)
+    
+    print('Done.')
+    return(Array)
+
+
+def WriteABRTar(ABRs, XValues, Path, FileName):
+    print('Writing data to', FileName+'... ', end='')    
+    FileList = glob(Path + '/**/*.*', recursive=True); FileList.sort()
+    
+    with tarfile.open(FileName, 'a') as F:
+        for File in FileList:
+            F.add(File)
+    
+    print('Done.')
+    return(None)
+
+
+def WriteWav(Data, ChNo, DataSize, Rate, FileName):
+    print('Writing data to', FileName+'... ', end='')
+    with wave.open(Path+'/'+FileName, 'w') as F:
+        F.setparams((ChNo, 4, Rate, DataSize*ChNo, 'NONE', 'uncompressed'))
+        F.writeframes(Data)
+    
+    print('Done.')
+    return(None)
+
+def WriteABRWave(ABRs, XValues, Rate, Group, Path):
+    Path = Group + '/' + Path
+    Trial = len(glob(Path+'/*')); Trial = "{0:02d}".format(Trial)
+    Path = Path + '/' + Trial
+    os.makedirs(Path, exist_ok=True)
+    
+    Keys = list(ABRs.keys()); Keys.sort()
+    ChNo = len(ABRs); DataSize = len(ABRs[Keys[0]])
+    
+    Data = [ABRs[dB][Sample] for Sample in range(DataSize) for dB in Keys]
+    Data = np.array('f', Data); Data = bytes(Data)
+    
+    FileName = Path.split(sep='/'); del(FileName[0])
+    FileName = 'ABRs-' + '_'.join(FileName)
+    WriteWav(Data, ChNo, DataSize, Rate, FileName)
+    
+    XValues = np.array('f', XValues); XValues = bytes(XValues)
+    
+    FileName = Path.split(sep='/'); del(FileName[0])
+    FileName = 'XValues-' + '_'.join(FileName)
+    WriteWav(XValues, 1, len(XValues), Rate, FileName)
+
+
+print('Load DataInfo...')
+DirList = glob('KwikFiles/*'); DirList.sort()
+DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+
+AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+Now = datetime.now().strftime("%Y%m%d%H%M%S")
+Here = os.getcwd().split(sep='/')[-1]
+Group = Here + '-ABRs_' + Now
+    
+for Stim in StimType:
+    if Override != {}: 
+        if 'Stim' in Override.keys(): Stim = Override['Stim']
+    
+    Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+    
+    for RecFolder in Exps:
+        ABRs = {}; Info = {}
+        ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
+        
+        if AnalogTTLs: 
+            Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+        else: 
+            Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+        
+        OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
+        
+        if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
+        else:
+            Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
+            TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
+        
+        Rate = Raw[OEProc]['info']['0']['sample_rate']
+        NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
+        NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
+        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+        
+        Info['Frequency'] = ''.join([
+                        str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][0]),
+                        '-',
+                        str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][1])])
+        
+        Info['XValues'] = (range(-NoOfSamplesBefore, 
+                                 NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
+        
+        for Rec in Raw[OEProc]['data'].keys():
+            print('Slicing and filtering ABRs Rec ', str(Rec), '...')
+            
+            if AnalogTTLs:
+                TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ABRTTLCh, 
+                                          OEProc)
+                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
+                                NoOfSamplesBefore, NoOfSamplesAfter, 
+                                NoOfSamples, AnalogTTLs)
+            else:
+                RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
+                                                   TTLsPerRec=TTLsPerRec)
+                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
+                                NoOfSamplesBefore, NoOfSamplesAfter, 
+                                AnalogTTLs, RawTime)
+            
+            for TTL in range(len(TTLs)):
+                ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
+                                        FilterOrder, 'highpass')
+            
+            ABR = np.mean(ABR, axis=0)
+            ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
+                               'lowpass')
+            
+            dB = str(DataInfo['Intensities'][int(Rec)]) + 'dB'
+            ABRs[dB] = ABR[:]; del(ABR)
+        
+        Path = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
+        Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
+
+
 
 #%%
 Backend = 'Qt5Agg'

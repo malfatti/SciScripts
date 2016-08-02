@@ -632,15 +632,10 @@ def ABRPlot3D(AnalysisFile, FileName, Azimuth=-110, Elevation=50, Visible=True):
     return(None)
 
 
-def ClusterizeSpks(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE', 
-                   Override={}):
+def ClusterizeSpks(ChannelMap, FileName, StimType=['Sound'], AnalogTTLs=False, 
+                   Board='OE', Override={}):
     print('Load DataInfo...')
     DirList = glob('KwikFiles/*'); DirList.sort()
-    
-    CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
-    A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-           'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
-    ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
     
     for Stim in StimType:
         if Override != {}: 
@@ -669,7 +664,7 @@ def ClusterizeSpks(FileName, StimType=['Sound'], AnalogTTLs=False, Board='OE',
                 
                 print('Separating channels according to ChannelMap...')
                 Data = [Raw[OEProc]['data'][Rec][:, _-1] * 
-                        Raw[OEProc]['channel_bit_volts'][Rec][_-1] * 1000
+                        Raw[OEProc]['channel_bit_volts'][Rec][_-1]
                         for _ in ChannelMap]
                                 
                 print('Writing files for clustering... ', end='')

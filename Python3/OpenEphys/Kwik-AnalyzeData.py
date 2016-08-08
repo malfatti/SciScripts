@@ -56,20 +56,18 @@ GPIASTimeAfterTTL = 100    # in ms
 FilterFreq = [70, 400]     # frequency for filter
 FilterOrder = 3       # butter order
 AnalogTTLs = True
-RecFolder = 1
+RecFolderNo = 1
 
 #==========#==========#==========#==========#
 
 import KwikAnalysis
 from glob import glob
 
-FileName = glob('*.hdf5'); FileName.sort(); FileName = FileName[RecFolder-1]
-KwikAnalysis.GPIASAnalysis(RecFolder, FileName, GPIASCh, GPIASTTLCh, 
-                             GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterFreq, 
-                             FilterOrder, AnalogTTLs)
+KwikAnalysis.GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL, 
+                           GPIASTimeAfterTTL, FilterFreq, FilterOrder, 
+                           AnalogTTLs)
 
-AnalysisFile = glob('../*.hdf5')[0]
-KwikAnalysis.GPIASPlot(AnalysisFile, FileName, Visible=True)
+KwikAnalysis.GPIASPlot(AnalysisFile, RecFolderNo, Visible=True)
 
 
 #%% TTLsLatencyTest

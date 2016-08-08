@@ -23,7 +23,94 @@ import KwikAnalysis
 import numpy as np
 import os
 from glob import glob
-from scipy import io
+from scipy import io, signal
+
+
+def GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL=20, GPIASTimeAfterTTL=100, 
+                     FilterFreq=[70, 400], FilterOrder=3, Override={}):
+    if 'DirList' in Override: DirList = Override['DirList']
+    else: DirList = glob('MatFiles/*'); DirList.sort()
+    
+    if 'FileName' in Override: FileName =  Override['FileName']
+    else: 
+        FileName = glob('*.mat')[0]
+    
+    DataInfo = io.loadmat(FileName)
+    DataInfo['AnimalName'] = os.getcwd().split('/')[-2]
+    
+    if 'AnalysisFile' in Override: AnalysisFile =  Override['AnalysisFile']
+    else: AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+    
+    RecFolder = DirList[RecFolderNo-1]
+    
+    Rate = np.array(int(DataInfo['Rate'])); PulseStart = DataInfo['PulseStart']
+    Freqs = glob(RecFolder + '/*.mat')
+    GPIAS = {}
+    
+    for Freq in Freqs:
+        SFreq = Freq[-9:-4]; SFreq = SFreq.split('_')
+        try:
+            SFreq = str(int(SFreq[0])*1000) + '-' + str(int(SFreq[1])*1000)
+        except ValueError:
+            SFreq = str(int(SFreq[0][1:])*1000) + '-' + str(int(SFreq[1])*1000)
+        
+        if SFreq not in GPIAS.keys(): GPIAS[SFreq] = {}
+        
+        NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
+        NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
+        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+        
+        XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
+                   /Rate)*10**3
+        
+        Start = int(PulseStart-NoOfSamplesAfter)
+        End = int(PulseStart+NoOfSamplesAfter)
+        
+        Data = io.loadmat(Freq)                
+        Data['Gap'] = Data['Gap'][0,Start:End] * 1000 # in mV
+        Data['NoGap'] = Data['NoGap'][0,Start:End] * 1000 # in mV
+        
+        Data['Gap'] = KwikAnalysis.FilterSignal(Data['Gap'], Rate, 
+                                                FilterFreq, 
+                                                FilterOrder, 
+                                                'bandpass')
+        Data['NoGap'] = KwikAnalysis.FilterSignal(Data['NoGap'], Rate, 
+                                                  FilterFreq, 
+                                                  FilterOrder, 
+                                                  'bandpass')
+        
+         # Amplitude envelope
+        GapAE = abs(signal.hilbert(Data['Gap']))
+        NoGapAE = abs(signal.hilbert(Data['NoGap']))
+        
+        # RMS
+        Half = len(GapAE)//2
+        BGStart = 0; BGEnd = Half - 1
+        PulseStart = Half; PulseEnd = len(GapAE) - 1
+        BinSize = XValues[-1] - XValues[-2]
+        
+        GapRMSBG = sum(GapAE[BGStart:BGEnd] * BinSize)**0.5
+        GapRMSPulse = sum(GapAE[PulseStart:PulseEnd] * BinSize)**0.5
+        GapRMS = GapRMSPulse - GapRMSBG
+        
+        NoGapRMSBG = sum(NoGapAE[BGStart:BGEnd] * BinSize)**0.5
+        NoGapRMSPulse = sum(NoGapAE[PulseStart:PulseEnd] * BinSize)**0.5
+        NoGapRMS = NoGapRMSPulse - NoGapRMSBG
+        
+        # GPIAS index (How much Gap is different from NoGap)
+        Data['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
+        
+        GPIAS[SFreq]['Gap'] = Data['Gap'][:]
+        GPIAS[SFreq]['NoGap'] = Data['NoGap'][:]
+        GPIAS[SFreq]['GPIASIndex']= Data['GPIASIndex']
+        del(Data)
+    
+    if 'DirList' in Override:
+        RecExp = RecFolder.split('/')[1]
+        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile, RecExp)
+    else:
+        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile)
+
 
 def WriteDataToMMSS(FileName, StimType=['Sound'], Override={}):
     DirList = glob('KwikFiles/*'); DirList.sort()

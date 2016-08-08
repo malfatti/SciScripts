@@ -193,12 +193,16 @@ def LoadGPIAS(FileName):
         Key = GetExpKeys('GPIAS_', F)
         
         GPIAS = {}
-        for Freq in F[Key].keys():
+        for Freq in F[Key]['GPIAS']:
             GPIAS[Freq] = {}
-            GPIAS[Freq]['NoGap'] = F[Key][Freq]['NoGap'][:]
-            GPIAS[Freq]['Gap'] = F[Key][Freq]['Gap'][:]
+            
+            for GKey, GVal in F[Key]['GPIAS'][Freq].items():
+                GPIAS[Freq][GKey] = GVal[:]
+            
+#                GPIAS[Freq]['NoGap'] = F[Key]['GPIAS'][Freq]['NoGap'][:]
+#                GPIAS[Freq]['Gap'] = F[Key]['GPIAS'][Freq]['Gap'][:]
     
-        XValues = F[Key].attrs['XValues'][:]
+        XValues = F[Key]['XValues'][:]
     
     return(GPIAS, XValues)
 
@@ -441,21 +445,27 @@ def WriteExpInfo(StimType, DVCoord, Freq, FileName):
     return(None)
 
 
-def WriteGPIAS(GPIAS, RecFolder, XValues, FileName):
+def WriteGPIAS(GPIAS, XValues, RecFolder, FileName, Here=''):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Here = os.getcwd().split(sep='/')[-1]
-    Group = Here + '_' + RecFolder[10:] + '-GPIAS_' + Now
+    if Here == '': Here = os.getcwd().split(sep='/')[-1]
+    else: Here = Here.split('/')[-1]
+    
+    Group = Here + '_' + RecFolder.split('/')[-1] + '-GPIAS_' + Now
     
     with h5py.File(FileName) as F:
         F.create_group(Group)
-        F[Group].attrs['XValues'] = XValues
+        F[Group]['XValues'] = XValues
         
-        for Freq in GPIAS.keys():
-            if Freq not in F[Group]: F[Group].create_group(Freq)
+        for Freq in GPIAS:
+            if 'GPIAS' not in F[Group]: F[Group].create_group('GPIAS')
+            if Freq not in F[Group]['GPIAS']: 
+                F[Group]['GPIAS'].create_group(Freq)
             
-            F[Group][Freq]['NoGap'] = GPIAS[Freq]['NoGap']
-            F[Group][Freq]['Gap'] = GPIAS[Freq]['Gap']
+            for GKey, GVal in GPIAS[Freq].items():
+                F[Group]['GPIAS'][Freq][GKey] = GVal
+#                F[Group]['GPIAS'][Freq]['NoGap'] = GPIAS[Freq]['NoGap']
+#                F[Group]['GPIAS'][Freq]['Gap'] = GPIAS[Freq]['Gap']
     
     print('Done.')
     return(None)

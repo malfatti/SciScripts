@@ -709,17 +709,25 @@ def ClusterizeSpks(ChannelMap, FileName, StimType=['Sound'], AnalogTTLs=False,
             os.removedirs(Path)
 
 
-def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1, 
-                  GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
-                  FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
-                  Board='OE'):
+def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50, 
+                  GPIASTimeAfterTTL=150, FilterFreq=[70, 400], FilterOrder=4, 
+                  AnalogTTLs=False, Board='OE', Override={}):
     
     print('set paths...')
-    DirList = glob('KwikFiles/*'); DirList.sort()
-    RecFolder = DirList[RecFolder-1]
+    if 'DirList' in Override: DirList = Override['DirList']
+    else: DirList = glob('KwikFiles/*'); DirList.sort()
     
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)    
-    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+    if 'FileName' in Override: FileName =  Override['FileName']
+    else: 
+        FileName = glob('*.hdf5'); FileName.sort()
+        FileName = FileName[RecFolderNo-1]
+    
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    
+    if 'AnalysisFile' in Override: AnalysisFile =  Override['AnalysisFile']
+    else: AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+    
+    RecFolder = DirList[RecFolderNo-1]
     
     for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
         DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
@@ -756,17 +764,17 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
         SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
                          str(DataInfo['NoiseFrequency'][Freq][1])])
         
-        if Trial%2 == 0: STrial = 'NoGap'
+        if Trial % 2 == 0: STrial = 'NoGap'
         else: STrial = 'Gap'
         
         if AnalogTTLs:
             TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, GPIASTTLCh, OEProc)
-            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesAfter, 
                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
         else:
             RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
                                                TTLsPerRec=TTLsPerRec)
-            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesAfter, 
                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
         if GPIAS[SFreq][STrial] == []: GPIAS[SFreq][STrial] = GD[:]
@@ -777,35 +785,62 @@ def GPIASAnalysis(RecFolder, FileName, GPIASCh=1, GPIASTTLCh=1,
                                      *ElNo) + GD[:])/(ElNo+1)
     
     for Freq in GPIAS.keys():
-        # Hilbert
-        GPIAS[Freq]['NoGap'] = abs(signal.hilbert(GPIAS[Freq]['NoGap']))
-        GPIAS[Freq]['Gap'] = abs(signal.hilbert(GPIAS[Freq]['Gap']))
+        # Fix array location on dict
+        GPIAS[Freq]['Gap'] = GPIAS[Freq]['Gap'][0]
+        GPIAS[Freq]['NoGap'] = GPIAS[Freq]['NoGap'][0]
         
         # Bandpass filter
+        GPIAS[Freq]['Gap'] = FilterSignal(GPIAS[Freq]['Gap'], Rate, FilterFreq, 
+                                          FilterOrder, 'bandpass')
         GPIAS[Freq]['NoGap'] = FilterSignal(GPIAS[Freq]['NoGap'], Rate, 
                                             FilterFreq, FilterOrder, 
                                             'bandpass')
-        GPIAS[Freq]['Gap'] = FilterSignal(GPIAS[Freq]['Gap'], Rate, FilterFreq, 
-                                          FilterOrder, 'bandpass')
-        
-        # SavGol smooth
-        GPIAS[Freq]['NoGap'] = signal.savgol_filter(GPIAS[Freq]['NoGap'], 5, 2, 
-                                                    mode='nearest')
-        GPIAS[Freq]['Gap'] = signal.savgol_filter(GPIAS[Freq]['Gap'], 5, 2, 
-                                                  mode='nearest')
         
         # V to mV
-        GPIAS[Freq]['NoGap'] = GPIAS[Freq]['NoGap']*1000
-        GPIAS[Freq]['Gap'] = GPIAS[Freq]['Gap']*1000
+        GPIAS[Freq]['Gap'] = GPIAS[Freq]['Gap'] * 1000
+        GPIAS[Freq]['NoGap'] = GPIAS[Freq]['NoGap'] * 1000
+        
+        # Amplitude envelope
+        GapAE = abs(signal.hilbert(GPIAS[Freq]['Gap']))
+        NoGapAE = abs(signal.hilbert(GPIAS[Freq]['NoGap']))
+        
+        # RMS
+        Half = len(GapAE)//2
+        BGStart = 0; BGEnd = Half - 1
+        PulseStart = Half; PulseEnd = len(GapAE) - 1
+        BinSize = XValues[-1] - XValues[-2]
+        
+        GapRMSBG = sum(GapAE[BGStart:BGEnd] * BinSize)**0.5
+        GapRMSPulse = sum(GapAE[PulseStart:PulseEnd] * BinSize)**0.5
+        GapRMS = GapRMSPulse - GapRMSBG
+        
+        NoGapRMSBG = sum(NoGapAE[BGStart:BGEnd] * BinSize)**0.5
+        NoGapRMSPulse = sum(NoGapAE[PulseStart:PulseEnd] * BinSize)**0.5
+        NoGapRMS = NoGapRMSPulse - NoGapRMSBG
+        
+        # GPIAS index (How much Gap is different from NoGap)
+        GPIAS[Freq]['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
     
-    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Hdf5F.WriteGPIAS(GPIAS, RecFolder, XValues, AnalysisFile)
+    if 'DirList' in Override:
+        RecExp = RecFolder.split('/')[1]
+        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile, RecExp)
+    else:
+        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile)
     
     return(None)
 
 
-def GPIASPlot(AnalysisFile, FileName, Visible=False):
+def GPIASPlot(RecFolderNo, Visible=False, Override={}):
+    print('Set paths...')
     os.makedirs('Figs', exist_ok=True)    # Figs folder
+    
+    if 'FileName' in Override: FileName =  Override['FileName']
+    else: 
+        FileName = glob('*.hdf5'); FileName.sort()
+        FileName = FileName[RecFolderNo-1]
+    
+    if 'AnalysisFile' in Override: AnalysisFile =  Override['AnalysisFile']
+    else: AnalysisFile = AnalysisFile = glob('../*.hdf5')[0]
     
     print('Loading data...')
     ## DataInfo
@@ -831,9 +866,9 @@ def GPIASPlot(AnalysisFile, FileName, Visible=False):
         plt.figure()
         plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
                     lw=0, label=SpanLabel)
-        plt.plot(XValues, GPIAS[Freq]['NoGap'][0,:], 
+        plt.plot(XValues, GPIAS[Freq]['NoGap'], 
                  color='r', label=LineNoGapLabel, lw=2)
-        plt.plot(XValues, GPIAS[Freq]['Gap'][0,:], 
+        plt.plot(XValues, GPIAS[Freq]['Gap'], 
                  color='b', label=LineGapLabel, lw=2)
 
         SetPlot(AxesObj=plt.axes(), Axes=True)

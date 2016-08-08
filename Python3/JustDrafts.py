@@ -2,15 +2,227 @@
 """
 Just drafts
 """
-#%%
+#%% GPIASMatToHdf5
+
+
+GPIASTimeBeforeTTL = 20    # in ms
+GPIASTimeAfterTTL = 100    # in ms
+FilterFreq = [70, 400]     # frequency for filter
+FilterOrder = 3       # butter order
+RecFolder = 1
+
+#%% ReAnalysis
+import Hdf5F
+import KwikAnalysis
+import MatF
+from glob import glob
+
+Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+#AlreadRun = []
+AlreadyRun = ['CaMKIIahM4Dn06/CaMKIIahM4Dn06-20160217-GPIASn01Screening',
+              'CaMKIIahM4Dn06/CaMKIIahM4Dn06-20160623-GPIAS',
+              'CaMKIIahM4Dn06/CaMKIIahM4Dn06-20160629-GPIAS',
+              'CaMKIIahM4Dn06/CaMKIIahM4Dn06-20160630-GPIAS',
+              'CaMKIIahM4Dn07/CaMKIIahM4Dn07-20160217-GPIASn01Screening',
+              'CaMKIIahM4Dn07/CaMKIIahM4Dn07-20160218-GPIASn01Retest'
+              'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160218-GPIASn02Screening',
+              'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160624-GPIAS',
+              'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160629-GPIAS',
+              'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160630-GPIAS',
+              'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160701-GPIAS',
+              'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160702-GPIAS'
+              'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160218-GPIASn02Screening',
+              'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160624-GPIAS']
+Exp = 'GPIAS'
+
+GPIASCh = [1]
+GPIASTTLCh = 2
+GPIASTimeBeforeTTL = 20    # in ms
+GPIASTimeAfterTTL = 100    # in ms
+FilterFreq = [70, 400]     # frequency for filter
+FilterOrder = 3       # butter order
+AnalogTTLs = True
+RecFolderNo = 1
+Override = {}
+
+for Animal in Animals:
+    Override['AnalysisFile'] = glob(Animal+'/*.hdf5')[0]
+    Exps = [F for F in glob(Animal+'/*') if Exp in F]; Exps.sort()
+    
+    for RecExp in Exps:
+        if RecExp in AlreadyRun:
+            continue
+        
+        print('Running', RecExp + '...')
+        DataFolders = glob(RecExp + '/*Files')
+        
+        for DataFolder in DataFolders:
+            DataType = DataFolder.split('/')[-1]
+            
+            if DataType == 'KwikFiles':
+                Override['FileName'] = glob(RecExp + '/*.hdf5')
+                Override['FileName'].sort(); 
+                Override['FileName'] = Override['FileName'][RecFolderNo-1]
+                
+                Override['DirList'] = glob(RecExp + '/KwikFiles/*')
+                Override['DirList'].sort()
+                
+                KwikAnalysis.GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, 
+                                           GPIASTimeBeforeTTL, 
+                                           GPIASTimeAfterTTL, FilterFreq, 
+                                           FilterOrder, AnalogTTLs, 
+                                           Override=Override)
+                
+            elif DataType == 'MatFiles':
+                Override['FileName'] = glob(RecExp + '/*.mat')[0]
+                
+                Override['DirList'] = glob(RecExp + '/MatFiles/*')
+                Override['DirList'].sort()
+                
+                MatF.GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL, 
+                                      GPIASTimeAfterTTL, FilterFreq, 
+                                      FilterOrder, Override)
+                    
+            else: 
+                print(DataType, 'not supported (yet).')
+                continue
+        
+        AlreadyRun.append(RecExp)
+                
+        
+#%% GPIASIndex
+Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
+
+Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+GPIASIndex = {}
+
+for Animal in Animals:
+    AnalysisFile = glob(Animal+'/*.hdf5')[0]
+    GPIASIndex[Animal] = {}
+    
+    with h5py,File(AnalysisFile, 'r') as F:
+         Keys = [Key for Key in F.keys() if 'GPIAS_' in Key]; Keys.sort()
+         
+         for Key in Keys:
+             
+             GPIASIndex[Animal]
+             
+    GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile)
+    
+    for Freq in GPIAS:
+        GPIASIndex[Animal]
+        
+
+
+Group = {}
+
+YLabel = 'GPIAS index'
+ExpLabels = ['Before ANT', '2d after ANT', '1w after ANT (NaCl)', 
+             '1w after ANT (CNO)']
+
+Fig, Axes = plt.subplots(1,4, sharey=True)
+
+for AInd, Animal in enumerate(Animals):
+    AnalysisFile = glob(Animal+'/*.hdf5')[0]
+    GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile)
+    
+    Freqs = list(GPÌAS.keys())
+    for FInd, Freq in enumerate(Freqs):
+        
+        
+    
+#%% ABRThresholds
+import Hdf5F
+import numpy as np
+from glob import glob
+
+FileName = glob('*.txt')[0]
+
+with open(FileName, 'r') as F:
+    Lines = [Line for Line in F]
+
+Lines = [Line.split() for Line in Lines]
+Exps = Lines[0][:]; del(Lines[0])
+Freqs = Lines[0][:]; del(Lines[0])
+
+ABRThresholds = {Exps[_]: np.array(Lines[_], dtype='f') 
+                 for _ in range(len(Lines))}
+
+AnalysisFile = glob('*.hdf5')[0]
+Hdf5F.WriteDict(ABRThresholds, '/ABRThresholds', AnalysisFile, Attrs=False)
+
+del(ABRThresholds, AnalysisFile, Exps, FileName, Freqs, F, Lines)
+
+
+#%% Plot ABRThresholds
+import KwikAnalysis
+import Hdf5F
+import numpy as np
+from glob import glob
+
+Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+
+Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
+
+YLabel = 'Intensity [dBSPL]'
+Freqs = ['8$\sim$10', '9$\sim$11', '10$\sim$12', '12$\sim$14', '14$\sim$16 [KHz]']
+Colors = ['--ro', '--bx', '--g^', '--ms']
+When = ['Before ANT', '48h after ANT', '2w after ANT (NaCl)', '2w after ANT (CNO)']
+
+Fig, Axes = plt.subplots(1,4, sharey=True)
+for AInd, Animal in enumerate(Animals):
+    AnalysisFile = glob(Animal + '/*.hdf5')[0]
+    ABRThresholds = Hdf5F.LoadDict('/ABRThresholds', AnalysisFile, Attrs=False)
+    Exps = [Exp for Exp in ABRThresholds.keys()]; Exps.sort()
+    
+    for EInd, Exp in enumerate(Exps):
+        Axes[EInd].plot(ABRThresholds[Exp], Colors[AInd], label=Animal)
+        KwikAnalysis.SetPlot(AxesObj=Axes[EInd], Axes=True)
+        Axes[EInd].xaxis.set_ticks(range(len(ABRThresholds[Exp])))
+        Axes[EInd].set_xticklabels(Freqs)
+        Axes[EInd].set_xlabel(When[EInd])
+        Axes[EInd].legend(loc='upper left')
+        Axes[EInd].spines['bottom'].set_position(('outward', 5))
+        if EInd == 0: Axes[EInd].spines['left'].set_position(('outward', 5))
+        else: 
+            Axes[EInd].spines['left'].set_visible(False)
+            Axes[EInd].yaxis.set_ticks_position('none')
+#        
+#    adjust_spines(Axes[0], ['left, bottom'])
+    Axes[0].set_ylabel(YLabel)
+plt.show()
+
+CharNo = [len(Animal) for Animal in Animals]
+
+PrefixList = []; Prefix = ''; SuffixList = []; SuffixA = ''; SuffixB = ''
+if len(np.unique(CharNo)) == 1:
+    for Animal in range(1, len(Animals)):
+        for Char in range(CharNo[0]):
+            if Animals[Animal-1][Char] == Animals[Animal][Char]:
+                Prefix = ''.join([Prefix, Animals[Animal][Char]])
+            else: 
+                SuffixA = ''.join([SuffixA, Animals[Animal-1][Char:]])
+                SuffixB = ''.join([SuffixB, Animals[Animal][Char:]])
+                break
+        PrefixList.append(Prefix[:]); Prefix = ''
+        SuffixList.append([SuffixA[:], SuffixB[:]]); SuffixA = ''; SuffixB = ''
+
+Prefix = np.unique(PrefixList)[0]
+FigName = Prefix + Suffix[:-1]
+
+#%% Tar+Wave revolution
 
 ABRCh = [10]         # [RightChannel, LeftChannel], if order matters
 ABRTTLCh = 17            # TTL ch for ABR
 ABRTimeBeforeTTL = 3    # in ms
 ABRTimeAfterTTL = 9    # in ms
-FilterFreq = [300, 3000]         # frequency for filter
-FilterOrder = 5         # butter order
+FilterFreq = [300, 3000]         # frequeutter order
 AnalogTTLs = True
+FilterOrder = 5         # b
 StimType = ['Sound_NaCl', 'Sound_CNO']
 #StimType = ['Sound']
 Board = 'OE'
@@ -529,3 +741,63 @@ def GPIASAAA(FileName, GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, FilterLow=3
     print('Finished.')
     return(None)
 
+#%% SavGol
+        # SavGol smooth
+#        GPIAS[Freq]['NoGap'] = signal.savgol_filter(GPIAS[Freq]['NoGap'], 5, 2, 
+#                                                    mode='nearest')
+#        GPIAS[Freq]['Gap'] = signal.savgol_filter(GPIAS[Freq]['Gap'], 5, 2, 
+#                                                  mode='nearest')
+        
+
+#%% RenameFiles
+import os
+from glob import glob
+
+ModifyFreq = ['20160217-GPIASn01Screening']
+
+for Folder in ModifyFreq:
+    Files = glob(Folder + '/*.mat')
+    
+    for File in Files:
+        NewFile = File.replace('  ', '_')
+        os.rename(File, NewFile)
+
+
+#%%
+import os
+from glob import glob
+
+ModifyName = glob('*GPIAS*'); ModifyName.sort()
+
+for Folder in ModifyName:
+    Files = glob(Folder + '/*.mat')
+    Start = len(Folder) + 1
+        
+    for File in Files:
+        NewFile = File[Start:Start+14] + '_' + File[Start+15:]
+        NewFile = NewFile.split('_')
+        Date = NewFile[0]; Animal = NewFile[1]
+        DateIndex = NewFile.index(Date); AnimalIndex = NewFile.index(Animal)
+        NewFile[0], NewFile[1] = NewFile[AnimalIndex], NewFile[DateIndex]
+        NewFile = File[:Start] + '_'.join(NewFile)
+        os.rename(File, NewFile)
+#        print(File + '\n', NewFile)
+
+#%%
+import os
+from glob import glob
+
+ModifyFreq = ['20160217-GPIASn01Screening']
+
+for Folder in ModifyFreq:
+    Files = glob(Folder + '/*.mat')
+    Start = len(Folder) + 1
+    
+    for File in Files:
+        if File[Start:Start+4] == '1OD-': NewFile = File[:Start] + '1R_' + File[Start+4:]
+        elif File[Start:Start+4] == '1OE-': NewFile = File[:Start] + '1L_' + File[Start+4:]
+        elif File[Start:Start+4] == '2OD-': NewFile = File[:Start] + '2R_' + File[Start+4:]
+        elif File[Start:Start+4] == '2OE-': NewFile = File[:Start] + '2L_' + File[Start+4:]
+        elif File[Start:Start+5] == '1ODE-': NewFile = File[:Start] + '1LR_' + File[Start+5:]
+        
+        os.rename(File, NewFile)

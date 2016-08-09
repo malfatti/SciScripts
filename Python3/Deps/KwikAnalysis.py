@@ -17,11 +17,8 @@
 
 """
 
-##import h5py
-##import Kwik
-#from numbers import Number
-
 import Hdf5F
+import MatF
 import numpy as np
 import os
 from datetime import datetime
@@ -161,7 +158,7 @@ def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[],
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:
         TTLCh = Raw[Proc]['data'][Rec][:, ChTTL-1]
-        Threshold = max(TTLCh)/2
+        Threshold = np.mean(TTLCh) + 2*(np.std(TTLCh))
         TTLs = []
         for _ in range(1, len(TTLCh)):
             if TTLCh[_] > Threshold:
@@ -632,6 +629,28 @@ def ABRPlot3D(AnalysisFile, FileName, Azimuth=-110, Elevation=50, Visible=True):
     return(None)
 
 
+def ABRThresholdsTxtToHdf5(Override={}):
+    if 'AnalysisFile' in Override: AnalysisFile =  Override['AnalysisFile']
+    else: AnalysisFile = AnalysisFile = glob('../*.hdf5')[0]
+    
+    if 'FileName' in Override: FileName =  Override['FileName']
+    else: FileName = glob('*.txt')[0]
+    
+    with open(FileName, 'r') as F:
+        Lines = [Line for Line in F]
+    
+    Lines = [Line.split() for Line in Lines]
+    Exps = Lines[0][:]; del(Lines[0])
+    Freqs = Lines[0][:]; del(Lines[0]); Freqs.sort()
+    
+    ABRThresholds = {Exps[_]: np.array(Lines[_], dtype='f') 
+                     for _ in range(len(Lines))}
+    
+    Hdf5F.WriteDict(ABRThresholds, '/ABRThresholds', AnalysisFile, Attrs=False)
+    
+    return(None)
+
+
 def ClusterizeSpks(ChannelMap, FileName, StimType=['Sound'], AnalogTTLs=False, 
                    Board='OE', Override={}):
     print('Load DataInfo...')
@@ -828,6 +847,55 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
         Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile)
     
     return(None)
+
+
+def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL, 
+                       GPIASTimeAfterTTL, FilterFreq, FilterOrder, AnalogTTLs, 
+                       Animals, Exp, AlreadyRun=[], Override={}):
+    for Animal in Animals:
+        Override['AnalysisFile'] = glob(Animal+'/*.hdf5')[0]
+        Exps = [F for F in glob(Animal+'/*') if Exp in F]; Exps.sort()
+        
+        for RecExp in Exps:
+            if RecExp in AlreadyRun:
+                continue
+            
+            print('Running', RecExp + '...')
+            DataFolders = glob(RecExp + '/*Files')
+            
+            for DataFolder in DataFolders:
+                DataType = DataFolder.split('/')[-1]
+                
+                if DataType == 'KwikFiles':
+                    Override['FileName'] = glob(RecExp + '/*.hdf5')
+                    Override['FileName'].sort(); 
+                    Override['FileName'] = Override['FileName'][RecFolderNo-1]
+                    
+                    Override['DirList'] = glob(RecExp + '/KwikFiles/*')
+                    Override['DirList'].sort()
+                    
+                    GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, 
+                                  GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+                                  FilterFreq, FilterOrder, AnalogTTLs, 
+                                  Override=Override)
+                    
+                elif DataType == 'MatFiles':
+                    Override['FileName'] = glob(RecExp + '/*.mat')[0]
+                    
+                    Override['DirList'] = glob(RecExp + '/MatFiles/*')
+                    Override['DirList'].sort()
+                    
+                    MatF.GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL, 
+                                          GPIASTimeAfterTTL, FilterFreq, 
+                                          FilterOrder, Override)
+                        
+                else: 
+                    print(DataType, 'not supported (yet).')
+                    continue
+            
+            AlreadyRun.append(RecExp)
+    
+    return(AlreadyRun)
 
 
 def GPIASPlot(RecFolderNo, Visible=False, Override={}):

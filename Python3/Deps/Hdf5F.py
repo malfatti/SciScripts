@@ -59,12 +59,19 @@ def DeleteGroup(Group, FileName):
 def ExpExpInfo(RecFolder, DirList, FileName):
     ExpInfo = {}
     with h5py.File(FileName, 'r') as F:
-#        Key = str(DirList.index(RecFolder))
         Key = "{0:02d}".format(DirList.index(RecFolder))
         ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
         ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
     
     return(ExpInfo)
+
+
+def FixExpInfoNo(FileName):
+    with h5py.File(FileName) as F:
+        for key in F['ExpInfo'].keys():
+            N = "{0:02d}".format(int(key))
+            F['ExpInfo'][N] = F['ExpInfo'][key]
+            del(F['ExpInfo'][key])
 
 
 def GetExpKeys(ExpStr, OpenedFile):

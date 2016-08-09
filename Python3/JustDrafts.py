@@ -237,6 +237,7 @@ import wave
 from datetime import datetime
 from glob import glob
 from scipy import signal
+from scipy.io import wavfile
 
 FileName = glob('*.hdf5')[0]
 
@@ -404,7 +405,7 @@ def WriteABRTar(ABRs, XValues, Path, FileName):
 
 def WriteWav(Data, ChNo, DataSize, Rate, FileName):
     print('Writing data to', FileName+'... ', end='')
-    with wave.open(Path+'/'+FileName, 'w') as F:
+    with wave.open(FileName, 'w') as F:
         F.setparams((ChNo, 4, Rate, DataSize*ChNo, 'NONE', 'uncompressed'))
         F.writeframes(Data)
     
@@ -417,20 +418,22 @@ def WriteABRWave(ABRs, XValues, Rate, Group, Path):
     Path = Path + '/' + Trial
     os.makedirs(Path, exist_ok=True)
     
-    Keys = list(ABRs.keys()); Keys.sort()
-    ChNo = len(ABRs); DataSize = len(ABRs[Keys[0]])
+#    Keys = list(ABRs.keys()); Keys.sort()
+#    ChNo = len(ABRs); 
     
-    Data = [ABRs[dB][Sample] for Sample in range(DataSize) for dB in Keys]
-    Data = np.array('f', Data); Data = bytes(Data)
+#    Data = [ABRs[dB][Sample] for Sample in range(DataSize) for dB in Keys]
     
-    FileName = Path.split(sep='/'); del(FileName[0])
-    FileName = 'ABRs-' + '_'.join(FileName)
-    WriteWav(Data, ChNo, DataSize, Rate, FileName)
+    for Key in ABRs:
+#        Data = ABRs[Key].tobytes(); DataSize = len(Data)
+        FileName = Path.split(sep='/'); del(FileName[0])
+        FileName = Path + '/' + 'ABRs-' + '_'.join(FileName) + '_' + Key + '.wav'
+        wavfile.write(FileName, Rate, ABRs[Key])
+#        WriteWav(Data, 1, DataSize, Rate, FileName)
     
-    XValues = np.array('f', XValues); XValues = bytes(XValues)
-    
+    XValues = XValues.tobytes()
     FileName = Path.split(sep='/'); del(FileName[0])
     FileName = 'XValues-' + '_'.join(FileName)
+    
     WriteWav(XValues, 1, len(XValues), Rate, FileName)
 
 
@@ -470,12 +473,11 @@ for Stim in StimType:
         NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
         NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
         
-        Info['Frequency'] = ''.join([
-                        str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][0]),
-                        '-',
-                        str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][1])])
+        SFreq = ''.join([str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][0]),
+                         '-',
+                         str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][1])])
         
-        Info['XValues'] = (range(-NoOfSamplesBefore, 
+        XValues = (range(-NoOfSamplesBefore, 
                                  NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
         
         for Rec in Raw[OEProc]['data'].keys():
@@ -505,7 +507,7 @@ for Stim in StimType:
             dB = str(DataInfo['Intensities'][int(Rec)]) + 'dB'
             ABRs[dB] = ABR[:]; del(ABR)
         
-        Path = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
+        Path = Stim + '/' + ExpInfo['DVCoord'] + '/' + SFreq
         Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
 
 

@@ -2,6 +2,150 @@
 """
 Just drafts
 """
+#%% TTLs figure
+
+import ControlSoundBoard
+import KwikAnalysis
+import numpy as np
+
+AnimalName = 'CaMKIIahM4Dn04'
+Rate = 128000
+BaudRate = 38400
+
+CalibrationFile = '20160419093139-SoundMeasurement.hdf5'
+SoundBoard = 'USBPre2_oAux-iAux'
+
+TTLAmpF = 1
+SoundTTLVal = 0.6
+LaserTTLVal = 4.1
+
+SoundPrePauseDur = 0.008
+SoundPulseDur = 0.003
+SoundPostPauseDur = 0.039
+SoundPulseNo = 2
+SoundStimBlockNo = 1
+SoundPauseBetweenStimBlocksDur = 1
+Intensities = [80]
+NoiseFrequency = [[8000, 10000]]
+SBOutAmpF = 1
+
+LaserPrePauseDur = 0.004
+LaserPulseDur = 0.01
+LaserPostPauseDur = 0.036
+LaserPulseNo = 2
+LaserStimBlockNo = 1
+LaserPauseBetweenStimBlocksDur = 1
+
+SoundAmpF = ControlSoundBoard.dBToAmpF(Intensities, CalibrationFile)
+SoundPulse = ControlSoundBoard.GenNoise(Rate, SoundPulseDur)
+SoundPulseFiltered = ControlSoundBoard.BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
+SoundUnit = ControlSoundBoard.ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
+                               NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
+                               SoundPostPauseDur)
+SoundTTLUnit = ControlSoundBoard.GenTTL(Rate, SoundPulseDur, TTLAmpF, 
+                                        SoundTTLVal, SoundBoard, SBOutAmpF, 
+                                        SoundPrePauseDur, SoundPostPauseDur)
+
+LaserUnit = ControlSoundBoard.GenTTL(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SoundBoard, SBOutAmpF, 
+                       LaserPrePauseDur, LaserPostPauseDur)
+
+SoundTTLLaserUnit = [LaserUnit[_]+SoundTTLUnit[_] \
+                     for _ in range(len(SoundTTLUnit))]
+
+SoundTTL = []
+for El in SoundTTLUnit:
+    if El > 0: SoundTTL.append(El)
+    else: SoundTTL.append(0)
+
+LaserTTL = []
+for El in LaserUnit:
+    if El > 0: LaserTTL.append(El)
+    else: LaserTTL.append(0)
+
+SoundLaserTTL = []
+for El in SoundTTLLaserUnit:
+    if El > 0: SoundLaserTTL.append(El)
+    else: SoundLaserTTL.append(0)
+
+XValues = (range(round(0.05*Rate))/np.array([Rate]))*10**3
+    
+Signals = {}
+Signals['SoundPulse'] = {'X': XValues,
+                         'Y': np.array(SoundUnit[0][0])*1000,
+                         'Label': 'Sound pulse',
+                         'XLabel': 'Time [ms]',
+                         'YLabel': 'Voltage [mV]',
+                         'Name': 'SoundPulse'}
+
+Signals['SoundSqWave'] = {'X': XValues,
+                          'Y': SoundTTLUnit,
+                          'Label': 'Sound square wave',
+                          'XLabel': 'Time [ms]',
+                          'YLabel': 'Voltage [V]',
+                          'Name': 'SoundSqWave'}
+
+Signals['SoundTTL'] = {'X': XValues,
+                       'Y': SoundTTL,
+                       'Label': 'Sound TTL',
+                       'XLabel': 'Time [ms]',
+                       'YLabel': 'Voltage [V]',
+                       'Name': 'SoundTTL'}
+
+Signals['LaserSqWave'] = {'X': XValues,
+                          'Y': LaserUnit,
+                          'Label': 'Laser square wave',
+                          'XLabel': 'Time [ms]',
+                          'YLabel': 'Voltage [V]',
+                          'Name': 'LaserSqWave'}
+
+Signals['LaserTTL'] = {'X': XValues,
+                       'Y': LaserTTL,
+                       'Label': 'LaserTTL',
+                       'XLabel': 'Time [ms]',
+                       'YLabel': 'Voltage [V]',
+                       'Name': 'LaserTTL'}
+
+Signals['SoundLaserSqWave'] = {'X': XValues,
+                               'Y': SoundTTLLaserUnit,
+                               'Label': 'Sound + laser square wave',
+                               'XLabel': 'Time [ms]',
+                               'YLabel': 'Voltage [V]',
+                               'Name': 'SoundLaserSqWave'}
+
+Signals['SoundLaserTTL'] = {'X': XValues,
+                            'Y': SoundLaserTTL,
+                            'Label': 'Sound + laser TTL',
+                            'XLabel': 'Time [ms]',
+                            'YLabel': 'Voltage [V]',
+                            'Name': 'SoundLaserTTL'}
+
+
+
+def GeneralPlot(Data, Visible=True):
+    Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+    from matplotlib import rcParams; rcParams.update(Params)
+    import matplotlib.pyplot as plt
+    
+    plt.figure(figsize=(4,2))
+    plt.plot(Data['X'], Data['Y'], label=Data['Label'])
+    plt.ylabel(Data['YLabel']); plt.xlabel(Data['XLabel'])
+    plt.legend(loc='lower right')
+    plt.locator_params(tight=True)
+    plt.tick_params(direction='out')
+    plt.axes().spines['right'].set_visible(False)
+    plt.axes().spines['top'].set_visible(False)
+    plt.axes().yaxis.set_ticks_position('left')
+    plt.axes().xaxis.set_ticks_position('bottom')
+    plt.savefig(Data['Name']+'.svg', format='svg')
+    if Visible: plt.show()
+    
+    return(None)
+
+
+for Signal in Signals:
+    GeneralPlot(Signals[Signal])
+
+
 #%% GPIASIndex
 import h5py
 import KwikAnalysis

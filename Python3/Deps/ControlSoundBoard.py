@@ -22,9 +22,8 @@ board as an analog I/O board.
 
 import array
 import Hdf5F
+import KwikAnalysis
 import math
-import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 import pyaudio
 import shelve
 import random
@@ -37,7 +36,7 @@ SBAmpFsFile = '/home/cerebro/Malfatti/Test/20160418173048-SBAmpFs.hdf5'
 ## Lower-level functions
 def dBToAmpF(Intensities, CalibrationFile):
     print('Converting dB to AmpF...')
-    SoundIntensity = Hdf5F.SoundMeasurement(CalibrationFile, 
+    SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, 
                                                     'SoundIntensity')
     
     SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
@@ -109,24 +108,25 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
                                     SoundPulseFiltered[Freq] + \
                                     SoundPostPause
             Max = max(SoundUnit[Freq][AmpF])
-            SoundUnit[Freq][AmpF] = [(SoundEl * (SBOutAmpF/Max))
+            SoundUnit[Freq][AmpF] = [(SoundEl / (SBOutAmpF/Max))
                                      * SoundAmpF[Key][AmpF]
                                      for SoundEl in SoundUnit[Freq][AmpF]]
     
     return(SoundUnit)
 
 
-def GenTTL(Rate, PulseDur, TTLAmpF, SoundBoard, SBOutAmpF, PrePauseDur=0, 
+def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0, 
            PostPauseDur=0):
     
     print('Generating Sound TTL...')
+    TTLVal = round(TTLVal/SBOutAmpF, 3)
     
-    TTLPulse = [1]*round((Rate*PulseDur)/2) + \
-                    [-1]*round((Rate*PulseDur)/2)
+    TTLPulse = [TTLVal] * round(Rate*PulseDur) + \
+               [TTLVal*-1] * round(Rate*PulseDur)
     TTLPulse[-1] = 0
 
     TTLPrePause = [0] * round(PrePauseDur * Rate)
-    TTLPostPause = [0] * round(PostPauseDur * Rate)
+    TTLPostPause = [0] * round((PostPauseDur-PulseDur) * Rate)
     
 #    if SoundPulseDur < 0.01:
 #        SoundTTLPulse = [round(SoundTTLVal/SBOutAmpF, 3)] * round(SoundPulseDur * Rate)
@@ -374,8 +374,8 @@ def SoundStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
     SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
                                NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
                                SoundPostPauseDur)
-    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
-                          SoundPrePauseDur, SoundPostPauseDur)    
+    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, SoundBoard, 
+                          SBOutAmpF, SoundPrePauseDur, SoundPostPauseDur)    
     SoundList = InterleaveChannels(SoundUnit, SoundTTLUnit, SoundAmpF, 
                                    NoiseFrequency)    
     Sound = ListToByteArray(SoundList, SoundAmpF, NoiseFrequency)
@@ -399,8 +399,8 @@ def LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, SoundBoard,
     SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                                'SBOutAmpF')
     
-    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
-                       LaserPrePauseDur, LaserPostPauseDur)
+    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SoundBoard, 
+                       SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
     LaserList = InterleaveChannels([0], LaserUnit, [0], [0])
     Laser = ListToByteArray(LaserList, [0], [0])
     LaserPauseBetweenStimBlocks = GenPause(Rate, LaserPauseBetweenStimBlocksDur)    
@@ -427,11 +427,12 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
     SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                                'SBOutAmpF')
     
-    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
-                       LaserPrePauseDur, LaserPostPauseDur)
+    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SoundBoard, 
+                       SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
     
-    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundBoard, SBOutAmpF, 
-                          SoundPrePauseDur, SoundPostPauseDur)
+    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
+                          SoundBoard, SBOutAmpF, SoundPrePauseDur, 
+                          SoundPostPauseDur)
     
     print('Summing sound TTL and laser units...')
     SoundTTLLaserUnit = [LaserUnit[_]+SoundTTLUnit[_] \
@@ -548,6 +549,10 @@ def GPIAS(FileList, CalibrationFile, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, Filt
 
 
 def PlotGPIAS(FileList):
+    Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+    from matplotlib import rcParams; rcParams.update(Params)
+    from matplotlib import pyplot as plt
+    
     for File in FileList:
         print('Loading data from ', File, ' ...')
         with shelve.open(File[:-3]) as Shelve:
@@ -592,6 +597,10 @@ def PlotGPIAS(FileList):
 def MicrOscilloscope(Rate, SoundBoard, XLim, YLim, FramesPerBuf=512):
     """ Read data from sound board input and plot it until the windows is 
     closed. """
+    Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+    from matplotlib import rcParams; rcParams.update(Params)
+    import matplotlib.animation as animation
+    from matplotlib import pyplot as plt
     
     SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                               'SBInAmpF')
@@ -630,6 +639,10 @@ def MicrOscilloscope(Rate, SoundBoard, XLim, YLim, FramesPerBuf=512):
 def MicrOscilloscopeRec(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512):
     """ Read data from sound board input, record it to a video and plot it 
     until the windows is closed (with a delay). """
+    Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+    from matplotlib import rcParams; rcParams.update(Params)
+    import matplotlib.animation as animation
+    from matplotlib import pyplot as plt
     
     SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                               'SBInAmpF')
@@ -728,9 +741,12 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
     SoundUnit = [0]*len(NoiseFrequency)
     SoundList = [0]*len(NoiseFrequency)
     Sound = [0]*len(NoiseFrequency)
-    SoundRec = [0]*len(NoiseFrequency)
+    SoundRec = {}
     
-    for Freq in range(len(NoiseFrequency)):        
+    for Freq in range(len(NoiseFrequency)):
+        FKey = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+        SoundRec[FKey] = {}
+        
         print('Filtering sound: ', NoiseFrequency[Freq], '...')
         passband = [_/(Rate/2) for _ in NoiseFrequency[Freq]]
         f2, f1 = signal.butter(4, passband, 'bandpass')
@@ -744,14 +760,13 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
         SoundUnit[Freq] = [0]*len(SoundAmpF)
         SoundList[Freq] = [0]*len(SoundAmpF)
         Sound[Freq] = [0]*len(SoundAmpF)
-        SoundRec[Freq] = [[] for _ in range(len(SoundAmpF))]
         
         print('Applying amplification factors...')
         for AmpF in range(len(SoundAmpF)):
             SoundUnit[Freq][AmpF] = SoundPulseFiltered[Freq]
                                     
             Max = max(SoundUnit[Freq][AmpF])
-            SoundUnit[Freq][AmpF] = [(SoundEl * (SBOutAmpF/Max))
+            SoundUnit[Freq][AmpF] = [(SoundEl / (SBOutAmpF/Max))
                                      * SoundAmpF[AmpF]
                                      for SoundEl in SoundUnit[Freq][AmpF]]
             
@@ -776,4 +791,4 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
                          input=False,
                          output=True)
 
-    return(Sound, SoundRec, Stimulation)
+    return(Sound, Stimulation)

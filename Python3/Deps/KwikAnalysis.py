@@ -237,7 +237,7 @@ def SetPlot(Backend='TkAgg', AxesObj=(), FigObj=(), FigTitle='', Params=False,
                   'figure.titlesize': 'large', 'figure.titleweight': 'normal',
                   
                   'image.cmap': 'cubehelix', 'savefig.transparent': True,
-                  'svg.fonttype': 'path'}
+                  'svg.fonttype': 'none'}
         return(Params)
     
     elif Plot:
@@ -827,14 +827,18 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
         Half = len(GapAE)//2
         BGStart = 0; BGEnd = Half - 1
         PulseStart = Half; PulseEnd = len(GapAE) - 1
-        BinSize = XValues[-1] - XValues[-2]
+#        BinSize = XValues[-1] - XValues[-2]
         
-        GapRMSBG = sum(GapAE[BGStart:BGEnd] * BinSize)**0.5
-        GapRMSPulse = sum(GapAE[PulseStart:PulseEnd] * BinSize)**0.5
+#        GapRMSBG = sum(GapAE[BGStart:BGEnd] * BinSize)**0.5
+#        GapRMSPulse = sum(GapAE[PulseStart:PulseEnd] * BinSize)**0.5
+        GapRMSBG = (np.mean(GapAE[BGStart:BGEnd]**2))**0.5
+        GapRMSPulse = (np.mean(GapAE[PulseStart:PulseEnd]**2))**0.5
         GapRMS = GapRMSPulse - GapRMSBG
         
-        NoGapRMSBG = sum(NoGapAE[BGStart:BGEnd] * BinSize)**0.5
-        NoGapRMSPulse = sum(NoGapAE[PulseStart:PulseEnd] * BinSize)**0.5
+#        NoGapRMSBG = sum(NoGapAE[BGStart:BGEnd] * BinSize)**0.5
+#        NoGapRMSPulse = sum(NoGapAE[PulseStart:PulseEnd] * BinSize)**0.5
+        NoGapRMSBG = (np.mean(NoGapAE[BGStart:BGEnd]**2))**0.5
+        NoGapRMSPulse = (np.mean(NoGapAE[PulseStart:PulseEnd]**2))**0.5
         NoGapRMS = NoGapRMSPulse - NoGapRMSBG
         
         # GPIAS index (How much Gap is different from NoGap)

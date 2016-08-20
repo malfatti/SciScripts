@@ -65,7 +65,7 @@ SoundStimBlockNo = 5
 SoundPauseBetweenStimBlocksDur = 10
 # Intensities tested, in order, in dB. Supports floats :)
 #Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
-#Intensities = [80, 70, 60, 50]
+#Intensities = [80, 70, 60, 50, 40, 0]
 Intensities = [80]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 

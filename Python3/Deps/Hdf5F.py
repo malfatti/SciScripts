@@ -316,40 +316,34 @@ def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
     return(Var)
 
 
-def SoundMeasurement(FileName, Var='SoundIntensity'):
+def LoadSoundMeasurement(FileName, Var='SoundIntensity'):
     DataInfo = {}; SoundIntensity = {}
     with h5py.File(FileName, 'r') as h5:
-        if Var in ['DataInfo', 'SoundRec', 'SoundIntensity']:
+        if Var == 'DataInfo':
             for Key,Val in h5['SoundRec'].attrs.items():
                 DataInfo[Key] = Val
             
-            if Var == 'SoundRec':
-                SoundRec = [0]*len(DataInfo['NoiseFrequency'])
-                
-                for Freq in range(len(SoundRec)):
-                    SoundRec[Freq] = [0]*len(DataInfo['SoundAmpF'])
-                    Key = str(DataInfo['NoiseFrequency'][Freq][0]) + '-' + \
-                          str(DataInfo['NoiseFrequency'][Freq][1])
-                    
-                    for AmpF in range(len(SoundRec[Freq])):
-                        aKey = str(DataInfo['SoundAmpF'][AmpF])
-                        if aKey == '0.0': aKey = '0'
-                        
-                        SoundRec[Freq][AmpF] = list(h5['SoundRec'][Key][aKey])
-                
-                return(SoundRec)
+            return(DataInfo)
             
-            elif Var == 'SoundIntensity':
-                for Key in h5['SoundIntensity'].keys():
-                    SoundIntensity[Key] = {}
-                    
-                    for AmpF in h5['SoundIntensity'][Key].keys():
-                        SoundIntensity[Key][AmpF] = h5['SoundIntensity'][Key][AmpF][0]
-                
-                return(SoundIntensity)
+        elif Var == 'SoundRec':
+            SoundRec = {}
             
-            else:
-                return(DataInfo)
+            for Freq in h5['SoundRec']:
+                SoundRec[Freq] = {}
+                
+                for AKey, AVal in h5['SoundRec'][Freq].items():
+                    SoundRec[Freq][AKey] = AVal[:]
+            
+            return(SoundRec)
+        
+        elif Var == 'SoundIntensity':
+            for FKey in h5['SoundIntensity']:
+                SoundIntensity[FKey] = {}
+                
+                for AmpF in h5['SoundIntensity'][FKey]:
+                    SoundIntensity[FKey][AmpF] = h5['SoundIntensity'][FKey][AmpF][0]
+            
+            return(SoundIntensity)
         
         else:
             print('Supported variables: DataInfo, SoundRec, SoundIntensity.')

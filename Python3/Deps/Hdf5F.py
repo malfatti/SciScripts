@@ -40,10 +40,21 @@ def CheckGroup(FileName, Group):
             return(True)
 
 
-def DeleteGroup(Group, FileName):
+def DeleteGroup(Group, FileName, All=False):
     with h5py.File(FileName) as F:
         Delete = True
         while Delete:
+            if All:
+                Keys = [Key for Key in F.keys() if Group in Key]; Keys.sort()
+                print('This will delete the following keys:')
+                for Key in Keys: print(Key)
+                Ans = input('Delete keys? [y/N] ')
+                
+                if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: 
+                    for Key in Keys: del(F[Key])
+                
+                return(None)
+            
             Key = GetExpKeys(Group, F)
             
             Ans = input('Delete key ' + Key + '? [y/N] ')
@@ -74,16 +85,28 @@ def FixExpInfoNo(FileName):
             del(F['ExpInfo'][key])
 
 
-def GetExpKeys(ExpStr, OpenedFile):
-    Keys = [Key for Key in OpenedFile.keys() if ExpStr in Key]; Keys.sort()
-    if len(Keys) > 1:
-        print('Choose dataset:')
-        for Ind, Key in enumerate(Keys):
-            print(str(Ind), '=' , Key)
-        Key = input(': ')
-        Key = Keys[int(Key)]
-    else:
-        Key = Keys[0]
+def GetGroupKeys(Group, FileName):
+    with h5py.File(FileName, 'r') as F:
+        Keys = list(F[Group].keys())
+    
+    return(Keys)
+
+
+def GetExpKeys(ExpStr, OpenedFile, Key=''):
+    Keys = [K for K in OpenedFile.keys() if ExpStr in K]; Keys.sort()
+    
+    if Key == '':
+        if len(Keys) > 1:
+            print('Choose dataset:')
+            for Ind, K in enumerate(Keys):
+                print(str(Ind), '=' , K)
+            K = input(': ')
+            K = Keys[int(K)]
+        else:
+            K = Keys[0]
+        
+    else: 
+        Key = [K for K in Keys if Key in K]; Key = Key[0]
     
     return(Key)
 
@@ -176,7 +199,11 @@ def LoadDict(Path, FileName, Attrs=True):
         
         else:
             
-            for Key, Value in F[Path].items(): Dict[Key] = Value[:]
+            for Key, Value in F[Path].items(): 
+                if type(Value) == int: Dict[Key] = list(Value)[0]
+                else: 
+                    try: Dict[Key] = Value[:]
+                    except ValueError: Dict[Key] = Value[()]
     
     return(Dict)
 
@@ -195,16 +222,17 @@ def LoadExpPerStim(StimType, DirList, FileName):
     return(Exps)
 
 
-def LoadGPIAS(FileName):
+def LoadGPIAS(FileName, Key=''):
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('GPIAS_', F)
+        Key = GetExpKeys('GPIAS_', F, Key)
         
         GPIAS = {}
         for Freq in F[Key]['GPIAS']:
             GPIAS[Freq] = {}
             
             for GKey, GVal in F[Key]['GPIAS'][Freq].items():
-                GPIAS[Freq][GKey] = GVal[:]
+                try: GPIAS[Freq][GKey] = GVal[:]
+                except ValueError: GPIAS[Freq][GKey] = GVal[()]
             
 #                GPIAS[Freq]['NoGap'] = F[Key]['GPIAS'][Freq]['NoGap'][:]
 #                GPIAS[Freq]['Gap'] = F[Key]['GPIAS'][Freq]['Gap'][:]

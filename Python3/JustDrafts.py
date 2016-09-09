@@ -2,6 +2,105 @@
 """
 Just drafts
 """
+#%% Statistics
+import numpy as np
+from itertools import permutations
+from rpy2.robjects import packages as RPackages
+from rpy2 import robjects as RObj
+
+def RCheckPackage(Packages):
+    RPacksUsed = Packages
+    RPacksToInstall = [Pack for Pack in RPacksUsed 
+                       if not RPackages.isinstalled(Pack)]
+    if len(RPacksToInstall) > 0:
+        print(str(RPacksToInstall), 'not installed. Install now?')
+        Ans = input('[y/N]: ')
+        
+        if Ans in ['y', 'yes', 'Yes', 'YES']:
+            from rpy2.robjects.vectors import StrVector as RStrVector
+            
+            RUtils = RPackages.importr('utils')
+            RUtils.chooseCRANmirror(ind=1)
+            
+            RUtils.install_packages(RStrVector(RPacksToInstall))
+        
+        else: print('Aborted.')
+    
+    else: print('Packages', str(Packages), 'installed.')
+    
+    return(None)
+
+
+def RAnOVa(GroupNo=RObj.NULL, SampleSize=RObj.NULL, Power=RObj.NULL, 
+           SigLevel=RObj.NULL, EffectSize=RObj.NULL):
+    RCheckPackage(['pwr'])
+    Rpwr = RPackages.importr('pwr')
+    
+    Results = Rpwr.pwr_anova_test(k=GroupNo, power=Power, sig_level=SigLevel, 
+                                  f=EffectSize, n=SampleSize)
+    
+    print('Calculating', Results.rx('method')[0][0] + '... ', end='')
+    AnOVaResults = {}
+    for Key, Value in {'k': 'GroupNo', 'n': 'SampleSize', 'f': 'EffectSize', 
+                       'power':'Power', 'sig.level': 'SigLevel'}.items():
+        AnOVaResults[Value] = Results.rx(Key)[0][0]
+    
+    print('Done.')
+    return(AnOVaResults)
+
+
+def RTTest(DataA, DataB, Paired=True, Alt='less', Confidence=0.95):
+    Rttest = RObj.r['t.test']
+    
+    if np.mean(DataA) > np.mean(DataB): DataA, DataB = DataB, DataA
+    
+    Results = Rttest(RObj.IntVector(DataA), RObj.IntVector(DataB), 
+                     paired=Paired, var_equal=False, alternative=Alt, 
+                     conf_level=RObj.FloatVector([Confidence]))
+    
+    print('Calculating', Results.rx('method')[0][0] + '... ', end='')
+    TTestResults = {}; Names = list(Results.names)
+    for Name in Names:
+        TTestResults[Name] = Results.rx(Name)[0][0]
+    
+    print('Done.')
+    return(TTestResults)
+
+
+
+#%% Nernst potential
+Temperature = 25    # in Celsius
+Ions = ['Sodium', 'Potassium', 'Chloride']
+
+Sodium = {'In':8,
+          'Out': 130 + 20,
+          'z': +1}
+
+Potassium = {'In': 108,
+             'Out': 3 + 1.2,
+             'z': +1}
+
+Chloride = {'In': 9,
+            'Out': 130 + 3 + 4.8,
+            'z':-1}
+
+
+import numpy as np
+
+e = 1.6021766 * 10**-19
+Na = 6.022141 * 10**23
+
+F = e*Na 
+R = 8.314472
+T = Temperature + 274.150
+
+Nernst = {}
+for Ion in Ions:
+    IonDict = eval(Ion)
+    Nernst[Ion] = (((R*T)/(IonDict['z']*F)) * 
+                   np.log(IonDict['Out']/IonDict['In']) * 1000) # in mV
+
+
 #%% TTLs figure
 
 import ControlSoundBoard
@@ -146,6 +245,14 @@ for Signal in Signals:
     GeneralPlot(Signals[Signal])
 
 
+#%% GPIASDrafts
+import Hdf5F
+Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn06/CaMKIIahM4Dn06-Analysis.hdf5', All=True)
+Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn07/CaMKIIahM4Dn07-Analysis.hdf5', All=True)
+Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn08/CaMKIIahM4Dn08-Analysis.hdf5', All=True)
+Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn09/CaMKIIahM4Dn09-Analysis.hdf5', All=True)
+
+
 #%% GPIASIndex
 import h5py
 import KwikAnalysis
@@ -155,7 +262,8 @@ Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
-Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 
+           'CaMKIIahM4Dn09']
 
 GPIASIndex = {Animal: {} for Animal in Animals}
 
@@ -176,13 +284,13 @@ for Animal in Animals:
                                        for Freq in Freqs]
 
 # Override
-del(GPIASIndex['CaMKIIahM4Dn06']['CaMKIIahM4Dn06-20160623-GPIAS_2016-06-23_14-27-40-GPIAS_20160807222302'])
-del(GPIASIndex['CaMKIIahM4Dn06']['CaMKIIahM4Dn06-20160630-GPIAS_2016-06-30_10-32-42-GPIAS_20160807222457'])
-del(GPIASIndex['CaMKIIahM4Dn07']['CaMKIIahM4Dn07-20160217-GPIASn01Screening_2016-02-17-GPIAS_20160807223204'])
-del(GPIASIndex['CaMKIIahM4Dn08']['CaMKIIahM4Dn08-20160629-GPIAS_2016-06-29_14-27-21-GPIAS_20160807223400'])
-del(GPIASIndex['CaMKIIahM4Dn08']['CaMKIIahM4Dn08-20160630-GPIAS_2016-06-30_11-13-25-GPIAS_20160807223458'])
-del(GPIASIndex['CaMKIIahM4Dn09']['CaMKIIahM4Dn09-20160629-GPIAS_2016-06-29_15-17-25-GPIAS_20160809104500'])
-del(GPIASIndex['CaMKIIahM4Dn09']['CaMKIIahM4Dn09-20160630-GPIAS_2016-06-30_11-53-13-GPIAS_20160809104845'])
+del(GPIASIndex['CaMKIIahM4Dn06']['CaMKIIahM4Dn06-20160623-GPIAS_2016-06-23_14-27-40-GPIAS_20160831160855'])
+del(GPIASIndex['CaMKIIahM4Dn06']['CaMKIIahM4Dn06-20160630-GPIAS_2016-06-30_10-32-42-GPIAS_20160831160947'])
+del(GPIASIndex['CaMKIIahM4Dn07']['CaMKIIahM4Dn07-20160217-GPIASn01Screening_2016-02-17-GPIAS_20160831161040'])
+del(GPIASIndex['CaMKIIahM4Dn08']['CaMKIIahM4Dn08-20160629-GPIAS_2016-06-29_14-27-21-GPIAS_20160831161134'])
+del(GPIASIndex['CaMKIIahM4Dn08']['CaMKIIahM4Dn08-20160630-GPIAS_2016-06-30_11-13-25-GPIAS_20160831161200'])
+del(GPIASIndex['CaMKIIahM4Dn09']['CaMKIIahM4Dn09-20160629-GPIAS_2016-06-29_15-17-25-GPIAS_20160831161347'])
+del(GPIASIndex['CaMKIIahM4Dn09']['CaMKIIahM4Dn09-20160630-GPIAS_2016-06-30_11-53-13-GPIAS_20160831161413'])
 
 for Animal in Animals:
     for Exp in GPIASIndex[Animal]:
@@ -190,7 +298,7 @@ for Animal in Animals:
             GPIASIndex[Animal][Exp].insert(1, float('NaN'))
 
 YLabel = 'GPIAS index'
-Colors = ['--ro', '--bx', '--g^', '--ms']
+Colors = ['-ro', '-bx', '-g^', '-ms']
 Freqs = ['8$\sim$10', '9$\sim$11', '10$\sim$12', '12$\sim$14', 
          '14$\sim$16 [KHz]']
 When = ['Before ANT', '2d after ANT', '1w after ANT (NaCl)', 
@@ -224,57 +332,245 @@ import Hdf5F
 import numpy as np
 from glob import glob
 
+def StrRange(Start='a', End='e', Step=1):
+    if max(len(Start), len(End)) > 1: 
+        print('Only 1-char length strings are accepted.')
+        return(None)
+    else:
+        Range = map(chr, range(ord(Start), ord(End), Step))
+        return(Range)
+
 Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 
 Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
-YLabel = 'Intensity [dBSPL]'
-Freqs = ['8$\sim$10', '9$\sim$11', '10$\sim$12', '12$\sim$14', '14$\sim$16 [KHz]']
-Colors = ['--ro', '--bx', '--g^', '--ms']
-When = ['Before ANT', '48h after ANT', '2w after ANT (NaCl)', '2w after ANT (CNO)']
-
-Fig, Axes = plt.subplots(1,4, sharey=True)
-for AInd, Animal in enumerate(Animals):
+ABRThresholds = {Animal: {} for Animal in Animals}
+for Animal in Animals:
     AnalysisFile = glob(Animal + '/*.hdf5')[0]
-    ABRThresholds = Hdf5F.LoadDict('/ABRThresholds', AnalysisFile, Attrs=False)
-    Exps = [Exp for Exp in ABRThresholds.keys()]; Exps.sort()
+    Exps = Hdf5F.GetGroupKeys('/ABRThresholds', AnalysisFile)
+    
+    for Exp in Exps:
+        ABRThresholds[Animal][Exp] = Hdf5F.LoadDict('/ABRThresholds/'+Exp, 
+                                                    AnalysisFile, Attrs=False)
+
+Freqs = [Freq for Freq in ABRThresholds[Animal][Exp]]
+Freqs = sorted(Freqs)
+
+ThresholdsPerFreq = [[[] for Freq in Freqs] for Exp in range(len(Exps))]
+for Animal in Animals:
+    Exps = [Exp for Exp in ABRThresholds[Animal]]; Exps.sort()
     
     for EInd, Exp in enumerate(Exps):
-        Axes[EInd].plot(ABRThresholds[Exp], Colors[AInd], label=Animal)
-        KwikAnalysis.SetPlot(AxesObj=Axes[EInd], Axes=True)
-        Axes[EInd].xaxis.set_ticks(range(len(ABRThresholds[Exp])))
-        Axes[EInd].set_xticklabels(Freqs)
-        Axes[EInd].set_xlabel(When[EInd])
-        Axes[EInd].legend(loc='upper left')
-        Axes[EInd].spines['bottom'].set_position(('outward', 5))
-        if EInd == 0: Axes[EInd].spines['left'].set_position(('outward', 5))
+        for FInd, Freq in enumerate(Freqs):
+            ThresholdsPerFreq[EInd][FInd].append(ABRThresholds[Animal][Exp][Freq])
+
+TPFExpanded = ThresholdsPerFreq[:]
+for EInd in range(2,4):
+    TPFExpanded[EInd] = [TPFExpanded[EInd][FInd] + TPFExpanded[EInd][FInd]
+                         for FInd in range(len(Freqs))]
+
+# For t-tests
+Pairs = {}
+for Pair in permutations(''.join(StrRange('0', str(len(Exps)))), 2):
+    PKey = min(Pair)+max(Pair)
+    if PKey in Pairs: continue
+    
+    Pairs[PKey] = {}
+    
+    for FInd, Freq in enumerate(Freqs):
+#        DataA = ThresholdsPerFreq[int(Pair[0])][FInd]
+#        DataB = ThresholdsPerFreq[int(Pair[1])][FInd]
+        DataA = TPFExpanded[int(Pair[0])][FInd]
+        DataB = TPFExpanded[int(Pair[1])][FInd]
+        CL = 1 - (0.05/6)
+        
+        Pairs[PKey][Freq] = RTTest(DataA, DataB, Confidence=CL)
+        print('Pair', str(Pair), 'Freq', Freq + ':', 
+              str(Pairs[PKey][Freq]['p.value']))
+
+## For Anova
+#Data = {'Freqs': [], 'Values':[]}
+#for Freq in range(len(Freqs)):
+#    for Exp in range(len(Exps)):
+#        for Value in TPFExpanded[Exp][Freq]:
+#            Data['Freqs'].append(Freq); Data['Values'] = Data['Values'] + [Value]
+
+ToDelete = []
+for Pair in Pairs:
+    for Freq in Freqs:
+        if Pairs[Pair][Freq]['p.value'] > 0.05:
+            ToDelete.append([Pair, Freq])
+        
+        if Pairs[Pair][Freq]['p.value'] != Pairs[Pair][Freq]['p.value']:
+            ToDelete.append([Pair, Freq])
+        
+
+for KeyPair in ToDelete:
+    del(Pairs[KeyPair[0]][KeyPair[1]])
+
+EmptyPairs = []
+for Pair in Pairs:
+    if len(Pairs[Pair]) == 0:
+        EmptyPairs.append(Pair)
+
+for Pair in EmptyPairs:
+    del(Pairs[Pair])
+
+# Plots
+def DiffLine(XInd, Y, Text, Axes, lw=1):
+    X = XInd[0] + ((max(XInd) - min(XInd))/2)
+    props = {'connectionstyle':'bar','arrowstyle':'-',
+             'shrinkA':20,'shrinkB':20,'lw':lw}
+    
+    Axes.annotate(Text, xy=(X, Y+7), ha='center')#, zorder=10)
+    Axes.annotate('', xy=(XInd[0], Y), xytext=(XInd[1], Y), arrowprops=props)
+    
+    return(None)
+
+
+def SignificanceBar(XStart, XEnd, Y, Text, Ax, TicksDir='down', lw=1, color='k'):
+    from matplotlib.markers import TICKDOWN, TICKUP
+    if TicksDir == 'down': Tick = TICKDOWN
+    elif TicksDir == 'up': Tick = TICKUP
+    
+    if TicksDir == 'down': Yy = Y-(Y*0.1)
+    elif TicksDir == 'up': Yy = Y+(Y*0.1)
+    else: print('TicksDir should be "up" or "down".'); return(None)
+    
+    Ax.plot([XStart, XEnd], [Y, Y], color=color, lw=lw, marker=Tick)
+#    Ax.plot([XStart, XStart], [Yy, Y], color=color, lw=lw)
+#    Ax.plot([XEnd, XEnd], [Yy, Y], color=color, lw=lw)
+    
+    Ax.text(0.5*(XStart+XEnd), Yy, Text, ha='center', va='center')
+    return(None)
+
+
+#Colors = ['ro', 'bx', 'g^', 'ms']
+Visible = True
+Colors = ['r', 'g', 'b', 'm', 'k', '#ffa500']; ErrorCfg = {'ecolor':'k'}
+XLabel = 'ABR measurements'; YLabel = 'Intensity [dBSPL]'
+When = ['Before ANT', '48h after ANT', '2w after ANT (NaCl)', '2w after ANT (CNO)']
+
+Thresholds = {}
+Fig, Axes = plt.subplots(2, 1, gridspec_kw={'height_ratios':[3, 1]}, sharex=True, figsize=(12, 9))
+for FInd, Freq in enumerate(Freqs):
+    Thresholds[Freq] = {}
+    Thresholds[Freq]['Means'] = [np.mean(ThresholdsPerFreq[EInd][FInd]) 
+                                 for EInd in range(len(Exps))]
+    Thresholds[Freq]['SEMs'] = [np.std(ThresholdsPerFreq[EInd][FInd]) / \
+                                (len(ThresholdsPerFreq[EInd][FInd]))**0.5
+                                for EInd in range(len(Exps))]
+    
+    
+    for EInd, Exp in enumerate(Exps):
+        Bars = range(len(Freqs)) + np.array([7*EInd])
+        if EInd == 0:
+            Axes[0].bar(Bars[FInd], Thresholds[Freq]['Means'][EInd],
+                     color=Colors[FInd], alpha=0.4, error_kw=ErrorCfg,
+                     yerr=Thresholds[Freq]['SEMs'][EInd], label=Freq+' Hz')
         else: 
-            Axes[EInd].spines['left'].set_visible(False)
-            Axes[EInd].yaxis.set_ticks_position('none')
+            Axes[0].bar(Bars[FInd], Thresholds[Freq]['Means'][EInd],
+                     color=Colors[FInd], alpha=0.4, error_kw=ErrorCfg,
+                     yerr=Thresholds[Freq]['SEMs'][EInd])
+
+ExpWidth = len(Freqs)+2
+Ticks = [x/10 for x in range(int(len(Freqs)*10/2), 
+                             int(ExpWidth*10*len(Exps)), 
+                             ExpWidth*10)]
+
+Counter = 1
+for Pair in Pairs:
+    for FInd, Freq in enumerate(Freqs):
+        if Freq not in Pairs[Pair]: continue
+        
+        E0Ind = int(Pair[0]); E1Ind = int(Pair[1])
+        XInd = [(E0Ind*ExpWidth)+FInd+0.5, (E1Ind*ExpWidth)+FInd+0.5]
+        Y = 1.1* max(Thresholds[Freq]['Means'][E0Ind], 
+                        Thresholds[Freq]['Means'][E1Ind])
+        
+        Text = 'p = ' + str(round(Pairs[Pair][Freq]['p.value'], 4))
+#        DiffLine(XInd, Y, Text, Axes[1])
+#        print(Counter)
+        SignificanceBar(XInd[0], XInd[1], Counter, Text, Axes[1], TicksDir='up')
+        Counter += 1
+
+for Ind in [0,1]:
+    Axes[Ind].spines['top'].set_visible(False)
+    Axes[Ind].spines['bottom'].set_visible(False)
+    Axes[Ind].spines['right'].set_visible(False)
+    Axes[Ind].yaxis.set_ticks_position('left')
+    Axes[Ind].xaxis.set_ticks_position('none')
+    Axes[Ind].spines['left'].set_position(('outward', 5))
+
+
+Axes[0].set_ylabel(YLabel)
+Axes[0].set_ylim(bottom=30)
+Axes[0].legend(loc='best', frameon=False)
+
+Axes[1].xaxis.set_ticks(Ticks)
+Axes[1].set_xticklabels(When)
+Axes[1].set_xlabel(XLabel)
+Axes[1].set_ylim(-2, 7)
+Axes[1].spines['left'].set_visible(False)
+Axes[1].yaxis.set_ticks_position('none')
+
+Fig.savefig('ABRThresholds-' + Animals[0][:-2] + 
+            '_'.join([_[-2:] for _ in Animals]) + '.svg', format='svg')
+if Visible: plt.show()
+
+
+
+#Fig, Axes = plt.subplots(1,4, sharey=True, figsize=(12, 6))
+#for EInd, Exp in enumerate(Exps):
+#    Maxs, Mins, Means = [], [], []
+#    for FInd, Freq in enumerate(Freqs):
+#        Mean = np.mean(ThresholdsPerFreq[EInd][FInd])
+#        SEM = np.std(ThresholdsPerFreq[EInd][FInd]) / \
+#              (len(ThresholdsPerFreq[EInd][FInd]))**0.5
 #        
-#    adjust_spines(Axes[0], ['left, bottom'])
-    Axes[0].set_ylabel(YLabel)
-plt.show()
+#        Maxs.append(Mean+SEM); Means.append(Mean); Mins.append(Mean-SEM)
+#    
+#    Axes[EInd].plot(Means, label='Mean')
+#    Axes[EInd].fill_between(range(len(Maxs)), Maxs, Mins, color='0.8', label='SEM')
+#    Axes[EInd].xaxis.set_ticks(range(len(Freqs)))
+#    Axes[EInd].set_xticklabels(Freqs)
+#    Axes[EInd].set_xlabel(When[EInd])
+#    Axes[EInd].legend(loc='upper left')
+#    Axes[EInd].spines['bottom'].set_position(('outward', 5))
+#    if EInd == 0: Axes[EInd].spines['left'].set_position(('outward', 5))
+#    else: 
+#        Axes[EInd].spines['left'].set_visible(False)
+#        Axes[EInd].yaxis.set_ticks_position('none')
+#
+#Axes[0].set_ylabel(YLabel)
+#plt.show()
+#
 
-CharNo = [len(Animal) for Animal in Animals]
+## Individual data
+#Fig, Axes = plt.subplots(1,4, sharey=True)
+#for AInd, Animal in enumerate(Animals):
+#    Exps = [Exp for Exp in ABRThresholds[Animal]]; Exps.sort()
+#    
+#    for EInd, Exp in enumerate(Exps):        
+#        Thresholds = [ABRThresholds[Animal][Exp][Freq] for Freq in Freqs]
+#        
+#        Axes[EInd].plot(Thresholds, Colors[AInd], label=Animal)
+#        KwikAnalysis.SetPlot(AxesObj=Axes[EInd], Axes=True)
+#        Axes[EInd].xaxis.set_ticks(range(len(ABRThresholds[Animal][Exp])))
+#        Axes[EInd].set_xticklabels(Freqs)
+#        Axes[EInd].set_xlabel(When[EInd])
+#        Axes[EInd].legend(loc='upper left')
+#        Axes[EInd].spines['bottom'].set_position(('outward', 5))
+#        if EInd == 0: Axes[EInd].spines['left'].set_position(('outward', 5))
+#        else: 
+#            Axes[EInd].spines['left'].set_visible(False)
+#            Axes[EInd].yaxis.set_ticks_position('none')
+#    
+#    Axes[0].set_ylabel(YLabel)
+#plt.show()
 
-PrefixList = []; Prefix = ''; SuffixList = []; SuffixA = ''; SuffixB = ''
-if len(np.unique(CharNo)) == 1:
-    for Animal in range(1, len(Animals)):
-        for Char in range(CharNo[0]):
-            if Animals[Animal-1][Char] == Animals[Animal][Char]:
-                Prefix = ''.join([Prefix, Animals[Animal][Char]])
-            else: 
-                SuffixA = ''.join([SuffixA, Animals[Animal-1][Char:]])
-                SuffixB = ''.join([SuffixB, Animals[Animal][Char:]])
-                break
-        PrefixList.append(Prefix[:]); Prefix = ''
-        SuffixList.append([SuffixA[:], SuffixB[:]]); SuffixA = ''; SuffixB = ''
-
-Prefix = np.unique(PrefixList)[0]
-FigName = Prefix + Suffix[:-1]
 
 #%% Tar+Wave revolution
 

@@ -34,16 +34,20 @@ All the following cells send the stimulus to the sound board, each one with its
 own settings. 
 """
 #%% Set Parameters
-AnimalName = 'CaMKIIahM4Dn04'
-Rate = 128000
+AnimalName = 'LongEvansTest01'
+Rate = 384000
 BaudRate = 38400
 
-CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
+#CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
+#                  '20160419093139-SoundMeasurement/' + \
+#                  '20160419093139-SoundMeasurement.hdf5'
+CalibrationFile = '/home/malfatti/Documents/PhD/Tests/' + \
                   '20160419093139-SoundMeasurement/' + \
                   '20160419093139-SoundMeasurement.hdf5'
 
 # Sound board used
-SoundBoard = 'USBPre2_oAux-iAux'
+#SoundBoard = 'USBPre2_oAux-iAux'
+SoundBoard = 'Intel_oAnalog-iAnalog'
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
@@ -54,25 +58,25 @@ TTLAmpF = 1
 # Silence before pulse
 SoundPrePauseDur = 0.004
 # Pulse duration
-SoundPulseDur = 0.003
+SoundPulseDur = 0.005
 # Silence after pulse
-SoundPostPauseDur = 0.093
+SoundPostPauseDur = 0.091
 # Amount of pulses per block
-SoundPulseNo = 200
+SoundPulseNo = 529
 # Number of blocks
-SoundStimBlockNo = 5
+SoundStimBlockNo = 1
 # Duration of pause between blocks
 SoundPauseBetweenStimBlocksDur = 10
 # Intensities tested, in order, in dB. Supports floats :)
 #Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
-#Intensities = [80, 70, 60, 50, 40, 0]
-Intensities = [80]
+Intensities = [80, 70, 60, 50, 40]
+#Intensities = [80]
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
 #NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
 #                  [12000, 14000], [14000, 16000]]
-NoiseFrequency = [[8000, 10000]]
+NoiseFrequency = [[20000, 30000], [40000, 70000]]
 
 ## Laser
 # Silence before pulse
@@ -177,10 +181,10 @@ while True:
         print('Playing', str(NoiseFrequency[Freq]), 'at', 
               str(Intensities[AmpF]), 'dB')
         
-        Arduino.write(b'P')
+#        Arduino.write(b'P')
         PlaySound(Freq, AmpF)
         Stimulation.write(SoundPauseBetweenStimBlocks)
-        Arduino.write(b'P')
+#        Arduino.write(b'P')
     
     Hdf5F.WriteExpInfo('Sound', DVCoord, Freq, FileName)
     print('Played Freq', str(Freq), 'at', DVCoord, 'µm DV')

@@ -631,7 +631,7 @@ def ABRPlot3D(AnalysisFile, FileName, Azimuth=-110, Elevation=50, Visible=True):
 
 def ABRThresholdsTxtToHdf5(Override={}):
     if 'AnalysisFile' in Override: AnalysisFile =  Override['AnalysisFile']
-    else: AnalysisFile = AnalysisFile = glob('../*.hdf5')[0]
+    else: AnalysisFile = glob('*.hdf5')[0]
     
     if 'FileName' in Override: FileName =  Override['FileName']
     else: FileName = glob('*.txt')[0]
@@ -641,12 +641,15 @@ def ABRThresholdsTxtToHdf5(Override={}):
     
     Lines = [Line.split() for Line in Lines]
     Exps = Lines[0][:]; del(Lines[0])
-    Freqs = Lines[0][:]; del(Lines[0]); Freqs.sort()
+    Freqs = Lines[0][:]; del(Lines[0])
     
-    ABRThresholds = {Exps[_]: np.array(Lines[_], dtype='f') 
-                     for _ in range(len(Lines))}
+    ABRThresholds = {Exp: {} for Exp in Exps}
+    for EInd, Exp in enumerate(Exps):
+        for FInd, Freq in enumerate(Freqs):
+            ABRThresholds[Exp][Freq] = float(Lines[EInd][FInd])
     
-    Hdf5F.WriteDict(ABRThresholds, '/ABRThresholds', AnalysisFile, Attrs=False)
+    for Key in ABRThresholds:
+        Hdf5F.WriteDict(ABRThresholds[Key], '/ABRThresholds/'+Key, AnalysisFile, Attrs=False)
     
     return(None)
 
@@ -788,12 +791,12 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
         
         if AnalogTTLs:
             TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, GPIASTTLCh, OEProc)
-            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesAfter, 
+            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
         else:
             RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
                                                TTLsPerRec=TTLsPerRec)
-            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesAfter, 
+            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
         if GPIAS[SFreq][STrial] == []: GPIAS[SFreq][STrial] = GD[:]
@@ -824,22 +827,21 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
         NoGapAE = abs(signal.hilbert(GPIAS[Freq]['NoGap']))
         
         # RMS
-        Half = len(GapAE)//2
-        BGStart = 0; BGEnd = Half - 1
-        PulseStart = Half; PulseEnd = len(GapAE) - 1
+        BGStart = 0; BGEnd = NoOfSamplesBefore - 1
+        PulseStart = NoOfSamplesBefore; PulseEnd = len(GapAE) - 1
 #        BinSize = XValues[-1] - XValues[-2]
         
 #        GapRMSBG = sum(GapAE[BGStart:BGEnd] * BinSize)**0.5
 #        GapRMSPulse = sum(GapAE[PulseStart:PulseEnd] * BinSize)**0.5
         GapRMSBG = (np.mean(GapAE[BGStart:BGEnd]**2))**0.5
         GapRMSPulse = (np.mean(GapAE[PulseStart:PulseEnd]**2))**0.5
-        GapRMS = GapRMSPulse - GapRMSBG
+        GapRMS = GapRMSPulse/GapRMSBG
         
 #        NoGapRMSBG = sum(NoGapAE[BGStart:BGEnd] * BinSize)**0.5
 #        NoGapRMSPulse = sum(NoGapAE[PulseStart:PulseEnd] * BinSize)**0.5
         NoGapRMSBG = (np.mean(NoGapAE[BGStart:BGEnd]**2))**0.5
         NoGapRMSPulse = (np.mean(NoGapAE[PulseStart:PulseEnd]**2))**0.5
-        NoGapRMS = NoGapRMSPulse - NoGapRMSBG
+        NoGapRMS = NoGapRMSPulse/NoGapRMSBG
         
         # GPIAS index (How much Gap is different from NoGap)
         GPIAS[Freq]['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
@@ -855,7 +857,7 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
 
 def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL, 
                        GPIASTimeAfterTTL, FilterFreq, FilterOrder, AnalogTTLs, 
-                       Animals, Exp, AlreadyRun=[], Override={}):
+                       Animals, Exp, AlreadyRun=[], Override={}, Visible=False):
     for Animal in Animals:
         Override['AnalysisFile'] = glob(Animal+'/*.hdf5')[0]
         Exps = [F for F in glob(Animal+'/*') if Exp in F]; Exps.sort()
@@ -864,6 +866,7 @@ def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
             if RecExp in AlreadyRun:
                 continue
             
+            Override['ExpPath'] = RecExp
             print('Running', RecExp + '...')
             DataFolders = glob(RecExp + '/*Files')
             
@@ -878,10 +881,12 @@ def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
                     Override['DirList'] = glob(RecExp + '/KwikFiles/*')
                     Override['DirList'].sort()
                     
-                    GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, 
-                                  GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                                  FilterFreq, FilterOrder, AnalogTTLs, 
-                                  Override=Override)
+#                    GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, 
+#                                  GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+#                                  FilterFreq, FilterOrder, AnalogTTLs, 
+#                                  Override=Override)
+                    
+                    GPIASPlot(RecFolderNo, Visible=Visible, Override=Override)
                     
                 elif DataType == 'MatFiles':
                     Override['FileName'] = glob(RecExp + '/*.mat')[0]
@@ -889,10 +894,12 @@ def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
                     Override['DirList'] = glob(RecExp + '/MatFiles/*')
                     Override['DirList'].sort()
                     
-                    MatF.GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL, 
-                                          GPIASTimeAfterTTL, FilterFreq, 
-                                          FilterOrder, Override)
-                        
+#                    MatF.GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL, 
+#                                          GPIASTimeAfterTTL, FilterFreq, 
+#                                          FilterOrder, Override)
+                    
+                    GPIASPlot(RecFolderNo, Visible=Visible, Override=Override)
+                    
                 else: 
                     print(DataType, 'not supported (yet).')
                     continue
@@ -903,9 +910,7 @@ def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
 
 
 def GPIASPlot(RecFolderNo, Visible=False, Override={}):
-    print('Set paths...')
-    os.makedirs('Figs', exist_ok=True)    # Figs folder
-    
+    print('Set paths...')    
     if 'FileName' in Override: FileName =  Override['FileName']
     else: 
         FileName = glob('*.hdf5'); FileName.sort()
@@ -913,13 +918,22 @@ def GPIASPlot(RecFolderNo, Visible=False, Override={}):
     
     if 'AnalysisFile' in Override: AnalysisFile =  Override['AnalysisFile']
     else: AnalysisFile = AnalysisFile = glob('../*.hdf5')[0]
+
+    if 'ExpPath' in Override: ExpPath = Override['ExpPath']
+    else: ExpPath = '.'
+    
+    os.makedirs(ExpPath + '/Figs', exist_ok=True)    # Figs folder
     
     print('Loading data...')
     ## DataInfo
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    if '.mat' in FileName: DataInfo = {'SoundLoudPulseDur':0.05}
+    elif '.hdf5' in FileName: DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+    else: print('File', FileName, 'not supported.'); return(None)
     
     ## GPIAS
-    GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile)
+    if 'ExpPath' in Override:
+        GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile, ExpPath.split('/')[-1])
+    else: GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile)
     
     Params = SetPlot(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
@@ -930,7 +944,7 @@ def GPIASPlot(RecFolderNo, Visible=False, Override={}):
     Ind2 = list(XValues).index(int(DataInfo['SoundLoudPulseDur']*1000))
     
     for Freq in GPIAS.keys():
-        FigTitle = Freq + ' Hz'
+        FigTitle = Freq + ' Hz' + 'Index = ' + str(GPIAS[Freq]['GPIASIndex'])
         LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
         SpanLabel = 'Sound Pulse'
         XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
@@ -948,7 +962,7 @@ def GPIASPlot(RecFolderNo, Visible=False, Override={}):
         plt.ylabel(YLabel); plt.xlabel(XLabel)
         plt.legend(loc='lower right')
         
-        FigName = 'Figs/' + FileName[:-5] + '-' + Freq + '.svg'
+        FigName = ExpPath + '/Figs/' + FileName.split('/')[-1][:-5] + '-' + Freq + '.svg'
         plt.savefig(FigName, format='svg')
     
     if Visible: plt.show()

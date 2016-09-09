@@ -63,7 +63,7 @@ def GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL=20, GPIASTimeAfterTTL=100,
         XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
                    /Rate)*10**3
         
-        Start = int(PulseStart-NoOfSamplesAfter)
+        Start = int(PulseStart-NoOfSamplesBefore)
         End = int(PulseStart+NoOfSamplesAfter)
         
         Data = io.loadmat(Freq)                

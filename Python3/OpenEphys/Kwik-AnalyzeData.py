@@ -51,7 +51,7 @@ KwikAnalysis.ABRPlot3D(AnalysisFile, FileName, Visible=True)
 
 GPIASCh = [1]
 GPIASTTLCh = 2
-GPIASTimeBeforeTTL = 20    # in ms
+GPIASTimeBeforeTTL = 100   # in ms
 GPIASTimeAfterTTL = 100    # in ms
 FilterFreq = [70, 400]     # frequency for filter
 FilterOrder = 3       # butter order
@@ -67,7 +67,8 @@ KwikAnalysis.GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
                            GPIASTimeAfterTTL, FilterFreq, FilterOrder, 
                            AnalogTTLs)
 
-KwikAnalysis.GPIASPlot(AnalysisFile, RecFolderNo, Visible=True)
+AnalysisFile = glob('../*.hdf5')[0]
+KwikAnalysis.GPIASPlot(RecFolderNo, Visible=True)
 
 
 #%% TTLsLatencyTest

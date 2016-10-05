@@ -956,3 +956,12 @@ for Folder in ModifyFreq:
         elif File[Start:Start+5] == '1ODE-': NewFile = File[:Start] + '1LR_' + File[Start+5:]
         
         os.rename(File, NewFile)
+
+#%% Freq sort
+
+FKeys = list(Sound.keys()); ToPrepend = []
+for FF in ['8000-10000', '9000-11000']:
+    if FF in FKeys:
+        del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
+
+ToPrepend.sort(); FKeys = ToPrepend + FKeys

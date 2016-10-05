@@ -24,8 +24,8 @@ import array
 import Hdf5F
 import KwikAnalysis
 import math
-import pyaudio
-import shelve
+import numpy as np
+import sounddevice as SD
 import random
 from scipy import signal
 import threading
@@ -50,16 +50,16 @@ def dBToAmpF(Intensities, CalibrationFile):
 
 def GenNoise(Rate, SoundPulseDur):
     print('Generating noise...')
-    SoundNoise = [random.random() \
-                  for _ in range(round(Rate*SoundPulseDur))]
-    SoundPulse = [SoundNoise[ElI]*2-1 for ElI,ElV in enumerate(SoundNoise)]
+    Noise = np.random.uniform(-1, 1, size=round(Rate*SoundPulseDur))
+    Noise[-1] = 0
+    Noise = np.array(Noise, dtype=np.float32)
     
-    return(SoundPulse)
+    return(Noise)
 
 
 def GenSineWave(Rate, Freq, AmpF, SoundPulseDur):
     print('Generating sine wave...')
-    Pulse = [math.sin(2*math.pi*Freq*(_/Rate)) * AmpF
+    Pulse = [math.sin(2 * math.pi * Freq * (_/Rate)) * AmpF
              for _ in range(round(Rate*SoundPulseDur))]
     Pulse[-1] = 0
     
@@ -68,25 +68,24 @@ def GenSineWave(Rate, Freq, AmpF, SoundPulseDur):
 
 def BandpassFilterSound(SoundPulse, Rate, NoiseFrequency):
     # Preallocating memory
-    SoundPulseFiltered = [0]*len(NoiseFrequency)
+    SoundPulseFiltered = {}
     
     print('Filtering sound: ', end='')
     for Freq in range(len(NoiseFrequency)):
+        FKey= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
 #        if len(NoiseFrequency[Freq]) == 1:
 #            print('Filtering sound: ', NoiseFrequency[Freq], '...')
 #            passband = [(NoiseFrequency[Freq][0]-1)/(Rate/2), 
 #                        (NoiseFrequency[Freq][0]+1)/(Rate/2)]
 #            f2, f1 = signal.butter(4, passband, 'bandpass')
 #        else:        
-        print(NoiseFrequency[Freq], end='...')
+        print(FKey, end='...')
         passband = [_/(Rate/2) for _ in NoiseFrequency[Freq]]
         
         f2, f1 = signal.butter(4, passband, 'bandpass')
-        SoundPulseFiltered[Freq] = signal.filtfilt(f2, f1, SoundPulse, \
-                                                         padtype='odd', \
-                                                         padlen=0)
-        SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()
-        SoundPulseFiltered[Freq][-1] = 0
+        SoundPulseFiltered[FKey] = signal.filtfilt(f2, f1, SoundPulse, 
+                                                   padtype='odd', padlen=0)
+        SoundPulseFiltered[FKey][-1] = 0
     print(end='\n')
     return(SoundPulseFiltered)
 
@@ -95,24 +94,21 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
                    SBOutAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0):
     print('Applying amplification factors...')
     # Preallocating memory
-    SoundPrePause = [0] * round(Rate * SoundPrePauseDur)
-    SoundPostPause = [0] * round(Rate * SoundPostPauseDur)
-    SoundUnit = [0]*len(NoiseFrequency)
+    SoundPrePause = np.zeros(round(Rate * SoundPrePauseDur), dtype=np.float32)
+    SoundPostPause = np.zeros(round(Rate * SoundPostPauseDur), dtype=np.float32)
+    SoundUnit = {}
     
-    for Freq in range(len(NoiseFrequency)):
-        Key= str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+    for FKey in SoundPulseFiltered:
+#    for Freq in range(len(NoiseFrequency)):
+        SoundUnit[FKey] = {}
         
-        SoundUnit[Freq] = [0]*len(SoundAmpF[Key])
-        
-        for AmpF in range(len(SoundAmpF[Key])):
-            SoundUnit[Freq][AmpF] = SoundPrePause + \
-                                    SoundPulseFiltered[Freq] + \
-                                    SoundPostPause
-            Max = max(SoundUnit[Freq][AmpF])
-            SoundUnit[Freq][AmpF] = [(SoundEl / (SBOutAmpF/Max))
-                                     * SoundAmpF[Key][AmpF]
-                                     for SoundEl in SoundUnit[Freq][AmpF]]
-    
+        for AmpF in range(len(SoundAmpF[FKey])):
+            AKey = str(SoundAmpF[FKey][AmpF])
+            SoundUnit[FKey][AKey] = np.concatenate([SoundPrePause, 
+                                                    SoundPulseFiltered[FKey],
+                                                    SoundPostPause])
+            SoundUnit[FKey][AKey] = (SoundUnit[FKey][AKey]
+                                     * SoundAmpF[FKey][AmpF]) / SBOutAmpF
     return(SoundUnit)
 
 
@@ -120,14 +116,17 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
            PostPauseDur=0):
     
     print('Generating Sound TTL...')
-    TTLVal = round(TTLVal/SBOutAmpF, 3)
-    
-    TTLPulse = [TTLVal] * round(Rate*PulseDur) + \
-               [TTLVal*-1] * round(Rate*PulseDur)
+    TTLPulse = np.concatenate([
+                  np.array([TTLVal] * round(Rate*PulseDur), dtype=np.float32),
+                  np.array([TTLVal*-1] * round(Rate*PulseDur), dtype=np.float32)
+                  ])
+#    TTLPulse = [TTLVal] * round(Rate*PulseDur) + \
+#               [TTLVal*-1] * round(Rate*PulseDur)
     TTLPulse[-1] = 0
 
-    TTLPrePause = [0] * round(PrePauseDur * Rate)
-    TTLPostPause = [0] * round((PostPauseDur-PulseDur) * Rate)
+    TTLPrePause = np.zeros(round(PrePauseDur * Rate), dtype=np.float32)
+    TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
+                            dtype=np.float32)
     
 #    if SoundPulseDur < 0.01:
 #        SoundTTLPulse = [round(SoundTTLVal/SBOutAmpF, 3)] * round(SoundPulseDur * Rate)
@@ -136,8 +135,8 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
 #        Border = [round(SoundTTLVal/SBOutAmpF, 3)] * round(0.005 * Rate)
 #        SoundTTLPulse = Border + Middle + Border
     
-    TTLUnit = TTLPrePause + TTLPulse + TTLPostPause
-    TTLUnit = [TTLEl*TTLAmpF for TTLEl in TTLUnit]
+    TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
+    TTLUnit = (TTLUnit * TTLAmpF) / SBOutAmpF
     
     return(TTLUnit)
 
@@ -379,19 +378,21 @@ def SoundStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency,
                                NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
                                SoundPostPauseDur)
     SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, SoundBoard, 
-                          SBOutAmpF, SoundPrePauseDur, SoundPostPauseDur)    
-    SoundList = InterleaveChannels(SoundUnit, SoundTTLUnit, SoundAmpF, 
-                                   NoiseFrequency)    
-    Sound = ListToByteArray(SoundList, SoundAmpF, NoiseFrequency)
-    SoundPauseBetweenStimBlocks = GenPause(Rate, SoundPauseBetweenStimBlocksDur)    
+                          SBOutAmpF, SoundPrePauseDur, SoundPostPauseDur)
     
-    Stimulation = GenAudioObj(Rate, 'out')
-    PlaySound = RunSound(Sound, SoundPauseBetweenStimBlocks, SoundPulseNo, 
-                         Stimulation, SoundAmpF, NoiseFrequency, Complexity, 
-                         SoundStimBlockNo, Multithread=False)
+    Sound = {}
+    for FKey in SoundUnit:
+        Sound[FKey] = {}
+        
+        for AKey in SoundUnit[FKey]:
+            Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey]))
+    
+    SoundPauseBetweenStimBlocks = np.zeros([2, 
+                                            round(SoundPauseBetweenStimBlocksDur 
+                                                  * Rate)])
     
     print('Done generating sound stimulus.')
-    return(Sound, PlaySound)
+    return(Sound, SoundPauseBetweenStimBlocks)
 
 
 def LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, SoundBoard, 
@@ -598,49 +599,7 @@ def PlotGPIAS(FileList):
     return(None)
 
 
-def MicrOscilloscope(Rate, SoundBoard, XLim, YLim, FramesPerBuf=512):
-    """ Read data from sound board input and plot it until the windows is 
-    closed. """
-    Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
-    from matplotlib import rcParams; rcParams.update(Params)
-    import matplotlib.animation as animation
-    from matplotlib import pyplot as plt
-    
-    SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
-                                              'SBInAmpF')
-    
-    r = pyaudio.PyAudio()
-    
-    Plotting = r.open(format=pyaudio.paFloat32,
-                         channels=1,
-                         rate=Rate,
-                         input=True,
-                         output=False,
-                         frames_per_buffer=FramesPerBuf)
-                         #stream_callback=InCallBack)
-    
-    Fig = plt.figure()
-    Ax = plt.axes(xlim=XLim, ylim=YLim)
-    Plot, = Ax.plot([float('nan')]*(Rate//10), lw=1)
-    
-    def AnimInit():
-        Data = array.array('f', [])
-        Plot.set_ydata(Data)
-        return Plot,
-    
-    def PltUp(n):
-        Data = array.array('f', Plotting.read(Rate//10))
-        Data = [_/SBInAmpF for _ in Data]
-        Plot.set_ydata(Data)
-        return Plot,
-    
-    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, 
-                                   interval=16, blit=False)
-    
-    return(None)
-
-
-def MicrOscilloscopeRec(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512):
+def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512, Rec=False):
     """ Read data from sound board input, record it to a video and plot it 
     until the windows is closed (with a delay). """
     Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
@@ -658,11 +617,9 @@ def MicrOscilloscopeRec(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512):
                          rate=Rate,
                          input=True,
                          output=False,
+                         #input_device_index=18,
                          frames_per_buffer=FramesPerBuf)
                          #stream_callback=InCallBack)
-    
-    Writers = animation.writers['ffmpeg']
-    Writer = Writers(fps=15, metadata=dict(artist='Me'))
     
     Fig = plt.figure()
     Ax = plt.axes(xlim=XLim, ylim=YLim)
@@ -674,13 +631,22 @@ def MicrOscilloscopeRec(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512):
         return Plot,
     
     def PltUp(n):
-        Data = array.array('f', Plotting.read(Rate//10))
+#        Data = array.array('f', Plotting.read(Rate//10))
+        Data = array.array('f', Plotting.read(Rate//10, 
+                                              exception_on_overflow=False))
         Data = [_/SBInAmpF for _ in Data]
         Plot.set_ydata(Data)
         return Plot,
     
-    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=16, blit=False)
-    Anim.save('MicrOscilloscope.mp4', writer=Writer)
+    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=16, 
+                                   blit=False)
+    
+    if Rec:
+        Writers = animation.writers['ffmpeg']
+        Writer = Writers(fps=15, metadata=dict(artist='Me'))
+        Anim.save('MicrOscilloscope.mp4', writer=Writer)
+    
+    plt.show()
     
     return(None)
 
@@ -796,3 +762,4 @@ def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF,
                          output=True)
 
     return(Sound, Stimulation)
+

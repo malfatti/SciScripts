@@ -165,23 +165,37 @@ DVCoord = '3000'
 #Freq = 4
 #Freq = int(Freq)
 
+FKeys = list(Sound.keys()); ToPrepend = []
+for FF in ['8000-10000', '9000-11000']:
+    if FF in FKeys:
+        del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
+
+ToPrepend.sort(); FKeys = ToPrepend + FKeys
+
 while True:
     print('Remember to change folder name in OE!')
-    Freq = input('Choose Freq index [0-' + str(len(NoiseFrequency)-1) + ']: ')
-    Freq = int(Freq)
+    print('Choose frequency:')
+    for Ind, K in enumerate(FKeys):
+        print(str(Ind), '=' , K)
     
-    if Freq not in list(range(len(NoiseFrequency))):
+    print(str(len(FKeys)), '=', 'Cancel')
+    FKey = input(': ')
+    
+    if FKey == str(len(FKeys)): break
+    
+    try:
+        FKey = FKeys[int(FKey)]
+    except IndexError:
         print('=== Wrong Freq index. Stopping... ===')
         print('')
         break
     
-    print('Running...')
-    Key = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
-    for AmpF in range(len(SoundAmpF[Key])):
-        print('Playing', str(NoiseFrequency[Freq]), 'at', 
-              str(Intensities[AmpF]), 'dB')
+    AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
+    for AmpF, AKey in enumerate(AKeys):
+        print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
         
 #        Arduino.write(b'P')
+        SD
         PlaySound(Freq, AmpF)
         Stimulation.write(SoundPauseBetweenStimBlocks)
 #        Arduino.write(b'P')

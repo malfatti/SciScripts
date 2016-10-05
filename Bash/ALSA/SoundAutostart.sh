@@ -2,7 +2,7 @@
 
 KernelName="$(uname -r)";
 if test "${KernelName#*rt}" != "$KernelName"; then
-    bash ~/.MyScripts/ALSA/SoundCtl.sh jackrt
+    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/SoundCtl.sh jackrt
 else
-    bash ~/.MyScripts/ALSA/SoundCtl.sh jack
+    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/SoundCtl.sh jack
 fi

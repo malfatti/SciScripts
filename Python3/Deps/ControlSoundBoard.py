@@ -228,6 +228,7 @@ def GenAudioObj(Rate, Direction='out', Stream=False):
                          rate=Rate,
                          input=True,
                          output=False,
+                         input_device_index=6,
                          stream_callback=InCallBack)
         return(Reading, InCallBack)
     
@@ -237,7 +238,8 @@ def GenAudioObj(Rate, Direction='out', Stream=False):
             Stimulation = p.open(format=pyaudio.paFloat32,
                             channels=2,
                             rate=Rate,
-                            output=True)
+                            output=True,
+                            output_device_index=6)
             return(Stimulation)
             
         elif Direction == 'in':
@@ -245,7 +247,8 @@ def GenAudioObj(Rate, Direction='out', Stream=False):
             Reading = q.open(format=pyaudio.paFloat32,
                              channels=2,
                              rate=Rate,
-                             input=True)
+                             input=True,
+                             input_device_index=6)
             return(Reading)
             
         elif Direction == 'inout':

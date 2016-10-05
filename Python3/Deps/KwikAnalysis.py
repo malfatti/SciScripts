@@ -835,13 +835,13 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
 #        GapRMSPulse = sum(GapAE[PulseStart:PulseEnd] * BinSize)**0.5
         GapRMSBG = (np.mean(GapAE[BGStart:BGEnd]**2))**0.5
         GapRMSPulse = (np.mean(GapAE[PulseStart:PulseEnd]**2))**0.5
-        GapRMS = GapRMSPulse/GapRMSBG
+        GapRMS = GapRMSPulse - GapRMSBG
         
 #        NoGapRMSBG = sum(NoGapAE[BGStart:BGEnd] * BinSize)**0.5
 #        NoGapRMSPulse = sum(NoGapAE[PulseStart:PulseEnd] * BinSize)**0.5
         NoGapRMSBG = (np.mean(NoGapAE[BGStart:BGEnd]**2))**0.5
         NoGapRMSPulse = (np.mean(NoGapAE[PulseStart:PulseEnd]**2))**0.5
-        NoGapRMS = NoGapRMSPulse/NoGapRMSBG
+        NoGapRMS = NoGapRMSPulse - NoGapRMSBG
         
         # GPIAS index (How much Gap is different from NoGap)
         GPIAS[Freq]['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
@@ -881,10 +881,10 @@ def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
                     Override['DirList'] = glob(RecExp + '/KwikFiles/*')
                     Override['DirList'].sort()
                     
-#                    GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, 
-#                                  GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-#                                  FilterFreq, FilterOrder, AnalogTTLs, 
-#                                  Override=Override)
+                    GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, 
+                                  GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+                                  FilterFreq, FilterOrder, AnalogTTLs, 
+                                  Override=Override)
                     
                     GPIASPlot(RecFolderNo, Visible=Visible, Override=Override)
                     
@@ -894,9 +894,9 @@ def GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
                     Override['DirList'] = glob(RecExp + '/MatFiles/*')
                     Override['DirList'].sort()
                     
-#                    MatF.GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL, 
-#                                          GPIASTimeAfterTTL, FilterFreq, 
-#                                          FilterOrder, Override)
+                    MatF.GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL, 
+                                          GPIASTimeAfterTTL, FilterFreq, 
+                                          FilterOrder, Override)
                     
                     GPIASPlot(RecFolderNo, Visible=Visible, Override=Override)
                     

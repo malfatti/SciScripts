@@ -1,0 +1,103 @@
+#
+# This is almost the same as the asound.txt file from Lampros "Reteo" Liontos's
+# Jack-Alsa Bridge Kit, avaliable at
+# http://www.penguinproducer.com/Blog/2011/11/jack-alsa-bridge-kit/
+#
+
+#=== Jack loop 1 ===#
+
+## ALSA side
+
+# Playback
+pcm.JackPlayback1 {
+  type plug
+  slave.pcm "hw:Loopback,0,0"
+}
+
+# Capture
+pcm.JackCapture1 {
+  type plug
+  slave.pcm "hw:Loopback,0,1"
+}
+
+# Duplex
+pcm.JackDuplex1 {
+  type asym
+  playback.pcm "JackPlayback1"
+  capture.pcm "JackCapture1"
+  hint {
+    show on
+    description "ALSA-Jack bridge 1"
+  }
+}
+
+
+## Jack side
+
+# Input
+pcm.ALSAInput1 {
+  type plug
+  slave.pcm "hw:Loopback,1,0"
+}
+
+# Output
+pcm.ALSAOutput1 {
+  type plug
+  slave.pcm "hw:Loopback,1,1"
+}
+
+
+#=== Jack loop 2 ===#
+
+## ALSA side
+
+# Playback
+pcm.JackPlayback2 {
+  type plug
+  slave.pcm "hw:Loopback,0,2"
+}
+
+# Capture
+pcm.JackCapture2 {
+  type plug
+  slave.pcm "hw:Loopback,0,3"
+}
+
+# Duplex
+pcm.JackDuplex2 {
+  type asym
+  playback.pcm "JackPlayback2"
+  capture.pcm "JackCapture2"
+  hint {
+    show on
+    description "ALSA-Jack bridge 2"
+  }
+}
+
+
+## Jack side
+
+# Input
+pcm.ALSAInput2 {
+  type plug
+  slave.pcm "hw:Loopback,1,2"
+}
+
+# Output
+pcm.ALSAOutput2 {
+  type plug
+  slave.pcm "hw:Loopback,1,3"
+}
+
+
+#=== Defaults ===#
+pcm.!default {
+  type plug
+  slave.pcm "JackDuplex1"
+}
+
+ctl.!default {
+  type hw
+  card Loopback
+}
+

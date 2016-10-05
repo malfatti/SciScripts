@@ -2,6 +2,29 @@
 """
 Just drafts
 """
+#%% RT plots
+import KwikAnalysis
+
+Params = KwikAnalysis.SetPlot(Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
+
+Files = ['Hist-NonRT-T' + str(_) for _ in range (8)]
+Jitter = {}
+         
+for File in Files:
+    with open(File, 'r') as FHist:
+        for LineNo, Line in enumerate(FHist, 1):
+            pass
+    
+    Jitter[File] = [[] for _ in range(LineNo)]
+    with open(File, 'r') as FHist:
+        for Ind, Line in enumerate(FHist):
+            if Line == 'Avg:\n': Line = '51'
+            Jitter[File][Ind] = int(Line)
+
+
+plt.plot(Jitter['Hist-NonRT-T0'], 'bo'); plt.show()
 #%% Statistics
 import numpy as np
 from itertools import permutations

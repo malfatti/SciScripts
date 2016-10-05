@@ -1,0 +1,6 @@
+pcm.spdif {
+     type hw
+     card PCH
+     device 1
+}
+pcm.!default "plug:spdif"

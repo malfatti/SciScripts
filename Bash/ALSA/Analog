@@ -1,0 +1,6 @@
+pcm.analog {
+     type hw
+     card PCH
+     device 0
+}
+pcm.!default "plug:analog"

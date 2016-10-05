@@ -92,21 +92,21 @@ def GetGroupKeys(Group, FileName):
     return(Keys)
 
 
-def GetExpKeys(ExpStr, OpenedFile, Key=''):
+def GetExpKeys(ExpStr, OpenedFile, MyKey=''):
     Keys = [K for K in OpenedFile.keys() if ExpStr in K]; Keys.sort()
     
-    if Key == '':
+    if MyKey == '':
         if len(Keys) > 1:
             print('Choose dataset:')
             for Ind, K in enumerate(Keys):
                 print(str(Ind), '=' , K)
-            K = input(': ')
-            K = Keys[int(K)]
+            Key = input(': ')
+            Key = Keys[int(Key)]
         else:
-            K = Keys[0]
+            Key = Keys[0]
         
     else: 
-        Key = [K for K in Keys if Key in K]; Key = Key[0]
+        Key = [K for K in Keys if MyKey in K]; Key = Key[0]
     
     return(Key)
 

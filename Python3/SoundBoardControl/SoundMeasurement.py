@@ -34,9 +34,9 @@ Setup = 'UnitRec'
 ## Sound
 # Pulse duration. Avoid using more than 0.5. If you need long pulses, use
 # SoundPulseDur = 0.5 and SoundPulseNo = DesiredDurationInSec/0.5
-SoundPulseDur = 0.5
+SoundPulseDur = 2
 # Amount of pulses per block
-SoundPulseNo = 4
+SoundPulseNo = 1
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
                   [14000, 16000], [16000, 18000]]
@@ -45,8 +45,6 @@ TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
 MicSens_dB = -47.46
 
-# Path to file saved after Python3/SoundBoardControl/SoundBoardCalibration.py
-SBAmpFsFile = '/home/cerebro/Malfatti/Data/Test/20160418173048-SBAmpFs.hdf5'
 #==========#==========#==========#==========#
 
 #import array
@@ -56,108 +54,69 @@ import math
 import numpy as np
 import os
 import pandas
-import pyaudio
+import sounddevice as SD
 import time
 from datetime import datetime
 from scipy import signal
-
-with h5py.File(SBAmpFsFile) as h5:
-    SBOutAmpF = h5[SoundBoard]['SBOutAmpF'][0]
-    SBInAmpF = h5[SoundBoard]['SBInAmpF'][0]
 
 def FRange(Start, End, Step):
     Range = [round(x/(1/Step), 5) 
              for x in range(round(Start/Step), round(End/Step), -1)]
     return(Range)
 
+#SoundAmpF = [1, 0.5, 0.25, 0]
 SoundAmpF = FRange(2.0, 1.0, 0.1) + FRange(1.0, 0.4, 0.05) + \
             FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
             FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
             FRange(0.001, 0, 0.00002) + [0.0]
 
-#SoundAmpF = [1, 0.5, 0.25, 0]
-
-MicSens_VPa = 10**(MicSens_dB/20)
-
+## Prepare dict w/ experimental setup
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
 Folder = ''.join([Setup, '-', Date, '-SoundMeasurement'])
-
-## Prepare dict w/ experimental setup
 FileName = Folder + '/' + Folder + '.hdf5'
+
 DataInfo = dict((Name, eval(Name)) 
                 for Name in ['Rate', 'SoundPulseDur', 'SoundPulseNo', 
                              'SoundAmpF', 'NoiseFrequency', 'TTLAmpF', 
-                             'MicSens_dB', 'MicSens_VPa', 'SBOutAmpF', 
-                             'SBInAmpF', 'Folder'])
+                             'SoundBoard', 'Setup', 'MicSens_dB', 'Folder'])
 
-## Prepare sound objects
+# Prepare sound pulses
+Sound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
+                                    NoiseFrequency, TTLAmpF, SoundBoard)[0]
+
+# Preallocate dict for recordings
 SoundRec = {}
-for Freq in range(len(NoiseFrequency)):
-    FKey = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
+for FKey in Sound:
     SoundRec[FKey] = {}
-    for AmpF in SoundAmpF:
-        SoundRec[FKey][str(AmpF)] = []
-        
-Sound, Stimulation = ControlSoundBoard.SoundMeasurementOut(
-                                   Rate, SoundPulseDur, SoundPulseNo, 
-                                   SoundAmpF, NoiseFrequency, TTLAmpF, 
-                                   SBOutAmpF
-                                                           )
 
-# Define input objects
-q = pyaudio.PyAudio()
-
-InOn = False
-RecStop = False
-def InCallBack(in_data, frame_count, time_info, status):
-    if InOn:
-        global SoundRec
-        SoundRec[Freq][AmpF].append(in_data)
-        
-    if RecStop:
-        InFlag = pyaudio.paComplete
-    else:
-        InFlag = pyaudio.paContinue
-    return(None, InFlag)
-
-Reading = q.open(format=pyaudio.paFloat32,
-                     channels=1,
-                     rate=Rate,
-                     #frames_per_buffer = len(Sound[0][0])//2,
-                     input=True,
-                     output=False,
-                     stream_callback=InCallBack)
-
+# Prepare audio objects
+SD.default.device = 'system'
+SD.default.samplerate = Rate
+SD.default.channels = 2
 
 ## Run!
-fTime = (len(SoundAmpF)*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
+FullTime = (len(SoundAmpF)*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
 input('Press enter to start sound measurement.')
-print('Full test will take', str(round(fTime, 2)), 'min to run.')
+print('Full test will take', str(round(FullTime, 2)), 'min to run.')
 print('Current time: ', datetime.now().strftime("%H:%M:%S"))
 print('Cover your ears!!')
-print('5...')
+print('5 ', end='')
 time.sleep(1)
-print('4...')
+print('4 ', end='')
 time.sleep(1)
-print('3...')
+print('3 ', end='')
 time.sleep(1)
-print('2...')
+print('2 ', end='')
 time.sleep(1)
-print('1...')
+print('1 ')
 time.sleep(1)
 print('Sound measurement running...')
 time.sleep(1)
 
-Reading.start_stream()
-for Freq in SoundRec:
-    for AmpF in SoundRec[Freq]:
-        AmpF = str(AmpF)
-        
-        RecStop = False; InOn = True        
+for FKey in Sound:
+    for AKey in Sound[FKey]:
         for Pulse in range(SoundPulseNo):
-            Stimulation.write(Sound[Freq][AmpF])        
-        InOn = False; RecStop = True
-Reading.stop_stream()
+            SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey]); SD.wait()
 
 print('Done playing/recording. Saving data...')
 
@@ -165,15 +124,15 @@ print('Done playing/recording. Saving data...')
 os.makedirs(Folder, exist_ok=True)
 with h5py.File(FileName) as F:
     F.create_group('SoundRec')
-    for Freq in SoundRec:
-        F['SoundRec'].create_group(Freq)
-        for AKey, AVal in SoundRec[Freq].items():
-            F['SoundRec'][Freq][AKey]= AVal
+    for FKey in SoundRec:
+        F['SoundRec'].create_group(FKey)
+        for AKey, AVal in SoundRec[FKey].items():
+            F['SoundRec'][FKey][AKey] = AVal
     
     for Key, Value in DataInfo.items():
         F['SoundRec'].attrs[Key] = Value
 
-del(Sound, Stimulation, q, Reading)
+del(Sound)
 print('Data saved.')
 
 
@@ -192,41 +151,34 @@ from scipy import signal
 DataInfo = Hdf5F.LoadSoundMeasurement(FileName, 'DataInfo')
 SoundRec = Hdf5F.LoadSoundMeasurement(FileName, 'SoundRec')
 
+MicSens_VPa = 10**(DataInfo['MicSens_dB']/20)
+
 print('Calculating PSD, RMS and dBSLP...')
 RecordingData = {}; Intensity = {}
 
-for Freq in SoundRec:
-    RecordingData[Freq] = {}
-    Intensity[Freq] = {}
+for FKey in SoundRec:
+    Intensity[FKey] = {}
     
-    for AmpF in SoundRec[Freq]:
-        Intensity[Freq][AmpF] = {}
+    for AKey in SoundRec[FKey]:
+        Intensity[FKey][AKey] = {}
         
-        print('Saving data for', Freq, 'at', AmpF)
-        
-        RecordingData[Freq][AmpF] = np.fromstring(b''.join(SoundRec[Freq][AmpF]), 
-                                                  dtype='f')
-#        RecordingData[Freq][AmpF] = array.array('f', 
-#                                                b''.join(SoundRec[Freq][AmpF]))
-#        RecordingData[Freq][AmpF] = array.array('f', SoundRec[Freq][AmpF])
-        
-        SliceStart = int(DataInfo['Rate']*0.25)-1
-        SliceEnd = SliceStart + int(DataInfo['Rate']*1)
-        RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
-                                                        SliceStart:SliceEnd
-                                                        ]
-        
-        RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF]/DataInfo['SBInAmpF']
+        print('Saving data for', FKey, 'at', AKey)        
+#        SliceStart = int(DataInfo['Rate']*0.25)-1
+#        SliceEnd = SliceStart + int(DataInfo['Rate']*1)
+#        RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
+#                                                        SliceStart:SliceEnd
+#                                                        ]
+        SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * DataInfo['SBInAmpF']
 #        RecordingData[Freq][AmpF] = [_/DataInfo['SBInAmpF']
 #                                     for _ in RecordingData[Freq][AmpF]]
         
-        Window = signal.hanning(len(RecordingData[Freq][AmpF])//
+        Window = signal.hanning(len(SoundRec[FKey][AKey])//
                                     (DataInfo['Rate']/1000))
-        F, PxxSp = signal.welch(RecordingData[Freq][AmpF], DataInfo['Rate'], 
+        F, PxxSp = signal.welch(SoundRec[FKey][AKey], DataInfo['Rate'], 
                                 Window, nperseg=len(Window), noverlap=0, 
                                 scaling='density')
         
-        FreqBand = [int(_) for _ in Freq.split('-')]
+        FreqBand = [int(_) for _ in FKey.split('-')]
         
         Start = np.where(F > FreqBand[0])[0][0]-1
         End = np.where(F > FreqBand[1])[0][0]-1
@@ -234,9 +186,9 @@ for Freq in SoundRec:
         RMS = sum(PxxSp[Start:End] * BinSize)**0.5
 #        RMS = sum(PxxSp * BinSize)**0.5
         
-        Intensity[Freq][AmpF]['PSD'] = [F, PxxSp]
-        Intensity[Freq][AmpF]['RMS'] = RMS
-        Intensity[Freq][AmpF]['dB'] = 20*(math.log(RMS/DataInfo['MicSens_VPa'], 10)) + 94
+        Intensity[FKey][AKey]['PSD'] = [F, PxxSp]
+        Intensity[FKey][AKey]['RMS'] = RMS
+        Intensity[FKey][AKey]['dB'] = 20*(math.log(RMS/DataInfo['MicSens_VPa'], 10)) + 94
         
         del(F, PxxSp, BinSize, RMS)
 

@@ -59,9 +59,10 @@ def GenNoise(Rate, SoundPulseDur):
 
 def GenSineWave(Rate, Freq, AmpF, SoundPulseDur):
     print('Generating sine wave...')
-    Pulse = [math.sin(2 * math.pi * Freq * (_/Rate)) * AmpF
+    Pulse = [np.sin(2 * np.pi * Freq * (_/Rate)) * AmpF
              for _ in range(round(Rate*SoundPulseDur))]
     Pulse[-1] = 0
+    Pulse = np.array(Pulse, dtype=np.float32)
     
     return(Pulse)
 
@@ -108,7 +109,7 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
                                                     SoundPulseFiltered[FKey],
                                                     SoundPostPause])
             SoundUnit[FKey][AKey] = (SoundUnit[FKey][AKey]
-                                     * SoundAmpF[FKey][AmpF]) / SBOutAmpF
+                                     * SoundAmpF[FKey][AmpF]) * SBOutAmpF
     return(SoundUnit)
 
 
@@ -136,7 +137,7 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
 #        SoundTTLPulse = Border + Middle + Border
     
     TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
-    TTLUnit = (TTLUnit * TTLAmpF) / SBOutAmpF
+    TTLUnit = (TTLUnit * TTLAmpF) * SBOutAmpF
     
     return(TTLUnit)
 
@@ -205,164 +206,9 @@ def GenPause(Rate, PauseBetweenStimBlocksDur):
     return(PauseBetweenStimBlocks)
 
 
-def GenAudioObj(Rate, Direction='out', Stream=False):
-    print('Generating audio object...')
-    if Stream:
-        q = pyaudio.PyAudio()
-        InOn = False
-        RecStop = False
-        def InCallBack(in_data, frame_count, time_info, status):
-            if InOn:
-                global SoundRec
-                SoundRec[RealFreq][RealTrial].append(in_data)
-                
-            if RecStop:
-                InFlag = pyaudio.paComplete
-            else:
-                InFlag = pyaudio.paContinue
-            return(None, InFlag)
-        
-        Reading = q.open(format=pyaudio.paFloat32,
-                         channels=1,
-                         rate=Rate,
-                         input=True,
-                         output=False,
-                         input_device_index=6,
-                         stream_callback=InCallBack)
-        return(Reading, InCallBack)
-    
-    else:
-        if Direction == 'out':
-            p = pyaudio.PyAudio()
-            Stimulation = p.open(format=pyaudio.paFloat32,
-                            channels=2,
-                            rate=Rate,
-                            output=True,
-                            output_device_index=6)
-            return(Stimulation)
-            
-        elif Direction == 'in':
-            q = pyaudio.PyAudio()
-            Reading = q.open(format=pyaudio.paFloat32,
-                             channels=2,
-                             rate=Rate,
-                             input=True,
-                             input_device_index=6)
-            return(Reading)
-            
-        elif Direction == 'inout':
-            print('To be implemented :)')
-            raise SystemExit(0)
-        else:
-            print("Choose 'in', 'out' or 'inout'")
-            raise SystemExit(0)
-
-
-def RunSound(Array, PauseBetweenStimBlocks, PulseNo, Stimulation, SoundAmpF, 
-             NoiseFrequency, Complexity='All', StimBlockNo=1, 
-             Multithread=False):
-    if Multithread:
-        if Complexity == 'AllPulses':
-            class Play(threading.Thread):
-                def run(self):
-                    for OnePulse in range(PulseNo):
-                        Stimulation.write(Array)
-            return(Play)
-        
-        elif Complexity == 'All':
-            class Play(threading.Thread):
-                def run(self):
-                    for Freq in range(len(NoiseFrequency)):
-                        if len(NoiseFrequency[Freq]) == 1:
-                            Key= str(NoiseFrequency[Freq][0])
-                        else:
-                            Key= str(NoiseFrequency[Freq][0]) + '-' \
-                                 + str(NoiseFrequency[Freq][1])
-                        
-                        for AmpF in range(len(SoundAmpF[Key])):
-                            for OneBlock in range(StimBlockNo):
-                                for OnePulse in range(PulseNo):
-                                    Stimulation.write(Array[Freq][AmpF])
-                        
-                                Stimulation.write(PauseBetweenStimBlocks)
-            return(Play)
-        else:
-            print("Choose 'Allpulses' or 'All'.")
-            raise SystemExit(0)
-    else:
-        if Complexity == 'AllPulses':
-            if SoundAmpF == [0]:
-                def Play():
-                    for OnePulse in range(PulseNo):
-                        Stimulation.write(Array)
-                    
-                return(Play)
-            else:
-                def Play(Freq, AmpF):
-                    for OnePulse in range(PulseNo):
-                        Stimulation.write(Array[Freq][AmpF])
-                    
-                return(Play)
-        
-        elif Complexity == 'AllBlocks':
-            if SoundAmpF == [0]:
-                def Play():
-                    for OneBlock in range(StimBlockNo):
-                        for OnePulse in range(PulseNo):
-                            Stimulation.write(Array)
-                        
-                        Stimulation.write(PauseBetweenStimBlocks)
-                return(Play)
-            else:
-                def Play(Freq, AmpF):
-                    for OneBlock in range(StimBlockNo):
-                        for OnePulse in range(PulseNo):
-                            Stimulation.write(Array[Freq][AmpF])
-                
-                        Stimulation.write(PauseBetweenStimBlocks)
-                return(Play)
-        
-        elif Complexity == 'AllAmpFs':
-            def Play(Freq):
-                if len(NoiseFrequency[Freq]) == 1:
-                    Key= str(NoiseFrequency[Freq][0])
-                else:
-                    Key= str(NoiseFrequency[Freq][0]) + '-' \
-                         + str(NoiseFrequency[Freq][1])
-                for AmpF in range(len(SoundAmpF[Key])):
-                    for OneBlock in range(StimBlockNo):
-                        for OnePulse in range(PulseNo):
-                            Stimulation.write(Array[Freq][AmpF])
-                
-                        Stimulation.write(PauseBetweenStimBlocks)
-            return(Play)
-        
-        elif Complexity == 'All':
-            def Play():
-                for Freq in range(len(NoiseFrequency)):
-                    if len(NoiseFrequency[Freq]) == 1:
-                        Key= str(NoiseFrequency[Freq][0])
-                    else:
-                        Key= str(NoiseFrequency[Freq][0]) + '-' \
-                             + str(NoiseFrequency[Freq][1])
-                    
-                    for AmpF in range(len(SoundAmpF[Key])):
-                        for OneBlock in range(StimBlockNo):
-                            for OnePulse in range(PulseNo):
-                                Stimulation.write(Array[Freq][AmpF])
-                    
-                            Stimulation.write(PauseBetweenStimBlocks)
-            return(Play)
-        
-        else:
-            print("Choose 'Allpulses', 'AllBlocks', 'AllAmpFs' or 'All'.")
-            raise SystemExit(0)
-
-
 ## Higher-level functions
-def SoundStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, NoiseFrequency, 
-              TTLAmpF, SoundBoard, Complexity='All', SoundPrePauseDur=0, 
-              SoundPostPauseDur=0, SoundStimBlockNo=1, 
+def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
+              TTLAmpF, SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, 
               SoundPauseBetweenStimBlocksDur=0):
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
@@ -656,16 +502,16 @@ def SoundCalOut(Rate, Freq, WaveDur):
     SoundPulseNo = round(WaveDur/0.1)
     
     Pulse = GenSineWave(Rate, Freq, 1, 0.1)
-    List = InterleaveChannels(Pulse, [0], [0], [0])
-    Pulse = ListToByteArray(List, [0], [0])
     
-    Stimulation = GenAudioObj(Rate, 'out')
-    Play = RunSound(Pulse, 0, SoundPulseNo, Stimulation, [0], [0], 
-                    'AllPulses', 1, Multithread=False)
+    SD.default.device = 'system'
+    SD.default.samplerate = Rate
+    SD.default.channels = 1
     
-    print('Playing...')
-    Play()
+    print('Playing... ', end='')
+    for Pulse in SoundPulseNo:
+        SD.play(Pulse); SD.wait()
     
+    print('Done.')
     return(None)
 
 
@@ -674,92 +520,17 @@ def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF):
     SoundPulseNo = round(WaveDur/0.1)
     
     Pulse = GenSineWave(Rate, Freq, SBOutAmpF, 0.1)
-    List = InterleaveChannels(Pulse, [0], [0], [0])
-    Pulse = ListToByteArray(List, [0], [0])
     
-    Stimulation = GenAudioObj(Rate, 'out')
-    Reading = GenAudioObj(Rate, 'in')
-    Play = RunSound(Pulse, 0, SoundPulseNo, Stimulation, [0], [0], 
-                    'AllPulses', 1, Multithread=True)
+    SD.default.device = 'system'
+    SD.default.samplerate = Rate
+    SD.default.channels = 1
     
-    print('Playing...')
-    Play().start()
-    Data = Reading.read(Rate)
-    Data = array.array('f', Data)
+    print('Measuring... ', end='')
+    Data = np.array([], dtype=np.float32)
+    for Pulse in SoundPulseNo:
+        Rec = SD.playrec(Pulse); SD.wait()
+        Data = np.concatenate([Data, Rec])
     
+    print('Done.')
     return(Data)
-
-
-def SoundMeasurementOut(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
-                        NoiseFrequency, TTLAmpF, SBOutAmpF):
-    """ This will generate the sound pulses and the sound output objects.
-    Remember to create input objects and call them accordingly. """
-    
-    print('Generating Sound TTL...')
-    SoundTTLPulse = [SoundTTLVal] * round(SoundPulseDur * Rate)
-    SoundTTLPulse[-1] = 0
-    
-    SoundTTLUnit = [round(_/SBOutAmpF, 3)*TTLAmpF for _ in SoundTTLPulse]
-    
-    print('Generating sound pulse...')         
-    SoundNoise = [random.random() 
-                  for _ in range(round(Rate*SoundPulseDur))]
-    SoundPulse = [_*2-1 for _ in SoundNoise]
-    
-    # Preallocating memory
-    SoundPulseFiltered = [0]*len(NoiseFrequency)
-    SoundUnit = [0]*len(NoiseFrequency)
-    SoundList = [0]*len(NoiseFrequency)
-    Sound = [0]*len(NoiseFrequency)
-    SoundRec = {}
-    
-    for Freq in range(len(NoiseFrequency)):
-        FKey = str(NoiseFrequency[Freq][0]) + '-' + str(NoiseFrequency[Freq][1])
-        SoundRec[FKey] = {}
-        
-        print('Filtering sound: ', NoiseFrequency[Freq], '...')
-        passband = [_/(Rate/2) for _ in NoiseFrequency[Freq]]
-        f2, f1 = signal.butter(4, passband, 'bandpass')
-        SoundPulseFiltered[Freq] = signal.filtfilt(f2, f1, SoundPulse, 
-                                                         padtype='odd', 
-                                                         padlen=0)
-        SoundPulseFiltered[Freq] = SoundPulseFiltered[Freq].tolist()
-        SoundPulseFiltered[Freq][-1] = 0
-        
-        # Preallocating memory
-        SoundUnit[Freq] = [0]*len(SoundAmpF)
-        SoundList[Freq] = [0]*len(SoundAmpF)
-        Sound[Freq] = [0]*len(SoundAmpF)
-        
-        print('Applying amplification factors...')
-        for AmpF in range(len(SoundAmpF)):
-            SoundUnit[Freq][AmpF] = SoundPulseFiltered[Freq]
-                                    
-            Max = max(SoundUnit[Freq][AmpF])
-            SoundUnit[Freq][AmpF] = [(SoundEl / (SBOutAmpF/Max))
-                                     * SoundAmpF[AmpF]
-                                     for SoundEl in SoundUnit[Freq][AmpF]]
-            
-            # Preallocating memory
-            SoundList[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
-            Sound[Freq][AmpF] = [0]*(2*len(SoundUnit[Freq][AmpF]))
-            
-            for _ in range(len(SoundUnit[Freq][AmpF])):
-                SoundList[Freq][AmpF][_ *2] = SoundUnit[Freq][AmpF][_]
-                SoundList[Freq][AmpF][_ *2+1] = SoundTTLUnit[_]
-            
-            Sound[Freq][AmpF] = array.array('f')
-            Sound[Freq][AmpF].fromlist(SoundList[Freq][AmpF])
-            Sound[Freq][AmpF] = bytes(Sound[Freq][AmpF])
-    
-    print('Generating sound objects...')
-    p = pyaudio.PyAudio()
-    Stimulation = p.open(format=pyaudio.paFloat32,
-                         channels=2,
-                         rate=Rate,
-                         #frames_per_buffer = len(Sound[0][0]),
-                         input=False,
-                         output=True)
-
-    return(Sound, Stimulation)
 

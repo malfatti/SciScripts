@@ -356,11 +356,11 @@ def LoadSoundMeasurement(FileName, Var='SoundIntensity'):
         elif Var == 'SoundRec':
             SoundRec = {}
             
-            for Freq in h5['SoundRec']:
-                SoundRec[Freq] = {}
+            for FKey in h5['SoundRec']:
+                SoundRec[FKey] = {}
                 
-                for AKey, AVal in h5['SoundRec'][Freq].items():
-                    SoundRec[Freq][AKey] = AVal[:]
+                for AKey, AVal in h5['SoundRec'][FKey].items():
+                    SoundRec[FKey][AKey] = AVal[:]
             
             return(SoundRec)
         

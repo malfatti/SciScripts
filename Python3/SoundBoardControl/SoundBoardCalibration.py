@@ -19,19 +19,19 @@ This script can be used to calibrate the sound board in and out amplification
 factor.
 
 For output:
-    Write square pulses of amp 1 to sound board output. We use this to get the 
+    Write sine waves of amp 1 to sound board output. We use this to get the 
     sound board amp factor, that is, how much does the sound board being used 
-    increase or decrease the signal written to it.
+    is increasing or decreasing the signal written to it.
     
 For input:
     Read signal from sound board input. You have to apply a known amplitude 
-    signal (a sine wave, for example) sound board input, so you can check if 
-    the voltage you applied is the voltage being read by the sound board. 
-    For this, you can open 2 consoles, run the output cell in one and the 
-    input cell in the other.
+    signal (a sine wave, for example) to the sound board input, so you can 
+    check if the voltage you applied is the voltage being read by the sound 
+    board.
 
-It is very important to set the volume of the soundboard to 0dB (which is 100%) 
-so you know that no kind of frequency filter is being applied.
+It is very important to set the volume of the soundboard to unit level 
+(usually 0dB, which is 100% of the intensity) so you know that no kind of 
+frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 128000; Freq = 1000; WaveDur = 10
@@ -40,23 +40,27 @@ SoundBoard = 'Intel_oAnalog-iAnalog'
 import ControlSoundBoard
 from datetime import datetime
 import h5py
+import numpy as np
 
 #%% Output
 
 ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
+# SBOutAmpF is the generated signal divided by the measured signal
+SBOutAmpF = 1/2
 
 #%% Input
 Repetitions = 20
-SBOutAmpF = 2
 
-Data = [[] for _ in range(Repetitions)]
-SBInAmpF = [[] for _ in range(Repetitions)]
+SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
-    Data[aa] = ControlSoundBoard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF)
-    SBInAmpF[aa] = (max(Data[aa])+(min(Data[aa])*-1))/2
+    Rec = ControlSoundBoard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF)
+    SBInAmpF[aa] = (max(Rec)+(min(Rec)*-1))/2
     print(SBInAmpF[aa])
 
+# Mean
 SBInAmpF = sum(SBInAmpF)/len(SBInAmpF)
+# SBInAmpF is the real amplitude divided by the measured amplitude
+SBInAmpF = 1/SBInAmpF
 
 print('SBInAmpF = ', str(SBInAmpF))
 
@@ -75,4 +79,5 @@ with h5py.File(FileName) as h5:
 
 """
 Malfatti = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
+Cerebro = '/home/cerebro/Malfatti/Test/20160418173048-SBAmpFs.hdf5'
 """

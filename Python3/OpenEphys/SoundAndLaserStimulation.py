@@ -19,19 +19,7 @@ This is a script to generate pulses and send to the soundboard, and then to a
 sound amplifier and an Arduino board. Basically it generates sound pulses, 
 sound square pulses (TTLs), and laser square pulses. The square pulses will be 
 sent to the left channel and the sound pulses will be sent to the right 
-channel. In our current setup, we have an arduino uno set to read an analog 
-pin and when the voltage is within a range, it turns on a digital port (Check 
-ControlArduinoWithSoundBoard.ino code). This way, you can control one sound 
-channel, one laser and "separate" TTLs for both.
-
-The first cell will set the experiment parameters.
-
-The second, third and fourth cells create audio objects for sound playback and 
-set some attributes of it. Then, threads are created so .write() commands can 
-run on its own thread.
-
-All the following cells send the stimulus to the sound board, each one with its 
-own settings. 
+channel. 
 """
 #%% Set Parameters
 AnimalName = 'LongEvansTest01'
@@ -98,6 +86,7 @@ import ControlSoundBoard
 import datetime
 import Hdf5F
 import numpy as np
+import sounddevice as SD
 
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
@@ -125,19 +114,18 @@ Hdf5F.WriteDict(SoundAmpF, '/DataInfo/SoundAmpF', FileName)
 
 
 #%% Prepare sound stimulation
-Sound, PlaySound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
-                                               SoundPulseNo, SoundAmpF, 
-                                               NoiseFrequency, TTLAmpF, 
-                                               SoundBoard, 'AllPulses', 
-                                               SoundPrePauseDur, 
-                                               SoundPostPauseDur, 
-                                               SoundStimBlockNo, 
-                                               SoundPauseBetweenStimBlocksDur)
 
-Stimulation = ControlSoundBoard.GenAudioObj(Rate, 'out')
-SoundPauseBetweenStimBlocks = ControlSoundBoard.GenPause(
-                                        Rate, SoundPauseBetweenStimBlocksDur
-                                                              )
+Sound, SoundPauseBetweenStimBlocks = ControlSoundBoard.SoundStim(
+                                             Rate, SoundPulseDur, SoundAmpF, 
+                                             NoiseFrequency, TTLAmpF, 
+                                             SoundBoard, SoundPrePauseDur, 
+                                             SoundPostPauseDur, 
+                                             SoundPauseBetweenStimBlocksDur)
+
+SD.default.device = 'system'
+SD.default.samplerate = Rate
+SD.default.channels = 2
+
 
 #%% Prepare laser stimulation
 Laser, LaserPauseBetweenStimBlocks, _ = \
@@ -176,9 +164,9 @@ while True:
     print('Remember to change folder name in OE!')
     print('Choose frequency:')
     for Ind, K in enumerate(FKeys):
-        print(str(Ind), '=' , K)
+        print(str(Ind) + ')' , K)
     
-    print(str(len(FKeys)), '=', 'Cancel')
+    print(str(len(FKeys)) + ')', 'Cancel')
     FKey = input(': ')
     
     if FKey == str(len(FKeys)): break
@@ -195,13 +183,12 @@ while True:
         print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
         
 #        Arduino.write(b'P')
-        SD
-        PlaySound(Freq, AmpF)
-        Stimulation.write(SoundPauseBetweenStimBlocks)
+        SD.play(Sound[FKey][AKey]); SD.wait()
 #        Arduino.write(b'P')
+        SD.play(SoundPauseBetweenStimBlocks); SD.wait()
     
-    Hdf5F.WriteExpInfo('Sound', DVCoord, Freq, FileName)
-    print('Played Freq', str(Freq), 'at', DVCoord, 'µm DV')
+    Hdf5F.WriteExpInfo('Sound', DVCoord, FKey, FileName)
+    print('Played Freq', FKey, 'at', DVCoord, 'µm DV')
 
 #%% Run laser
 #DVCoord = input('Choose DVCoord (in µm): '); 

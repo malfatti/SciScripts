@@ -35,6 +35,8 @@ if [ "$End" == "" ]; then
     ffmpeg -i "$Video" -ss "$Start" -c copy "$NewFileName"
 elif [ "$Start" == "" ]; then
     ffmpeg -i "$Video" -to "$End" -c copy "$NewFileName"
+else
+    ffmpeg -i "$Video" -ss "$Start" -to "$End" -c copy "$NewFileName"
 fi
 
 echo -en '\n'; echo -en '\n'; echo "Video saved as "$NewFileName""

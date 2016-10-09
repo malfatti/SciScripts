@@ -1,5 +1,6 @@
 Jack options: -r -P19 -dalsa -dhw:PCH -r48000 -p1024 -n3
-tz, Jack O'Quinn, Torben Hohn and others.
+jackd 0.121.3
+Copyright 2001-2009 Paul Davis, Stephane Letz, Jack O'Quinn, Torben Hohn and others.
 jackd comes with ABSOLUTELY NO WARRANTY
 This is free software, and you are welcome to redistribute it
 under certain conditions; see the file COPYING for details
@@ -13,8 +14,8 @@ ALSA: final selected sample format for capture: 32bit integer little-endian
 ALSA: use 3 periods for capture
 ALSA: final selected sample format for playback: 32bit integer little-endian
 ALSA: use 3 periods for playback
-alsa_out options:  -j ALSAInput -dALSAOutput1 -f 30000 -q 1 -r 48000 -p 1024 -n 3
 Building output bridge...
+alsa_out options:  -j ALSAInput -dALSAOutput1 -f 30000 -q 1 -r 48000 -p 1024 -n 3
 Building input bridge...
 alsa_in options: -j ALSAOutput -dALSAInput1 -f 30000 -q 1 -r 48000 -p 1024 -n 3
 Connecting bridge to output...

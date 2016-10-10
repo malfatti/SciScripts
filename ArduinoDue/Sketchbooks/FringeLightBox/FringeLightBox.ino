@@ -32,8 +32,7 @@ FilterOnePole HighPassFilter( HIGHPASS, HighPassFreq );
 FilterOnePole LowPassFilter( LOWPASS, LowPassFreq );
 
 
-void setup()
-{
+void setup() {
   Serial.begin(38400);
   
   // Set free running mode on ADC7 (pin A0)
@@ -50,12 +49,13 @@ void setup()
   }
 }
 
-void loop()
-{
-  while ((ADC->ADC_ISR & 0x80) == 0); // wait for conversion
-  Data = ADC->ADC_CDR[7];
-  FilteredData = 
-  //  val = map(val, 0, 1023, 0, 255);
+void loop() {
+  while( true ) {
+    while ((ADC->ADC_ISR & 0x80) == 0); // wait for conversion
+    Data = ADC->ADC_CDR[7];
+    FilteredData = 
+//    val = map(val, 0, 1023, 0, 255);
 
   Serial.println(Data);
+  }
 }

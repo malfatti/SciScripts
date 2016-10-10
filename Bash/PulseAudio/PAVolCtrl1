@@ -1,5 +1,7 @@
 #!/bin/bash
  
+# from https://gist.github.com/maksim-litvinov/6521969
+
 # CHANGES, RE-VIEWS/WRITES, IMPROVEMENTS:
 # mhasko: functions; VOL-steps; 
 # gashapon: autodectect default sink

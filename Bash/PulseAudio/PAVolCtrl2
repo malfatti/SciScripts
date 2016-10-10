@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# Based on https://gist.github.com/maksim-litvinov/6521969
+# but allows going up to 153% (amplification)
  
 # CHANGES, RE-VIEWS/WRITES, IMPROVEMENTS:
 # mhasko: functions; VOL-steps; 

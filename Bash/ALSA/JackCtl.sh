@@ -35,26 +35,26 @@ Catch=30000
 ResamplingRate=48000
 ResamplingQuality=1
 
-echo "Jack options: -"$RT" -P"$Prio" -dalsa -dhw:PCH -r"$Rate" -p"$PeriodSize" -n"$Periods"" > ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
+echo "Jack options: -"$RT" -P"$Prio" -dalsa -dhw:PCH -r"$Rate" -p"$PeriodSize" -n"$Periods"" > ~/.log/JackSession.log &
 
-jackd -"$RT" -P"$Prio" -dalsa -dhw:PCH -r"$Rate" -p"$PeriodSize" -n"$Periods" &>> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
-
-sleep 2
-
-echo "Building output bridge..." >> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
-echo "alsa_out options:  -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
-/usr/bin/alsa_out -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
-
-echo "Building input bridge..." >> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
-echo "alsa_in options: -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
-/usr/bin/alsa_in -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
+jackd -"$RT" -P"$Prio" -dalsa -dhw:PCH -r"$Rate" -p"$PeriodSize" -n"$Periods" &>> ~/.log/JackSession.log &
 
 sleep 2
 
-echo "Connecting bridge to output..." >> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
+echo "Building output bridge..." >> ~/.log/JackSession.log &
+echo "alsa_out options:  -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
+/usr/bin/alsa_out -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+
+echo "Building input bridge..." >> ~/.log/JackSession.log &
+echo "alsa_in options: -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
+/usr/bin/alsa_in -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+
+sleep 2
+
+echo "Connecting bridge to output..." >> ~/.log/JackSession.log &
 jack_connect ALSAOutput:capture_1 system:playback_1
 jack_connect ALSAOutput:capture_2 system:playback_2
 
-echo "Connecting bridge to input..." >> ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log &
+echo "Connecting bridge to input..." >> ~/.log/JackSession.log &
 jack_connect system:capture_1 ALSAInput:playback_1
 jack_connect system:capture_2 ALSAInput:playback_2

@@ -17,7 +17,7 @@ MaxFileSize=5120000
 
 
 BatteryCheck() {
-echo "BM loop starting..."
+#echo "BM loop starting..."
 if [ -e $BATPath ]; then
 	On=$(cat $BATPath/status)
     
@@ -30,7 +30,7 @@ if [ -e $BATPath ]; then
 			bash $SCRIPTSPATH/Bash/ALSA/SoundAutostart.sh
             
 	    elif [[ $Current -gt $BATCritical && $Current -lt $BATLow ]]; then
-            echo "Battery below $BATLow"
+#            echo "Battery below $BATLow"
             Brightness=$(xbacklight)
 
             if [ $Brightness -gt 30 ]; then
@@ -41,7 +41,7 @@ if [ -e $BATPath ]; then
 			sleep 90
             
 		elif [ $Current -ge $BATLow ]; then
-            echo "Battery above $BATLow"
+#            echo "Battery above $BATLow"
 			sleep 270
 	    fi
     else
@@ -49,11 +49,11 @@ if [ -e $BATPath ]; then
 	fi
 fi
 sleep 30
-echo "BM loop finished"
+#echo "BM loop finished"
 }
 
 FileSizeCheck() {
-echo "FM loop starting..."
+#echo "FM loop starting..."
 for File in $Files; do
     FileSize=$(stat -c "%s" "$File")
     if [ $FileSize -gt 5120000 ]; then
@@ -67,7 +67,7 @@ for File in $Files; do
     fi
 done
 sleep 60
-echo "FM loop finished"
+#echo "FM loop finished"
 }
 
 while [ true ] ; do

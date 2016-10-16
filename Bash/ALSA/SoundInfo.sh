@@ -5,7 +5,7 @@ if [ "${1,,}" == asoundrc ]; then
 elif [ "${1,,}" == devsinuse ]; then
     fuser -fv /dev/snd/* /dev/dsp*
 elif [ "${1,,}" == jacklog ]; then
-    less  ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackSession.log
+    less  ~/.log/JackSession.log
 elif [ "${1,,}" == rtthreads ]; then
     ps -eLo rtprio,pri,cgroup,class,pid,pcpu,%mem,user,comm --sort pri | less
 else

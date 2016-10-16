@@ -34,7 +34,7 @@ It is very important to set the volume of the soundboard to unit level
 frequency filter is being applied.
 """
 #%% Set calibration
-Rate = 128000; Freq = 1000; WaveDur = 10
+Rate = 192000; Freq = 1000; WaveDur = 10
 SoundBoard = 'Intel_oAnalog-iAnalog'
 
 import ControlSoundBoard
@@ -49,7 +49,7 @@ ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
 SBOutAmpF = 1/2
 
 #%% Input
-Repetitions = 20
+Repetitions = 4
 
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
@@ -67,17 +67,17 @@ print('SBInAmpF = ', str(SBInAmpF))
 #%% Save
 Date = datetime.now()
 FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
-#FileName = '20160418173048-SBAmpFs.hdf5'
+#FileName = '20161013123915-SBAmpFs.hdf5'
 with h5py.File(FileName) as h5:
     h5.create_group(SoundBoard)
-    h5[SoundBoard].attrs['SBOutAmpF'] = SBOutAmpF
-    h5[SoundBoard].attrs['SBInAmpF'] = SBInAmpF
+    h5[SoundBoard]['SBOutAmpF'] = SBOutAmpF
+    h5[SoundBoard]['SBInAmpF'] = SBInAmpF
 
 with h5py.File(FileName) as h5:
-    a = h5[SoundBoard].attrs['SBOutAmpF']
-    b = h5[SoundBoard].attrs['SBInAmpF']
+    a = h5[SoundBoard]['SBOutAmpF'][()]
+    b = h5[SoundBoard]['SBInAmpF'][()]
 
 """
-Malfatti = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
+Malfatti = '/home/malfatti/Documents/PhD/Tests/20161013174053-SBAmpFs.hdf5'
 Cerebro = '/home/cerebro/Malfatti/Test/20160418173048-SBAmpFs.hdf5'
 """

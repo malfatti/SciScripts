@@ -25,14 +25,16 @@ import Hdf5F
 import KwikAnalysis
 import math
 import numpy as np
-import sounddevice as SD
+import pyaudio
+from queue import Queue, Empty
 import random
+import sounddevice as SD
 from scipy import signal
 import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
 #SBAmpFsFile = '/home/cerebro/Malfatti/Test/20160418173048-SBAmpFs.hdf5'
-SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
+SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20161013123915-SBAmpFs.hdf5'
 
 ## Lower-level functions
 def dBToAmpF(Intensities, CalibrationFile):
@@ -445,10 +447,8 @@ def PlotGPIAS(FileList):
     return(None)
 
 
-def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512, Rec=False):
-    """ Read data from sound board input, record it to a video and plot it 
-    until the windows is closed (with a delay). """
-    Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+def MicrOscilloscope1(SoundBoard, Rate, YLim, FreqBand, MicSens_VPa, FramesPerBuf=512, Rec=False):
+    Params = {'backend': 'Qt5Agg'}
     from matplotlib import rcParams; rcParams.update(Params)
     import matplotlib.animation as animation
     from matplotlib import pyplot as plt
@@ -468,7 +468,7 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512, Rec=False):
                          #stream_callback=InCallBack)
     
     Fig = plt.figure()
-    Ax = plt.axes(xlim=XLim, ylim=YLim)
+    Ax = plt.axes(xlim=FreqBand, ylim=YLim)
     Plot, = Ax.plot([float('nan')]*(Rate//10), lw=1)
     
     def AnimInit():
@@ -480,8 +480,20 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512, Rec=False):
 #        Data = array.array('f', Plotting.read(Rate//10))
         Data = array.array('f', Plotting.read(Rate//10, 
                                               exception_on_overflow=False))
-        Data = [_/SBInAmpF for _ in Data]
-        Plot.set_ydata(Data)
+        Data = [_ * SBInAmpF for _ in Data]
+        HWindow = signal.hanning(len(Data)//(Rate/1000))
+        F, PxxSp = signal.welch(Data, Rate, HWindow, nperseg=len(HWindow), noverlap=0, 
+                                scaling='density')
+        
+        Start = np.where(F > FreqBand[0])[0][0]-1
+        End = np.where(F > FreqBand[1])[0][0]-1
+        BinSize = F[1] - F[0]
+        RMS = sum(PxxSp[Start:End] * BinSize)**0.5
+        dB = 20*(math.log(RMS/MicSens_VPa, 10)) + 94
+        print(dB, max(PxxSp))
+        
+        Plot.set_xdata(F)
+        Plot.set_ydata(PxxSp)
         return Plot,
     
     Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=16, 
@@ -493,44 +505,157 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuf=512, Rec=False):
         Anim.save('MicrOscilloscope.mp4', writer=Writer)
     
     plt.show()
+        
+    return(None)
+
+
+def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=False):
+    """ Read data from sound board input, record it to a video and plot it 
+    until the windows is closed (with a delay). """
+    import Hdf5F
+    import sounddevice as SD
+    from queue import Queue, Empty
+    import numpy as np
+    SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
+
+    SoundBoard = 'Intel_oAnalog-iAnalog'
+    Device = 'default'
+    Rate = 192000
+    Channels = [0]
+    DownSample = 10
+    Window = 200
+    Interval = 30
+    SoundQueue = Queue()
+    
+#    SD.default.device = 'system'
+#    SD.default.samplerate = Rate
+#    SD.default.channels = 2
+    
+    def audio_callback(indata, outdata, frames, time, status):
+        """This is called (from a separate thread) for each audio block."""
+        if status:
+            print(status, flush=True)
+        # Fancy indexing with mapping creates a (necessary!) copy:
+        SoundQueue.put(indata[::DownSample, Channels])
+    
+#    Fig = plt.figure()
+#    Ax = plt.axes(xlim=XLim, ylim=YLim)
+#    Plot, = Ax.plot([float('nan')]*(Rate//10), lw=1)
+    
+#    def AnimInit():
+#        Data = np.array([np.nan])
+#        Plot.set_ydata(Data)
+#        return Plot,
+    
+    def PltUp(n):
+        global DataPlot, SBInAmpF
+        Block = True
+        
+        while True:
+            try:
+                Data = SoundQueue.get(block=Block)
+                Data = Data * SBInAmpF
+            except Empty:
+                break
+            Shift = len(Data)
+            DataPlot = np.roll(DataPlot, -Shift, axis=0)
+            DataPlot[-Shift:, :] = Data
+            Block = False
+        
+        for Col, Line in enumerate(Lines):
+            Line.set_ydata(DataPlot[:, Col])
+        
+        return(Lines)
+    
+#        Data = array.array('f', Plotting.read(Rate//10))
+#        Data = SD.rec(Rate//10)
+#        Data = Data * SBInAmpF
+#        Plot.set_ydata(Data)
+#        return Plot,
+    
+    Params = {'backend': 'Qt5Agg'}
+    from matplotlib import rcParams; rcParams.update(Params)
+    from matplotlib.animation import FuncAnimation
+    from matplotlib import pyplot as plt
+    
+    SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
+    
+    DataLength = int(Window * Rate / (1000 * DownSample))
+    DataPlot = np.zeros((DataLength, len(Channels)))
+    
+    Fig, Ax = plt.subplots()
+    Lines = Ax.plot(DataPlot)
+    
+    if len(Channels) > 1:
+        Ax.legend(['Channel {}'.format(Channel) for Channel in Channels],
+                  loc='lower left', ncol=len(Channels))
+    
+    Ax.axis((0, len(DataPlot), -1, 1))
+    Ax.set_yticks([0])
+    Ax.yaxis.grid(True)
+    Ax.tick_params(bottom='off', top='off', labelbottom='off',
+                   right='off', left='off', labelleft='off')
+    Ax.set_xlim(XLim)
+    Ax.set_ylim(YLim)
+    Fig.tight_layout(pad=0)
+    
+#    SD.default.
+    
+    Stream = SD.Stream(device=Device, channels=max(Channels)+1, blocksize=0, samplerate=Rate, callback=audio_callback, never_drop_input=True)
+    Anim = FuncAnimation(Fig, PltUp, interval=Interval, blit=True)
+    
+    with Stream:
+        plt.show()
+    
+#    Anim = FuncAnimation(Fig, PltUp, frames=FramesPerBuffer, interval=16, 
+#                                   blit=False)
+#    
+#    if Rec:
+#        Writers = animation.writers['ffmpeg']
+#        Writer = Writers(fps=15, metadata=dict(artist='Me'))
+#        Anim.save('MicrOscilloscope.mp4', writer=Writer)
+    
+#    plt.show()
     
     return(None)
 
 
 def SoundCalOut(Rate, Freq, WaveDur):
     """ Generate a sine wave from 1 to -1 """
-    SoundPulseNo = round(WaveDur/0.1)
-    
-    Pulse = GenSineWave(Rate, Freq, 1, 0.1)
+    Pulse = GenSineWave(Rate, Freq, 1, WaveDur)
     
     SD.default.device = 'system'
     SD.default.samplerate = Rate
     SD.default.channels = 1
+    SD.default.blocksize = 0    
+    SD.default.latency = 'low'
     
-    print('Playing... ', end='')
-    for Pulse in SoundPulseNo:
-        SD.play(Pulse); SD.wait()
-    
+#    Stream = SD.OutputStream()
+#    
+#    print('Playing... ', end='')
+#    with Stream: 
+#        for PulseNo in range(SoundPulseNo):
+#            Stream.write(Pulse)
+#   
+    print('Playing...', end='')
+    SD.play(Pulse, blocking=True);
     print('Done.')
+    
     return(None)
 
 
 def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF):
     """ Generate sine wave (1V to -1V) and read 1s of it. """
-    SoundPulseNo = round(WaveDur/0.1)
-    
-    Pulse = GenSineWave(Rate, Freq, SBOutAmpF, 0.1)
+    Pulse = GenSineWave(Rate, Freq, 0.05, WaveDur)
     
     SD.default.device = 'system'
     SD.default.samplerate = Rate
     SD.default.channels = 1
+    SD.default.blocksize = 0    
+    SD.default.latency = 'low'
     
     print('Measuring... ', end='')
-    Data = np.array([], dtype=np.float32)
-    for Pulse in SoundPulseNo:
-        Rec = SD.playrec(Pulse); SD.wait()
-        Data = np.concatenate([Data, Rec])
-    
+    Rec = SD.playrec(Pulse, blocking=True)
     print('Done.')
     return(Data)
 

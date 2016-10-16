@@ -340,7 +340,7 @@ def LoadUnits(FileName, Override={}):
 
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
     with h5py.File(SBAmpFsFile, 'r') as h5: 
-        Var = h5[SoundBoard][Key][0]
+        Var = h5[SoundBoard][Key][()]
     return(Var)
 
 

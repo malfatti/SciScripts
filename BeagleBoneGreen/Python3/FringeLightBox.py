@@ -38,6 +38,7 @@ ButtonLed = 'P8_18'
 LedPins = ['P9_'+str(_) for _ in range(21,32, 2)] + \
           ['P8_'+str(_) for _ in range(26,33, 2)] + ['P8_17', 'P8_27']
 
+print('Checking pins...')
 if ButtonPin in LedPins: 
     print('ButtonPin cannot be one of the LedPins.')
     raise SystemExit(1)
@@ -50,6 +51,7 @@ if ButtonPin == ButtonLed:
     print('ButtonPin cannot be ButtonLed.')
     raise SystemExit(1)
 
+print('Defining functions...')
 def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
     if Type not in ['bandpass', 'lowpass', 'highpass']:
         print("Choose 'bandpass', 'lowpass' or 'highpass'.")
@@ -90,23 +92,23 @@ def ProcessData(Rate, FreqBand):
 #        SoundData[-Shift:, 0] = Data
         Block = False
     
-#    HWindow = signal.hanning(len(Data)//(Rate/1000))
-#    F, PxxSp = signal.welch(Data, Rate, HWindow, nperseg=len(HWindow), 
-#                            noverlap=0, scaling='density')
-#    
-#    Start = np.where(F > FreqBand[0])[0][0]-1
-#    End = np.where(F > FreqBand[1])[0][0]-1
-#    BinSize = F[1] - F[0]
-#    RMS = sum(PxxSp[Start:End] * BinSize)**0.5
-#    Max = max(PxxSp[Start:End])
+    HWindow = signal.hanning(len(Data)//(Rate/1000))
+    F, PxxSp = signal.welch(Data, Rate, HWindow, nperseg=len(HWindow), 
+                            noverlap=0, scaling='density')
+    
+    Start = np.where(F > FreqBand[0])[0][0]-1
+    End = np.where(F > FreqBand[1])[0][0]-1
+    BinSize = F[1] - F[0]
+    RMS = sum(PxxSp[Start:End] * BinSize)**0.5
+    Max = max(PxxSp[Start:End])
 #
-    Data = FilterSignal(Data, Rate, FreqBand, FilterOrder, 'bandpass')
-    RMS = np.mean(abs(Data))
+#    Data = FilterSignal(Data, Rate, FreqBand, FilterOrder, 'bandpass')
+#    RMS = np.mean(abs(Data))
     
     return(RMS)
 
 
-# Set audio
+print('Setting audio...')
 SD.default.samplerate = Rate
 SD.default.channels = 1
 SD.default.blocksize = 0
@@ -114,7 +116,7 @@ SD.default.blocksize = 0
 SoundQueue = Queue()
 Stream = SD.Stream(callback=audio_callback, never_drop_input=True)
 
-# Set pins
+print('Setting pins...')
 for Pin in LedPins: GPIO.setup(Pin, GPIO.OUT)
 GPIO.setup(ButtonPin, GPIO.IN)
 GPIO.setup(ButtonLed, GPIO.OUT)
@@ -123,29 +125,34 @@ GPIO.setup(ButtonPower, GPIO.OUT)
 
 with Stream:
     while True:
-        # Set pins
+        print('Loop started!')
+        print('Setting pins...')
         for Pin in LedPins: GPIO.output(Pin, GPIO.LOW)
         GPIO.output(ButtonPower, GPIO.HIGH)
         GPIO.output(ButtonLed, GPIO.HIGH)
         
-        # Wait button press to start
+        print('Press the microswitch to start.')
         GPIO.wait_for_edge(ButtonPin, GPIO.RISING)
         
-        # Calibration
+        print('Calibrating RMS...')
         RefRMS = np.zeros([100])
-        for _ in range(100): RefRMS[_] = ProcessData(Rate, FreqBand)
+        for _ in range(100):
+            print(_)
+            RefRMS[_] = ProcessData(Rate, FreqBand)
         RefRMS = np.mean(RefRMS)
         Slot = int(RefRMS/(len(LedPins)))
         
-        # Start game :)
+        print('Starting game...')
         GPIO.output(ButtonLed, GPIO.LOW)
         GPIO.output(ButtonPower, GPIO.LOW)
         for Pin in LedPins: GPIO.output(Pin, GPIO.HIGH)
         np.random.shuffle(LedPins)
         
         while True:
+            print('Started Acq. loop!')
             Break = False
             RMS = ProcessData(Rate, FreqBand)
+            Print(RMS)
             
             for Limit in range(Slot, RefRMS, Slot):
                 LowLimit = Limit - Slot;

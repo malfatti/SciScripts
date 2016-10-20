@@ -37,7 +37,7 @@ collaboration with a great colleague and friend, J. Targino.
 #%% Defining functions
 
 import numpy
-import matplotlib as plot
+import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 
@@ -120,13 +120,13 @@ def rossler_generate(DataLength):
 def PlotData(Data):
     if (Data.all == LorenzData.all) or (Data.all == RosslerData.all):
         # 2D plot
-        plot.pylab.plot(Data[0])
+        plt.plot(Data[0])
         #3D plot
-        figure = plot.pylab.figure()
+        figure = plt.figure()
         axes = Axes3D(figure)
         axes.plot3D(Data[0], Data[1], Data[2])
         figure.add_axes(axes)
-        plot.pylab.show()
+        plt.show()
     else:
         print('Are you bananas?')
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import AdafruitB_BIO.GPIO as GPIO
+import Adafruit_BBIO.GPIO as GPIO
 import time
-GPIO.setup("USR3", GPIO.OUT)
+GPIO.setup("P9_21", GPIO.OUT)
 while True:
-    GPIO.output("USR3", GPIO.HIGH)
+    GPIO.output("P9_21", GPIO.HIGH)
     time.sleep(0.5)
-    GPIO.output("USR3", GPIO.LOW)
+    GPIO.output("P9_21", GPIO.LOW)
     time.sleep(0.5)

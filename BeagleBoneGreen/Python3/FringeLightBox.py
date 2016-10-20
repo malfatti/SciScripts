@@ -32,10 +32,11 @@ FreqBand = [8, 15]
 FilterOrder = 4
 Window = 256
 Interval = 8
-ButtonPin = 'P8_16'
+ButtonPower = 'P8_46'
+ButtonPin = 'P8_40'
 ButtonLed = 'P8_18'
 LedPins = ['P9_'+str(_) for _ in range(21,32, 2)] + \
-          ['P8_'+str(_) for _ in range(22,33, 2)]
+          ['P8_'+str(_) for _ in range(26,33, 2)] + ['P8_17', 'P8_27']
 
 if ButtonPin in LedPins: 
     print('ButtonPin cannot be one of the LedPins.')
@@ -48,15 +49,15 @@ if ButtonLed in LedPins:
 if ButtonPin == ButtonLed: 
     print('ButtonPin cannot be ButtonLed.')
     raise SystemExit(1)
-          
+
 def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
     if Type not in ['bandpass', 'lowpass', 'highpass']:
         print("Choose 'bandpass', 'lowpass' or 'highpass'.")
-    
+        
     elif len(Frequency) not in [1, 2]:
         print('Frequency must have 2 elements for bandpass; or 1 element for \
         lowpass or highpass.')
-    
+        
     else:
         passband = [_/(Rate/2) for _ in Frequency]
         f2, f1 = signal.butter(FilterOrder, passband, Type)
@@ -117,18 +118,18 @@ Stream = SD.Stream(callback=audio_callback, never_drop_input=True)
 for Pin in LedPins: GPIO.setup(Pin, GPIO.OUT)
 GPIO.setup(ButtonPin, GPIO.IN)
 GPIO.setup(ButtonLed, GPIO.OUT)
+GPIO.setup(ButtonPower, GPIO.OUT)
+
 
 with Stream:
     while True:
         # Set pins
-        for Pin in LedPins: 
-            GPIO.setup(Pin, GPIO.OUT)
-            GPIO.setup(Pin, GPIO.LOW)
-        
-        GPIO.setup(ButtonLed, GPIO.HIGH)
+        for Pin in LedPins: GPIO.output(Pin, GPIO.LOW)
+        GPIO.output(ButtonPower, GPIO.HIGH)
+        GPIO.output(ButtonLed, GPIO.HIGH)
         
         # Wait button press to start
-        GPIO.wait_for_edge("P8_14", GPIO.RISING)
+        GPIO.wait_for_edge(ButtonPin, GPIO.RISING)
         
         # Calibration
         RefRMS = np.zeros([100])
@@ -137,8 +138,9 @@ with Stream:
         Slot = int(RefRMS/(len(LedPins)))
         
         # Start game :)
-        GPIO.setup(ButtonLed, GPIO.LOW)
-        for Pin in LedPins: GPIO.setup(Pin, GPIO.HIGH)
+        GPIO.output(ButtonLed, GPIO.LOW)
+        GPIO.output(ButtonPower, GPIO.LOW)
+        for Pin in LedPins: GPIO.output(Pin, GPIO.HIGH)
         np.random.shuffle(LedPins)
         
         while True:
@@ -151,10 +153,10 @@ with Stream:
                 if RMS <= Limit and RMS > LowLimit:
                     print('Turn off', Limit/Slot, 'leds')
                     for Pin in LedPins[:int(Limit/Slot)]:
-                        GPIO.setup(Pin, GPIO.LOW)
+                        GPIO.output(Pin, GPIO.LOW)
                     
                     for Pin in LedPins[int(Limit/Slot):]:
-                        GPIO.setup(Pin, GPIO.HIGH)
+                        GPIO.output(Pin, GPIO.HIGH)
                 
                 if RMS > RefRMS-Slot:
                     print('Turn off all leds and restart')

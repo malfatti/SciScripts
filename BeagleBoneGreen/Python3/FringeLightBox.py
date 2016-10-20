@@ -21,18 +21,159 @@ filtered and the highest the power in that frequency, more leds will be turned
 off.
 """
 
+import Adafruit_BBIO.GPIO as GPIO
 import numpy as np
+from queue import Queue, Empty
 import sounddevice as SD
+from scipy import signal
 
-Rate=48000
-Freq=1000
+Rate = 48000
+FreqBand = [8, 15]
+FilterOrder = 4
+Window = 256
+Interval = 8
+ButtonPin = 'P8_16'
+ButtonLed = 'P8_18'
+LedPins = ['P9_'+str(_) for _ in range(21,32, 2)] + \
+          ['P8_'+str(_) for _ in range(22,33, 2)]
 
-SD.default.samplerate=Rate
-SD.default.channels=1
+if ButtonPin in LedPins: 
+    print('ButtonPin cannot be one of the LedPins.')
+    raise SystemExit(1)
 
-A = np.random.uniform(-1, 1, size=Rate)
-B = [np.sin(2 * np.pi * Freq * (_/Rate))  for _ in range(Rate)]
+if ButtonLed in LedPins: 
+    print('ButtonLed cannot be one of the LedPins.')
+    raise SystemExit(1)
 
-#SD.play(A, blocking=True)
+if ButtonPin == ButtonLed: 
+    print('ButtonPin cannot be ButtonLed.')
+    raise SystemExit(1)
+          
+def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
+    if Type not in ['bandpass', 'lowpass', 'highpass']:
+        print("Choose 'bandpass', 'lowpass' or 'highpass'.")
+    
+    elif len(Frequency) not in [1, 2]:
+        print('Frequency must have 2 elements for bandpass; or 1 element for \
+        lowpass or highpass.')
+    
+    else:
+        passband = [_/(Rate/2) for _ in Frequency]
+        f2, f1 = signal.butter(FilterOrder, passband, Type)
+        Signal = signal.filtfilt(f2, f1, Signal, padtype='odd', padlen=0)
+        
+        return(Signal)
 
-C = SD.playrec(B, blocking=True)
+def audio_callback(indata, outdata, frames, time, status):
+    """This is called (from a separate thread) for each audio block."""
+    if status:
+        print(status, flush=True)
+    # Fancy indexing with mapping creates a (necessary!) copy:
+    SoundQueue.put(indata[:, 0])
+
+
+def ProcessData(Rate, FreqBand):
+    Block = True
+    Data = np.array([])
+    
+    while True:
+        try:
+#            Data = SoundQueue.get(block=Block)
+            Data = np.append(Data, SoundQueue.get(block=Block))
+            
+        except Empty:
+            break
+        
+#        Shift = len(Data)
+#        SoundData = np.roll(SoundData, -Shift, axis=0)
+#        SoundData[-Shift:, 0] = Data
+        Block = False
+    
+#    HWindow = signal.hanning(len(Data)//(Rate/1000))
+#    F, PxxSp = signal.welch(Data, Rate, HWindow, nperseg=len(HWindow), 
+#                            noverlap=0, scaling='density')
+#    
+#    Start = np.where(F > FreqBand[0])[0][0]-1
+#    End = np.where(F > FreqBand[1])[0][0]-1
+#    BinSize = F[1] - F[0]
+#    RMS = sum(PxxSp[Start:End] * BinSize)**0.5
+#    Max = max(PxxSp[Start:End])
+#
+    Data = FilterSignal(Data, Rate, FreqBand, FilterOrder, 'bandpass')
+    RMS = np.mean(abs(Data))
+    
+    return(RMS)
+
+
+# Set audio
+SD.default.samplerate = Rate
+SD.default.channels = 1
+SD.default.blocksize = 0
+
+SoundQueue = Queue()
+Stream = SD.Stream(callback=audio_callback, never_drop_input=True)
+
+# Set pins
+for Pin in LedPins: GPIO.setup(Pin, GPIO.OUT)
+GPIO.setup(ButtonPin, GPIO.IN)
+GPIO.setup(ButtonLed, GPIO.OUT)
+
+with Stream:
+    while True:
+        # Set pins
+        for Pin in LedPins: 
+            GPIO.setup(Pin, GPIO.OUT)
+            GPIO.setup(Pin, GPIO.LOW)
+        
+        GPIO.setup(ButtonLed, GPIO.HIGH)
+        
+        # Wait button press to start
+        GPIO.wait_for_edge("P8_14", GPIO.RISING)
+        
+        # Calibration
+        RefRMS = np.zeros([100])
+        for _ in range(100): RefRMS[_] = ProcessData(Rate, FreqBand)
+        RefRMS = np.mean(RefRMS)
+        Slot = int(RefRMS/(len(LedPins)))
+        
+        # Start game :)
+        GPIO.setup(ButtonLed, GPIO.LOW)
+        for Pin in LedPins: GPIO.setup(Pin, GPIO.HIGH)
+        np.random.shuffle(LedPins)
+        
+        while True:
+            Break = False
+            RMS = ProcessData(Rate, FreqBand)
+            
+            for Limit in range(Slot, RefRMS, Slot):
+                LowLimit = Limit - Slot;
+                
+                if RMS <= Limit and RMS > LowLimit:
+                    print('Turn off', Limit/Slot, 'leds')
+                    for Pin in LedPins[:int(Limit/Slot)]:
+                        GPIO.setup(Pin, GPIO.LOW)
+                    
+                    for Pin in LedPins[int(Limit/Slot):]:
+                        GPIO.setup(Pin, GPIO.HIGH)
+                
+                if RMS > RefRMS-Slot:
+                    print('Turn off all leds and restart')
+                    Break = True
+                    break
+            
+            if Break: break
+        
+#            for (int Led = 0; Led < Limit/Slot; Led++) {
+#              digitalWrite(LedPins[Led], LOW)
+#            }
+#            if (Limit/Slot == LastPin-FirstPin) { AllOff = true; }
+#          }
+#    
+#          if (DataMean > (AmpMean + LimitP) && DataMean < (AmpMean + Limit) {
+#            for (int Led = 0; Led < Limit/Slot; Led++) {
+#                digitalWrite(LedPins[Led], LOW)
+#            }
+#            if (Limit/Slot == LastPin-FirstPin) { AllOff = true; }
+#          }
+#        }
+#        if RMS

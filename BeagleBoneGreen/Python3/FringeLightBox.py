@@ -76,34 +76,35 @@ def audio_callback(indata, outdata, frames, time, status):
 
 
 def ProcessData(Rate, FreqBand):
-    Block = True
-    Data = np.array([])
+#    Block = True
+#    Data = np.array([])
     
-    while True:
-        try:
+#    while True:
+#        try:
 #            Data = SoundQueue.get(block=Block)
-            Data = np.append(Data, SoundQueue.get(block=Block))
-            
-        except Empty:
-            break
-        
+#            Data = np.append(Data, SoundQueue.get(block=Block))
+#            
+#        except Empty:
+#            break
+#        
 #        Shift = len(Data)
 #        SoundData = np.roll(SoundData, -Shift, axis=0)
 #        SoundData[-Shift:, 0] = Data
-        Block = False
+#        Block = False
     
-    HWindow = signal.hanning(len(Data)//(Rate/1000))
-    F, PxxSp = signal.welch(Data, Rate, HWindow, nperseg=len(HWindow), 
-                            noverlap=0, scaling='density')
-    
-    Start = np.where(F > FreqBand[0])[0][0]-1
-    End = np.where(F > FreqBand[1])[0][0]-1
-    BinSize = F[1] - F[0]
-    RMS = sum(PxxSp[Start:End] * BinSize)**0.5
-    Max = max(PxxSp[Start:End])
+#    HWindow = signal.hanning(len(Data)//(Rate/1000))
+#    F, PxxSp = signal.welch(Data, Rate, HWindow, nperseg=len(HWindow), 
+#                            noverlap=0, scaling='density')
+#    
+#    Start = np.where(F > FreqBand[0])[0][0]-1
+#    End = np.where(F > FreqBand[1])[0][0]-1
+#    BinSize = F[1] - F[0]
+#    RMS = sum(PxxSp[Start:End] * BinSize)**0.5
+#    Max = max(PxxSp[Start:End])
 #
-#    Data = FilterSignal(Data, Rate, FreqBand, FilterOrder, 'bandpass')
-#    RMS = np.mean(abs(Data))
+    Data = SoundQueue.get(block=True)
+    Data = FilterSignal(Data, Rate, FreqBand, FilterOrder, 'bandpass')
+    RMS = np.mean(abs(Data))
     
     return(RMS)
 
@@ -141,6 +142,7 @@ with Stream:
             RefRMS[_] = ProcessData(Rate, FreqBand)
         RefRMS = np.mean(RefRMS)
         Slot = int(RefRMS/(len(LedPins)))
+        print(RefRMS, Slot)
         
         print('Starting game...')
         GPIO.output(ButtonLed, GPIO.LOW)
@@ -152,7 +154,7 @@ with Stream:
             print('Started Acq. loop!')
             Break = False
             RMS = ProcessData(Rate, FreqBand)
-            Print(RMS)
+            print(RMS)
             
             for Limit in range(Slot, RefRMS, Slot):
                 LowLimit = Limit - Slot;

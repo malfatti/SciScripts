@@ -18,7 +18,6 @@ SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
 SoundBoard = 'Intel_oAnalog-iAnalog'
 Device = 'default'
 Rate = 192000
-DownSample = 10
 Window = 200
 Interval = 30
 YLim = [0, 5.5**-14]
@@ -26,8 +25,8 @@ FreqBand = [20, 20000]
 MicSens_dB = -47.46
 MicSens_VPa = 10**(MicSens_dB/20)
 
-def MicrOscilloscope(SoundBoard, Device, Rate, DownSample, Window, 
-                     Interval, YLim, FreqBand):
+def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim, 
+                     FreqBand):
     """ Read data from sound board input and plot it until the windows is 
         closed. """
     
@@ -38,7 +37,7 @@ def MicrOscilloscope(SoundBoard, Device, Rate, DownSample, Window,
     
     SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
     SoundQueue = Queue()
-    DataLength = int(Window * Rate / (1000 * DownSample))
+    DataLength = int(Window * Rate / (1000))
     DataPlot = np.zeros((DataLength, 1))
     
     def audio_callback(indata, outdata, frames, time, status):
@@ -46,7 +45,7 @@ def MicrOscilloscope(SoundBoard, Device, Rate, DownSample, Window,
         if status:
             print(status, flush=True)
         # Fancy indexing with mapping creates a (necessary!) copy:
-        SoundQueue.put(indata[::DownSample, 0])
+        SoundQueue.put(indata[:, 0])
     
     
     def PltUp(n):
@@ -109,7 +108,7 @@ def MicrOscilloscope(SoundBoard, Device, Rate, DownSample, Window,
     return(None)
 
 #%%
-MicrOscilloscope(SoundBoard, Device, Rate, DownSample, Window, Interval, YLim, FreqBand)
+MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim, FreqBand)
 
 #%%
 import ControlSoundBoard

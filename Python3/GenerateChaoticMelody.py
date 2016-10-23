@@ -36,7 +36,7 @@ collaboration with a great colleague and friend, J. Targino.
 """
 #%% Defining functions
 
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d.axes3d import Axes3D
@@ -52,7 +52,7 @@ def rk4(odes, LorenzCoord, LorenzParameters, dt=0.01):
 
 ## Generate data
 def generate(DataLength, odes, LorenzCoord, LorenzParameters):
-    data = numpy.zeros([LorenzCoord.shape[0], DataLength])
+    data = np.zeros([LorenzCoord.shape[0], DataLength])
     # Since the first iterates are transient, they can removed.
     for i in range(800):
         LorenzCoord = rk4(odes, LorenzCoord, LorenzParameters)
@@ -82,7 +82,7 @@ def lorenz_odes(LorenzCoord,LorenzParameters):
   zd = x*y - beta*z
 
   # return the LorenzCoord derivatives
-  return numpy.array([xd, yd, zd])
+  return np.array([xd, yd, zd])
 
 
 ## Organize data to generate Lorenz attractor
@@ -108,10 +108,10 @@ def rossler_odes(RosslerCoord,RosslerParameters):
   zd = b + z*(x - c)
 
   # return the RosslerCoord derivatives
-  return numpy.array([xd, yd, zd])
+  return np.array([xd, yd, zd])
 
 
-## Organize data to generate Lorenz attractor
+## Organize data to generate Rossler attractor
 def rossler_generate(DataLength):
     return generate(DataLength, rossler_odes, RosslerCoord, RosslerParameters)
 
@@ -184,20 +184,20 @@ Basically, you set the first note and let chaos do the rest :)
 LorenzX = 0.0979989 
 LorenzY = 0.0011667
 LorenzZ = 0.08422
-LorenzCoord = numpy.array([LorenzX, LorenzY, LorenzZ])
+LorenzCoord = np.array([LorenzX, LorenzY, LorenzZ])
 
 RosslerX = 10
 RosslerY = 0
 RosslerZ = 0
-RosslerCoord = numpy.array([RosslerX, RosslerY, RosslerZ])
+RosslerCoord = np.array([RosslerX, RosslerY, RosslerZ])
 
 """
 According to McGUlNNESS (1983), using parameters r = 40, sigma = 16 and 
 b = 4 will generate a Lorenz attractor with Hausdorff dimension of 
 2.06 ± 0.01
 """
-LorenzParameters = numpy.array([40, 4, 16])
-RosslerParameters = numpy.array([0.15, 0.2, 10.0])
+LorenzParameters = np.array([40, 4, 16])
+RosslerParameters = np.array([0.15, 0.2, 10.0])
 
 
 """
@@ -256,11 +256,11 @@ SortedZCoordPos = sorted(ZCoordPos)
 
 # 84 and 10 are the number of notes and intensities possible, respectively. If 
 # you change the notes or intensities, remember to change the numbers here.
-ChunkedXCoordPos = numpy.array(ChunkList(SortedXCoordPos, int(len(XCoordPos)/42)))
-ChunkedZCoordPos = numpy.array(ChunkList(SortedZCoordPos, int(len(ZCoordPos)/10)))
+ChunkedXCoordPos = np.array(ChunkList(SortedXCoordPos, int(len(XCoordPos)/42)))
+ChunkedZCoordPos = np.array(ChunkList(SortedZCoordPos, int(len(ZCoordPos)/10)))
 
-NotesIndexCode = [numpy.nonzero(ChunkedXCoordPos == RawNotes)[0][0] for RawNotes in XCoordPos]
-IntensitiesIndexCode = [numpy.nonzero(ChunkedZCoordPos == RawIntensities)[0][0] for RawIntensities in ZCoordPos]
+NotesIndexCode = [np.nonzero(ChunkedXCoordPos == RawNotes)[0][0] for RawNotes in XCoordPos]
+IntensitiesIndexCode = [np.nonzero(ChunkedZCoordPos == RawIntensities)[0][0] for RawIntensities in ZCoordPos]
 
 
 ## Mapping durations

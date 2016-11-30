@@ -153,6 +153,8 @@ def GetTTLInfo(Events, EventRec, TTLCh):
     return(TTLsPerRec)
 
 
+    
+
 def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[], 
                        Rate=[]):
     print('Get TTL timestamps... ', end='')
@@ -185,10 +187,10 @@ def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[],
         return(RawTime, TTLs)
 
 
-def RemoveDateFromFolderName():
-    RenameFolders = input('Rename folders in KwikFiles/* (BE CAREFUL)? [y/N] ')
+def RemoveDateFromFolderName(Type):
+    RenameFolders = input('Rename folders in' + Type + '/* (BE CAREFUL)? [y/N] ')
     if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
-        DirList = glob('KwikFiles/*'); DirList.sort()
+        DirList = glob(Type+'/*'); DirList.sort()
         for FolderName in DirList:
             NewFolderName = ''.join([FolderName[:10], FolderName[21:]])
             NewFolderName = NewFolderName.replace("-", "")
@@ -221,7 +223,7 @@ def SepSpksPerCluster(Clusters, Ch):
     else: return({})
 
 
-def SetPlot(Backend='TkAgg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
+def SetPlot(Backend='Qt5Agg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
             Plot=False, Axes=False):
     if Params:
         print('Set plot parameters...')
@@ -378,9 +380,10 @@ def UnitPlotPerCh(ChDict, Ch, XValues, PulseDur, FigName, FigTitle):
 ## Higher-level functions
 def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
                 ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
-                StimType='Sound', AnalogTTLs=False, Board='OE', Override={}):
+                StimType='Sound', AnalogTTLs=False, Board='OE', Type='kwik',
+                Override={}):
     """
-    Analyze ABRs from data in Kwik format. A '*ABRs.hdf5' file will be saved 
+    Analyze ABRs from data. A '*ABRs.hdf5' file will be saved 
     in cwd, containing:
         - ABRs group, where data will be saved as 
           ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
@@ -394,17 +397,10 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
         
         - DataInfo dict, where all info will be saved.
     
-    For this function to work:
-        - The Kwik folders must be in 'KwikFiles/';
-        - There must be a *Exp.hdf5 file containing all experimental settings 
-          (see Python3/SoundBoardControl/SoundAndLaserStimulation.py, 1st cell);
     """
     
     print('Load DataInfo...')
-    DirList = glob('KwikFiles/*'); DirList.sort()
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     
-    AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
     Here = os.getcwd().split(sep='/')[-1]
     Group = Here + '-ABRs_' + Now
@@ -413,11 +409,8 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
         if Override != {}: 
             if 'Stim' in Override.keys(): Stim = Override['Stim']
         
-        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
-        
         for RecFolder in Exps:
             ABRs = {}; Info = {}
-            ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
             
             if AnalogTTLs: 
                 Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
@@ -472,6 +465,7 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
                 ABRs[dB] = ABR[:]; del(ABR)
             
             Path = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
+            AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
             Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
     
     return(None)

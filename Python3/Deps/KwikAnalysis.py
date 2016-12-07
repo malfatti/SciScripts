@@ -155,7 +155,7 @@ def GetTTLInfo(Events, EventRec, TTLCh):
 
     
 
-def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[], 
+def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=0, Proc='', TTLsPerRec=[], 
                        Rate=[]):
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:

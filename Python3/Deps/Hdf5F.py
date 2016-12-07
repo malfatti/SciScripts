@@ -92,10 +92,16 @@ def GetGroupKeys(Group, FileName):
     return(Keys)
 
 
-def GetExpKeys(ExpStr, OpenedFile, MyKey=''):
+def GetExpKeys(ExpStr, OpenedFile, KeyInd=None, KeyStr=None):
     Keys = [K for K in OpenedFile.keys() if ExpStr in K]; Keys.sort()
     
-    if MyKey == '':
+    if KeyStr != None:
+        Key = [K for K in Keys if KeyStr in K]; Key = Key[0]
+        
+    elif KeyInd != None:
+        Key = Keys[KeyInd]
+        
+    else: 
         if len(Keys) > 1:
             print('Choose dataset:')
             for Ind, K in enumerate(Keys):
@@ -104,9 +110,6 @@ def GetExpKeys(ExpStr, OpenedFile, MyKey=''):
             Key = Keys[int(Key)]
         else:
             Key = Keys[0]
-        
-    else: 
-        Key = [K for K in Keys if MyKey in K]; Key = Key[0]
     
     return(Key)
 
@@ -166,9 +169,9 @@ def LoadABRs(FileName, Path='all'):
     return(ABRs, XValues)
 
 
-def LoadClusters(FileName):
+def LoadClusters(FileName, KeyInd=None, KeyStr=None):
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('SpkClusters', F)
+        Key = GetExpKeys('SpkClusters', F, KeyInd, KeyStr)
         
         Clusters = {}
         for RKey in F[Key].keys():

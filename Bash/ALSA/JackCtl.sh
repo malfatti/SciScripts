@@ -31,9 +31,9 @@ while [[ $# -gt 1 ]]; do
     shift
 done
 
-Catch=30000
-ResamplingRate=48000
-ResamplingQuality=1
+#Catch=100000
+#ResamplingRate=192000
+#ResamplingQuality=1
 
 echo "Jack options: -"$RT" -P"$Prio" -dalsa -dhw:PCH -r"$Rate" -p"$PeriodSize" -n"$Periods"" > ~/.log/JackSession.log &
 
@@ -42,12 +42,14 @@ jackd -"$RT" -P"$Prio" -dalsa -dhw:PCH -r"$Rate" -p"$PeriodSize" -n"$Periods" &>
 sleep 2
 
 echo "Building output bridge..." >> ~/.log/JackSession.log &
-echo "alsa_out options:  -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
-/usr/bin/alsa_out -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+#echo "alsa_out options:  -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
+#/usr/bin/alsa_out -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+/usr/bin/alsa_out -j ALSAInput -dALSAOutput1 &>> ~/.log/JackSession.log &
 
 echo "Building input bridge..." >> ~/.log/JackSession.log &
-echo "alsa_in options: -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
-/usr/bin/alsa_in -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+#echo "alsa_in options: -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
+#/usr/bin/alsa_in -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+/usr/bin/alsa_in -j ALSAOutput -dALSAInput1 &>> ~/.log/JackSession.log &
 
 sleep 2
 

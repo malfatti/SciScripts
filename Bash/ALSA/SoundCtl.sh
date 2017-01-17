@@ -17,7 +17,7 @@ elif [ "${1,,}" == jackrt ]; then
     killall jackd &> /dev/null
     cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/Jack-ALSA ~/.asoundrc
     cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/PCHVol.sh ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/VolControl.sh
-    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --rt R --rate 192000 --periodsize 384 --periods 3 --priority 89
+    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --rt R --rate 192000 --periodsize 128 --periods 9 --priority 89
 elif [ "${1,,}" == spdif ]; then
     killall jackd &> /dev/null
     cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/SPDIf ~/.asoundrc

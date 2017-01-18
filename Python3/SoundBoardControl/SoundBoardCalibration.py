@@ -35,7 +35,7 @@ frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 192000; Freq = 1000; WaveDur = 10
-SoundBoard = 'Intel_oAnalog-iAnalog'
+Connections = 'IntelOut-MackieIn-MackieChOut-Speaker'
 
 import ControlSoundBoard
 from datetime import datetime
@@ -46,7 +46,7 @@ import numpy as np
 
 ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1/2
+SBOutAmpF = 1/1.8
 
 #%% Input
 Repetitions = 4
@@ -58,11 +58,11 @@ for aa in range(Repetitions):
     print(SBInAmpF[aa])
 
 # Mean
-SBInAmpF = sum(SBInAmpF)/len(SBInAmpF)
+SBInAmpFM = sum(SBInAmpF)/len(SBInAmpF)
 # SBInAmpF is the real amplitude divided by the measured amplitude
-SBInAmpF = 1/SBInAmpF
+SBInAmpFM = 1/SBInAmpFM
 
-print('SBInAmpF = ', str(SBInAmpF))
+print('SBInAmpF = ', str(SBInAmpFM))
 
 #%% Save
 Date = datetime.now()

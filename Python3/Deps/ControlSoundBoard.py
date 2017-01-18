@@ -646,7 +646,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
 
 def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF):
     """ Generate sine wave (1V to -1V) and read 1s of it. """
-    Pulse = GenSineWave(Rate, Freq, 0.05, WaveDur)
+    Pulse = GenSineWave(Rate, Freq, SBOutAmpF, WaveDur)
     
     SD.default.device = 'system'
     SD.default.samplerate = Rate
@@ -657,5 +657,5 @@ def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF):
     print('Measuring... ', end='')
     Rec = SD.playrec(Pulse, blocking=True)
     print('Done.')
-    return(Data)
+    return(Rec)
 

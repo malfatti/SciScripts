@@ -58,11 +58,11 @@ for aa in range(Repetitions):
     print(SBInAmpF[aa])
 
 # Mean
-SBInAmpFM = sum(SBInAmpF)/len(SBInAmpF)
+SBInAmpF = sum(SBInAmpF)/len(SBInAmpF)
 # SBInAmpF is the real amplitude divided by the measured amplitude
-SBInAmpFM = 1/SBInAmpFM
+SBInAmpF = 1/SBInAmpF
 
-print('SBInAmpF = ', str(SBInAmpFM))
+print('SBInAmpF = ', str(SBInAmpF))
 
 #%% Save
 Date = datetime.now()

@@ -6,34 +6,55 @@ Created on Wed Jan 18 10:28:45 2017
 @author: cerebro
 """
 #%%
-import struct
+import json
 import numpy as np
 
-def DataWrite(Data):
-    with open('numpy2.dat', 'wb') as file: file.write(Data.tobytes())
-#        for i in range(len(Data)):
-#            Data.tofile(stream)
-
-def struct_approach(Data):
-    with open('structnp.dat', 'wb') as stream:
-        for Sample in range(Data.shape[1]):
-            for Ch in range(Data.shape[0]):
-                s = struct.pack('<f', Data[Ch, Sample])
-                stream.write(s)
-
-def structread():
-    ChNo = 27
-    with open('numpy2.dat', 'rb') as stream: Raw = stream.read()
+def DataWrite(DataFile, InfoFile, Data, Info):
+    if Info['Transpose']: 
+        with open(DataFile, 'wb') as File: File.write(Data.T.tobytes())
+    else:
+        with open(DataFile, 'wb') as File: File.write(Data.tobytes())
     
-    RawData = np.fromstring(Raw, '<f')
+    Info['DataLineNo'] = Data.shape[0]
+    Info['DataColumnNo'] = Data.shape[1]
     
-    DataRead = np.zeros((ChNo, (RawData.size//ChNo)))
-    DataRead = np.array(DataRead, 'Float32')
+#    with open(FileName, 'w') as File: File.write(str(Info))
+    with open(InfoFile, 'w') as File: json.dump(Info, File)
     
-    for Ch in range(ChNo):
-        DataRead[Ch, :] = RawData[range(Ch,RawData.size,ChNo)]
+    return(None)
 
 
-Data = np.random.randn(27, 5*60*30000)
-Data = np.array(Data, 'Float32')
-# https://gist.github.com/deanmalmgren/fd1714799dc5b5643b87#file-write_profiler-py
+def DataRead(DataFile, InfoFile, ChList=[]):
+    with open(DataFile, 'rb') as File: Raw = File.read()
+    with open(InfoFile, 'r') as File: Info = json.load(File)
+    
+    RawData = np.fromstring(Raw, Info['Format'])
+    
+    if ChList:
+#        DataR = np.zeros((len(ChList), (RawData.size//Info['ChNo'])))
+        DataR = np.zeros((len(ChList), Info['DataColumnNo']))
+        DataR = np.array(DataR, Info['Format'])
+        
+        for Ind, Ch in enumerate(ChList):
+            DataR[Ind, :] = RawData[range(Ch-1,RawData.size,Info['DataLineNo'])]
+    else:
+#        Data = np.zeros((Info['ChNo'], (RawData.size//Info['ChNo'])))
+        DataR = np.zeros((Info['DataLineNo'], Info['DataColumnNo']))
+        DataR = np.array(DataR, Info['Format'])
+        
+        for Ch in range(Info['DataLineNo']):
+            DataR[Ch, :] = RawData[range(Ch,RawData.size,Info['DataLineNo'])]
+    
+    return(Data)
+
+
+FileName = 'numpy2.flat'
+Info = {'ChNo': 27,
+        'Format': '<f'}
+ChList = [1, 3, 10, 27]
+
+Data = np.random.randn(Info['ChNo'], 5*60*30000)
+Data = np.array(Data, Info['Format'])
+
+DataWrite(FileName, Data)
+DataTest = DataRead(FileName, Info, ChList)

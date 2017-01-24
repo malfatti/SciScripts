@@ -27,8 +27,17 @@ def DictWrite(DictFile, Dict):
 
 def TarWrite(TarFile, FileList):
     with tarfile.open(TarFile, 'a') as F:
+        FilesInTar = F.getnames()
+        FilesToExclude = []
+        
         for File in FileList:
-            F.add(File)
+            if File in FilesInTar:
+                FilesToExclude.append(File)
+            else:
+                F.add(File)
+        
+        if FilesToExclude:
+            
 
 
 ### Level 1 ###

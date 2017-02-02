@@ -1,12 +1,13 @@
 #!/bin/bash
 
-if [ "${1,,}" == --help ]
+if [ "${1,,}" == --help ]; then
     echo "Usage: bash ./LaTex2Doc.sh [File name w/o .tex] [rtf | txt]"
+fi
 
 if [ -d 'DocVersion' ]; then
 	echo "DocVersion Directory exists"
 	else
-		mkdir WordVersion
+		mkdir DocVersion
 		echo "DocVersion Directory created"
 fi
 

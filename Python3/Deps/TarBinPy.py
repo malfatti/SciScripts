@@ -6,6 +6,7 @@ Created on Wed Jan 18 10:28:45 2017
 @author: cerebro
 """
 #%%
+from datetime import datetime
 from glob import glob
 
 import json
@@ -27,16 +28,37 @@ def DictWrite(DictFile, Dict):
 
 def TarWrite(TarFile, FileList):
     with tarfile.open(TarFile, 'a') as F:
+        for File in FileList:
+            F.add(File)
+    
+    return(None)
+
+
+def TarWriteNew(TarFile, FileList):
+    with tarfile.open(TarFile, 'a') as F:
         FilesInTar = F.getnames()
         FilesToExclude = []
+        FilesToAdd = []
         
         for File in FileList:
-            if File in FilesInTar:
-                FilesToExclude.append(File)
-            else:
-                F.add(File)
+            if File in FilesInTar: FilesToExclude.append(File)
+            else: FilesToAdd.append(File)
+    
+    
+    if FilesToExclude:
+        Now = '_' + datetime.now().strftime("%Y%m%d%H%M%S")
         
-        if FilesToExclude:
+        with tarfile.open(TarFile + Now, 'a') as NewF:
+            with tarfile.open(TarFile, 'r') as F:
+                for File in FileList: NewF.add(File)
+                
+                for File in FilesInTar:
+                    if File not in FileList:
+                        FileExtr = F.extractfile(File)
+                        NewF.add(FileExtr)
+    else:
+        for File in FileList:
+            F.add(File)
             
 
 
@@ -136,5 +158,5 @@ Data = np.array(Data, Info['Format'])
 
 DataWrite(DataFile, TarFile, Path, Data, Info)
 
-F = tarfile.open(TarFile, 'r')
-F.getmembers()
+#F = tarfile.open(TarFile, 'r')
+#F.getmembers()

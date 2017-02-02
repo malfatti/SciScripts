@@ -246,11 +246,11 @@ def LoadGPIAS(FileName, Key=''):
 
 
 def LoadOEKwik(RecFolder, AnalogTTLs):
-    if AnalogTTLs: Raw, _, Spks, Files = Kwik.load_all_files(RecFolder)
-    else: Raw, Events, Spks, Files = Kwik.load_all_files(RecFolder)
+    if AnalogTTLs: RawRO, _, Spks, Files = Kwik.load_all_files(RecFolder)
+    else: RawRO, Events, Spks, Files = Kwik.load_all_files(RecFolder)
     
     print('Check if files are ok...')
-    if 'Raw' not in locals():
+    if 'RawRO' not in locals():
         print('.kwd file is corrupted. Skipping dataset...')
         return(None)
     
@@ -259,6 +259,17 @@ def LoadOEKwik(RecFolder, AnalogTTLs):
             print('.kwe/.kwik file is corrupted. Skipping dataset...')
             return(None)
     
+    Raw = {}
+    for Proc in RawRO.keys():
+        Raw[Proc] = {}
+        Raw[Proc]['data'] = {Rec: RawRO[Proc]['data'][Rec][:, :]
+                             for Rec in RawRO[Proc]['data'].keys()}
+        
+        Raw[Proc]['channel_bit_volts'] = RawRO[Proc]['channel_bit_volts']
+        Raw[Proc]['info'] = RawRO[Proc]['info'].copy()
+        Raw[Proc]['timestamps'] = RawRO[Proc]['timestamps'].copy()
+    
+    del(RawRO)
     print('Data from ', RecFolder, ' loaded.')
     
     if AnalogTTLs: return(Raw, Spks, Files)

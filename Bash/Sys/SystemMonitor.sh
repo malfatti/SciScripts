@@ -33,7 +33,7 @@ if [ -e $BATPath ]; then
 #            echo "Battery below $BATLow"
             Brightness=$(xbacklight)
 
-            if [ $Brightness -gt 30 ]; then
+            if [ $Brightness -gt 30.0 ]; then
                 xbacklight -set 30
             fi
             

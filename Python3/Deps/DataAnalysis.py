@@ -23,18 +23,25 @@ import h5py
 import IntanBin
 import numpy as np
 import os
-
-
-File = 'Test.int'; Folder = './'
-Raw = {}
-Raw['0'], XValues = IntanBin.IntLoad(File)
-
+from glob import glob
+from scipy import io
+from subprocess import call
 
 ## Level 0
-def BitsToVolts(Data, BitVolts):
-    for Ch in range(Data.shape[1]):
-        Data[:, Ch] = Data[:, Ch] * BitVolts[Ch]
-    return(Raw)
+def CallWaveClus(Rate, Path):
+    print('Clustering spikes...')
+    
+#    MLab = '/home/cerebro/Software/Programs/MatLabR2014a/bin/matlab'
+    MLab = '/home/malfatti/Software/Programs/MatLabR2015a/bin/matlab'
+    CmdCd = 'cd ' + Path + '; '
+    CmdCluster = 'try, par.sr=' + str(int(Rate)) + '; ' + \
+                 "Get_spikes('Files.txt', 'parallel', true, 'par', par);" + \
+                 "Files = dir('./*spikes.mat'); Files = {Files.name}; " + \
+                 "Do_clustering(Files, 'make_plots', false); end; quit"
+    call([MLab, '-r', CmdCd+CmdCluster])
+    
+    print('Done clustering.')
+    return(None)
 
 
 def CheckStimulationPattern(TTL):
@@ -46,6 +53,36 @@ def CheckStimulationPattern(TTL):
         print('square pulses stimulation')
         Threshold = ((max(TTL) - min(TTL)) / 2) + 2*(np.std(TTL))
         return(Threshold) 
+
+
+def RemapChannels(Tip, Head, Connector):
+    """
+    Get probe channels order. It doesn't matter what logic you follow to order 
+    your connector channels, but you MUST follow the same logic for your probe 
+    head.
+    
+    If the probe tip channels are put top-down or bottom-up, the resulting 
+    channel map will be ordered accordingly.
+    
+    Example:
+        CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
+        RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
+        A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+               'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+        
+        ChannelMap = RemapChannels(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
+    """
+    print('Get channel order... ', end='')
+    ChNo = len(Tip)
+    ChMap = [0]*ChNo
+    
+    for Ch in range(ChNo):
+        TipCh = Tip[Ch] # What channel should be the Ch
+        HeadCh = Head.index(TipCh) # Where Ch is in Head
+        ChMap[Ch] = Connector[HeadCh] # Channels in depth order
+    
+    print('Done.')
+    return(ChMap)
 
 
 def SepSpksPerCluster(Clusters, Ch):
@@ -124,20 +161,14 @@ def WriteUnits(Units, FileName, XValues=[]):
 
 ## Level 1
 def ClusterizeSpks(Data, Rate, Path, AnalogTTLs=False, ChannelMap=[], Override={}):
-#    print('Load DataInfo...')
-#    if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(Folder, AnalogTTLs)
-#    else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(Folder, AnalogTTLs)
-#    
-#    OEProc = GetProc(Raw, Board)[0]
-#    
-#    Path = os.getcwd() + '/' + Folder +'/SepCh/'
-    os.makedirs(Path, exist_ok=True)
-    if not ChannelMap: 
+    """ Detect and clusterize spks using WaveClus """
     
-#    Rate = Raw[OEProc]['info']['0']['sample_rate']
+    os.makedirs(Path, exist_ok=True)
     
     Clusters = {}
     for Rec in Data.keys():
+        if not ChannelMap: ChannelMap = [_ for _ in range(Data[Rec].shape[1])]
+        
         if Override != {}: 
             if 'Rec' in Override.keys():
                 Rec = Override['Rec']
@@ -150,20 +181,19 @@ def ClusterizeSpks(Data, Rate, Path, AnalogTTLs=False, ChannelMap=[], Override={
         print('Writing files for clustering... ', end='')
         FileList = []
         for Ind, Ch in enumerate(Data):
-            MatName = 'Exp' + Files[OEProc+'_kwd'][-13:-8] + '_' + \
-                      RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
+            MatName = 'Rec' + RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
             
             FileList.append(MatName)
             io.savemat(Path+MatName, {'data': Ch})
         
         TxtFile = open(Path+'Files.txt', 'w')
-        for File in FileList: TxtFile.write(File+'\n')
+        for File in FileList: TxtFile.write(File + '\n')
         TxtFile.close()
         print('Done.')
         
         CallWaveClus(Rate, Path)
         
-        ClusterList = glob(Path+'times_*'); ClusterList.sort()
+        ClusterList = glob(Path + 'times_*'); ClusterList.sort()
         ClusterList = [_ for _ in ClusterList if _[-11:-9] == RecS]
         
         Clusters[RecS] = {}
@@ -179,7 +209,7 @@ def ClusterizeSpks(Data, Rate, Path, AnalogTTLs=False, ChannelMap=[], Override={
         if Override != {}: 
             if 'Rec' in Override.keys(): break
     
-        ToDelete = glob(Path+'*')
+        ToDelete = glob(Path + '*')
         for File in ToDelete: os.remove(File)
     
     os.removedirs(Path)
@@ -295,3 +325,13 @@ def UnitsSpks(Data, Path, AnalysisFile, Override={}):
     return(None)
 
 
+
+#%% Tests
+File = 'Intan/Arch45S_153244.int'; ClusterPath = './SepCh/'
+Raw = {}
+Raw['0'] = IntanBin.IntLoad(File)[0]
+
+RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
+A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+       'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+ChannelMap = RemapChannels(A16['ProbeTip'], A16['ProbeHead'], RHAHeadstage)

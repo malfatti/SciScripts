@@ -26,6 +26,19 @@ from datetime import datetime
 from numbers import Number
 
 
+def BitsToVolts(Raw):
+    for Proc in Raw.keys():
+        for Rec in Raw[Proc]['data'].keys():
+            Raw[Proc]['data'][Rec] = np.array(Raw[Proc]['data'][Rec], 'float32')
+            for Ch in range(Raw[Proc]['data'][Rec].shape[1]):
+                Data = Raw[Proc]['data'][Rec][:, Ch]
+                BitVolts = Raw[Proc]['channel_bit_volts'][Rec][0]
+                
+                Data = Data * BitVolts
+                Raw[Proc]['data'][Rec][:, Ch] = Data[:]
+    return(Raw)
+
+
 def CheckGroup(FileName, Group):
     with h5py.File(FileName, 'r') as F:
         if Group in F.keys():
@@ -245,7 +258,7 @@ def LoadGPIAS(FileName, Key=''):
     return(GPIAS, XValues)
 
 
-def LoadOEKwik(RecFolder, AnalogTTLs):
+def LoadOEKwik(RecFolder, AnalogTTLs, Unit='uV'):
     if AnalogTTLs: RawRO, _, Spks, Files = Kwik.load_all_files(RecFolder)
     else: RawRO, Events, Spks, Files = Kwik.load_all_files(RecFolder)
     
@@ -270,6 +283,9 @@ def LoadOEKwik(RecFolder, AnalogTTLs):
         Raw[Proc]['timestamps'] = RawRO[Proc]['timestamps'].copy()
     
     del(RawRO)
+    
+    if Unit == 'uV': Raw = BitsToVolts(Raw)
+            
     print('Data from ', RecFolder, ' loaded.')
     
     if AnalogTTLs: return(Raw, Spks, Files)

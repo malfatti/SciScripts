@@ -34,8 +34,8 @@ It is very important to set the volume of the soundboard to unit level
 frequency filter is being applied.
 """
 #%% Set calibration
-Rate = 192000; Freq = 1000; WaveDur = 10
-Connections = 'IntelOut-MackieIn-MackieChOut-Speaker'
+Rate = 192000; Freq = 10000; WaveDur = 10
+Connections = 'Jack-USBPre2AuxOut-USBPre2AuxIn'
 
 import ControlSoundBoard
 from datetime import datetime
@@ -46,7 +46,7 @@ import numpy as np
 
 ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1/1.8
+SBOutAmpF = 1
 
 #%% Input
 Repetitions = 4
@@ -70,14 +70,14 @@ print('SBInAmpF = ', str(SBInAmpF))
 Date = datetime.now()
 FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
 #FileName = '20161013123915-SBAmpFs.hdf5'
-with h5py.File(FileName) as h5:
-    h5.create_group(SoundBoard)
-    h5[SoundBoard]['SBOutAmpF'] = SBOutAmpF
-    h5[SoundBoard]['SBInAmpF'] = SBInAmpF
+with h5py.File(FileName, 'w') as F:
+    F.create_group(Connections)
+    F[Connections]['SBOutAmpF'] = SBOutAmpF
+    F[Connections]['SBInAmpF'] = SBInAmpF
 
-with h5py.File(FileName) as h5:
-    a = h5[SoundBoard]['SBOutAmpF'][()]
-    b = h5[SoundBoard]['SBInAmpF'][()]
+with h5py.File(FileName, 'r') as F:
+    a = F[Connections]['SBOutAmpF'][()]
+    b = F[Connections]['SBInAmpF'][()]
 
 """
 Malfatti = '/home/malfatti/Documents/PhD/Tests/20161013174053-SBAmpFs.hdf5'

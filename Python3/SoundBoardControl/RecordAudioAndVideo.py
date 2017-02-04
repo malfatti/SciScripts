@@ -13,6 +13,7 @@ Record audio and video
 #%%
 import cv2
 import pyaudio
+#import sounddevice as SD
 import wave
 import threading
 import time
@@ -53,7 +54,19 @@ Info = {'FPS': 23,
         'Buffer': 384,
         'ChNo': 2,
         'AudioFormat': pyaudio.paInt32,
-        'AudioFile': 'Rec-' + Now + '.wav'}
+        'AudioFile': 'Rec-' + Now + '.wav',
+        'AVFile': 'AV-' + Now + '.wav'}
+
+	# Find jack PA device
+def GetPADeviceByName(PAObj, Name):
+    Index = ''
+    for Dev in range(PAObj.get_device_count()):
+        Info = PAObj.get_device_info_by_index(Dev)
+        if Info['name'] == Name: Index = Dev
+    
+    if Index == '': print(Name+' device not found.'); return(None)
+    else: return(Index)
+
 
 class VideoRecorder():
 	
@@ -127,8 +140,6 @@ class VideoRecorder():
 
 
 class AudioRecorder():
-	
-
     # Audio class based on pyAudio and Wave
     def __init__(self, Info):
         
@@ -139,11 +150,13 @@ class AudioRecorder():
         self.format = Info['AudioFormat']
         self.audio_filename = Info['AudioFile']
         self.audio = pyaudio.PyAudio()
+        self.PAIndex = GetPADeviceByName(self.audio, 'system')
         self.stream = self.audio.open(format=self.format,
                                       channels=self.channels,
                                       rate=self.rate,
                                       input=True,
-                                      frames_per_buffer = self.frames_per_buffer)
+                                      frames_per_buffer = self.frames_per_buffer,
+                                      output_device_index=self.PAIndex)
         self.audio_frames = []
 
 

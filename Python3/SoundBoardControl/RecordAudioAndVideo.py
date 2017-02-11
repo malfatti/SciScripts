@@ -12,8 +12,9 @@ Record audio and video
 """
 #%%
 import cv2
-import pyaudio
-#import sounddevice as SD
+#import pyaudio
+import numpy as np
+import sounddevice as SD
 import wave
 import threading
 import time
@@ -24,48 +25,39 @@ from datetime import datetime
 
 ########################
 ## JRF
-## VideoRecorder and AudioRecorder are two classes based on openCV and pyaudio, respectively. 
 ## By using multithreading these two classes allow to record simultaneously video and audio.
-## ffmpeg is used for muxing the two signals
-## A timer loop is used to control the frame rate of the video recording. This timer as well as
-## the final encoding rate can be adjusted according to camera capabilities
 ##
-
-########################
 ## Usage:
 ## 
-## numpy, PyAudio and Wave need to be installed
+## numpy, sounddevice and Wave need to be installed
 ## install openCV, make sure the file cv2.pyd is located in the same folder as the other libraries
-## install ffmpeg and make sure the ffmpeg .exe is in the working directory
 ##
-## 
-## start_AVrecording(filename) # function to start the recording
-## stop_AVrecording(filename)  # "" ... to stop it
+## start_AVrecording(Info) # function to start the recording
+## stop_AVrecording(Info)  # "" ... to stop it
 ##
+## Where Info is a dictionary containing sound and video settings. for example:
 ##
+## Info = {'CamIndex': 0,
+##         'VideoCodec': 'XVID',
+##         'FPS': 30,
+##         'VideoRes': (640,480),
+##         'VideoFile': 'Video.avi',
+##         'Rate': 48000,
+##         'ChNo': 2,
+##         'AudioFormat': 'float32',
+##         'AudioFile': 'Rec.wav'}
 ########################
 
-Now = datetime.now().strftime("%Y%m%d%H%M%S")
-Info = {'FPS': 23,
-        'VideoFormat': 'MJPG',
-        'Res': (1328,966),
-        'VideoFile': 'Video-' + Now + '.avi',
-        'Rate': 192000,
-        'Buffer': 384,
-        'ChNo': 2,
-        'AudioFormat': pyaudio.paInt32,
-        'AudioFile': 'Rec-' + Now + '.wav',
-        'AVFile': 'AV-' + Now + '.wav'}
 
-	# Find jack PA device
-def GetPADeviceByName(PAObj, Name):
-    Index = ''
-    for Dev in range(PAObj.get_device_count()):
-        Info = PAObj.get_device_info_by_index(Dev)
-        if Info['name'] == Name: Index = Dev
-    
-    if Index == '': print(Name+' device not found.'); return(None)
-    else: return(Index)
+## Find jack PA device
+#def GetPADeviceByName(PAObj, Name):
+#    Index = ''
+#    for Dev in range(PAObj.get_device_count()):
+#        Info = PAObj.get_device_info_by_index(Dev)
+#        if Info['name'] == Name: Index = Dev
+#    
+#    if Index == '': print(Name+' device not found.'); return(None)
+#    else: return(Index)
 
 
 class VideoRecorder():
@@ -74,15 +66,15 @@ class VideoRecorder():
 	def __init__(self, Info):
 		
 		self.open = True
-		self.device_index = 0
-		self.fps = Info['FPS']               # fps should be the minimum constant rate at which the camera can
-		self.fourcc = Info['VideoFormat']       # capture images (with no decrease in speed over time; testing is required)
-		self.frameSize = Info['Res'] # video formats and sizes also depend and vary according to the camera used
+		self.device_index = Info['CamIndex']
+		self.fps = Info['FPS']                     # fps should be the minimum constant rate at which the camera can
+		self.fourcc = Info['VideoCodec']           # capture images (with no decrease in speed over time; testing is required)
+		self.frameSize = Info['VideoRes']          # video formats and sizes also depend and vary according to the camera used
 		self.video_filename = Info['VideoFile']
 		self.video_cap = cv2.VideoCapture(self.device_index)
 		self.video_writer = cv2.VideoWriter_fourcc(*self.fourcc)
 		self.video_out = cv2.VideoWriter(self.video_filename, self.video_writer, self.fps, self.frameSize)
-		self.frame_counts = 1
+		self.frame_counts = 0
 		self.start_time = time.time()
 
 	
@@ -108,8 +100,8 @@ class VideoRecorder():
 					# Uncomment the following three lines to make the video to be
 					# displayed to screen while recording
 					
-					gray = cv2.cvtColor(video_frame, cv2.COLOR_BGR2GRAY)
-					cv2.imshow('video_frame', gray)
+#					gray = cv2.cvtColor(video_frame, cv2.COLOR_BGR2GRAY)
+					cv2.imshow('video_frame', video_frame)
 					cv2.waitKey(1)
 			else:
 				break
@@ -142,31 +134,37 @@ class VideoRecorder():
 class AudioRecorder():
     # Audio class based on pyAudio and Wave
     def __init__(self, Info):
-        
         self.open = True
         self.rate = Info['Rate']
-        self.frames_per_buffer = Info['Buffer']
+        self.duration = 1/Info['FPS']
         self.channels = Info['ChNo']
         self.format = Info['AudioFormat']
         self.audio_filename = Info['AudioFile']
-        self.audio = pyaudio.PyAudio()
-        self.PAIndex = GetPADeviceByName(self.audio, 'system')
-        self.stream = self.audio.open(format=self.format,
-                                      channels=self.channels,
-                                      rate=self.rate,
-                                      input=True,
-                                      frames_per_buffer = self.frames_per_buffer,
-                                      output_device_index=self.PAIndex)
-        self.audio_frames = []
+        
+        SD.default.device = 'system'
+        SD.default.samplerate = self.rate
+        SD.default.channels = self.channels
+        SD.default.blocksize = 0
+        
+#        self.audio = pyaudio.PyAudio()
+#        self.PAIndex = GetPADeviceByName(self.audio, 'system')
+#        self.stream = self.audio.open(format=self.format,
+#                                      channels=self.channels,
+#                                      rate=self.rate,
+#                                      input=True,
+#                                      frames_per_buffer = self.frames_per_buffer,
+#                                      output_device_index=self.PAIndex)
+        self.stream = SD.InputStream()
+        self.audio_frames = np.zeros((1, 2), dtype=self.format)
 
 
     # Audio starts being recorded
     def record(self):
         
-        self.stream.start_stream()
+        self.stream.start()
         while(self.open == True):
-            data = self.stream.read(self.frames_per_buffer) 
-            self.audio_frames.append(data)
+            data = self.stream.read(self.duration * self.rate) 
+            self.audio_frames = np.concatenate((self.audio_frames, data))
             if self.open==False:
                 break
         
@@ -176,13 +174,14 @@ class AudioRecorder():
        
         if self.open==True:
             self.open = False
-            self.stream.stop_stream()
+            self.stream.stop()
             self.stream.close()
-            self.audio.terminate()
+#            self.audio.terminate()
                
             waveFile = wave.open(self.audio_filename, 'wb')
             waveFile.setnchannels(self.channels)
-            waveFile.setsampwidth(self.audio.get_sample_size(self.format))
+#            waveFile.setsampwidth(self.audio.get_sample_size(self.format))
+            waveFile.setsampwidth(4)
             waveFile.setframerate(self.rate)
             waveFile.writeframes(b''.join(self.audio_frames))
             waveFile.close()
@@ -266,27 +265,7 @@ def stop_AVrecording(Info):
 #
 #		print ".."
 
-
-## Required and wanted processing of final files
-#def file_manager(filename):
-#
-#	local_path = os.getcwd()
-#
-#	if os.path.exists(str(local_path) + "/temp_audio.wav"):
-#		os.remove(str(local_path) + "/temp_audio.wav")
-#	
-#	if os.path.exists(str(local_path) + "/temp_video.avi"):
-#		os.remove(str(local_path) + "/temp_video.avi")
-#
-#	if os.path.exists(str(local_path) + "/temp_video2.avi"):
-#		os.remove(str(local_path) + "/temp_video2.avi")
-#
-#	if os.path.exists(str(local_path) + "/" + filename + ".avi"):
-#		os.remove(str(local_path) + "/" + filename + ".avi")
-#	
-#	
-#
-#	
+	
 #if __name__== "__main__":
 #	
 #	filename = "Default_user"	
@@ -301,3 +280,15 @@ def stop_AVrecording(Info):
 #
 
 
+Now = datetime.now().strftime("%Y%m%d%H%M%S")
+Info = {'CamIndex': 0,
+        'VideoCodec': 'XVID',
+        'FPS': 30,
+        'VideoRes': (640,480),
+        'VideoFile': 'Video-' + Now + '.avi',
+        'Rate': 192000,
+        'Buffer': 384,
+        'ChNo': 2,
+        'AudioFormat': 'float32',
+        'AudioFile': 'Rec-' + Now + '.wav',
+        'AVFile': 'AV-' + Now + '.wav'}

@@ -19,7 +19,7 @@ This is a script that defines functions allowing the use of a computer's sound
 board as an analog I/O board.
 
 """
-
+#%%
 import array
 import Hdf5F
 import KwikAnalysis
@@ -463,7 +463,7 @@ def MicrOscilloscope1(SoundBoard, Rate, YLim, FreqBand, MicSens_VPa, FramesPerBu
                          rate=Rate,
                          input=True,
                          output=False,
-                         #input_device_index=18,
+                         input_device_index=18,
                          frames_per_buffer=FramesPerBuf)
                          #stream_callback=InCallBack)
     
@@ -526,6 +526,8 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
     Window = 200
     Interval = 30
     SoundQueue = Queue()
+    XLim=[0, 2000]
+    YLim=[-0.05, 0.05]
     
 #    SD.default.device = 'system'
 #    SD.default.samplerate = Rate

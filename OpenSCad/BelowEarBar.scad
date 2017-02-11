@@ -1,4 +1,4 @@
-BarWid = 5; BarLen = 45; BarFit = 5; CircleRes = 100;
+BarWid = 5; BarLen = 45; BarFit = 5; CircleRes = 50;
 
 module RoundHolder() {
     translate([0, 0, BarWid/2]) rotate([90, 0, 0]) difference() {
@@ -107,16 +107,16 @@ module Tip() {
 
 module RoundBar() {
     union() {
-        rotate([90, 0, 180]) translate([0, 1, 10]) Arc();
-        rotate([90, 0, 180]) translate([-0.5, 1, 10]) RoundJoint();
+        rotate([0, 0, 180]) translate([0, -20, 0]) Arc();
+        rotate([0, 0, 180]) translate([-0.5, -20, 0]) RoundJoint();
         translate([0, -BarLen/2, 0]) RoundHolder();
     }
 }
 
 module SqBar() {
     union() {
-        rotate([90, 0, 180]) translate([0, 1, 10]) Arc();
-        rotate([90, 0, 180]) translate([-0.5, 1, 10]) SqJoint();
+        rotate([0, 0, 180]) translate([0, -20, 0]) Arc();
+        rotate([0, 0, 180]) translate([-0.5, -20, 0]) SqJoint();
         translate([0, -BarLen/2, 0]) SqHolder();
     }
 }

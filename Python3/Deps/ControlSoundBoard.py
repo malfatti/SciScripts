@@ -33,8 +33,8 @@ from scipy import signal
 import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
-#SBAmpFsFile = '/home/cerebro/Malfatti/Test/20160418173048-SBAmpFs.hdf5'
-SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20161013123915-SBAmpFs.hdf5'
+SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
+#SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20161013123915-SBAmpFs.hdf5'
 
 ## Lower-level functions
 def dBToAmpF(Intensities, CalibrationFile):
@@ -126,10 +126,26 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
 #    TTLPulse = [TTLVal] * round(Rate*PulseDur) + \
 #               [TTLVal*-1] * round(Rate*PulseDur)
     TTLPulse[-1] = 0
-
-    TTLPrePause = np.zeros(round(PrePauseDur * Rate), dtype=np.float32)
-    TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
+    
+    if PrePauseDur == 0:
+        if PostPauseDur == 0:
+            TTLUnit = TTLPulse
+        else:
+            TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
                             dtype=np.float32)
+            TTLUnit = np.concatenate([TTLPulse, TTLPostPause])
+    else:
+        TTLPrePause = np.zeros(round(PrePauseDur * Rate), dtype=np.float32)
+        if PostPauseDur == 0:
+            TTLUnit = np.concatenate([TTLPrePause, TTLPulse])
+        else:
+            TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
+                            dtype=np.float32)
+            TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
+            
+#    TTLPrePause = np.zeros(round(PrePauseDur * Rate), dtype=np.float32)
+#    TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
+#                            dtype=np.float32)
     
 #    if SoundPulseDur < 0.01:
 #        SoundTTLPulse = [round(SoundTTLVal/SBOutAmpF, 3)] * round(SoundPulseDur * Rate)
@@ -138,7 +154,7 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
 #        Border = [round(SoundTTLVal/SBOutAmpF, 3)] * round(0.005 * Rate)
 #        SoundTTLPulse = Border + Middle + Border
     
-    TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
+#    TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
     TTLUnit = (TTLUnit * TTLAmpF) * SBOutAmpF
     
     return(TTLUnit)
@@ -211,7 +227,7 @@ def GenPause(Rate, PauseBetweenStimBlocksDur):
 ## Higher-level functions
 def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
               TTLAmpF, SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, 
-              SoundPauseBetweenStimBlocksDur=0):
+              SoundPauseBetweenStimBlocksDur=0, TTLs=True):
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
@@ -225,8 +241,12 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency,
     SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
                                NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
                                SoundPostPauseDur)
-    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, SoundBoard, 
-                          SBOutAmpF, SoundPrePauseDur, SoundPostPauseDur)
+    if TTLs:
+        SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
+                              SoundBoard, SBOutAmpF, SoundPrePauseDur, 
+                              SoundPostPauseDur)
+    else:
+        SoundTTLUnit = np.zeros((SoundPulse.size))
     
     Sound = {}
     for FKey in SoundUnit:

@@ -35,7 +35,7 @@ frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 192000; Freq = 10000; WaveDur = 10
-Connections = 'Jack-USBPre2AuxOut-USBPre2AuxIn'
+Connections = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
 import ControlSoundBoard
 from datetime import datetime
@@ -46,7 +46,7 @@ import numpy as np
 
 ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1
+SBOutAmpF = 1/2.15
 
 #%% Input
 Repetitions = 4
@@ -66,7 +66,6 @@ print('SBInAmpF = ', str(SBInAmpF))
 
 #%% Save
 
-
 Date = datetime.now()
 FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
 #FileName = '20161013123915-SBAmpFs.hdf5'
@@ -81,5 +80,5 @@ with h5py.File(FileName, 'r') as F:
 
 """
 Malfatti = '/home/malfatti/Documents/PhD/Tests/20161013174053-SBAmpFs.hdf5'
-Cerebro = '/home/cerebro/Malfatti/Test/20160418173048-SBAmpFs.hdf5'
+Cerebro = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
 """

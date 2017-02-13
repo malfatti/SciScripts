@@ -24,9 +24,10 @@ equipment.
 
 #%% Set parameters of the experiment
 
-Rate = 128000
+Rate = 192000
 # Use one that was used in SoundBoardCalibration.py
-SoundBoard = 'USBPre2_oAux-iAux'
+SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
+SoundBoard = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'UnitRec'
 
 ## Fill all durations in SECONDS! If
@@ -38,8 +39,9 @@ SoundPulseDur = 2
 # Amount of pulses per block
 SoundPulseNo = 1
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-                  [14000, 16000], [16000, 18000]]
+NoiseFrequency = [[8000, 10000], [12000, 14000]]
+#NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
+#                  [14000, 16000], [16000, 18000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
@@ -50,6 +52,7 @@ MicSens_dB = -47.46
 #import array
 import ControlSoundBoard
 import h5py
+import Hdf5F
 import math
 import numpy as np
 import os
@@ -59,16 +62,20 @@ import time
 from datetime import datetime
 from scipy import signal
 
-def FRange(Start, End, Step):
-    Range = [round(x/(1/Step), 5) 
-             for x in range(round(Start/Step), round(End/Step), -1)]
-    return(Range)
+SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
+SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
 
-#SoundAmpF = [1, 0.5, 0.25, 0]
-SoundAmpF = FRange(2.0, 1.0, 0.1) + FRange(1.0, 0.4, 0.05) + \
-            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
-            FRange(0.001, 0, 0.00002) + [0.0]
+SoundAmpF = [2, 1, 0.5, 0.25, 0]
+#SoundAmpF = np.hstack((
+#                np.arange(2.0, 1.0, -0.1), np.arange(1.0, 0.4, -0.05),
+#                np.arange(0.4, 0.15, -0.01), np.arange(0.15, 0.03, -0.005),
+#                np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
+#                np.arange(0.001, 0, -0.00002), np.array(0.0)
+#                ))
+#SoundAmpF = FRange(2.0, 1.0, 0.1) + FRange(1.0, 0.4, 0.05) + \
+#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
+#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
+#            FRange(0.001, 0, 0.00002) + [0.0]
 
 ## Prepare dict w/ experimental setup
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -81,8 +88,11 @@ DataInfo = dict((Name, eval(Name))
                              'SoundBoard', 'Setup', 'MicSens_dB', 'Folder'])
 
 # Prepare sound pulses
+Freqs = [str(Freq[0]) + '-' + str(Freq[1]) for Freq in NoiseFrequency]
+SoundAmpF = {str(Freq): SoundAmpF for Freq in Freqs}
 Sound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
-                                    NoiseFrequency, TTLAmpF, SoundBoard)[0]
+                                    NoiseFrequency, TTLAmpF, SoundBoard, 
+                                    TTLs=False)[0]
 
 # Preallocate dict for recordings
 SoundRec = {}
@@ -95,7 +105,7 @@ SD.default.samplerate = Rate
 SD.default.channels = 2
 
 ## Run!
-FullTime = (len(SoundAmpF)*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
+FullTime = (len(SoundAmpF['8000-10000'])*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
 input('Press enter to start sound measurement.')
 print('Full test will take', str(round(FullTime, 2)), 'min to run.')
 print('Current time: ', datetime.now().strftime("%H:%M:%S"))
@@ -116,7 +126,7 @@ time.sleep(1)
 for FKey in Sound:
     for AKey in Sound[FKey]:
         for Pulse in range(SoundPulseNo):
-            SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey]); SD.wait()
+            SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey].T, blocking=True)#; SD.wait()
 
 print('Done playing/recording. Saving data...')
 
@@ -168,14 +178,14 @@ for FKey in SoundRec:
 #        RecordingData[Freq][AmpF] = RecordingData[Freq][AmpF][
 #                                                        SliceStart:SliceEnd
 #                                                        ]
-        SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * DataInfo['SBInAmpF']
+        SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * SBInAmpF
 #        RecordingData[Freq][AmpF] = [_/DataInfo['SBInAmpF']
 #                                     for _ in RecordingData[Freq][AmpF]]
         
         Window = signal.hanning(len(SoundRec[FKey][AKey])//
                                     (DataInfo['Rate']/1000))
         F, PxxSp = signal.welch(SoundRec[FKey][AKey], DataInfo['Rate'], 
-                                Window, nperseg=len(Window), noverlap=0, 
+                                Window, noverlap=0, 
                                 scaling='density')
         
         FreqBand = [int(_) for _ in FKey.split('-')]

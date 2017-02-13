@@ -35,7 +35,7 @@ own settings.
 """
 #%% Set Parameters
 AnimalName = 'TestSetup01'
-Rate = 128000
+Rate = 192000
 
 CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
                   '20160315202456-SoundMeasurement/SoundIntensity'

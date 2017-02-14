@@ -33,8 +33,8 @@ from scipy import signal
 import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
-#SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
-SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
+SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
+#SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
 
 ## Lower-level functions
 def dBToAmpF(Intensities, CalibrationFile):
@@ -650,7 +650,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
     SD.default.samplerate = Rate
     SD.default.channels = 1
     SD.default.blocksize = 0    
-    SD.default.latency = 'low'
+#    SD.default.latency = 'low'
     
 #    Stream = SD.OutputStream()
 #    
@@ -660,7 +660,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
 #            Stream.write(Pulse)
 #   
     print('Playing...', end='')
-    SD.play(Pulse, blocking=True);
+    SD.play(Pulse, blocking=True, mapping=(2));
     print('Done.')
     
     return(None)

@@ -26,7 +26,8 @@ equipment.
 
 Rate = 192000
 # Use one that was used in SoundBoardCalibration.py
-SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
+#SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
+SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
 SoundBoard = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'UnitRec'
 
@@ -126,7 +127,7 @@ time.sleep(1)
 for FKey in Sound:
     for AKey in Sound[FKey]:
         for Pulse in range(SoundPulseNo):
-            SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey].T, blocking=True)#; SD.wait()
+            SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey].T, blocking=True)
 
 print('Done playing/recording. Saving data...')
 
@@ -149,17 +150,18 @@ print('Data saved.')
 #%% Analysis
 # If needed:
 #import array
-import datetime
+#import datetime
 #import glob
-import h5py
-import Hdf5F
-import KwikAnalysis
-import math
-import numpy as np
-import pandas
-from scipy import signal
-DataInfo = Hdf5F.LoadSoundMeasurement(FileName, 'DataInfo')
-SoundRec = Hdf5F.LoadSoundMeasurement(FileName, 'SoundRec')
+#import h5py
+#import Hdf5F
+#import KwikAnalysis
+#import math
+#import numpy as np
+#import pandas
+#from scipy import signal
+#DataInfo = Hdf5F.LoadSoundMeasurement(FileName, 'DataInfo')
+#SoundRec = Hdf5F.LoadSoundMeasurement(FileName, 'SoundRec')
+#SBInAmpF = Hdf5F.SoundCalibration(DataInfo['SBAmpFsFile'], SoundBoard, 'SBInAmpF')
 
 MicSens_VPa = 10**(DataInfo['MicSens_dB']/20)
 

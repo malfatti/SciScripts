@@ -77,10 +77,6 @@ SoundAmpF = np.hstack((
                 np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
                 np.arange(0.001, 0, -0.00002), np.array(0.0)
                 ))
-#SoundAmpF = FRange(2.0, 1.0, 0.1) + FRange(1.0, 0.4, 0.05) + \
-#            FRange(0.4, 0.15, 0.01) + FRange(0.15, 0.03, 0.005) + \
-#            FRange(0.03, 0.01, 0.0005) + FRange(0.01, 0.001, 0.0001) + \
-#            FRange(0.001, 0, 0.00002) + [0.0]
 
 ## Prepare dict w/ experimental setup
 Date = datetime.now().strftime("%Y%m%d%H%M%S")

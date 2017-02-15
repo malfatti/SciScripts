@@ -25,7 +25,6 @@ import Hdf5F
 import KwikAnalysis
 import math
 import numpy as np
-import pyaudio
 from queue import Queue, Empty
 import random
 import sounddevice as SD
@@ -468,11 +467,19 @@ def PlotGPIAS(FileList):
 
 
 def MicrOscilloscope1(SoundBoard, Rate, YLim, FreqBand, MicSens_VPa, FramesPerBuf=512, Rec=False):
+    import array
+    import Hdf5F
+    import math
+    import numpy as np
+    import pyaudio
+    from scipy import signal
+    
     Params = {'backend': 'Qt5Agg'}
     from matplotlib import rcParams; rcParams.update(Params)
     import matplotlib.animation as animation
     from matplotlib import pyplot as plt
     
+    SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
     SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
                                               'SBInAmpF')
     
@@ -483,7 +490,7 @@ def MicrOscilloscope1(SoundBoard, Rate, YLim, FreqBand, MicSens_VPa, FramesPerBu
                          rate=Rate,
                          input=True,
                          output=False,
-                         input_device_index=18,
+                         input_device_index=17,
                          frames_per_buffer=FramesPerBuf)
                          #stream_callback=InCallBack)
     
@@ -536,11 +543,11 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
     import sounddevice as SD
     from queue import Queue, Empty
     import numpy as np
-    SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
+    SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
 
-    SoundBoard = 'Intel_oAnalog-iAnalog'
-    Device = 'default'
-    Rate = 192000
+#    SoundBoard = 'Intel_oAnalog-iAnalog'
+#    Device = 'system'
+#    Rate = 192000
     Channels = [0]
     DownSample = 10
     Window = 200
@@ -549,8 +556,8 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
     XLim=[0, 2000]
     YLim=[-0.05, 0.05]
     
-#    SD.default.device = 'system'
-#    SD.default.samplerate = Rate
+    SD.default.device = 'system'
+    SD.default.samplerate = Rate
 #    SD.default.channels = 2
     
     def audio_callback(indata, outdata, frames, time, status):
@@ -623,8 +630,8 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
     
 #    SD.default.
     
-    Stream = SD.Stream(device=Device, channels=max(Channels)+1, blocksize=0, samplerate=Rate, callback=audio_callback, never_drop_input=True)
-    Anim = FuncAnimation(Fig, PltUp, interval=Interval, blit=True)
+    Stream = SD.Stream(channels=max(Channels)+1, blocksize=0, callback=audio_callback, never_drop_input=True)
+    Anim = FuncAnimation(Fig, PltUp, interval=Interval, blit=False)
     
     with Stream:
         plt.show()

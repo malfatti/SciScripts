@@ -20,15 +20,14 @@
 
 ## Set experiment details
 
-ABRCh = [10]         # [RightChannel, LeftChannel], if order matters
-ABRTTLCh = 17            # TTL ch for ABR
+ABRCh = [13]         # [RightChannel, LeftChannel], if order matters
+ABRTTLCh = 22            # TTL ch for ABR
 ABRTimeBeforeTTL = 3    # in ms
-ABRTimeAfterTTL = 9    # in ms
+ABRTimeAfterTTL = 12    # in ms
 FilterFreq = [300, 3000]         # frequency for filter
 FilterOrder = 5         # butter order
 AnalogTTLs = True
-StimType = ['Sound_NaCl', 'Sound_CNO']
-#StimType = ['Sound']
+StimType = ['Sound']
 Board = 'OE'
 
 #==========#==========#==========#==========#

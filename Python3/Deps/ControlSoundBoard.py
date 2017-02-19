@@ -39,7 +39,7 @@ SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
 def dBToAmpF(Intensities, CalibrationFile):
     print('Converting dB to AmpF...')
     SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, 
-                                                    'SoundIntensity')
+                                                'SoundIntensity')
     
     SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
                                 key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
@@ -230,8 +230,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency,
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
-    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
-                                               'SBOutAmpF')
+    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
     
     SoundPulse = GenNoise(Rate, SoundPulseDur)
     print('   ', end='')

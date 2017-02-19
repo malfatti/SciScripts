@@ -22,20 +22,20 @@ sent to the left channel and the sound pulses will be sent to the right
 channel. 
 """
 #%% Set Parameters
-AnimalName = 'LongEvansTest01'
+AnimalName = 'EarBarTest_02'
 Rate = 192000
 BaudRate = 38400
 
-#CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
+CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
+                  'UnitRec-20170215112151-SoundMeasurement/' + \
+                  'UnitRec-20170215112151-SoundMeasurement.hdf5'
+#CalibrationFile = '/home/malfatti/Documents/PhD/Tests/' + \
 #                  '20160419093139-SoundMeasurement/' + \
 #                  '20160419093139-SoundMeasurement.hdf5'
-CalibrationFile = '/home/malfatti/Documents/PhD/Tests/' + \
-                  '20160419093139-SoundMeasurement/' + \
-                  '20160419093139-SoundMeasurement.hdf5'
 
 # Sound board used
 #SoundBoard = 'USBPre2_oAux-iAux'
-SoundBoard = 'Intel_oAnalog-iAnalog'
+SoundBoard = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 1
@@ -46,9 +46,9 @@ TTLAmpF = 1
 # Silence before pulse
 SoundPrePauseDur = 0.004
 # Pulse duration
-SoundPulseDur = 0.005
+SoundPulseDur = 0.003
 # Silence after pulse
-SoundPostPauseDur = 0.091
+SoundPostPauseDur = 0.093
 # Amount of pulses per block
 SoundPulseNo = 529
 # Number of blocks
@@ -64,7 +64,7 @@ Intensities = [80, 70, 60, 50, 40]
 # just run the cell once and then list(SoundIntensity).
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
                   [12000, 14000], [14000, 16000]]
-#NoiseFrequency = [[20000, 30000], [40000, 70000]]
+#NoiseFrequency = [[8000, 10000], [12000, 14000]]
 
 ## Laser
 # Silence before pulse
@@ -110,11 +110,10 @@ DataInfo = dict((Name, eval(Name))
 Hdf5F.WriteDict(DataInfo, '/DataInfo', FileName)
 Hdf5F.WriteDict(SoundAmpF, '/DataInfo/SoundAmpF', FileName)
 
-#Arduino = ControlArduino.CreateObj(BaudRate)
+Arduino = ControlArduino.CreateObj(BaudRate)
 
 
 #%% Prepare sound stimulation
-
 Sound, SoundPauseBetweenStimBlocks = ControlSoundBoard.SoundStim(
                                              Rate, SoundPulseDur, SoundAmpF, 
                                              NoiseFrequency, TTLAmpF, 
@@ -149,7 +148,7 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 
 #%% Run sound
-DVCoord = '3000'
+DVCoord = '4220'
 #Freq = 4
 #Freq = int(Freq)
 
@@ -180,12 +179,17 @@ while True:
     
     AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
     for AmpF, AKey in enumerate(AKeys):
-        print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
+#        SS = Sound[FKey][AKey].T
+#        for Pulse in range(SoundPulseNo-1):
+#            SS = np.concatenate((SS, Sound[FKey][AKey].T))
+        SS = np.concatenate([Sound[FKey][AKey].T for _ in range(SoundPulseNo)])
         
-#        Arduino.write(b'P')
-        SD.play(Sound[FKey][AKey]); SD.wait()
-#        Arduino.write(b'P')
-        SD.play(SoundPauseBetweenStimBlocks); SD.wait()
+        print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
+        Arduino.write(b'P')
+        SD.play(SS, blocking=True)
+        Arduino.write(b'P')
+        SD.play(SoundPauseBetweenStimBlocks.T, blocking=True)
+        del(SS)
     
     Hdf5F.WriteExpInfo('Sound', DVCoord, FKey, FileName)
     print('Played Freq', FKey, 'at', DVCoord, 'µm DV')

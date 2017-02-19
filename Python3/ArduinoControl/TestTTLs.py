@@ -52,7 +52,7 @@ Stimulation = p.open(format=pyaudio.paFloat32,
 Arduino = ControlArduino.CreateObj(38400)
 
 #%% Test TTL connections
-for _ in range(10):
+while True:
     Arduino.write(b'A')
     time.sleep(0.08)
     Arduino.write(b'B')

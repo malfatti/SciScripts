@@ -25,23 +25,9 @@ from datetime import datetime
 from glob import glob
 from multiprocessing import Process
 from scipy import io, signal
-from subprocess import call
 
 
-## Lower-level functions
-def CallWaveClus(Rate, Path):
-    print('Clustering spikes...')
-    
-    MLab = '/home/malfatti/Software/Programs/MatLabR2015a/bin/matlab'
-    CmdCd = 'cd ' + Path + '; '
-    CmdCluster = 'try, SampleRate='+str(int(Rate))+'; Get_spikes;' +\
-                 'Do_clustering(SampleRate); end; quit'
-    call([MLab, '-r', CmdCd+CmdCluster])
-    
-    print('Done clustering.')
-    return(None)
-
-
+## Level 0
 def GetProc(Raw, Board):
     print('Get proc no. for', Board, 'board... ', end='')
     ProcChs = {Proc: len(Raw[Proc]['data']['0'][1,:]) 
@@ -59,52 +45,6 @@ def GetProc(Raw, Board):
     
     print('Done.')
     return(OEProc, RHAProc, Proc)
-
-
-def GetProbeChOrder(ProbeTip, ProbeHead, Connector):
-    """
-    Get probe channels order. It doesn't matter what logic you follow to order 
-    your connector channels, but you MUST follow the same logic for your probe 
-    head.
-    
-    I the probe tip channels top-down or bottom-up, the resulting 
-    channel map will be ordered accordingly.
-    
-    Example:
-        CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
-        RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
-        A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-               'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
-        
-        ChannelMap = GetProbeChOrder(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
-    """
-    print('Get probe channel order... ', end='')
-    ChNo = len(ProbeTip)
-    ChMap = [0]*ChNo
-    
-    for Ch in range(ChNo):
-        TipCh = ProbeTip[Ch] # What channel should be the Ch
-        HeadCh = ProbeHead.index(TipCh) # Where Ch is in ProbeHead
-        ChMap[Ch] = Connector[HeadCh] # Channels in depth order
-    
-    print('Done.')
-    return(ChMap)
-
-
-def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
-    if Type not in ['bandpass', 'lowpass', 'highpass']:
-        print("Choose 'bandpass', 'lowpass' or 'highpass'.")
-    
-    elif len(Frequency) not in [1, 2]:
-        print('Frequency must have 2 elements for bandpass; or 1 element for \
-        lowpass or highpass.')
-    
-    else:
-        passband = [_/(Rate/2) for _ in Frequency]
-        f2, f1 = signal.butter(FilterOrder, passband, Type)
-        Signal = signal.filtfilt(f2, f1, Signal, padtype='odd', padlen=0)
-        
-        return(Signal)
 
 
 def GetRecKeys(Raw, Events, AnalogTTLs):
@@ -134,59 +74,6 @@ def GetRecKeys(Raw, Events, AnalogTTLs):
         else: EventRec = Events['TTLs']['recording']; return(Raw, EventRec)
 
 
-def GetTTLInfo(Events, EventRec, TTLCh):
-    print('Get TTL data...')
-    EventID = Events['TTLs']['user_data']['eventID']
-    EventCh = Events['TTLs']['user_data']['event_channels']
-    EventSample = Events['TTLs']['time_samples']
-
-#    TTLChs = np.nonzero(np.bincount(EventCh))[0]
-    TTLRecs = np.nonzero(np.bincount(EventRec))[0]
-    TTLRecs = ["{0:02d}".format(_) for _ in TTLRecs]
-    TTLsPerRec = {Rec: [EventSample[_] for _ in range(len(EventRec)) 
-                         if EventRec[_] == int(Rec)
-                         and EventCh[_] == TTLCh-1 
-                         and EventID[_] == 1]
-                  for Rec in TTLRecs}
-#    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], TTLCh-1)
-    
-    return(TTLsPerRec)
-
-
-    
-
-def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=0, Proc='', TTLsPerRec=[], 
-                       Rate=[]):
-    print('Get TTL timestamps... ', end='')
-    if AnalogTTLs:
-        TTLCh = Raw[Proc]['data'][Rec][:, ChTTL-1]
-        Threshold = np.mean(TTLCh) + 2*(np.std(TTLCh))
-        TTLs = []
-        for _ in range(1, len(TTLCh)):
-            if TTLCh[_] > Threshold:
-                if TTLCh[_-1] < Threshold: TTLs.append(_)
-        
-        print('Done.')
-        return(TTLs)
-    else:
-#        TTLNo = [0]
-#        for _ in range(1, len(TTLsPerRec)+1):
-#            TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
-#        TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
-#        
-#        if Rec == 0:
-#            sTTLNo = 0
-#        else:
-#            sTTLNo = TTLNo[Rec] + 1
-#        
-#        return(TTLNo, sTTLNo)
-        RawTime = [_*Rate for _ in Raw['timestamps'][int(Rec)]]
-        TTLs = TTLsPerRec[Rec]
-        
-        print('Done.')
-        return(RawTime, TTLs)
-
-
 def RemoveDateFromFolderName(Type):
     RenameFolders = input('Rename folders in' + Type + '/* (BE CAREFUL)? [y/N] ')
     if RenameFolders in ['y', 'Y', 'yes', 'Yes', 'YES']:
@@ -199,102 +86,6 @@ def RemoveDateFromFolderName(Type):
         del(RenameFolders, DirList, FolderName, NewFolderName)    
     
     return(None)
-
-
-def SepSpksPerCluster(Clusters, Ch):
-    Classes = np.unique(Clusters['ClusterClass'])
-    Dict = {}                    
-#    Dict['Spks'] = [[] for _ in range(len(Classes))]
-    Dict['Spks'] = {}
-    
-    print(Ch+':', str(len(Classes)), 'clusters:')
-    for Class in Classes:
-        ClassIndex = Clusters['ClusterClass'] == Class
-        
-        SpkNo = len(Clusters['Spikes'][ClassIndex,:])
-        if not SpkNo: continue
-        
-        Class = "{0:02d}".format(int(Class))
-        Dict['Spks'][Class] =  Clusters['Spikes'][ClassIndex,:][:]
-    
-        print('    Class', Class, '-', str(SpkNo), 'spikes.')
-    
-    if len(Dict): return(Dict)
-    else: return({})
-
-
-def SetPlot(Backend='Qt5Agg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
-            Plot=False, Axes=False):
-    if Params:
-        print('Set plot parameters...')
-        Params = {'backend': Backend,
-                  'text.usetex': True, 'text.latex.unicode': True,
-    #              'text.latex.preamble': '\\usepackage{siunitx}',
-                  
-                  'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
-                  'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
-                  'xtick.labelsize': 'small', 'xtick.direction': 'out',
-                  'ytick.labelsize': 'small', 'ytick.direction': 'out',
-                  'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
-                  'figure.titlesize': 'large', 'figure.titleweight': 'normal',
-                  
-                  'image.cmap': 'cubehelix', 'savefig.transparent': True,
-                  'svg.fonttype': 'none'}
-        return(Params)
-    
-    elif Plot:
-        print('Set plot figure...')
-        FigObj.suptitle(FigTitle); FigObj.tight_layout(); 
-        FigObj.subplots_adjust(top=0.925)
-    
-    elif Axes:
-        print('Set plot axes...')
-        AxesObj.spines['right'].set_visible(False)
-        AxesObj.spines['top'].set_visible(False)
-        AxesObj.yaxis.set_ticks_position('left')
-        AxesObj.xaxis.set_ticks_position('bottom')
-        AxesObj.locator_params(tight=True)
-    
-    else: print("'Params', 'Plot' or 'Axes' must be True.")
-    
-    return(None)
-
-
-def FixTTLs(Array, TTLsToFix):
-    for TTL in TTLsToFix:
-        nInd = np.random.randint(1, 100)
-        while nInd == TTL: nInd = np.random.randint(0, 100)
-        
-        print('TTL', str(TTL), 'was replaced by', str(nInd))
-        Array[TTL] = Array[nInd]
-    
-    return(Array)
-
-
-def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore, 
-              NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime=[]):
-    print('Slicing data around TTL...')
-    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
-    TTLsToFix = []
-    
-    for TTL in range(len(TTLs)):
-        if AnalogTTLs: TTLLoc = int(TTLs[TTL])
-        else: TTLLoc = int(RawTime.index(TTLs[TTL]))#)/Rate)
-        
-        Start = TTLLoc-NoOfSamplesBefore
-        End = TTLLoc+NoOfSamplesAfter
-        
-        if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
-        
-        Array[TTL] = Data[Proc]['data'][Rec][Start:End, DataCh[0]-1] * \
-                     Data[Proc]['channel_bit_volts'][Rec][DataCh[0]-1] # in mV
-        
-        if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
-            
-    Array = FixTTLs(Array, TTLsToFix)
-    
-    print('Done.')
-    return(Array)
 
 
 def UnitPlotPerCh(ChDict, Ch, XValues, PulseDur, FigName, FigTitle):
@@ -400,7 +191,10 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
     """
     
     print('Load DataInfo...')
+    DirList = glob('KwikFiles/*'); DirList.sort()
+    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
     
+    AnalysisFile = './' + DataInfo['AnimalName'] + '-Analysis.hdf5'
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
     Here = os.getcwd().split(sep='/')[-1]
     Group = Here + '-ABRs_' + Now
@@ -409,8 +203,12 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
         if Override != {}: 
             if 'Stim' in Override.keys(): Stim = Override['Stim']
         
+        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+        
         for RecFolder in Exps:
             ABRs = {}; Info = {}
+            
+            ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
             
             if AnalogTTLs: 
                 Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
@@ -429,16 +227,17 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
             NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
             NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
             
-            Info['Frequency'] = ''.join([
-                            str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][0]),
-                            '-',
-                            str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][1])])
+            Info['Frequency'] = ExpInfo['Hz']
             
             Info['XValues'] = (range(-NoOfSamplesBefore, 
                                      NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
             
             for Rec in Raw[OEProc]['data'].keys():
                 print('Slicing and filtering ABRs Rec ', str(Rec), '...')
+                
+                if len(Raw[OEProc]['data'][Rec]) < 50*Rate:
+                    print('Rec', Rec, 'is broken!!!')
+                    continue
                 
                 if AnalogTTLs:
                     TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ABRTTLCh, 
@@ -465,7 +264,7 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
                 ABRs[dB] = ABR[:]; del(ABR)
             
             Path = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
-            AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+#            AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
             Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
     
     return(None)

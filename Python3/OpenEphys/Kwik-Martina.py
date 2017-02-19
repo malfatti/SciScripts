@@ -16,6 +16,7 @@ from numbers import Number
 from scipy import io
 from subprocess import call
 
+# Level 0
 def CallWaveClus(Rate, Path):
     print('Clustering spikes...')
     
@@ -105,7 +106,7 @@ def SepSpksPerCluster(Clusters, Ch):
     else: return({})
 
 
-def SetPlot(Backend='TkAgg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
+def SetPlot(Backend='Qt5Agg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
             Plot=False, Axes=False):
     if Params:
         print('Set plot parameters...')
@@ -140,65 +141,6 @@ def SetPlot(Backend='TkAgg', AxesObj=(), FigObj=(), FigTitle='', Params=False,
     else: print("'Params', 'Plot' or 'Axes' must be True.")
     
     return(None)
-
-
-def LoadUnits(FileName, Override={}):
-    XValues = []
-    with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('UnitRec', F)
-        
-        Units = {}
-        for RKey in F[Key].keys():
-            if RKey == 'XValues':
-                XValues = F[Key][RKey][:]
-                continue
-            
-            if Override != {}: 
-                if 'Rec' in Override.keys():
-                    RKey = "{0:02d}".format(Override['Rec'])
-            
-            Units[RKey] = {}
-            
-            for Ch in F[Key][RKey].keys():
-                Units[RKey][Ch] = {}
-                Path = '/'+Key+'/'+RKey+'/'+Ch
-                print('Loading', Path+'...')
-                
-                if 'Spks' in F[Path].keys():
-                    Units[RKey][Ch]['Spks'] = {}
-                    for Cluster in F[Path]['Spks'].keys():
-                        SpkNo = len(list(F[Path]['Spks'][Cluster].keys()))
-                        Units[RKey][Ch]['Spks'][Cluster] = [[] for _ in range(SpkNo)]
-                        
-                        for Spk in F[Path]['Spks'][Cluster].keys():
-                            Units[RKey][Ch]['Spks'][Cluster][int(Spk)] = F[Path]['Spks'][Cluster][Spk][:]
-                    
-                    if F[Path]['Spks'].attrs.keys():
-                        Units[RKey][Ch]['Spks_Info'] = {}
-                        for VarKey, VarValue in F[Path]['Spks'].attrs.items():
-                            if isinstance(VarValue, Number): 
-                                Units[RKey][Ch]['Spks_Info'][VarKey] = float(VarValue)
-                            else: 
-                                Units[RKey][Ch]['Spks_Info'][VarKey] = VarValue
-                
-                if 'PSTH' in F[Path].keys():
-                    Units[RKey][Ch]['PSTH'] = {}
-                    
-                    for VarKey in F[Path]['PSTH'].keys():
-                        Units[RKey][Ch]['PSTH'][VarKey] = F[Path]['PSTH'][VarKey][:]
-                    
-                    if F[Path]['PSTH'].attrs.keys():
-                        Units[RKey][Ch]['PSTH_Info'] = {}
-                        for VarKey, VarValue in F[Path]['PSTH'].attrs.items():
-                            if isinstance(VarValue, Number): 
-                                Units[RKey][Ch]['PSTH_Info'][VarKey] = float(VarValue)
-                            else: 
-                                Units[RKey][Ch]['PSTH_Info'][VarKey] = VarValue
-            
-            if Override != {}: 
-                if 'Rec' in Override.keys(): break
-    
-    return(Units, XValues)
 
 
 def WriteUnits(Units, FileName, XValues=[]):
@@ -252,22 +194,7 @@ def WriteUnits(Units, FileName, XValues=[]):
     return(None)
 
 
-## Medium level
-def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=0, Proc=''):
-    print('Get TTL timestamps... ', end='')
-    if AnalogTTLs:
-        TTLCh = Raw[Proc]['data'][Rec][:, ChTTL-1]
-        Threshold = CheckStimulationPattern(TTLCh)
-        TTLs = []
-        for _ in range(1, len(TTLCh)):
-            if TTLCh[_] > Threshold:
-                if TTLCh[_-1] < Threshold: TTLs.append(_)
-        
-        print('Done.')
-        return(TTLs)          
-
-
-## Higher level functions
+## Level 1
 def ClusterizeSpks(Folder, AnalogTTLs=False, Board='OE', Override={}):
     print('Load DataInfo...')
     if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(Folder, AnalogTTLs)
@@ -332,6 +259,79 @@ def ClusterizeSpks(Folder, AnalogTTLs=False, Board='OE', Override={}):
     Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
 
 
+def LoadUnits(FileName, Override={}):
+    XValues = []
+    with h5py.File(FileName, 'r') as F:
+        Key = GetExpKeys('UnitRec', F)
+        
+        Units = {}
+        for RKey in F[Key].keys():
+            if RKey == 'XValues':
+                XValues = F[Key][RKey][:]
+                continue
+            
+            if Override != {}: 
+                if 'Rec' in Override.keys():
+                    RKey = "{0:02d}".format(Override['Rec'])
+            
+            Units[RKey] = {}
+            
+            for Ch in F[Key][RKey].keys():
+                Units[RKey][Ch] = {}
+                Path = '/'+Key+'/'+RKey+'/'+Ch
+                print('Loading', Path+'...')
+                
+                if 'Spks' in F[Path].keys():
+                    Units[RKey][Ch]['Spks'] = {}
+                    for Cluster in F[Path]['Spks'].keys():
+                        SpkNo = len(list(F[Path]['Spks'][Cluster].keys()))
+                        Units[RKey][Ch]['Spks'][Cluster] = [[] for _ in range(SpkNo)]
+                        
+                        for Spk in F[Path]['Spks'][Cluster].keys():
+                            Units[RKey][Ch]['Spks'][Cluster][int(Spk)] = F[Path]['Spks'][Cluster][Spk][:]
+                    
+                    if F[Path]['Spks'].attrs.keys():
+                        Units[RKey][Ch]['Spks_Info'] = {}
+                        for VarKey, VarValue in F[Path]['Spks'].attrs.items():
+                            if isinstance(VarValue, Number): 
+                                Units[RKey][Ch]['Spks_Info'][VarKey] = float(VarValue)
+                            else: 
+                                Units[RKey][Ch]['Spks_Info'][VarKey] = VarValue
+                
+                if 'PSTH' in F[Path].keys():
+                    Units[RKey][Ch]['PSTH'] = {}
+                    
+                    for VarKey in F[Path]['PSTH'].keys():
+                        Units[RKey][Ch]['PSTH'][VarKey] = F[Path]['PSTH'][VarKey][:]
+                    
+                    if F[Path]['PSTH'].attrs.keys():
+                        Units[RKey][Ch]['PSTH_Info'] = {}
+                        for VarKey, VarValue in F[Path]['PSTH'].attrs.items():
+                            if isinstance(VarValue, Number): 
+                                Units[RKey][Ch]['PSTH_Info'][VarKey] = float(VarValue)
+                            else: 
+                                Units[RKey][Ch]['PSTH_Info'][VarKey] = VarValue
+            
+            if Override != {}: 
+                if 'Rec' in Override.keys(): break
+    
+    return(Units, XValues)
+
+
+def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=0, Proc=''):
+    print('Get TTL timestamps... ', end='')
+    if AnalogTTLs:
+        TTLCh = Raw[Proc]['data'][Rec][:, ChTTL-1]
+        Threshold = CheckStimulationPattern(TTLCh)
+        TTLs = []
+        for _ in range(1, len(TTLCh)):
+            if TTLCh[_] > Threshold:
+                if TTLCh[_-1] < Threshold: TTLs.append(_)
+        
+        print('Done.')
+        return(TTLs)          
+
+
 def UnitsSpks(Folder, AnalysisFile, Board='OE', Override={}):
     print('Load DataInfo...')
     Raw = Hdf5F.LoadOEKwik(Folder, 'Raw')[0]
@@ -367,6 +367,7 @@ def UnitsSpks(Folder, AnalysisFile, Board='OE', Override={}):
     return(None)
 
 
+## Level 2
 def UnitsPSTH(Folder, AnalysisFile, TTLChNo=0, PSTHTimeBeforeTTL=0, 
                  PSTHTimeAfterTTL=300, AnalogTTLs=False, 
                  Board='OE', Override={}):

@@ -252,11 +252,11 @@ def ClusterizeSpks(Folder, AnalogTTLs=False, Board='OE', Override={}):
         if Override != {}: 
             if 'Rec' in Override.keys(): break
     
-        ToDelete = glob(Path+'*')
-        for File in ToDelete: os.remove(File)
+#        ToDelete = glob(Path+'*')
+#        for File in ToDelete: os.remove(File)
     
-    os.removedirs(Path)
-    Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
+#    os.removedirs(Path)
+#    Hdf5F.WriteClusters(Clusters, Path[:-6]+'SpkClusters.hdf5')
 
 
 def LoadUnits(FileName, Override={}):
@@ -587,15 +587,15 @@ for Folder in Folders:
             continue
         
         try:
-#            ClusterizeSpks(Subfolder, AnalogTTLs)
-#            Done.append(Subfolder)
+            ClusterizeSpks(Subfolder, AnalogTTLs)
+            Done.append(Subfolder)
             
-            AnalysisFile = '-'.join(Subfolder.split('/')) + '.hdf5'
-            AnalysisFile = Subfolder + '/' + AnalysisFile
+#            AnalysisFile = '-'.join(Subfolder.split('/')) + '.hdf5'
+#            AnalysisFile = Subfolder + '/' + AnalysisFile
 #            UnitsPSTH(Subfolder, AnalysisFile, TTLChNo, PSTHTimeBeforeTTL, 
 #                      PSTHTimeAfterTTL, AnalogTTLs)
-            UnitsSpksPSTH_ToVector(AnalysisFile, Ext, Override)
-            Done.append(Subfolder)
+#            UnitsSpksPSTH_ToVector(AnalysisFile, Ext, Override)
+#            Done.append(Subfolder)
             
         except Exception as e:
             Errors.append(Subfolder)

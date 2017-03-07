@@ -220,7 +220,7 @@ def ClusterizeSpks(Data, Rate, Path, AnalysisFile, ChannelMap=[],
         CallWaveClus(Rate, Path)
         
         ClusterList = glob(Path + 'times_*'); ClusterList.sort()
-        ClusterList = [_ for _ in ClusterList if _.split('-')[0].split('_')[-1] == 'Rec'+RecS]
+        ClusterList = [_ for _ in ClusterList if _.split('-')[-2].split('_')[-1] == 'Rec'+RecS]
         
         Clusters[RecS] = {}
         for File in ClusterList:
@@ -235,11 +235,11 @@ def ClusterizeSpks(Data, Rate, Path, AnalysisFile, ChannelMap=[],
         if 'Rec' in Override.keys(): break
         if 'RecS' in Override.keys(): break
     
+    Hdf5F.WriteClusters(Clusters, Path[:-6] + AnalysisFile)
+    
     ToDelete = glob(Path + '*')
     for File in ToDelete: os.remove(File)
     os.removedirs(Path)
-    
-    Hdf5F.WriteClusters(Clusters, Path[:-6] + AnalysisFile)
     
     if Return: return(Clusters)
     else: return(None)
@@ -676,7 +676,7 @@ class Plot():
                     Plot.Set(AxesObj=Axes[int(Class)-1][XInd], Axes=True)
                     Axes[int(Class)-1][XInd].set_ylabel(PSTHYLabel)
                     Axes[int(Class)-1][XInd].set_xlabel(PSTHXLabel)
-                    Axes[XInd].set_title(SubTitle)
+                    Axes[int(Class)-1][XInd].set_title(SubTitle)
         
         FigTitle = FigName.split('/')[-1][:-4]
         Plot.Set(FigObj=Fig, FigTitle=FigTitle, Plot=True)
@@ -727,43 +727,43 @@ class Plot():
 
 
 #%% Tests
-Here = os.getcwd(); Path = 'SepCh/'; ClusterPath = Here + '/' + Path
-
-RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
-A16 = {'Tip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-       'Head': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
-
-ChannelMap = RemapChannels(A16['Tip'], A16['Head'], RHAHeadstage)
-
-Rate = np.array([25000]); AnalogTTLs = True; Override={}
-
-Files = glob('IntanSound/*LS*') + glob('IntanSound/*SL*')
-
-AnalysisFile = './CaMKIIaArch3_02.hdf5'
-
-for File in Files:
-    Data = {}; Rec = File.split('-')[-1].split('_')[0]
-    Data[Rec] = IntanBin.IntLoad(File)[0]
-    Override['RecS'] = Rec
-    
-    Clusters = ClusterizeSpks(Data, Rate, ClusterPath, AnalysisFile, 
-                              ChannelMap, Override, Return=True)
-    
-#    Clusters = Hdf5F.LoadClusters(AnalysisFile)
-#    UnitsSpks(Clusters, AnalysisFile, Override)
-    
-    
-    Starts = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:, 16])
-    Override['TTLs'] = GenerateFakeTTLsRising(Starts, int(0.003*Rate), 200, int(0.090*Rate))
-    TimeBeforeTTL = 0; TimeAfterTTL = 300
-    
-    UnitsPSTH(Clusters, [], Rate, AnalysisFile, TimeBeforeTTL, TimeAfterTTL, 
-              AnalogTTLs, Override)
-
-    Plot.UnitsSpksPSTH(AnalysisFile, 'svg', Override)
-
-
-
-
-XValuesList = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 3, 5]]
-Plot.UnitsPSTHTestBin(XValuesList, AnalysisFile, 'svg', Override)
+#Here = os.getcwd(); Path = 'SepCh/'; ClusterPath = Here + '/' + Path
+#
+#RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
+#A16 = {'Tip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+#       'Head': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+#
+#ChannelMap = RemapChannels(A16['Tip'], A16['Head'], RHAHeadstage)
+#
+#Rate = np.array([25000]); AnalogTTLs = True; Override={}
+#
+#Files = [['IntanSound/Arch3n2-43S_184905.int', [154934, 4121425]],
+#         ['IntanSound/Arch3n2-35S_175902.int', [1702747]]]
+#
+#AnalysisFile = './CaMKIIaArch3_02.hdf5'
+#
+#for File in Files:
+#    Data = {}; Rec = File[0].split('-')[-1].split('_')[0]
+#    Data[Rec] = IntanBin.IntLoad(File)[0]
+#    Override['RecS'] = Rec
+#    
+#    Clusters = ClusterizeSpks(Data, Rate, ClusterPath, AnalysisFile, 
+#                              ChannelMap, Override, Return=True)
+#    
+##    Clusters = Hdf5F.LoadClusters(AnalysisFile)
+##    UnitsSpks(Clusters, AnalysisFile, Override)
+#    
+#    
+#    Starts = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:, 16])
+#    Override['TTLs'] = GenerateFakeTTLsRising(Starts, int(0.003*Rate), 200, int(0.090*Rate))
+#    TimeBeforeTTL = 0; TimeAfterTTL = 300
+#    
+#    UnitsPSTH(Clusters, [], Rate, AnalysisFile, TimeBeforeTTL, TimeAfterTTL, 
+#              AnalogTTLs, Override)
+#
+#    Plot.UnitsSpksPSTH(AnalysisFile, 'svg', Override)
+#
+#
+#
+#
+#

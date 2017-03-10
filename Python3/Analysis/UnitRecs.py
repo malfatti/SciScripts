@@ -149,3 +149,31 @@ for File in Files:
     XValuesList = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 3, 5]]
     DataAnalysis.Plot.UnitsPSTHTestBin(XValuesList, AnalysisFile, 'svg', Override)
 
+
+#%% Units per Rec per Ch
+
+import pandas as pd
+
+Title = 'CaMKIIaeArch3_04'
+Index = ['Ch', 'UnitsNo', 'Responding']
+
+Table = {'CaMKIIaeArch3_04': 
+            [[1, 1, 1],
+             [2, 0, 0],
+             [3, 1, 1],
+             [4, 1, 0],
+             [5, 0, 0],
+             [6, 2, 0],
+             [7, 1, 0],
+             [8, 1, 1],
+             [9, 1, 0],
+             [10, 1, 0],
+             [11, 2, 1],
+             [12, 2, 0],
+             [13, 3, 0],
+             [14, 1, 0],
+             [15, 2, 0],
+             [16, 0, 0]],
+        
+        'CaMKIIaeArch3_03':
+            

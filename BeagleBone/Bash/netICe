@@ -1,0 +1,2 @@
+config_eth0="192.168.50.117 netmask 255.255.254.0 brd 192.168.51.255"
+routes_eth0="default via 192.168.50.1"

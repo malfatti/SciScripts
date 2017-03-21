@@ -50,12 +50,13 @@ KwikAnalysis.ABRPlot3D(AnalysisFile, FileName, Visible=True)
 
 GPIASCh = [1]
 GPIASTTLCh = 2
-GPIASTimeBeforeTTL = 100   # in ms
-GPIASTimeAfterTTL = 100    # in ms
-FilterFreq = [70, 400]     # frequency for filter
+GPIASTimeBeforeTTL = 1000   # in ms
+GPIASTimeAfterTTL = 1000    # in ms
+FilterFreq = [70, 300]     # frequency for filter
 FilterOrder = 3       # butter order
 AnalogTTLs = True
 RecFolderNo = 1
+Override = {}
 
 #==========#==========#==========#==========#
 
@@ -66,11 +67,11 @@ KwikAnalysis.GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
                            GPIASTimeAfterTTL, FilterFreq, FilterOrder, 
                            AnalogTTLs)
 
-Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+Animals = ['CaMKIIahM4Dn07']#, 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 Exp = 'GPIAS'
 AlreadyRun = KwikAnalysis.GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL, 
                                 GPIASTimeAfterTTL, FilterFreq, FilterOrder, AnalogTTLs, 
-                                Animals, Exp, AlreadyRun=[], Override={}, Visible=False)
+                                Animals, Exp, AlreadyRun=[], Override={}, Visible=True)
 
 AnalysisFile = glob('../*.hdf5')[0]
 KwikAnalysis.GPIASPlot(RecFolderNo, Visible=True)

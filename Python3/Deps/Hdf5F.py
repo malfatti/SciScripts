@@ -55,28 +55,33 @@ def CheckGroup(FileName, Group):
 
 def DeleteGroup(Group, FileName, All=False):
     with h5py.File(FileName) as F:
+        if All:
+            Keys = [Key for Key in F.keys() if Group in Key]; Keys.sort()
+            print('This will delete the following keys:')
+            for Key in Keys: print(Key)
+            Ans = input('Delete keys? [y/N] ')
+            
+            if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: 
+                for Key in Keys: del(F[Key])
+            
+            return(None)
+        
         Delete = True
         while Delete:
-            if All:
-                Keys = [Key for Key in F.keys() if Group in Key]; Keys.sort()
-                print('This will delete the following keys:')
-                for Key in Keys: print(Key)
-                Ans = input('Delete keys? [y/N] ')
+            try:
+                Key = GetExpKeys(Group, F)
                 
-                if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: 
-                    for Key in Keys: del(F[Key])
+                Ans = input('Delete key ' + Key + '? [y/N] ')
+                if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: del(F[Key])
+                else: break
                 
-                return(None)
-            
-            Key = GetExpKeys(Group, F)
-            
-            Ans = input('Delete key ' + Key + '? [y/N] ')
-            if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: del(F[Key])
-            else: break
-            
-            Ans = input('Delete another dataset? [y/N] ')
-            if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: Delete = True
-            else: Delete = False
+                Ans = input('Delete another dataset? [y/N] ')
+                if Ans in ['y', 'yes', 'Y', 'Yes', 'YES']: Delete = True
+                else: Delete = False
+            except IndexError:
+                print('No keys matching string to delete.')
+                Delete = False
+                
     return(None)
 
 
@@ -238,9 +243,9 @@ def LoadExpPerStim(StimType, DirList, FileName):
     return(Exps)
 
 
-def LoadGPIAS(FileName, Key=''):
+def LoadGPIAS(FileName, Key=None):
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('GPIAS_', F, Key)
+        Key = GetExpKeys('GPIAS_', F, KeyStr=Key)
         
         GPIAS = {}
         for Freq in F[Key]['GPIAS']:

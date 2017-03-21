@@ -148,6 +148,7 @@ SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
 
 
 #%% Run sound
+input('Did you recorded spontaneou data for burst analysis before this???')
 DVCoord = '4220'
 #Freq = 4
 #Freq = int(Freq)

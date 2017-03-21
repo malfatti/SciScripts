@@ -18,6 +18,7 @@
 Functions for manipulating specific .mat files.
 """
 
+import DataAnalysis
 import Hdf5F
 import KwikAnalysis
 import numpy as np
@@ -70,11 +71,11 @@ def GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL=20, GPIASTimeAfterTTL=100,
         Data['Gap'] = Data['Gap'][0,Start:End] * 1000 # in mV
         Data['NoGap'] = Data['NoGap'][0,Start:End] * 1000 # in mV
         
-        Data['Gap'] = KwikAnalysis.FilterSignal(Data['Gap'], Rate, 
+        Data['Gap'] = DataAnalysis.FilterSignal(Data['Gap'], Rate, 
                                                 FilterFreq, 
                                                 FilterOrder, 
                                                 'bandpass')
-        Data['NoGap'] = KwikAnalysis.FilterSignal(Data['NoGap'], Rate, 
+        Data['NoGap'] = DataAnalysis.FilterSignal(Data['NoGap'], Rate, 
                                                   FilterFreq, 
                                                   FilterOrder, 
                                                   'bandpass')

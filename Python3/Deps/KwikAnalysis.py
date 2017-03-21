@@ -17,6 +17,7 @@
 
 """
 
+import DataAnalysis
 import Hdf5F
 import MatF
 import numpy as np
@@ -553,7 +554,7 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
     if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
     else:
         Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
-        TTLsPerRec = GetTTLInfo(Events, EventRec, GPIASTTLCh)
+        TTLsPerRec = DataAnalysis.GetTTLInfo(Events, EventRec, GPIASTTLCh)
     
     OEProc = GetProc(Raw, Board)[0]
     
@@ -583,13 +584,13 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
         else: STrial = 'Gap'
         
         if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, GPIASTTLCh, OEProc)
-            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+            TTLs = DataAnalysis.QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, GPIASTTLCh, OEProc)
+            GD = DataAnalysis.SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
         else:
-            RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
+            RawTime, TTLs = DataAnalysis.QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
                                                TTLsPerRec=TTLsPerRec)
-            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+            GD = DataAnalysis.SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
         if GPIAS[SFreq][STrial] == []: GPIAS[SFreq][STrial] = GD[:]
@@ -605,9 +606,9 @@ def GPIASAnalysis(RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50,
         GPIAS[Freq]['NoGap'] = GPIAS[Freq]['NoGap'][0]
         
         # Bandpass filter
-        GPIAS[Freq]['Gap'] = FilterSignal(GPIAS[Freq]['Gap'], Rate, FilterFreq, 
+        GPIAS[Freq]['Gap'] = DataAnalysis.FilterSignal(GPIAS[Freq]['Gap'], Rate, FilterFreq, 
                                           FilterOrder, 'bandpass')
-        GPIAS[Freq]['NoGap'] = FilterSignal(GPIAS[Freq]['NoGap'], Rate, 
+        GPIAS[Freq]['NoGap'] = DataAnalysis.FilterSignal(GPIAS[Freq]['NoGap'], Rate, 
                                             FilterFreq, FilterOrder, 
                                             'bandpass')
         
@@ -728,7 +729,7 @@ def GPIASPlot(RecFolderNo, Visible=False, Override={}):
         GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile, ExpPath.split('/')[-1])
     else: GPIAS, XValues = Hdf5F.LoadGPIAS(AnalysisFile)
     
-    Params = SetPlot(Params=True)
+    Params = DataAnalysis.Plot.Set(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
     from matplotlib import pyplot as plt
     
@@ -750,8 +751,8 @@ def GPIASPlot(RecFolderNo, Visible=False, Override={}):
         plt.plot(XValues, GPIAS[Freq]['Gap'], 
                  color='b', label=LineGapLabel, lw=2)
 
-        SetPlot(AxesObj=plt.axes(), Axes=True)
-        SetPlot(FigObj=plt, FigTitle=FigTitle, Plot=True)
+        DataAnalysis.Plot.Set(AxesObj=plt.axes(), Axes=True)
+        DataAnalysis.Plot.Set(FigObj=plt, FigTitle=FigTitle, Plot=True)
         plt.ylabel(YLabel); plt.xlabel(XLabel)
         plt.legend(loc='lower right')
         

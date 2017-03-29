@@ -12,11 +12,15 @@ import numpy as np
 from glob import glob
 from scipy import io
 
-def IntLoad(File):
+def IntLoad(File, ChannelMap=[]):
     Data = Intan.ReadData(File)
     
     try: len(Data['aux'][0])
     except TypeError: Data['aux'] = Data['aux'].reshape((Data['aux'].shape[0], 1))
+    
+    if ChannelMap: 
+        ChannelMap = [_-1 for _ in ChannelMap]
+        Data['analog'][:, (range(16))] = Data['analog'][:, ChannelMap]
     
     XValues = Data['t']
     Data = np.hstack((Data['analog'], Data['aux']))

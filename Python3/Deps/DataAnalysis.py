@@ -19,7 +19,7 @@
 """
 
 import Hdf5F
-import IntanBin
+#import IntanBin
 import numpy as np
 import os
 from datetime import datetime
@@ -39,7 +39,7 @@ def CallWaveClus(Rate, Path):
                  "Get_spikes('Files.txt', 'parallel', true, 'par', par);" + \
                  "Files = dir('./*spikes.mat'); Files = {Files.name}; " + \
                  "Do_clustering(Files, 'make_plots', false); end; quit"
-    call([MLab, '-r', CmdCd+CmdCluster])
+    call([MLab, '-nosplash', '-r', CmdCd+CmdCluster])
     
     print('Done clustering.')
     return(None)
@@ -73,6 +73,14 @@ def FixTTLs(Array, TTLsToFix):
     return(Array)
 
 
+def GenerateTTLVector(TTLs, TTLLen, FullLen):
+    TTLVec = np.zeros([FullLen, 1])
+    
+    for TTL in TTLs:
+        TTLVec[TTL:TTL+TTLLen] = np.ones([TTLLen, 1])
+    
+    return(TTLVec)
+
 def GenerateFakeTTLsRising(Start, Dur, No, PauseBetween):
     Dur = Dur + PauseBetween
     
@@ -83,7 +91,7 @@ def GenerateFakeTTLsRising(Start, Dur, No, PauseBetween):
     return(FakeTTLs)
 
 
-def GetRecXValues(Rec, TTLs, Rate, TimeBeforeTTL, TimeAfterTTL):
+def GetRecXValues(TTLs, Rate, TimeBeforeTTL, TimeAfterTTL):
 #    StimFreq = 1 / ((TTLs[3] - TTLs[2])/Rate)
 #    
 #    if np.mean(TTL) > 1000: 
@@ -94,14 +102,13 @@ def GetRecXValues(Rec, TTLs, Rate, TimeBeforeTTL, TimeAfterTTL):
 #        URecS = Rec + '-Squares-' + str(int(StimFreq)) + 'Hz'
 #        NoOfSamplesBefore = int(round((TimeBeforeTTL*Rate)*10**-3))
 #        NoOfSamplesAfter = int(round((TimeAfterTTL*Rate)*10**-3))
-    URecS = Rec
     NoOfSamplesBefore = int((TimeBeforeTTL*Rate) * 10**-3)
     NoOfSamplesAfter = int((TimeAfterTTL*Rate) * 10**-3)
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
     XValues = (range(-NoOfSamplesBefore, 
                      NoOfSamples-NoOfSamplesBefore)/Rate) * 10**3
     
-    return(URecS, XValues)
+    return(XValues)
 
 
 def GetTTLInfo(Events, EventRec, TTLCh):
@@ -123,14 +130,16 @@ def GetTTLInfo(Events, EventRec, TTLCh):
     return(TTLsPerRec)
 
 
-def GetTTLThreshold(TTL):
-    if np.mean(TTL) > 1000: 
+def GetTTLThreshold(TTLCh):
+    if np.mean(TTLCh) > 1000: 
         print('Sinusoidal stimulation')
-        Threshold = (max(TTL) - min(TTL)) / 2
+        Threshold = (max(TTLCh) - min(TTLCh)) / 2
         return(Threshold)
     else:
         print('square pulses stimulation')
-        Threshold = ((max(TTL) - min(TTL)) / 2)# + 2*(np.std(TTL))
+        Top = max(TTLCh) + abs(min(TTLCh))
+        Bot = min(TTLCh) + abs(min(TTLCh))
+        Threshold = max(TTLCh) - (Top - Bot)/3 # + 2*(np.std(TTL))
         return(Threshold) 
 
 
@@ -187,59 +196,52 @@ def SepSpksPerCluster(Clusters, Ch):
 
 
 ## Level 1
-def ClusterizeSpks(Data, Rate, Path, AnalysisFile, ChannelMap=[], 
-                   Override={}, Return=False):
+def ClusterizeSpks(Data, Rate, ChannelMap, ClusterPath, AnalysisFile, 
+                   AnalysisKey, Rec='0', Override={}, Return=False):
     """ Detect and clusterize spks using WaveClus """
     
-    os.makedirs(Path, exist_ok=True)
+    os.makedirs(ClusterPath, exist_ok=True)
     
-    Clusters = {}
-    for Rec in Data.keys():
-        if not ChannelMap: ChannelMap = [_ for _ in range(Data[Rec].shape[1])]
-        
-        if 'Rec' in Override.keys(): Rec = Override['Rec']
-        if 'RecS' in Override.keys(): RecS = Override['RecS']
-        else: RecS = "{0:02d}".format(int(Rec))
-        
-        print('Separating channels according to ChannelMap...')
-        Data = [Data[Rec][:, _] for _ in ChannelMap]
-                        
-        print('Writing files for clustering... ', end='')
-        FileList = []
-        for Ind, Ch in enumerate(Data):
-            MatName = 'Rec' + RecS + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
-            
-            FileList.append(MatName)
-            io.savemat(Path+MatName, {'data': Ch})
-        
-        TxtFile = open(Path+'Files.txt', 'w')
-        for File in FileList: TxtFile.write(File + '\n')
-        TxtFile.close()
-        print('Done.')
-        
-        CallWaveClus(Rate, Path)
-        
-        ClusterList = glob(Path + 'times_*'); ClusterList.sort()
-        ClusterList = [_ for _ in ClusterList if _.split('-')[-2].split('_')[-1] == 'Rec'+RecS]
-        
-        Clusters[RecS] = {}
-        for File in ClusterList:
-            Ch = File[-8:-4]
-            
-            ClusterFile = io.loadmat(File)
-            Clusters[RecS][Ch] = {}
-            Clusters[RecS][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
-            Clusters[RecS][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
-            Clusters[RecS][Ch]['Spikes'] = ClusterFile['spikes'][:]
-        
-        if 'Rec' in Override.keys(): break
-        if 'RecS' in Override.keys(): break
+    Data = [Data[:, _-1] for _ in sorted(ChannelMap)]
+    print('Writing files for clustering... ', end='')
+    FileList = []
     
-    Hdf5F.WriteClusters(Clusters, Path[:-6] + AnalysisFile)
+    try: Rec = "{0:02d}".format(int(Rec))
+    except ValueError: pass
     
-    ToDelete = glob(Path + '*')
-    for File in ToDelete: os.remove(File)
-    os.removedirs(Path)
+    for Ind, Ch in enumerate(Data):
+        MatName = 'Rec' + Rec + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
+        
+        FileList.append(MatName)
+        io.savemat(ClusterPath + '/' + MatName, {'data': Ch})
+    
+    TxtFile = open(ClusterPath + '/Files.txt', 'w')
+    for File in FileList: TxtFile.write(File + '\n')
+    TxtFile.close()
+    print('Done.')
+    
+    CallWaveClus(Rate, ClusterPath)
+    
+    ClusterList = glob(ClusterPath + '/times_*'); ClusterList.sort()
+    ClusterList = [_ for _ in ClusterList if _.split('-')[-2].split('_')[-1] == 'Rec'+Rec]
+    print(ClusterList)
+    Clusters = {Rec: {}}
+    for File in ClusterList:
+        Ch = File[-8:-4]
+        
+        ClusterFile = io.loadmat(File)
+        Clusters[Rec][Ch] = {}
+        Clusters[Rec][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
+        Clusters[Rec][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
+        Clusters[Rec][Ch]['Spikes'] = ClusterFile['spikes'][:]
+    
+    Group = AnalysisKey + '/SpkClusters'
+    Hdf5F.WriteClusters(Clusters, AnalysisFile, Group)
+    
+    ToDelete = glob(ClusterPath + '/*')
+    for File in ToDelete: 
+        if File not in glob(ClusterPath + '/times_*'): os.remove(File)
+#    os.removedirs(ClusterPath)
     
     if Return: return(Clusters)
     else: return(None)
@@ -300,75 +302,62 @@ def SliceData(Data, Rec, TTLs, DataCh, NoOfSamplesBefore,
     return(Array)
 
 
-def UnitsSpks(Clusters, AnalysisFile, Override={}):
-    Units = {}
-    for Rec in Clusters.keys():
-        if 'Rec' in Override.keys(): Rec = Override['Rec']
-        if 'RecS' in Override.keys(): RecS = Override['RecS']
-        else: RecS = "{0:02d}".format(int(Rec))
-        
-        Units[RecS] = {}
-        for Ch in Clusters[RecS].keys():
-            Units[RecS][Ch] = SepSpksPerCluster(Clusters[RecS][Ch], 
-                                                             Ch)
-        
-        if 'Rec' in Override.keys(): break
+def UnitsSpks(Clusters, AnalysisFile, AnalysisKey, Rec='0', Override={}):
+    try: Rec = "{0:02d}".format(int(Rec))
+    except ValueError: pass
     
-    Hdf5F.WriteUnits(Units, AnalysisFile)
+    Units = {Rec: {}}
+    for Ch in Clusters[Rec].keys():
+        Units[Rec][Ch] = SepSpksPerCluster(Clusters[Rec][Ch], Ch)
+    
+    Group = AnalysisKey + '/Units'
+    Hdf5F.WriteUnits(Units, AnalysisFile, Group)
     return(None)
 
 
 ## Level 2
-def UnitsPSTH(Clusters, TTLCh, Rate, AnalysisFile, TimeBeforeTTL=0, 
-              TimeAfterTTL=300, AnalogTTLs=True, Override={}):
-    Units = {}
+def UnitsPSTH(Clusters, TTLCh, Rate, AnalysisFile, AnalysisKey, Rec='0', 
+              TimeBeforeTTL=0, TimeAfterTTL=300, AnalogTTLs=True, 
+              Override={}):
+    try: Rec = "{0:02d}".format(int(Rec))
+    except ValueError: pass
+        
+    if 'TTLs' in Override.keys(): TTLs = Override['TTLs']
+    else: TTLs = QuantifyTTLsPerRec(AnalogTTLs, TTLCh)
     
-    for Rec in Clusters.keys():
-        if 'Rec' in Override.keys(): Rec = Override['Rec']
-        
-        if 'TTLs' in Override.keys(): TTLs = Override['TTLs']
-        else: TTLs = QuantifyTTLsPerRec(AnalogTTLs, TTLCh)
-        
-        URecS, XValues = GetRecXValues(Rec, TTLs, Rate, TimeBeforeTTL, TimeAfterTTL)
-        
-        Units[URecS] = {}
-        print('Preparing histograms and spike waveforms...')
-        for CKey in Clusters[Rec].keys():
-            Classes = np.unique(Clusters[Rec][CKey]['ClusterClass'])
-#            Units[URecS][CKey] = {}
-            Units[URecS][CKey] = SepSpksPerCluster(Clusters[Rec][CKey], CKey)
-            Units[URecS][CKey]['PSTH'] = {}
-            
-            for Class in Classes:
-                ClassIndex = Clusters[Rec][CKey]['ClusterClass'] == Class
-                if not len(Clusters[Rec][CKey]['Spikes'][ClassIndex,:]): continue
-                
-                Class = "{0:02d}".format(int(Class))
-                
-#                Units[URecS][CKey]['PSTH'][Class] = np.zeros(len(XValues))                
-                Hist = np.array([])
-                for TTL in range(len(TTLs)):
-                    Firing = Clusters[Rec][CKey]['Timestamps'][ClassIndex] \
-                             - (TTLs[TTL]/(Rate/1000))
-                    Firing = Firing[(Firing >= XValues[0]) * 
-                                    (Firing < XValues[-1])]
-#                    SpkCount = np.histogram(Firing, 
-#                                            np.hstack((XValues, len(XValues)/(Rate/1000))))[0]
-                    
-#                    Units[URecS][CKey]['PSTH'][Class] = Units[URecS][CKey]['PSTH'][Class] + SpkCount
-#                    del(Firing, SpkCount)
-                    
-                    Hist = np.concatenate((Hist, Firing)); del(Firing)
-                
-                Units[URecS][CKey]['PSTH'][Class] = Hist[:]
-                del(Hist)
-            
-            print(CKey+':', str(len(Classes)), 'clusters.')
-        
-        del(TTLs)
-        if 'Rec' in Override.keys(): break
+    XValues = GetRecXValues(TTLs, Rate, TimeBeforeTTL, TimeAfterTTL)
+    Units = {Rec: {}}
     
-    Hdf5F.WriteUnits(Units, AnalysisFile, XValues)
+    print('Preparing histograms and spike waveforms...')
+    for CKey in Clusters[Rec].keys():
+        Classes = np.unique(Clusters[Rec][CKey]['ClusterClass'])
+#            Units[URecS][CKey] = SepSpksPerCluster(Clusters[Rec][CKey], CKey)
+        Units[Rec][CKey] = {'PSTH': {}}
+        
+        for Class in Classes:
+            ClassIndex = Clusters[Rec][CKey]['ClusterClass'] == Class
+            if not len(Clusters[Rec][CKey]['Spikes'][ClassIndex,:]): continue
+            
+            Class = "{0:02d}".format(int(Class))
+            
+            Hist = np.array([])
+            for TTL in range(len(TTLs)):
+                Firing = Clusters[Rec][CKey]['Timestamps'][ClassIndex] \
+                         - (TTLs[TTL]/(Rate/1000))
+                Firing = Firing[(Firing >= XValues[0]) * 
+                                (Firing < XValues[-1])]
+                
+                Hist = np.concatenate((Hist, Firing)); del(Firing)
+            
+            Units[Rec][CKey]['PSTH'][Class] = Hist[:]
+            del(Hist)
+        
+        print(CKey+':', str(len(Classes)), 'clusters.')
+    
+    del(TTLs)
+    
+    Group = AnalysisKey + '/Units'
+    Hdf5F.WriteUnits(Units, AnalysisFile, Group, XValues)
     del(Units)
     return(None)
 
@@ -661,6 +650,38 @@ class Plot():
     
     
     ## Level 1
+    def RawCh(Ch, Lines, Cols, XValues=[], Slice=[], Leg=[], Colors='', 
+              Visible=True, Save=True, FigName=''):
+        Params = Plot.Set(Backend='Qt5Agg', Params=True)
+        from matplotlib import rcParams; rcParams.update(Params)
+        from matplotlib import pyplot as plt
+        
+        PlotNo = len(Ch)
+        Axes = [plt.subplot(Lines, Cols, _+1) for _ in range(PlotNo)]
+        
+        if XValues == []: XValues = range(len(Ch[0]))
+        
+        for Ind, Ax in enumerate(Axes):
+            if Slice: Line = Ax.plot(XValues[Slice[0]:Slice[1]], 
+                                     Ch[Ind][Slice[0]:Slice[1]])
+            else: Line = Ax.plot(XValues, Ch[Ind])
+            
+            if Colors: Line[0].set_color(Colors[Ind])
+            if Leg: Line[0].set_label(Leg[Ind]); Ax.legend(loc='best')
+        
+        if Save: 
+            if not FigName: 
+                Now = datetime.now().strftime("%Y%m%d%H%M%S")
+                FigName = 'RawCh-' + Now + '.svg'
+            
+            print('Writing to', FigName+'... ', end='')
+            plt.savefig(FigName, format='svg')
+            print('Done.')
+        
+        if Visible: plt.show()
+        return(None)
+    
+    
     def UnitPerCh(ChDict, Ch, XValues, FigName, Ext):
         ClusterNo = len(ChDict['Spks'])
         if ClusterNo == 0: print(Ch, 'had no spikes :('); return(None)
@@ -811,37 +832,58 @@ class Plot():
     
     
     ## Level 2
-    def UnitsSpksPSTH(AnalysisFile, Ext='svg', Override={}):
-        Units, XValues = Hdf5F.LoadUnits(AnalysisFile, Override)
+    def UnitsSpksPSTH(AnalysisFile, AnalysisKey, DataFolder='', Ext='svg', 
+                      Override={}, Procs=8):
+        Units, XValues = Hdf5F.LoadUnits(AnalysisFile, AnalysisKey, Override)
         if 'XValues' in Override: XValues = Override['XValues']
         
-        AnalysisFileName = AnalysisFile.split('/')[-1]
-        Folder = '/'.join(AnalysisFile.split('/')[:-1]) + '/Figures/'
-        os.makedirs(Folder, exist_ok=True)
+#        AnalysisFileName = AnalysisFile.split('/')[-1]
         
-    #    Thrash = {}
+        if not DataFolder: DataFolder = '/'.join(AnalysisFile.split('/')[:-1])
+        DataFolder += '/Figures'
+        
+        os.makedirs(DataFolder, exist_ok=True)
+        
+    #    Thrash = {} [a[s:s+8] for s in range(0,len(a),8)]
         for RKey in Units:
-            for Ch in Units[RKey]:
-                FigName = ''.join([Folder, AnalysisFileName[:-5], '_Rec', 
+            ChNo = len(Units[RKey])
+            ProcLists = [[] for _ in range(0, ChNo, Procs)]
+            
+            for Ind, Ch in enumerate(Units[RKey]):
+                FigName = ''.join([DataFolder, '/', DataFolder.split('/')[0],
+                                   '_', DataFolder.split('/')[-1], '_Rec', 
                                    RKey, '_', Ch, '.', Ext])
-                UnitPlot = Process(target=Plot.UnitPerCh, 
-                                   args=(Units[RKey][Ch], Ch, XValues, 
-                                         FigName, Ext))
-                UnitPlot.start(); print('PID =', UnitPlot.pid)
-                UnitPlot.join()
+                ProcLists[Ind//Procs].append(
+                        Process(target=Plot.UnitPerCh, 
+                                args=(Units[RKey][Ch], Ch, XValues, FigName, Ext))
+                        )
+            
+            for ProcList in ProcLists:
+                for Proc in ProcList:
+                    Proc.start(); print('PID =', Proc.pid)
+                Proc.join()
+            
+            return(None)
+#                UnitPlot.start(); print('PID =', UnitPlot.pid)
+#                UnitPlot.join()
+            
     
     
-    def UnitsPSTHTestBin(XValuesList, AnalysisFile, Ext='svg', Override={}):
+    def UnitsPSTHTestBin(XValuesList, AnalysisFile, DataFolder='', Ext='svg', 
+                         Override={}):
         Units = Hdf5F.LoadUnits(AnalysisFile, Override)[0]
         
         AnalysisFileName = AnalysisFile.split('/')[-1]
-        Folder = '/'.join(AnalysisFile.split('/')[:-1]) + '/Figures/'
-        os.makedirs(Folder, exist_ok=True)
+        
+        if not DataFolder: DataFolder = '/'.join(AnalysisFile.split('/')[:-1])
+        DataFolder += '/Figures/'
+        
+        os.makedirs(DataFolder, exist_ok=True)
         
     #    Thrash = {}
         for RKey in Units:
             for Ch in Units[RKey]:
-                FigName = ''.join([Folder, AnalysisFileName[:-5], '_Rec', 
+                FigName = ''.join([DataFolder, AnalysisFileName[:-5], '_Rec', 
                                    RKey, '_', Ch, '-BinSizeTest.', Ext])
                 UnitPlot = Process(target=Plot.UnitTestBinSizeCh, 
                                    args=(Units[RKey][Ch], Ch, XValuesList, 

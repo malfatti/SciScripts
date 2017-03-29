@@ -32,7 +32,7 @@ def BitsToVolts(Raw):
             Raw[Proc]['data'][Rec] = np.array(Raw[Proc]['data'][Rec], 'float32')
             for Ch in range(Raw[Proc]['data'][Rec].shape[1]):
                 Data = Raw[Proc]['data'][Rec][:, Ch]
-                BitVolts = Raw[Proc]['channel_bit_volts'][Rec][0]
+                BitVolts = Raw[Proc]['channel_bit_volts'][Rec][Ch]
                 
                 Data = Data * BitVolts
                 Raw[Proc]['data'][Rec][:, Ch] = Data[:]
@@ -132,6 +132,23 @@ def GetExpKeys(ExpStr, OpenedFile, KeyInd=None, KeyStr=None):
     return(Key)
 
 
+def GetProc(Data, Board):
+    print('Get proc no. for', Board, 'board... ', end='')
+    ProcChs = {Proc: len(Data[Proc]['data']['0'][1,:]) 
+               for Proc in Data.keys()}
+    
+    for Proc, Chs in ProcChs.items():
+        if Chs == max(ProcChs.values()): OEProc = Proc
+        else: RHAProc = Proc
+    
+    if 'RHAProc' not in locals(): RHAProc = OEProc
+    
+    print('Done.')
+    if Board == 'OE': Proc = OEProc; return(OEProc)
+    elif Board == 'RHA': Proc = RHAProc; return(RHAProc)
+    else: print("Choose Board as 'OE' or 'RHA'."); return(None)
+
+
 def GPIASDataInfo(FileName):
     DataInfo = {}
     with h5py.File(FileName, 'r') as F:
@@ -187,9 +204,11 @@ def LoadABRs(FileName, Path='all'):
     return(ABRs, XValues)
 
 
-def LoadClusters(FileName, KeyInd=None, KeyStr=None):
+def LoadClusters(FileName, AnalysisKey, KeyInd=None, KeyStr=None):
+    print('Loading clusters... ', end='')
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('SpkClusters', F, KeyInd, KeyStr)
+        Key = GetExpKeys('SpkClusters', F[AnalysisKey], KeyInd, KeyStr)
+        Key = AnalysisKey + '/' + Key
         
         Clusters = {}
         for RKey in F[Key].keys():
@@ -206,7 +225,7 @@ def LoadClusters(FileName, KeyInd=None, KeyStr=None):
 #                Clusters[RKey][CKey]['Info'] = {}
 #                Clusters[RKey][CKey]['Info']['Parameters'] = F[Path]['Spikes'].attrs['Parameters'][:]
 #                Clusters[RKey][CKey]['Info']['InSpk'] = F[Path]['Spikes'].attrs['InSpk'][:]
-    
+    print('Done.')
     return(Clusters)
 
 
@@ -263,7 +282,7 @@ def LoadGPIAS(FileName, Key=None):
     return(GPIAS, XValues)
 
 
-def LoadOEKwik(RecFolder, AnalogTTLs, Unit='uV'):
+def LoadOEKwik(RecFolder, AnalogTTLs, Unit='uV', ChannelMap=[]):
     if AnalogTTLs: RawRO, _, Spks, Files = Kwik.load_all_files(RecFolder)
     else: RawRO, Events, Spks, Files = Kwik.load_all_files(RecFolder)
     
@@ -279,19 +298,27 @@ def LoadOEKwik(RecFolder, AnalogTTLs, Unit='uV'):
     
     Raw = {}
     for Proc in RawRO.keys():
-        Raw[Proc] = {}
-        Raw[Proc]['data'] = {Rec: RawRO[Proc]['data'][Rec][:, :]
-                             for Rec in RawRO[Proc]['data'].keys()}
+        Raw[Proc] = {Key: {} for Key in ['data', 'channel_bit_volts', 'info', 'timestamps']}
         
-        Raw[Proc]['channel_bit_volts'] = RawRO[Proc]['channel_bit_volts']
-        Raw[Proc]['info'] = RawRO[Proc]['info'].copy()
-        Raw[Proc]['timestamps'] = RawRO[Proc]['timestamps'].copy()
+        for Rec in RawRO[Proc]['data'].keys():
+            Raw[Proc]['data'][Rec] = RawRO[Proc]['data'][Rec][()]
+            Raw[Proc]['channel_bit_volts'][Rec] = RawRO[Proc]['channel_bit_volts'][Rec][:]
+            Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
+            Raw[Proc]['timestamps'][Rec] = RawRO[Proc]['timestamps'][Rec][()]
     
     del(RawRO)
     
     if Unit == 'uV': Raw = BitsToVolts(Raw)
+    if ChannelMap:
+        ChannelMap = [_-1 for _ in ChannelMap]
+        for Proc in Raw.keys():
+            for Rec in Raw[Proc]['data'].keys():
+                if Raw[Proc]['data'][Rec].shape[1] < len(ChannelMap): continue
+                
+                Chs = sorted(ChannelMap)
+                Raw[Proc]['data'][Rec][:, Chs] = Raw[Proc]['data'][Rec][:, ChannelMap]
             
-    print('Data from ', RecFolder, ' loaded.')
+    print('Data from', RecFolder, 'loaded.')
     
     if AnalogTTLs: return(Raw, Spks, Files)
     else: return(Raw, Events, Spks, Files)
@@ -302,9 +329,10 @@ def LoadTTLsLatency(FileName):
     return(None)
 
 
-def LoadUnits(FileName, Override={}):
+def LoadUnits(FileName, AnalysisKey, Override={}):
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('UnitRec', F)
+        Key = GetExpKeys('Units', F[AnalysisKey])
+        Key = AnalysisKey + '/' + Key
         
         Units = {}
         for RKey in F[Key].keys():
@@ -315,7 +343,8 @@ def LoadUnits(FileName, Override={}):
             else: XValues = []
             
             if 'Rec' in Override.keys(): 
-                RKey = "{0:02d}".format(Override['Rec'])
+#                RKey = "{0:02d}".format(Override['Rec'])
+                RKey = Override['Rec']
             if 'RecS' in Override.keys(): 
                 RKey = Override['RecS']
             
@@ -444,10 +473,9 @@ def WriteABRs(ABRs, XValues, GroupName, FileName):
     return(None)
 
 
-def WriteClusters(Clusters, FileName):
+def WriteClusters(Clusters, FileName, Group):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Group = 'SpkClusters'
     with h5py.File(FileName) as F:
         for RKey in Clusters.keys():
             for CKey in Clusters[RKey].keys():
@@ -599,9 +627,8 @@ def WriteUnitsPerCh(Units, Path, FileName, XValues=[]):
     return(None)
 
 
-def WriteUnits(Units, FileName, XValues=[]):
+def WriteUnits(Units, FileName, Group, XValues=[]):
     print('Writing data to', FileName+'... ', end='')
-    Group = 'UnitRec'
     Thrash = []
     with h5py.File(FileName) as F:
         for RKey in Units.keys():

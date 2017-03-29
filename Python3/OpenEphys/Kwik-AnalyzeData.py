@@ -67,7 +67,7 @@ KwikAnalysis.GPIASAnalysis(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL,
                            GPIASTimeAfterTTL, FilterFreq, FilterOrder, 
                            AnalogTTLs)
 
-Animals = ['CaMKIIahM4Dn07']#, 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 Exp = 'GPIAS'
 AlreadyRun = KwikAnalysis.GPIASAnalysisGroup(RecFolderNo, GPIASCh, GPIASTTLCh, GPIASTimeBeforeTTL, 
                                 GPIASTimeAfterTTL, FilterFreq, FilterOrder, AnalogTTLs, 

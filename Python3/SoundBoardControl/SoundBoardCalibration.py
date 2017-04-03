@@ -35,7 +35,7 @@ frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 192000; Freq = 10000; WaveDur = 10
-Connections = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
 import ControlSoundBoard
 from datetime import datetime
@@ -70,13 +70,13 @@ Date = datetime.now()
 FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
 #FileName = '20161013123915-SBAmpFs.hdf5'
 with h5py.File(FileName, 'w') as F:
-    F.create_group(Connections)
-    F[Connections]['SBOutAmpF'] = SBOutAmpF
-    F[Connections]['SBInAmpF'] = SBInAmpF
+    F.create_group(SoundSystem)
+    F[SoundSystem]['SBOutAmpF'] = SBOutAmpF
+    F[SoundSystem]['SBInAmpF'] = SBInAmpF
 
 with h5py.File(FileName, 'r') as F:
-    a = F[Connections]['SBOutAmpF'][()]
-    b = F[Connections]['SBInAmpF'][()]
+    a = F[SoundSystem]['SBOutAmpF'][()]
+    b = F[SoundSystem]['SBInAmpF'][()]
 
 """
 Malfatti = '/home/malfatti/Documents/PhD/Tests/20161013174053-SBAmpFs.hdf5'

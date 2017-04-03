@@ -666,7 +666,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
 #            Stream.write(Pulse)
 #   
     print('Playing...', end='')
-    SD.play(Pulse, blocking=True, mapping=(2));
+    SD.play(Pulse, blocking=True, mapping=(1));
     print('Done.')
     
     return(None)

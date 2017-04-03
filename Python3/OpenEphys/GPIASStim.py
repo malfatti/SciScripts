@@ -21,14 +21,14 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'CaMKIIahM4Dn09'
+AnimalName = 'Test01-GPIAS'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
                   '20160419093139-SoundMeasurement/' + \
                   '20160419093139-SoundMeasurement.hdf5'
 
 # Sound board used
-SoundBoard = 'USBPre2_oAux-iAux'
+SoundBoard = 'IntelOut-MackieIn-MackieOut-IntelIn'
 
 Rate = 128000
 BaudRate = 38400

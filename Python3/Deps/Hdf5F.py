@@ -398,12 +398,12 @@ def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
     return(Var)
 
 
-def LoadSoundMeasurement(FileName, Var='SoundIntensity'):
+def LoadSoundMeasurement(FileName, Path, Var='SoundIntensity'):
     DataInfo = {}; SoundIntensity = {}
     with h5py.File(FileName, 'r') as h5:
-        Group = GetExpKeys('SoundMeasurement', h5)
+#        Group = GetExpKeys('SoundMeasurement', h5)
         if Var == 'DataInfo':
-            for Key,Val in h5[Group]['SoundRec'].attrs.items():
+            for Key,Val in h5[Path]['SoundRec'].attrs.items():
                 DataInfo[Key] = Val
             
             return(DataInfo)
@@ -411,20 +411,20 @@ def LoadSoundMeasurement(FileName, Var='SoundIntensity'):
         elif Var == 'SoundRec':
             SoundRec = {}
             
-            for FKey in h5[Group]['SoundRec']:
+            for FKey in h5[Path]['SoundRec']:
                 SoundRec[FKey] = {}
                 
-                for AKey, AVal in h5[Group]['SoundRec'][FKey].items():
+                for AKey, AVal in h5[Path]['SoundRec'][FKey].items():
                     SoundRec[FKey][AKey] = AVal[:]
             
             return(SoundRec)
         
         elif Var == 'SoundIntensity':
-            for FKey in h5[Group]['SoundIntensity']:
+            for FKey in h5[Path]['SoundIntensity']:
                 SoundIntensity[FKey] = {}
                 
-                for AmpF in h5[Group]['SoundIntensity'][FKey]:
-                    SoundIntensity[FKey][AmpF] = h5[Group]['SoundIntensity'][FKey][AmpF][()]
+                for AmpF in h5[Path]['SoundIntensity'][FKey]:
+                    SoundIntensity[FKey][AmpF] = h5[Path]['SoundIntensity'][FKey][AmpF][()]
             
             return(SoundIntensity)
         

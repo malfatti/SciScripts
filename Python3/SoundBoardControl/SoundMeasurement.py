@@ -26,23 +26,21 @@ equipment.
 
 Rate = 192000
 # Use one that was used in SoundBoardCalibration.py
-SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
+SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170403123604-SBAmpFs.hdf5'
 #SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
-SoundBoard = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
-Setup = 'UnitRec'
+SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+Setup = 'GPIAS'
 
 ## Fill all durations in SECONDS! If
 
 ## Sound
-# Pulse duration. Avoid using more than 0.5. If you need long pulses, use
-# SoundPulseDur = 0.5 and SoundPulseNo = DesiredDurationInSec/0.5
 SoundPulseDur = 2
 # Amount of pulses per block
 SoundPulseNo = 1
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
-#NoiseFrequency = [[8000, 10000], [12000, 14000]]
-NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-                  [14000, 16000], [16000, 18000], [8000, 18000]]
+NoiseFrequency = [[8000, 10000], [12000, 14000]]
+#NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
+#                  [14000, 16000], [16000, 18000], [8000, 18000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
@@ -67,26 +65,26 @@ Params = {'backend': 'Qt5Agg'}
 from matplotlib import rcParams; rcParams.update(Params)
 import matplotlib.pyplot as plt
 
-SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
-SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
+SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundSystem, 'SBOutAmpF')
+SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundSystem, 'SBInAmpF')
 
-#SoundAmpF = [2.15, 1.5, 1, 0.5, 0.1, 0]
-SoundAmpF = np.hstack((
-                np.arange(2.15, 1.05, -0.1), np.arange(1.0, 0.4, -0.05),
-                np.arange(0.4, 0.15, -0.01), np.arange(0.15, 0.03, -0.005),
-                np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
-                np.arange(0.001, 0, -0.00002), np.array(0.0)
-                ))
+SoundAmpF = [2.15, 1.5, 1, 0.5, 0.1, 0]
+#SoundAmpF = np.hstack((
+#                np.arange(2.15, 1.05, -0.1), np.arange(1.0, 0.4, -0.05),
+#                np.arange(0.4, 0.15, -0.01), np.arange(0.15, 0.03, -0.005),
+#                np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
+#                np.arange(0.001, 0, -0.00002), np.array(0.0)
+#                ))
 
 ## Prepare dict w/ experimental setup
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
-Folder = ''.join([Setup, '-', Date, '-SoundMeasurement'])
+Folder = 'SoundMeasurements'
 FileName = Folder + '/' + Folder + '.hdf5'
 
 DataInfo = dict((Name, eval(Name)) 
                 for Name in ['Rate', 'SoundPulseDur', 'SoundPulseNo', 
                              'SoundAmpF', 'NoiseFrequency', 'TTLAmpF', 
-                             'SoundBoard', 'Setup', 'MicSens_dB', 'Folder'])
+                             'SoundSystem', 'Setup', 'MicSens_dB', 'Folder'])
 
 ## Preallocate dict for recordings
 SoundRec = {}
@@ -95,53 +93,59 @@ SoundRec = {}
 
 # Prepare sound pulses
 Freqs = [str(Freq[0]) + '-' + str(Freq[1]) for Freq in NoiseFrequency]
-SoundAmpF = {str(Freq): SoundAmpF for Freq in Freqs}
+SoundAmpF = {Freq: SoundAmpF for Freq in Freqs}
 
 # Prepare audio objects
 SD.default.device = 'system'
 SD.default.samplerate = Rate
 SD.default.channels = 2
 
+os.makedirs(Folder, exist_ok=True)
+Group = '/'.join([Setup, SoundSystem])
 
+FullTime = (len(SoundAmpF['8000-10000'])*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
+#    input('Press enter to start sound measurement.')
+print('Full test will take', str(round(FullTime, 2)), 'min to run.')
+print('Current time: ', datetime.now().strftime("%H:%M:%S"))
+print('Cover your ears!!')
+print('5 ', end='')
+time.sleep(1)
+print('4 ', end='')
+time.sleep(1)
+print('3 ', end='')
+time.sleep(1)
+print('2 ', end='')
+time.sleep(1)
+print('1 ')
+time.sleep(1)
+
+print('Sound measurement running...')    
 for Freq in NoiseFrequency:
     SoundRec[str(Freq[0]) + '-' + str(Freq[1])] = {}
     Sound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
-                                        [Freq], TTLAmpF, SoundBoard, 
+                                        [Freq], TTLAmpF, SoundSystem, 
                                         TTLs=False)[0]
     
-    ## Run!
-    FullTime = (len(SoundAmpF['8000-10000'])*len(NoiseFrequency)*(SoundPulseDur*SoundPulseNo))/60
-#    input('Press enter to start sound measurement.')
-    print('Full test will take', str(round(FullTime, 2)), 'min to run.')
-    print('Current time: ', datetime.now().strftime("%H:%M:%S"))
-    print('Cover your ears!!')
-    print('5 ', end='')
-    time.sleep(1)
-    print('4 ', end='')
-    time.sleep(1)
-    print('3 ', end='')
-    time.sleep(1)
-    print('2 ', end='')
-    time.sleep(1)
-    print('1 ')
-    time.sleep(1)
-    print('Sound measurement running...')    
     for FKey in Sound:
         for AKey in Sound[FKey]:
             print(FKey, AKey)
             for Pulse in range(SoundPulseNo):
-                SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey].T, blocking=True)
+                SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey].T, 
+                                                  blocking=True, 
+                                                  output_mapping=(2,1))
     
-    print('Done playing/recording. Saving data...')
+    print('Done playing/recording. Saving data... ', end='')
     
     ## Save!!!
-    os.makedirs(Folder, exist_ok=True)
-    Group = Folder
     with h5py.File(FileName) as F:
-        if Group not in F: F.create_group(Group)
-        if 'SoundRec' not in F[Group]: F[Group].create_group('SoundRec')
+#        if Group not in F: F.create_group(Group)
+#        if 'SoundRec' not in F[Group]: F[Group].create_group('SoundRec')
+        
         for FKey in SoundRec:
-            F[Group]['SoundRec'].create_group(FKey)
+#            if Group+'/SoundRec/'+FKey not in F: F[Group]['SoundRec'].create_group(FKey)
+#            F[Group]['SoundRec'].create_group(FKey)
+            FPath = Group+'/SoundRec/'+FKey
+            if FPath not in F: F.create_group(FPath)
             for AKey, AVal in SoundRec[FKey].items():
                 F[Group]['SoundRec'][FKey][AKey] = AVal
         
@@ -149,9 +153,9 @@ for Freq in NoiseFrequency:
             F[Group]['SoundRec'].attrs[Key] = Value
     
     del(Sound, SoundRec[str(Freq[0]) + '-' + str(Freq[1])])
-    print('Data saved.')
+    print('Done.')
 
-print('Done \O/!')
+print('Finished recording \O/')
 
 
 #%% Analysis
@@ -168,7 +172,7 @@ print('Done \O/!')
 #from scipy import signal
 #DataInfo = Hdf5F.LoadSoundMeasurement(FileName, 'DataInfo')
 #SBInAmpF = Hdf5F.SoundCalibration(DataInfo['SBAmpFsFile'], SoundBoard, 'SBInAmpF')
-SoundRec = Hdf5F.LoadSoundMeasurement(FileName, 'SoundRec')
+SoundRec = Hdf5F.LoadSoundMeasurement(FileName, Group, 'SoundRec')
 
 DataInfo['MicSens_VPa'] = 10**(DataInfo['MicSens_dB']/20)
 

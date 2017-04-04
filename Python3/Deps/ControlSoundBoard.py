@@ -32,13 +32,13 @@ from scipy import signal
 import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
-#SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
-SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
+SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170403123604-SBAmpFs.hdf5'
+#SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
 
 ## Lower-level functions
-def dBToAmpF(Intensities, CalibrationFile):
+def dBToAmpF(Intensities, CalibrationFile, Path):
     print('Converting dB to AmpF...')
-    SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, 
+    SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, Path, 
                                                 'SoundIntensity')
     
     SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
@@ -118,10 +118,18 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
            PostPauseDur=0):
     
     print('Generating Sound TTL...')
-    TTLPulse = np.concatenate([
+    TTLSpace = PulseDur + PostPauseDur
+    if TTLSpace < 2*PulseDur:
+        TTLPulse = np.concatenate([
+                  np.array([TTLVal] * round(Rate*PulseDur/2), dtype=np.float32),
+                  np.array([TTLVal*-1] * round(Rate*PulseDur/2), dtype=np.float32)
+                  ])
+    else:
+        TTLPulse = np.concatenate([
                   np.array([TTLVal] * round(Rate*PulseDur), dtype=np.float32),
                   np.array([TTLVal*-1] * round(Rate*PulseDur), dtype=np.float32)
                   ])
+    
 #    TTLPulse = [TTLVal] * round(Rate*PulseDur) + \
 #               [TTLVal*-1] * round(Rate*PulseDur)
     TTLPulse[-1] = 0
@@ -251,7 +259,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency,
         Sound[FKey] = {}
         
         for AKey in SoundUnit[FKey]:
-            Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey]))
+            Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey])).T
     
     SoundPauseBetweenStimBlocks = np.zeros([2, 
                                             round(SoundPauseBetweenStimBlocksDur 
@@ -420,7 +428,7 @@ def GPIAS(FileList, CalibrationFile, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, Filt
 
 
 def PlotGPIAS(FileList):
-    Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+    Params = {'backend': 'Qt5Agg'}
     from matplotlib import rcParams; rcParams.update(Params)
     from matplotlib import pyplot as plt
     
@@ -543,7 +551,12 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
     from queue import Queue, Empty
     import numpy as np
     SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
-
+    
+    Params = {'backend': 'Qt5Agg'}
+    from matplotlib import rcParams; rcParams.update(Params)
+    from matplotlib.animation import FuncAnimation
+    from matplotlib import pyplot as plt
+    
 #    SoundBoard = 'Intel_oAnalog-iAnalog'
 #    Device = 'system'
 #    Rate = 192000
@@ -600,11 +613,6 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
 #        Data = Data * SBInAmpF
 #        Plot.set_ydata(Data)
 #        return Plot,
-    
-    Params = {'backend': 'Qt5Agg'}
-    from matplotlib import rcParams; rcParams.update(Params)
-    from matplotlib.animation import FuncAnimation
-    from matplotlib import pyplot as plt
     
     SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
     

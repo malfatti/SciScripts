@@ -19,8 +19,6 @@
 This is a script to define functions allowing Arduino/Python integration.
 """
 
-import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 import serial
 import serial.tools.list_ports
 
@@ -33,6 +31,9 @@ def CreateObj(BaudRate):
 
 def ArduinOscilloscope(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028), 
                        FramesPerBuf=128):
+    
+    import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
     
     Port = serial.tools.list_ports.comports()
     Arduino = serial.Serial(Port[-1][0], BaudRate)
@@ -58,6 +59,9 @@ def ArduinOscilloscope(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028),
 
 def CheckPiezoAndTTL(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028), 
                      FramesPerBuf=128):
+    
+    import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
     
     Port = serial.tools.list_ports.comports()
     Arduino = serial.Serial(Port[-1][0], BaudRate)

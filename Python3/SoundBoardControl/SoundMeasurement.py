@@ -82,7 +82,7 @@ Folder = 'SoundMeasurements'
 FileName = Folder + '/' + Folder + '.hdf5'
 
 DataInfo = dict((Name, eval(Name)) 
-                for Name in ['Rate', 'SoundPulseDur', 'SoundPulseNo', 
+                for Name in ['Rate', 'SoundPulseDur', 'SoundPulseNo', 'Date',
                              'SoundAmpF', 'NoiseFrequency', 'TTLAmpF', 
                              'SoundSystem', 'Setup', 'MicSens_dB', 'Folder'])
 
@@ -130,7 +130,7 @@ for Freq in NoiseFrequency:
         for AKey in Sound[FKey]:
             print(FKey, AKey)
             for Pulse in range(SoundPulseNo):
-                SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey].T, 
+                SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey], 
                                                   blocking=True, 
                                                   output_mapping=(2,1))
     
@@ -149,7 +149,7 @@ for Freq in NoiseFrequency:
             
             F.create_group(FPath)
             for AKey, AVal in SoundRec[FKey].items():
-                F[Group]['SoundRec'][FKey][AKey] = AVal#[:, 0]
+                F[Group]['SoundRec'][FKey][AKey] = AVal[:, 0]
         
         for Key, Value in DataInfo.items():
             F[Group]['SoundRec'].attrs[Key] = Value
@@ -209,7 +209,7 @@ for FKey in SoundRec:
             Window = signal.hanning(len(SoundRec[FKey][AKey])//
                                     (DataInfo['Rate']/1000))
             F, PxxSp = signal.welch(SoundRec[FKey][AKey], DataInfo['Rate'], 
-                                    Window, noverlap=0, 
+                                    Window, nperseg=len(Window), noverlap=0, 
                                     scaling='density')
         
         FreqBand = [int(_) for _ in FKey.split('-')]
@@ -249,15 +249,15 @@ with h5py.File(FileName) as h5:
 
 
 AmpFList = sorted(list(SoundIntensity['8000-10000'].keys()), reverse=True)
-ToAppend = AmpFList[:4] + [AmpFList[-1]]
-AmpFList = AmpFList[4:-1] + ToAppend
+#ToAppend = AmpFList[:4] + [AmpFList[-1]]
+#AmpFList = AmpFList[4:-1] + ToAppend
+
 TexTable = pandas.DataFrame([[float(AmpF)] + [Intensity[Freq][AmpF]['dB'] 
                                               for Freq in Intensity]
                              for AmpF in AmpFList])
 
-File = open(Folder+'/'+'IntensityTable.tex', 'w')
-File.write(r"""
-%% Configs =====
+File = open(Folder+'/'+'IntensityTable_'+DataInfo['Date']+'.tex', 'w')
+File.write(r"""%% Configs =====
 \documentclass[12pt,a4paper]{report}
 
 \usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
@@ -271,14 +271,14 @@ File.write(r"""
 
 \cleardoublepage
 \chapter{Sound measurements}
-\input{IntensityTable-Contents.tex}
-
+\input{IntensityTable-Contents""" +'_'+DataInfo['Date']+'.tex}')
+File.write(r"""
 \end{document}
 """)
 File.close()
 del(File)
 
-File = open(Folder+'/'+'IntensityTable-Contents.tex', 'w')
+File = open(Folder+'/'+'IntensityTable-Contents_'+DataInfo['Date']+'.tex', 'w')
 File.write(TexTable.to_latex(longtable=True))
 File.close()
 del(File)
@@ -312,7 +312,7 @@ plt.axes().spines['top'].set_visible(False)
 plt.axes().yaxis.set_ticks_position('left')
 plt.axes().xaxis.set_ticks_position('bottom')
 plt.title(FigTitle)
-plt.savefig(Folder+'/'+'SoundMeasurement.svg', format='svg')
+plt.savefig(Folder+'/'+'SoundMeasurement_'+DataInfo['Date']+'.svg', format='svg')
 
 
 Colormaps = [plt.get_cmap(Map) for Map in ['Reds', 'Greens', 'Blues', 
@@ -330,7 +330,7 @@ for FKey in FreqList:
     
 #    AmpFList = list(SoundIntensity[FKey].keys()); AmpFList.sort()
     Intensities = [80, 70, 60, 50, 40, 0]
-    AmpFList = ControlSoundBoard.dBToAmpF(Intensities, FileName)
+    AmpFList = ControlSoundBoard.dBToAmpF(Intensities, FileName, Group)
     for AFKey in AmpFList:
         AmpFList[AFKey] = [str(_) for _ in AmpFList[AFKey]]
     
@@ -339,7 +339,11 @@ for FKey in FreqList:
         
         Colors = [Colormaps[Freq](255-(AmpF*255//len(AmpFList)))]
         
-        LineLabel = str(round(SoundIntensity[FKey][AKey])) + ' dB'
+        try:
+            LineLabel = str(round(SoundIntensity[FKey][AKey])) + ' dB'
+        except KeyError:
+            AKey = '0'
+            LineLabel = str(round(SoundIntensity[FKey][AKey])) + ' dB'
         
         for IAmpF in Intensity[FKey]:
             IdB = Intensity[FKey][IAmpF]['dB']
@@ -366,6 +370,6 @@ for FKey in FreqList:
 Fig.suptitle(FigTitle)
 Fig.tight_layout()
 Fig.subplots_adjust(top=0.93)
-Fig.savefig(Folder+'/'+'PowerSpectrumDensity.svg', format='svg')
+Fig.savefig(Folder+'/'+'PowerSpectrumDensity_'+DataInfo['Date']+'.svg', format='svg')
 plt.show()
 print('Done.')

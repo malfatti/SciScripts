@@ -23,15 +23,19 @@ the acoustic startle reflex (GPIAS).
 
 AnimalName = 'Test01-GPIAS'
 
-CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
+#CalibrationFile = '/home/cerebro/Malfatti/Test/' + \
+#                  '20160419093139-SoundMeasurement/' + \
+#                  '20160419093139-SoundMeasurement.hdf5'
+CalibrationFile = '/home/malfatti/Documents/PhD/Tests/' + \
                   '20160419093139-SoundMeasurement/' + \
                   '20160419093139-SoundMeasurement.hdf5'
 
 # Sound board used
-SoundBoard = 'IntelOut-MackieIn-MackieOut-IntelIn'
+#SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
-Rate = 128000
-BaudRate = 38400
+Rate = 192000
+BaudRate = 115200
 
 ## Fill all durations in SECONDS!
 
@@ -50,14 +54,14 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [75]
-PulseIntensity = [120]
+BackgroundIntensity = [60]
+PulseIntensity = [105]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
-                  [12000, 14000], [14000, 16000]]
+                  [12000, 14000], [14000, 16000]]#1, [8000, 16000]]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 9
@@ -74,8 +78,7 @@ import h5py
 import Hdf5F
 import random
 
-SoundIntensity = Hdf5F.SoundMeasurement(CalibrationFile, 
-                                                'SoundIntensity')
+SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, 'SoundIntensity')
 
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
@@ -108,7 +111,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundBackground = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundPulseNo, 
                                               SoundAmpF, NoiseFrequency, 
-                                              TTLAmpF,SoundBoard, 
+                                              TTLAmpF,SoundSystem, 
                                               'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
@@ -120,7 +123,7 @@ SoundPulseNo = 1
 SoundAmpF = SoundBackgroundAmpF
 SoundGap[0] = ControlSoundBoard.SoundStim(Rate, SoundPulseDur,SoundPulseNo, 
                                           SoundAmpF, NoiseFrequency, 
-                                          TTLAmpF, SoundBoard, 'AllPulses')[0]
+                                          TTLAmpF, SoundSystem, 'AllPulses')[0]
 SoundGap[1] = [0, 0]*(round(Rate*SoundGapDur))
 SoundGap[1][-1] = 0
 SoundGap[1] = bytes(array.array('f',SoundGap[1]))
@@ -136,7 +139,7 @@ SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundPrePulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
                                                       SoundPulseNo, SoundAmpF, 
                                                       NoiseFrequency, TTLAmpF, 
-                                                      SoundBoard, 
+                                                      SoundSystem, 
                                                       'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
@@ -147,7 +150,7 @@ SoundAmpF = SoundPulseAmpF
 TTLAmpF = 0.07
 SoundLoudPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundPulseNo, 
                                              SoundAmpF, NoiseFrequency, 
-                                             TTLAmpF, SoundBoard, 
+                                             TTLAmpF, SoundSystem, 
                                              'AllPulses')[0]
 TTLAmpF = 0
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
@@ -159,7 +162,7 @@ SoundAmpF = SoundBackgroundAmpF
 SoundBackgroundAfterPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
                                                      SoundPulseNo, SoundAmpF, 
                                                      NoiseFrequency, TTLAmpF, 
-                                                     SoundBoard, 
+                                                     SoundSystem, 
                                                      'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
@@ -170,7 +173,7 @@ SoundAmpF = SoundBackgroundAmpF
 SoundBetweenStim = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
                                                SoundPulseNo, SoundAmpF, 
                                                NoiseFrequency, TTLAmpF, 
-                                               SoundBoard, 'AllPulses')[0]
+                                               SoundSystem, 'AllPulses')[0]
 del(SoundPulseDur, SoundPulseNo, SoundAmpF)
 
 
@@ -190,7 +193,24 @@ for FE in range(len(Freqs)):
 
 FreqOrder = [[0]]
 
-# Play!!
+# Play 3 trials only startle
+for Pre in range(3):
+    SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
+    NoOfPulses = round(SBSDur/SBSUnitDur)
+    
+    for Pulse in range(NoOfPulses):
+        Stimulation.write(SoundBetweenStim['8000-16000'][0])
+    
+    Arduino.write(b'P')
+    Stimulation.write(SoundBackground['8000-16000'][0])
+    Stimulation.write(SoundGap[0]['8000-16000'][0])
+    Stimulation.write(SoundBackgroundPrePulse['8000-16000'][0])
+    #Arduino.write(b'a')
+    Stimulation.write(SoundLoudPulse['8000-16000'][0])
+    #Arduino.write(b'z')
+    Stimulation.write(SoundBackgroundAfterPulse['8000-16000'][0])
+    Arduino.write(b'P')
+
 for Hz in range(len(Freqs)):
     Trials = [0, 1]
     random.shuffle(Trials)

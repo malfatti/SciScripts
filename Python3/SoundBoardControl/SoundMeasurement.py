@@ -40,7 +40,7 @@ SoundPulseNo = 1
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 NoiseFrequency = [[8000, 10000], [12000, 14000]]
 #NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-#                  [14000, 16000], [16000, 18000], [8000, 18000]]
+#                  [14000, 16000], [8000, 16000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
@@ -145,9 +145,11 @@ for Freq in NoiseFrequency:
 #            if Group+'/SoundRec/'+FKey not in F: F[Group]['SoundRec'].create_group(FKey)
 #            F[Group]['SoundRec'].create_group(FKey)
             FPath = Group+'/SoundRec/'+FKey
-            if FPath not in F: F.create_group(FPath)
+            if FPath in F: F[Date+'_'+FPath] = F[FPath]; del(F[FPath])
+            
+            F.create_group(FPath)
             for AKey, AVal in SoundRec[FKey].items():
-                F[Group]['SoundRec'][FKey][AKey] = AVal
+                F[Group]['SoundRec'][FKey][AKey] = AVal#[:, 0]
         
         for Key, Value in DataInfo.items():
             F[Group]['SoundRec'].attrs[Key] = Value
@@ -236,13 +238,11 @@ for Freq in Intensity:
 ## Save analyzed data
 print('Saving analyzed data...')
 os.makedirs(Folder, exist_ok=True)
-Group = Folder
 with h5py.File(FileName) as h5:
     if Group not in h5: h5.create_group(Group)
-    h5[Group].create_group('SoundIntensity')
     
     for Freq in SoundIntensity:
-        h5[Group]['SoundIntensity'].create_group(Freq)
+        h5[Group].create_group('SoundIntensity/'+Freq)
         
         for AKey, AVal in SoundIntensity[Freq].items():
             h5[Group]['SoundIntensity'][Freq][AKey] = AVal

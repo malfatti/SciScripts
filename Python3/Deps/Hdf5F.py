@@ -324,6 +324,40 @@ def LoadOEKwik(RecFolder, AnalogTTLs, Unit='uV', ChannelMap=[]):
     else: return(Raw, Events, Spks, Files)
 
 
+def LoadSoundMeasurement(FileName, Path, Var='SoundIntensity'):
+    DataInfo = {}; SoundIntensity = {}
+    with h5py.File(FileName, 'r') as h5:
+#        Group = GetExpKeys('SoundMeasurement', h5)
+        if Var == 'DataInfo':
+            for Key,Val in h5[Path]['SoundRec'].attrs.items():
+                DataInfo[Key] = Val
+            
+            return(DataInfo)
+            
+        elif Var == 'SoundRec':
+            SoundRec = {}
+            
+            for FKey in h5[Path]['SoundRec']:
+                SoundRec[FKey] = {}
+                
+                for AKey, AVal in h5[Path]['SoundRec'][FKey].items():
+                    SoundRec[FKey][AKey] = AVal[:]
+            
+            return(SoundRec)
+        
+        elif Var == 'SoundIntensity':
+            for FKey in h5[Path]['SoundIntensity']:
+                SoundIntensity[FKey] = {}
+                
+                for AmpF in h5[Path]['SoundIntensity'][FKey]:
+                    SoundIntensity[FKey][AmpF] = h5[Path]['SoundIntensity'][FKey][AmpF][()]
+            
+            return(SoundIntensity)
+        
+        else:
+            print('Supported variables: DataInfo, SoundRec, SoundIntensity.')
+
+
 def LoadTTLsLatency(FileName):
     
     return(None)
@@ -396,40 +430,6 @@ def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
     with h5py.File(SBAmpFsFile, 'r') as h5: 
         Var = h5[SoundBoard][Key][()]
     return(Var)
-
-
-def LoadSoundMeasurement(FileName, Path, Var='SoundIntensity'):
-    DataInfo = {}; SoundIntensity = {}
-    with h5py.File(FileName, 'r') as h5:
-#        Group = GetExpKeys('SoundMeasurement', h5)
-        if Var == 'DataInfo':
-            for Key,Val in h5[Path]['SoundRec'].attrs.items():
-                DataInfo[Key] = Val
-            
-            return(DataInfo)
-            
-        elif Var == 'SoundRec':
-            SoundRec = {}
-            
-            for FKey in h5[Path]['SoundRec']:
-                SoundRec[FKey] = {}
-                
-                for AKey, AVal in h5[Path]['SoundRec'][FKey].items():
-                    SoundRec[FKey][AKey] = AVal[:]
-            
-            return(SoundRec)
-        
-        elif Var == 'SoundIntensity':
-            for FKey in h5[Path]['SoundIntensity']:
-                SoundIntensity[FKey] = {}
-                
-                for AmpF in h5[Path]['SoundIntensity'][FKey]:
-                    SoundIntensity[FKey][AmpF] = h5[Path]['SoundIntensity'][FKey][AmpF][()]
-            
-            return(SoundIntensity)
-        
-        else:
-            print('Supported variables: DataInfo, SoundRec, SoundIntensity.')
 
 
 def WriteABR(ABRs, XValues, Group, Path, FileName):

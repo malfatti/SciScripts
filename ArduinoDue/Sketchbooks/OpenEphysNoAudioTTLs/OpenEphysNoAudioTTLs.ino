@@ -15,24 +15,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   All pulses (uppercase chars) are 10ms long.
-  A = pulse on pin 53
-  B = pulse on pin 50
-  C = pulse on pin 49
-  D = pulse on pin 46
-  E = pulse on pin 45
-  F = pulse on pin 42
-  G = pulse on pin 41
-  P = pulse on pin 38
+  A = pulse on Pins[0]
+  B = pulse on Pins[1]
+  C = pulse on Pins[2]
+  D = pulse on Pins[3]
+  E = pulse on Pins[4]
+  F = pulse on Pins[5]
+  G = pulse on Pins[6]
+  P = pulse on Pins[7]
 */
 
 const int inPin = A0;
 const int PinNo = 8;
-//const int Pins[PinNo] = {53, 50, 49, 46, 45, 42, 41, 38};
-const int Pins[PinNo] = {38, 41, 42, 45, 46, 49, 50, 53};
-const int Delay = 25;
+const int Pins[PinNo] = {39, 41, 43, 45, 47, 49, 51, 53};
+const int Delay = 20;
 
 void setup() {
-  Serial.begin(38400);
+  Serial.begin(115200);
 
 //  // Set free running mode on ADC7 (pin A0)
 //  ADC->ADC_MR |= 0x80;

@@ -29,7 +29,7 @@ CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
 #                  '20160419093139-SoundMeasurement/' + \
 #                  '20160419093139-SoundMeasurement.hdf5'
 
-# Sound board used
+# Sound setup and system used
 Setup = 'GPIAS'
 System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
@@ -37,20 +37,12 @@ Rate = 192000
 BaudRate = 115200
 SoundCh = 6; SoundTTLCh = 3; PiezoCh = 8
 
-## Fill all durations in SECONDS!
-
-## Sound
-# Background noise duration
+## Sound durations IN SECONDS
 SoundBackgroundDur = 2.3
-# Gap duration
 SoundGapDur = 0.04
-# Duration of background noise before pulse
 SoundBackgroundPrePulseDur = 0.1
-# Pulse duration
 SoundLoudPulseDur = 0.05
-# Duration of background noise after pulse
 SoundBackgroundAfterPulseDur = 0.51
-# Duration of background noise between stimulation block
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
@@ -71,7 +63,7 @@ NoOfTrials = 9
 TTLAmpF = 0.07
 #==========#==========#==========#==========#
 
-import datetime
+from datetime import datetime
 import ControlArduino
 import ControlSoundBoard
 import h5py
@@ -80,22 +72,17 @@ import numpy as np
 import random
 import sounddevice as SD
 
-SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, Setup+'/'+System, 
-                                            'SoundIntensity')
+Date = datetime.now().strftime("%Y%m%d%H%M%S")
+FileName = ''.join([Date, '-', AnimalName, '-GPIAS.hdf5'])
 
-Date = datetime.datetime.now()
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                    '-GPIAS.hdf5'])
+SoundBackgroundAmpF = ControlSoundBoard.dBToAmpF(BackgroundIntensity, 
+                                                 CalibrationFile, 
+                                                 Setup+'/'+System)
 
-SoundBackgroundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
-                            key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
-                            for dB in BackgroundIntensity] 
-                       for Hz in list(SoundIntensity)}
+SoundPulseAmpF = ControlSoundBoard.dBToAmpF(PulseIntensity, 
+                                            CalibrationFile, 
+                                            Setup+'/'+System)
 
-SoundPulseAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
-                       key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
-                       for dB in PulseIntensity] 
-                  for Hz in list(SoundIntensity)}
 
 ## Prepare dict w/ experimental setup
 DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate',
@@ -108,61 +95,12 @@ DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate'
                                        'NoiseFrequency', 'NoOfTrials', 
                                        'TTLAmpF', 'FileName'])
 
-print('Creating SoundBackground...')
-SoundPulseDur = SoundBackgroundDur
-SoundAmpF = SoundBackgroundAmpF
-SoundBackground = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
-                                              NoiseFrequency, TTLAmpF, 
-                                              System, TTLs=False)[0]
-del(SoundPulseDur, SoundAmpF)
-
-print('Creating SoundGap...')
-SoundGap = {}
-SoundPulseDur = SoundGapDur
-SoundAmpF = SoundBackgroundAmpF
-SoundGap['NoGap'] = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
-                                          NoiseFrequency, TTLAmpF, 
-                                          System, TTLs=False)[0]
-
-SoundGap['Gap'] = {FKey: {AKey: np.zeros(SoundGap['NoGap'][FKey][AKey].shape) 
-                          for AKey in SoundGap['NoGap'][FKey]} 
-                   for FKey in SoundGap['NoGap']}
-
-del(SoundPulseDur, SoundAmpF)
-
-
-print('Creating SoundBackgroundPrePulse...')
-SoundPulseDur = SoundBackgroundPrePulseDur
-SoundAmpF = SoundBackgroundAmpF
-SoundBackgroundPrePulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
-                                                      SoundAmpF, NoiseFrequency, 
-                                                      TTLAmpF, 
-                                                      System, TTLs=False)[0]
-del(SoundPulseDur, SoundAmpF)
-
-print('Creating SoundLoudPulse...')
-SoundPulseDur = SoundLoudPulseDur
-SoundAmpF = SoundPulseAmpF
-
-SoundLoudPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
-                                             NoiseFrequency, TTLAmpF, System)[0]
-del(SoundPulseDur, SoundAmpF)
-
-print('Creating SoundBackgroundAfterPulse...')
-SoundPulseDur = SoundBackgroundAfterPulseDur
-SoundAmpF = SoundBackgroundAmpF
-SoundBackgroundAfterPulse = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, 
-                                                        SoundAmpF, 
-                                                        NoiseFrequency, TTLAmpF, 
-                                                        System, TTLs=False)[0]
-del(SoundPulseDur, SoundAmpF)
-
-print('Creating SoundBetweenStim...')
-SoundPulseDur = 1; SoundAmpF = SoundBackgroundAmpF
-SoundBetweenStim = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
-                                               NoiseFrequency, TTLAmpF, 
-                                               System)[0]
-del(SoundPulseDur, SoundAmpF)
+SoundBackground, SoundGap, SoundBackgroundPrePulse, SoundLoudPulse, \
+SoundBackgroundAfterPulse, SoundBetweenStim = ControlSoundBoard.GPIASStim(
+        Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, 
+        SoundLoudPulseDur, SoundBackgroundAfterPulseDur, SoundBetweenStimDur, 
+        SoundBackgroundAmpF, SoundPulseAmpF, TTLAmpF, NoiseFrequency, 
+        System)
 
 # Set Arduino and audio objects
 Arduino = ControlArduino.CreateObj(BaudRate)
@@ -170,14 +108,15 @@ SD.default.device = 'system'
 SD.default.samplerate = Rate
 SD.default.blocksize = 384
 SD.default.channels = 2
-Map = (1, 2)
+Stim = SD.OutputStream(dtype='float32')
+
 
 #%% Run!!
 print('Preallocating memory and pseudo-randomizing the experiment...')
 FreqsStr = ['-'.join([str(a) for a in b]) for b in NoiseFrequency]
 TrialsStr = ['NoGap', 'Gap']
 Freqs = [In for In, El in enumerate(NoiseFrequency)]*NoOfTrials
-random.shuffle(Freqs); 
+np.random.shuffle(Freqs); 
 
 FreqSlot = [[0] for _ in range(len(Freqs)*2)]
 for FE in range(len(Freqs)):
@@ -186,25 +125,8 @@ for FE in range(len(Freqs)):
 
 FreqOrder = [[0]]
 
-# Play 3 trials only startle
-for Pre in range(3):
-    RealFreq = FreqsStr[-1]
-    ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
-    APulseKey = str(SoundPulseAmpF[RealFreq][0])
-    
-    SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
-    for Pulse in range(SBSDur):
-        SD.play(SoundBetweenStim[RealFreq][ABGKey], blocking=True, mapping=Map)
-    
-    Arduino.write(b'P')
-    SD.play(SoundBackground[RealFreq][ABGKey], blocking=True, mapping=Map)
-    SD.play(SoundGap['NoGap'][RealFreq][ABGKey], blocking=True, mapping=Map)
-    SD.play(SoundBackgroundPrePulse[RealFreq][ABGKey], blocking=True, mapping=Map)
-    SD.play(SoundLoudPulse[RealFreq][APulseKey], blocking=True, mapping=Map)
-    SD.play(SoundBackgroundAfterPulse[RealFreq][ABGKey], blocking=True, mapping=Map)
-    Arduino.write(b'P')
-
 # Play the test trials
+Stim.start()
 for Hz in range(len(Freqs)):
     Trials = [0, 1]
     random.shuffle(Trials)
@@ -216,39 +138,20 @@ for Hz in range(len(Freqs)):
         FreqOrder.append([0])
         ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
         APulseKey = str(SoundPulseAmpF[RealFreq][0])
+        SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         
         print('Playing ', RealFreq, ' trial ', TrialsStr[Trial])
-        SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
-        for Pulse in range(SBSDur):
-            SD.play(SoundBetweenStim[RealFreq][ABGKey], blocking=True, mapping=Map)
-        
+        Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
         Arduino.write(b'P')
-        SD.play(SoundBackground[RealFreq][ABGKey], blocking=True, mapping=Map)
-        SD.play(SoundGap[TrialsStr[Trial]][RealFreq][ABGKey], blocking=True, mapping=Map)
-        SD.play(SoundBackgroundPrePulse[RealFreq][ABGKey], blocking=True, mapping=Map)
-        SD.play(SoundLoudPulse[RealFreq][APulseKey], blocking=True, mapping=Map)
-        SD.play(SoundBackgroundAfterPulse[RealFreq][ABGKey], blocking=True, mapping=Map)
+        Stim.write(SoundBackground[RealFreq][ABGKey])
+        Stim.write(SoundGap[TrialsStr[Trial]][RealFreq][ABGKey])
+        Stim.write(SoundBackgroundPrePulse[RealFreq][ABGKey])
+        Stim.write(SoundLoudPulse[RealFreq][APulseKey])
+        Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
         Arduino.write(b'P')
-        
-FreqOrder.remove([0])
 
-# Play 3 trials only startle
-for Post in range(3):
-    RealFreq = FreqsStr[-1]
-    ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
-    APulseKey = str(SoundPulseAmpF[RealFreq][0])
-    
-    SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
-    for Pulse in range(SBSDur):
-        SD.play(SoundBetweenStim[RealFreq][ABGKey], blocking=True, mapping=Map)
-    
-    Arduino.write(b'P')
-    SD.play(SoundBackground[RealFreq][ABGKey], blocking=True, mapping=Map)
-    SD.play(SoundGap['NoGap'][RealFreq][ABGKey], blocking=True, mapping=Map)
-    SD.play(SoundBackgroundPrePulse[RealFreq][ABGKey], blocking=True, mapping=Map)
-    SD.play(SoundLoudPulse[RealFreq][APulseKey], blocking=True, mapping=Map)
-    SD.play(SoundBackgroundAfterPulse[RealFreq][ABGKey], blocking=True, mapping=Map)
-    Arduino.write(b'P')
+Stim.stop()
+FreqOrder.remove([0])
 
 print('Done.')
 

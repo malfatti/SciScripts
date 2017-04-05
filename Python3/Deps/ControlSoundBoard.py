@@ -22,20 +22,15 @@ board as an analog I/O board.
 #%%
 import array
 import Hdf5F
-import KwikAnalysis
-import math
 import numpy as np
-from queue import Queue, Empty
-import random
 import sounddevice as SD
 from scipy import signal
-import threading
 
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
 SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170403123604-SBAmpFs.hdf5'
 #SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
 
-## Lower-level functions
+## Level 0
 def dBToAmpF(Intensities, CalibrationFile, Path):
     print('Converting dB to AmpF...')
     SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, Path, 
@@ -87,6 +82,7 @@ def BandpassFilterSound(SoundPulse, Rate, NoiseFrequency):
         f2, f1 = signal.butter(4, passband, 'bandpass')
         SoundPulseFiltered[FKey] = signal.filtfilt(f2, f1, SoundPulse, 
                                                    padtype='odd', padlen=0)
+        SoundPulseFiltered[FKey] = SoundPulseFiltered[FKey].astype('float32')
         SoundPulseFiltered[FKey][-1] = 0
     print(end='\n')
     return(SoundPulseFiltered)
@@ -130,8 +126,6 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
                   np.array([TTLVal*-1] * round(Rate*PulseDur), dtype=np.float32)
                   ])
     
-#    TTLPulse = [TTLVal] * round(Rate*PulseDur) + \
-#               [TTLVal*-1] * round(Rate*PulseDur)
     TTLPulse[-1] = 0
     
     if PrePauseDur == 0:
@@ -149,19 +143,7 @@ def GenTTL(Rate, PulseDur, TTLAmpF, TTLVal, SoundBoard, SBOutAmpF, PrePauseDur=0
             TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
                             dtype=np.float32)
             TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
-            
-#    TTLPrePause = np.zeros(round(PrePauseDur * Rate), dtype=np.float32)
-#    TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
-#                            dtype=np.float32)
     
-#    if SoundPulseDur < 0.01:
-#        SoundTTLPulse = [round(SoundTTLVal/SBOutAmpF, 3)] * round(SoundPulseDur * Rate)
-#    else:
-#        Middle = [0]*round((SoundPulseDur-0.01) * Rate)
-#        Border = [round(SoundTTLVal/SBOutAmpF, 3)] * round(0.005 * Rate)
-#        SoundTTLPulse = Border + Middle + Border
-    
-#    TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
     TTLUnit = (TTLUnit * TTLAmpF) * SBOutAmpF
     
     return(TTLUnit)
@@ -231,10 +213,9 @@ def GenPause(Rate, PauseBetweenStimBlocksDur):
     return(PauseBetweenStimBlocks)
 
 
-## Higher-level functions
-def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
-              TTLAmpF, SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, 
-              SoundPauseBetweenStimBlocksDur=0, TTLs=True):
+## Level 1
+def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 
+              SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, TTLs=True):
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
@@ -260,217 +241,256 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency,
         
         for AKey in SoundUnit[FKey]:
             Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey])).T
-    
-    SoundPauseBetweenStimBlocks = np.zeros([2, 
-                                            round(SoundPauseBetweenStimBlocksDur 
-                                                  * Rate)])
+            Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
     
     print('Done generating sound stimulus.')
-    return(Sound, SoundPauseBetweenStimBlocks)
+    return(Sound)
 
 
-def LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, SoundBoard, 
-              Complexity='AllBlocks', LaserPrePauseDur=0, LaserPostPauseDur=0, 
-              LaserStimBlockNo=1, LaserPauseBetweenStimBlocksDur=0):
-    """ Generate square pulses in one channel that works as TTL for laser 
-    (Check ControlArduinoWithSoundBoard.ino code)."""
+## Level 2
+def GPIASStim(Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, 
+              SoundLoudPulseDur, SoundBackgroundAfterPulseDur, 
+              SoundBetweenStimDur, SoundBackgroundAmpF, SoundPulseAmpF, TTLAmpF, 
+              NoiseFrequency, SoundBoard):
+    print('Creating SoundBackground...')
+    SoundBackground = SoundStim(Rate, SoundBackgroundDur, SoundBackgroundAmpF, 
+                                NoiseFrequency, TTLAmpF, SoundBoard, TTLs=False)
     
-    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
-                                               'SBOutAmpF')
+    print('Creating SoundGap...')
+    SoundGap = {}
+    SoundGap['NoGap'] = SoundStim(Rate, SoundGapDur, SoundBackgroundAmpF, 
+                                  NoiseFrequency, TTLAmpF, SoundBoard, 
+                                  TTLs=False)
     
-    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SoundBoard, 
-                       SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
-    LaserList = InterleaveChannels([0], LaserUnit, [0], [0])
-    Laser = ListToByteArray(LaserList, [0], [0])
-    LaserPauseBetweenStimBlocks = GenPause(Rate, LaserPauseBetweenStimBlocksDur)    
+    SoundGap['Gap'] = {FKey: {AKey: np.zeros(SoundGap['NoGap'][FKey][AKey].shape) 
+                              for AKey in SoundGap['NoGap'][FKey]} 
+                       for FKey in SoundGap['NoGap']}
     
-    Stimulation = GenAudioObj(Rate, 'out')
-    PlayLaser = RunSound(Laser, LaserPauseBetweenStimBlocks, LaserPulseNo, 
-                         Stimulation, [0], [0], Complexity, LaserStimBlockNo, 
-                         Multithread=False)
+    print('Creating SoundBackgroundPrePulse...')
+    SoundBackgroundPrePulse = SoundStim(Rate, SoundBackgroundPrePulseDur, 
+                                        SoundBackgroundAmpF, NoiseFrequency, 
+                                        TTLAmpF, SoundBoard, TTLs=False)
     
-    print('Done generating laser stimulus.')
-    return(Laser, PlayLaser)
+    print('Creating SoundLoudPulse...')
+    SoundLoudPulse = SoundStim(Rate, SoundLoudPulseDur, SoundPulseAmpF, 
+                               NoiseFrequency, TTLAmpF, SoundBoard)
+    
+    print('Creating SoundBackgroundAfterPulse...')
+    SoundBackgroundAfterPulse = SoundStim(Rate, SoundBackgroundAfterPulseDur, 
+                                          SoundBackgroundAmpF, NoiseFrequency, 
+                                          TTLAmpF, SoundBoard, TTLs=False)
+    
+    print('Creating SoundBetweenStim...')
+    SoundBetweenStim = SoundStim(Rate, max(SoundBetweenStimDur), 
+                                 SoundBackgroundAmpF, NoiseFrequency, TTLAmpF, 
+                                 SoundBoard, TTLs=False)
+    
+    return(SoundBackground, SoundGap, SoundBackgroundPrePulse, SoundLoudPulse, 
+           SoundBackgroundAfterPulse, SoundBetweenStim)
+
+#def LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, SoundBoard, 
+#              Complexity='AllBlocks', LaserPrePauseDur=0, LaserPostPauseDur=0, 
+#              LaserStimBlockNo=1, LaserPauseBetweenStimBlocksDur=0):
+#    """ Generate square pulses in one channel that works as TTL for laser 
+#    (Check ControlArduinoWithSoundBoard.ino code)."""
+#    
+#    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
+#                                               'SBOutAmpF')
+#    
+#    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SoundBoard, 
+#                       SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
+#    LaserList = InterleaveChannels([0], LaserUnit, [0], [0])
+#    Laser = ListToByteArray(LaserList, [0], [0])
+#    LaserPauseBetweenStimBlocks = GenPause(Rate, LaserPauseBetweenStimBlocksDur)    
+#    
+#    Stimulation = GenAudioObj(Rate, 'out')
+#    PlayLaser = RunSound(Laser, LaserPauseBetweenStimBlocks, LaserPulseNo, 
+#                         Stimulation, [0], [0], Complexity, LaserStimBlockNo, 
+#                         Multithread=False)
+#    
+#    print('Done generating laser stimulus.')
+#    return(Laser, PlayLaser)
 
 
-def SoundLaserStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
-                   NoiseFrequency, LaserPulseDur, LaserPulseNo, TTLAmpF, 
-                   SoundBoard, Complexity='AllPulses', SoundPrePauseDur=0, 
-                   SoundPostPauseDur=0, SoundStimBlockNo=1, 
-                   SoundPauseBetweenStimBlocksDur=0, LaserPrePauseDur=0, 
-                   LaserPostPauseDur=0, LaserStimBlockNo=1, 
-                   LaserPauseBetweenStimBlocksDur=0):
-    """ Generate sound pulses in one channel and TTLs for sound and laser in 
-    the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
-    
-    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
-                                               'SBOutAmpF')
-    
-    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SoundBoard, 
-                       SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
-    
-    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
-                          SoundBoard, SBOutAmpF, SoundPrePauseDur, 
-                          SoundPostPauseDur)
-    
-    print('Summing sound TTL and laser units...')
-    SoundTTLLaserUnit = [LaserUnit[_]+SoundTTLUnit[_] \
-                         for _ in range(len(SoundTTLUnit))]
-    
-    SoundPulse = GenNoise(Rate, SoundPulseDur)
-    print('   ', end='')
-    SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
-    print('   ', end='')
-    SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                               NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
-                               SoundPostPauseDur)
-    
-    SoundLaserList = InterleaveChannels(SoundUnit, SoundTTLLaserUnit, 
-                                        SoundAmpF, NoiseFrequency)
-    SoundLaser = ListToByteArray(SoundLaserList, SoundAmpF, NoiseFrequency)
-    SoundLaserPauseBetweenStimBlocks = GenPause(Rate, 
-                                                SoundPauseBetweenStimBlocksDur)
-    
-    Stimulation = GenAudioObj(Rate, 'out')
-    PlaySoundLaser = RunSound(SoundLaser, SoundLaserPauseBetweenStimBlocks, 
-                              SoundPulseNo, Stimulation, SoundAmpF, 
-                              NoiseFrequency, Complexity, SoundStimBlockNo, 
-                              Multithread=False)
-    
-    print('Done generating sound and laser stimulus.')
-    return(SoundLaser, PlaySoundLaser)
-
-def GPIAS(FileList, CalibrationFile, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterLow, 
-          FilterHigh, FilterOrder):
-    """ Analyze GPIAS recorded using sound board input. """
-    
-    for File in FileList:
-        with shelve.open(CalibrationFile) as Shelve:
-            SoundRec = Shelve['SoundRec']
-            FakeTTLs = Shelve['FakeTTLs']
-            DataInfo = Shelve['DataInfo']
-        
-        with shelve.open(CalibrationFile) as Shelve:
-            SBInAmpF = Shelve['SBInAmpF']
-        
-        NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*DataInfo['Rate'])*10**-3))
-        NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*DataInfo['Rate'])*10**-3))
-        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-        XValues = (range(-NoOfSamplesBefore, 
-                         NoOfSamples-NoOfSamplesBefore)/DataInfo['Rate'])*10**3
-        
-        print('Preallocate memory...')
-        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-        for Hz in range(len(DataInfo['NoiseFrequency'])):
-            GPIAS[Hz] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
-        
-        AllTTLs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
-        for Hz in range(len(DataInfo['NoiseFrequency'])):
-            AllTTLs[Hz] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
-        
-        for Hz in range(len(SoundRec)):        
-            for Trial in range(DataInfo['NoOfTrials']*2):
-                SoundStart = ((FakeTTLs[Hz][Trial][0] * 
-                              len(SoundRec[Hz][Trial][0]))//4)-1
-                SoundEnd = ((FakeTTLs[Hz][Trial][1] * 
-                            len(SoundRec[Hz][Trial][0]))//4)-1
-                
-                Start = int(SoundStart-NoOfSamplesBefore)
-                End = int(SoundEnd+NoOfSamplesAfter)
-        
-                GPIAS[Hz][Trial] = array.array('f', b''.join(SoundRec[Hz][Trial]))
-                GPIAS[Hz][Trial] = GPIAS[Hz][Trial][Start:End]
-                GPIAS[Hz][Trial] = [_/SBInAmpF for _ in GPIAS[Hz][Trial]]
-                GPIAS[Hz][Trial] = abs(signal.hilbert(GPIAS[Hz][Trial]))
-                
-                passband = [FilterLow/(DataInfo['Rate']/2), 
-                            FilterHigh/(DataInfo['Rate']/2)]
-                f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
-                GPIAS[Hz][Trial] = signal.filtfilt(f2, f1, GPIAS[Hz][Trial], 
-                                                 padtype='odd', padlen=0)
-                
-                AllTTLs[Hz][Trial] = [SoundStart, SoundEnd]
-            
-            gData = GPIAS[Hz][:]
-            NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
-            GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
-            NoGapSum = list(map(sum, zip(*NoGapAll)))
-            GapSum = list(map(sum, zip(*GapAll)))
-            
-            gData = [0, 0]
-            gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
-            gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
-            gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
-            gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
-            GPIAS[Hz] = gData[:]
-            
-            
-            tData = AllTTLs[Hz][:]
-            TTLNoGapAll = [tData[_] for _ in range(len(tData)) if _%2 == 0]
-            TTLGapAll = [tData[_] for _ in range(len(tData)) if _%2 != 0]
-            TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
-            TTLGapSum = list(map(sum, zip(*TTLGapAll)))
-            
-            tData = [0, 0]
-            tData[0] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLNoGapSum]
-            tData[1] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLGapSum]
-            AllTTLs[Hz] = tData[:]
-            del(NoGapAll, GapAll, NoGapSum, GapSum, gData, tData)
-        
-        print('Saving data to ' + DataInfo['FileName'])
-        with shelve.open(DataInfo['FileName']) as Shelve:
-            Shelve['GPIAS'] = GPIAS
-            Shelve['AllTTLs'] = AllTTLs
-            Shelve['XValues'] = XValues
-        print('Done.')
-    
-    return(None)
+#def SoundLaserStim(Rate, SoundPulseDur, SoundPulseNo, SoundAmpF, 
+#                   NoiseFrequency, LaserPulseDur, LaserPulseNo, TTLAmpF, 
+#                   SoundBoard, Complexity='AllPulses', SoundPrePauseDur=0, 
+#                   SoundPostPauseDur=0, SoundStimBlockNo=1, 
+#                   SoundPauseBetweenStimBlocksDur=0, LaserPrePauseDur=0, 
+#                   LaserPostPauseDur=0, LaserStimBlockNo=1, 
+#                   LaserPauseBetweenStimBlocksDur=0):
+#    """ Generate sound pulses in one channel and TTLs for sound and laser in 
+#    the other channel (Check ControlArduinoWithSoundBoard.ino code)."""
+#    
+#    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
+#                                               'SBOutAmpF')
+#    
+#    LaserUnit = GenTTL(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SoundBoard, 
+#                       SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
+#    
+#    SoundTTLUnit = GenTTL(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
+#                          SoundBoard, SBOutAmpF, SoundPrePauseDur, 
+#                          SoundPostPauseDur)
+#    
+#    print('Summing sound TTL and laser units...')
+#    SoundTTLLaserUnit = [LaserUnit[_]+SoundTTLUnit[_] \
+#                         for _ in range(len(SoundTTLUnit))]
+#    
+#    SoundPulse = GenNoise(Rate, SoundPulseDur)
+#    print('   ', end='')
+#    SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
+#    print('   ', end='')
+#    SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
+#                               NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
+#                               SoundPostPauseDur)
+#    
+#    SoundLaserList = InterleaveChannels(SoundUnit, SoundTTLLaserUnit, 
+#                                        SoundAmpF, NoiseFrequency)
+#    SoundLaser = ListToByteArray(SoundLaserList, SoundAmpF, NoiseFrequency)
+#    SoundLaserPauseBetweenStimBlocks = GenPause(Rate, 
+#                                                SoundPauseBetweenStimBlocksDur)
+#    
+#    Stimulation = GenAudioObj(Rate, 'out')
+#    PlaySoundLaser = RunSound(SoundLaser, SoundLaserPauseBetweenStimBlocks, 
+#                              SoundPulseNo, Stimulation, SoundAmpF, 
+#                              NoiseFrequency, Complexity, SoundStimBlockNo, 
+#                              Multithread=False)
+#    
+#    print('Done generating sound and laser stimulus.')
+#    return(SoundLaser, PlaySoundLaser)
 
 
-def PlotGPIAS(FileList):
-    Params = {'backend': 'Qt5Agg'}
-    from matplotlib import rcParams; rcParams.update(Params)
-    from matplotlib import pyplot as plt
-    
-    for File in FileList:
-        print('Loading data from ', File, ' ...')
-        with shelve.open(File[:-3]) as Shelve:
-            GPIAS = Shelve['GPIAS']
-            AllTTLs = Shelve['AllTTLs']
-            XValues = Shelve['XValues']
-            DataInfo = Shelve['DataInfo']
-        
-        print('Plotting...')
-        for Freq in range(len(DataInfo['NoiseFrequency'])):
-            FigTitle = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
-            Line0Label = 'No\ Gap'; Line1Label = 'Gap'
-            SpanLabel = 'Sound\ Pulse'
-            XLabel = 'time\ [ms]'; YLabel = 'voltage\ [mV]'
-            
-            plt.figure(Freq)
-            plt.plot(XValues, GPIAS[Freq][0], 
-                     color='r', label='$'+Line0Label+'$')
-            plt.plot(XValues, GPIAS[Freq][1], 
-                     color='b', label='$'+Line1Label+'$')
-            plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
-                        color='k', alpha=0.5, lw=0, label='$'+SpanLabel+'$')
-#            plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
-#                        color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
-            plt.suptitle('$'+FigTitle+'$')
-            plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
-            plt.legend(loc='lower right')
-            plt.locator_params(tight=True)
-            plt.axes().spines['right'].set_visible(False)
-            plt.axes().spines['top'].set_visible(False)
-            plt.axes().yaxis.set_ticks_position('left')
-            plt.axes().xaxis.set_ticks_position('bottom')
-            plt.savefig('Figs/' + File[:-3] + '-' + 
-                        str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + 
-                        str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg', 
-                        format='svg')
-        print('Done.')
-    
-    return(None)
+#def GPIAS(FileList, CalibrationFile, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterLow, 
+#          FilterHigh, FilterOrder):
+#    """ Analyze GPIAS recorded using sound board input. """
+#    
+#    for File in FileList:
+#        with shelve.open(CalibrationFile) as Shelve:
+#            SoundRec = Shelve['SoundRec']
+#            FakeTTLs = Shelve['FakeTTLs']
+#            DataInfo = Shelve['DataInfo']
+#        
+#        with shelve.open(CalibrationFile) as Shelve:
+#            SBInAmpF = Shelve['SBInAmpF']
+#        
+#        NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*DataInfo['Rate'])*10**-3))
+#        NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*DataInfo['Rate'])*10**-3))
+#        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+#        XValues = (range(-NoOfSamplesBefore, 
+#                         NoOfSamples-NoOfSamplesBefore)/DataInfo['Rate'])*10**3
+#        
+#        print('Preallocate memory...')
+#        GPIAS = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+#        for Hz in range(len(DataInfo['NoiseFrequency'])):
+#            GPIAS[Hz] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
+#        
+#        AllTTLs = [[0] for _ in range(len(DataInfo['NoiseFrequency']))]
+#        for Hz in range(len(DataInfo['NoiseFrequency'])):
+#            AllTTLs[Hz] = [[0] for _ in range(DataInfo['NoOfTrials']*2)]
+#        
+#        for Hz in range(len(SoundRec)):        
+#            for Trial in range(DataInfo['NoOfTrials']*2):
+#                SoundStart = ((FakeTTLs[Hz][Trial][0] * 
+#                              len(SoundRec[Hz][Trial][0]))//4)-1
+#                SoundEnd = ((FakeTTLs[Hz][Trial][1] * 
+#                            len(SoundRec[Hz][Trial][0]))//4)-1
+#                
+#                Start = int(SoundStart-NoOfSamplesBefore)
+#                End = int(SoundEnd+NoOfSamplesAfter)
+#        
+#                GPIAS[Hz][Trial] = array.array('f', b''.join(SoundRec[Hz][Trial]))
+#                GPIAS[Hz][Trial] = GPIAS[Hz][Trial][Start:End]
+#                GPIAS[Hz][Trial] = [_/SBInAmpF for _ in GPIAS[Hz][Trial]]
+#                GPIAS[Hz][Trial] = abs(signal.hilbert(GPIAS[Hz][Trial]))
+#                
+#                passband = [FilterLow/(DataInfo['Rate']/2), 
+#                            FilterHigh/(DataInfo['Rate']/2)]
+#                f2, f1 = signal.butter(FilterOrder, passband, 'bandpass')
+#                GPIAS[Hz][Trial] = signal.filtfilt(f2, f1, GPIAS[Hz][Trial], 
+#                                                 padtype='odd', padlen=0)
+#                
+#                AllTTLs[Hz][Trial] = [SoundStart, SoundEnd]
+#            
+#            gData = GPIAS[Hz][:]
+#            NoGapAll = [gData[_] for _ in range(len(gData)) if _%2 == 0]
+#            GapAll = [gData[_] for _ in range(len(gData)) if _%2 != 0]
+#            NoGapSum = list(map(sum, zip(*NoGapAll)))
+#            GapSum = list(map(sum, zip(*GapAll)))
+#            
+#            gData = [0, 0]
+#            gData[0] = [_/DataInfo['NoOfTrials'] for _ in NoGapSum]
+#            gData[1] = [_/DataInfo['NoOfTrials'] for _ in GapSum]
+#            gData[0] = signal.savgol_filter(gData[0], 5, 2, mode='nearest')
+#            gData[1] = signal.savgol_filter(gData[1], 5, 2, mode='nearest')
+#            GPIAS[Hz] = gData[:]
+#            
+#            
+#            tData = AllTTLs[Hz][:]
+#            TTLNoGapAll = [tData[_] for _ in range(len(tData)) if _%2 == 0]
+#            TTLGapAll = [tData[_] for _ in range(len(tData)) if _%2 != 0]
+#            TTLNoGapSum = list(map(sum, zip(*TTLNoGapAll)))
+#            TTLGapSum = list(map(sum, zip(*TTLGapAll)))
+#            
+#            tData = [0, 0]
+#            tData[0] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLNoGapSum]
+#            tData[1] = [int(round(_/DataInfo['NoOfTrials'])) for _ in TTLGapSum]
+#            AllTTLs[Hz] = tData[:]
+#            del(NoGapAll, GapAll, NoGapSum, GapSum, gData, tData)
+#        
+#        print('Saving data to ' + DataInfo['FileName'])
+#        with shelve.open(DataInfo['FileName']) as Shelve:
+#            Shelve['GPIAS'] = GPIAS
+#            Shelve['AllTTLs'] = AllTTLs
+#            Shelve['XValues'] = XValues
+#        print('Done.')
+#    
+#    return(None)
+
+
+#def PlotGPIAS(FileList):
+#    Params = {'backend': 'Qt5Agg'}
+#    from matplotlib import rcParams; rcParams.update(Params)
+#    from matplotlib import pyplot as plt
+#    
+#    for File in FileList:
+#        print('Loading data from ', File, ' ...')
+#        with shelve.open(File[:-3]) as Shelve:
+#            GPIAS = Shelve['GPIAS']
+#            AllTTLs = Shelve['AllTTLs']
+#            XValues = Shelve['XValues']
+#            DataInfo = Shelve['DataInfo']
+#        
+#        print('Plotting...')
+#        for Freq in range(len(DataInfo['NoiseFrequency'])):
+#            FigTitle = str(DataInfo['NoiseFrequency'][Freq]) + '\ Hz'
+#            Line0Label = 'No\ Gap'; Line1Label = 'Gap'
+#            SpanLabel = 'Sound\ Pulse'
+#            XLabel = 'time\ [ms]'; YLabel = 'voltage\ [mV]'
+#            
+#            plt.figure(Freq)
+#            plt.plot(XValues, GPIAS[Freq][0], 
+#                     color='r', label='$'+Line0Label+'$')
+#            plt.plot(XValues, GPIAS[Freq][1], 
+#                     color='b', label='$'+Line1Label+'$')
+#            plt.axvspan(XValues[AllTTLs[Freq][0][0]], XValues[AllTTLs[Freq][0][1]], 
+#                        color='k', alpha=0.5, lw=0, label='$'+SpanLabel+'$')
+##            plt.axvspan(XValues[AllTTLs[Freq][1][0]], XValues[AllTTLs[Freq][1][1]], 
+##                        color='b', alpha=0.5, lw=0, label='Sound pulse (Gap)')
+#            plt.suptitle('$'+FigTitle+'$')
+#            plt.ylabel('$'+YLabel+'$'); plt.xlabel('$'+XLabel+'$')
+#            plt.legend(loc='lower right')
+#            plt.locator_params(tight=True)
+#            plt.axes().spines['right'].set_visible(False)
+#            plt.axes().spines['top'].set_visible(False)
+#            plt.axes().yaxis.set_ticks_position('left')
+#            plt.axes().xaxis.set_ticks_position('bottom')
+#            plt.savefig('Figs/' + File[:-3] + '-' + 
+#                        str(DataInfo['NoiseFrequency'][Freq][0]) + '_' + 
+#                        str(DataInfo['NoiseFrequency'][Freq][1]) + '.svg', 
+#                        format='svg')
+#        print('Done.')
+#    
+#    return(None)
 
 
 def MicrOscilloscope1(SoundBoard, Rate, YLim, FreqBand, MicSens_VPa, FramesPerBuf=512, Rec=False):

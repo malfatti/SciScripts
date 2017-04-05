@@ -124,7 +124,7 @@ for Freq in NoiseFrequency:
     SoundRec[str(Freq[0]) + '-' + str(Freq[1])] = {}
     Sound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
                                         [Freq], TTLAmpF, SoundSystem, 
-                                        TTLs=False)[0]
+                                        TTLs=False)
     
     for FKey in Sound:
         for AKey in Sound[FKey]:

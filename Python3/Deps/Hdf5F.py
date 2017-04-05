@@ -557,6 +557,27 @@ def WriteGPIAS(GPIAS, XValues, RecFolder, FileName, Here=''):
     return(None)
 
 
+def WriteGPIASInfo(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
+                   FreqOrder, FreqSlot, FileName):
+    with h5py.File(FileName) as h5:
+        h5.create_group('DataInfo')
+        for Key, Value in DataInfo.items():
+            h5['DataInfo'].attrs[Key] = Value
+        
+        h5['DataInfo'].create_group('SoundBackgroundAmpF')
+        h5['DataInfo'].create_group('SoundPulseAmpF')
+        
+        for Key, Value in SoundBackgroundAmpF.items():
+            h5['DataInfo']['SoundBackgroundAmpF'][Key] = Value
+        
+        for Key, Value in SoundPulseAmpF.items():
+            h5['DataInfo']['SoundPulseAmpF'][Key] = Value
+        
+        h5['DataInfo']['Freqs'] = Freqs
+        h5['DataInfo']['FreqOrder'] = FreqOrder
+        h5['DataInfo']['FreqSlot'] = FreqSlot
+
+
 def WriteTTLslatency(TTLsLatency, XValues, FileName):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")

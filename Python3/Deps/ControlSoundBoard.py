@@ -233,7 +233,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
                               SoundBoard, SBOutAmpF, SoundPrePauseDur, 
                               SoundPostPauseDur)
     else:
-        SoundTTLUnit = np.zeros((SoundPulse.size))
+        SoundTTLUnit = np.zeros((SoundPulse.size), dtype='float32')
     
     Sound = {}
     for FKey in SoundUnit:
@@ -262,7 +262,8 @@ def GPIASStim(Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur,
                                   NoiseFrequency, TTLAmpF, SoundBoard, 
                                   TTLs=False)
     
-    SoundGap['Gap'] = {FKey: {AKey: np.zeros(SoundGap['NoGap'][FKey][AKey].shape) 
+    SoundGap['Gap'] = {FKey: {AKey: np.zeros(SoundGap['NoGap'][FKey][AKey].shape, 
+                                             dtype='float32')
                               for AKey in SoundGap['NoGap'][FKey]} 
                        for FKey in SoundGap['NoGap']}
     

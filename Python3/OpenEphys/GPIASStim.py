@@ -125,8 +125,28 @@ for FE in range(len(Freqs)):
 
 FreqOrder = [[0]]
 
-# Play the test trials
+print("Running...")
 Stim.start()
+# Play the Pre-trials
+for Pre in range(3):
+    RealFreq = FreqsStr[0]
+    FreqOrder[len(FreqOrder)-1] = [0, -1]
+    FreqOrder.append([0])
+    ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
+    APulseKey = str(SoundPulseAmpF[RealFreq][0])
+    SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
+    
+    print('Playing ', RealFreq, ' Pre-trial')
+    Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
+    Arduino.write(b'P')
+    Stim.write(SoundBackground[RealFreq][ABGKey])
+    Stim.write(SoundGap['Gap'][RealFreq][ABGKey])
+    Stim.write(SoundBackgroundPrePulse[RealFreq][ABGKey])
+    Stim.write(SoundLoudPulse[RealFreq][APulseKey])
+    Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
+    Arduino.write(b'P')
+
+# Play the test trials
 for Hz in range(len(Freqs)):
     Trials = [0, 1]
     random.shuffle(Trials)
@@ -150,27 +170,29 @@ for Hz in range(len(Freqs)):
         Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
         Arduino.write(b'P')
 
+# Play the Pre-trials
+for Pre in range(3):
+    RealFreq = FreqsStr[0]
+    FreqOrder[len(FreqOrder)-1] = [0, -1]
+    FreqOrder.append([0])
+    ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
+    APulseKey = str(SoundPulseAmpF[RealFreq][0])
+    SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
+    
+    print('Playing ', RealFreq, ' Post-trial')
+    Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
+    Arduino.write(b'P')
+    Stim.write(SoundBackground[RealFreq][ABGKey])
+    Stim.write(SoundGap['Gap'][RealFreq][ABGKey])
+    Stim.write(SoundBackgroundPrePulse[RealFreq][ABGKey])
+    Stim.write(SoundLoudPulse[RealFreq][APulseKey])
+    Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
+    Arduino.write(b'P')
+
 Stim.stop()
 FreqOrder.remove([0])
 
-print('Done.')
-
-with h5py.File(FileName) as h5:
-    h5.create_group('DataInfo')
-    for Key, Value in DataInfo.items():
-        h5['DataInfo'].attrs[Key] = Value
-    
-    h5['DataInfo'].create_group('SoundBackgroundAmpF')
-    h5['DataInfo'].create_group('SoundPulseAmpF')
-    
-    for Key, Value in SoundBackgroundAmpF.items():
-        h5['DataInfo']['SoundBackgroundAmpF'][Key] = Value
-    
-    for Key, Value in SoundPulseAmpF.items():
-        h5['DataInfo']['SoundPulseAmpF'][Key] = Value
-    
-    h5['DataInfo']['Freqs'] = Freqs
-    h5['DataInfo']['FreqOrder'] = FreqOrder
-    h5['DataInfo']['FreqSlot'] = FreqSlot
-
-print('Data saved.')
+print('Done. Saving info...', end='')
+Hdf5F.WriteGPIASInfo(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
+                     FreqOrder, FreqSlot, FileName)
+print('Data info saved.')

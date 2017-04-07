@@ -21,7 +21,7 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'Test01'
+AnimalName = 'Habituation'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
                   'SoundMeasurements.hdf5'
@@ -35,7 +35,7 @@ System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
 Rate = 192000
 BaudRate = 115200
-SoundCh = 6; SoundTTLCh = 3; PiezoCh = 8
+SoundCh = 6; TTLCh = 3; PiezoCh = 8
 
 ## Sound durations IN SECONDS
 SoundBackgroundDur = 2.3
@@ -46,13 +46,13 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [60]
-PulseIntensity = [105]
+BackgroundIntensity = [50]
+PulseIntensity = [50]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 10000], [12000, 14000]]
+NoiseFrequency = [[8000, 16000]]
 #NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
 #                  [12000, 14000], [14000, 16000], [8000, 16000]]
 
@@ -60,13 +60,12 @@ NoiseFrequency = [[8000, 10000], [12000, 14000]]
 NoOfTrials = 9
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 0.07
+TTLAmpF = 1
 #==========#==========#==========#==========#
 
 from datetime import datetime
 import ControlArduino
 import ControlSoundBoard
-import h5py
 import Hdf5F
 import numpy as np
 import random
@@ -86,8 +85,8 @@ SoundPulseAmpF = ControlSoundBoard.dBToAmpF(PulseIntensity,
 
 ## Prepare dict w/ experimental setup
 DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate',
-                                       'Date', 'SoundBackgroundDur', 
-                                       'SoundGapDur', 
+                                       'Date', 'SoundCh', 'TTLCh', 'PiezoCh', 
+                                       'SoundBackgroundDur', 'SoundGapDur', 
                                        'SoundBackgroundPrePulseDur', 
                                        'SoundLoudPulseDur', 
                                        'SoundBackgroundAfterPulseDur', 

@@ -215,7 +215,8 @@ def GenPause(Rate, PauseBetweenStimBlocksDur):
 
 ## Level 1
 def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 
-              SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, TTLs=True):
+              SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, TTLs=True,
+              Map=[1,2]):
     """ Generate sound pulses in one channel and TTLs in the other channel 
     (Check ControlArduinoWithSoundBoard.ino code)."""
     
@@ -240,8 +241,12 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         Sound[FKey] = {}
         
         for AKey in SoundUnit[FKey]:
-            Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey])).T
-            Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
+            if Map[0] == 2:
+                Sound[FKey][AKey] = np.vstack((SoundUnit[FKey][AKey], SoundTTLUnit)).T
+                Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
+            else:
+                Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey])).T
+                Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
     
     print('Done generating sound stimulus.')
     return(Sound)
@@ -251,16 +256,17 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
 def GPIASStim(Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, 
               SoundLoudPulseDur, SoundBackgroundAfterPulseDur, 
               SoundBetweenStimDur, SoundBackgroundAmpF, SoundPulseAmpF, TTLAmpF, 
-              NoiseFrequency, SoundBoard):
+              NoiseFrequency, SoundBoard, Map=[2,1]):
     print('Creating SoundBackground...')
     SoundBackground = SoundStim(Rate, SoundBackgroundDur, SoundBackgroundAmpF, 
-                                NoiseFrequency, TTLAmpF, SoundBoard, TTLs=False)
+                                NoiseFrequency, TTLAmpF, SoundBoard, TTLs=False, 
+                                Map=Map)
     
     print('Creating SoundGap...')
     SoundGap = {}
     SoundGap['NoGap'] = SoundStim(Rate, SoundGapDur, SoundBackgroundAmpF, 
                                   NoiseFrequency, TTLAmpF, SoundBoard, 
-                                  TTLs=False)
+                                  TTLs=False, Map=Map)
     
     SoundGap['Gap'] = {FKey: {AKey: np.zeros(SoundGap['NoGap'][FKey][AKey].shape, 
                                              dtype='float32')
@@ -270,21 +276,21 @@ def GPIASStim(Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur,
     print('Creating SoundBackgroundPrePulse...')
     SoundBackgroundPrePulse = SoundStim(Rate, SoundBackgroundPrePulseDur, 
                                         SoundBackgroundAmpF, NoiseFrequency, 
-                                        TTLAmpF, SoundBoard, TTLs=False)
+                                        TTLAmpF, SoundBoard, TTLs=False, Map=Map)
     
     print('Creating SoundLoudPulse...')
     SoundLoudPulse = SoundStim(Rate, SoundLoudPulseDur, SoundPulseAmpF, 
-                               NoiseFrequency, TTLAmpF, SoundBoard)
+                               NoiseFrequency, TTLAmpF, SoundBoard, Map=Map)
     
     print('Creating SoundBackgroundAfterPulse...')
     SoundBackgroundAfterPulse = SoundStim(Rate, SoundBackgroundAfterPulseDur, 
                                           SoundBackgroundAmpF, NoiseFrequency, 
-                                          TTLAmpF, SoundBoard, TTLs=False)
+                                          TTLAmpF, SoundBoard, TTLs=False, Map=Map)
     
     print('Creating SoundBetweenStim...')
     SoundBetweenStim = SoundStim(Rate, max(SoundBetweenStimDur), 
                                  SoundBackgroundAmpF, NoiseFrequency, TTLAmpF, 
-                                 SoundBoard, TTLs=False)
+                                 SoundBoard, TTLs=False, Map=Map)
     
     return(SoundBackground, SoundGap, SoundBackgroundPrePulse, SoundLoudPulse, 
            SoundBackgroundAfterPulse, SoundBetweenStim)
@@ -684,7 +690,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
     SD.default.device = 'system'
     SD.default.samplerate = Rate
     SD.default.channels = 1
-    SD.default.blocksize = 0    
+    SD.default.blocksize = 384    
 #    SD.default.latency = 'low'
     
 #    Stream = SD.OutputStream()
@@ -695,7 +701,7 @@ def SoundCalOut(Rate, Freq, WaveDur):
 #            Stream.write(Pulse)
 #   
     print('Playing...', end='')
-    SD.play(Pulse, blocking=True, mapping=(1));
+    SD.play(Pulse, blocking=True, mapping=(2));
     print('Done.')
     
     return(None)

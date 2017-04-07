@@ -277,7 +277,7 @@ def QuantifyTTLsPerRec(AnalogTTLs, Data=[]):
 #        return(RawTime, TTLs)
 
 
-def SliceData(Data, Rec, TTLs, DataCh, NoOfSamplesBefore, 
+def SliceData(Data, TTLs, NoOfSamplesBefore, 
               NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime=[]):
     print('Slicing data around TTL...')
     Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
@@ -292,7 +292,7 @@ def SliceData(Data, Rec, TTLs, DataCh, NoOfSamplesBefore,
         
         if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
         
-        Array[TTL] = Data[Rec][Start:End, DataCh[0]-1]
+        Array[TTL] = Data[Start:End]
         
         if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
             
@@ -460,15 +460,14 @@ def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3,
             continue
         
         if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, TTLCh)
-            ABR = SliceData(Data, Rec, TTLs, ABRCh, NoOfSamplesBefore, 
+            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:,TTLCh-1])
+            ABR = SliceData(Data[Rec][:, ABRCh-1], TTLs, NoOfSamplesBefore, 
                             NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
-        else:
-            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
-                                               TTLsPerRec=TTLsPerRec)
-            ABR = SliceData(Data, Rec, TTLs, ABRCh, 
-                            NoOfSamplesBefore, NoOfSamplesAfter, 
-                            AnalogTTLs, RawTime)
+#        else:
+#            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
+#                                               TTLsPerRec=TTLsPerRec)
+#            ABR = SliceData(Data[Rec][:,ABRCh-1], TTLs,NoOfSamplesBefore, 
+#                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
         for TTL in range(len(TTLs)):
             ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
@@ -486,40 +485,11 @@ def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3,
     return(ABRs, Info)
 
 
-def GPIASAnalysis(Data, DataInfo, Rate, RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GPIASTimeBeforeTTL=50, 
-                  GPIASTimeAfterTTL=150, FilterFreq=[70, 400], FilterOrder=4, 
-                  AnalogTTLs=False, Board='OE', Override={}):
+def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
+                  GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
+                  FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
+                  Override={}):
     
-    print('set paths...')
-#    if 'FileName' in Override: FileName =  Override['FileName']
-#    else: 
-#        FileName = glob('*.hdf5'); FileName.sort()
-#        FileName = FileName[RecFolderNo-1]
-    
-#    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-#    
-    if 'DirList' in Override: DirList = Override['DirList']
-    else: DirList = glob('KwikFiles/*'); DirList.sort()
-    
-    if 'AnalysisFile' in Override: AnalysisFile =  Override['AnalysisFile']
-    else: AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    
-    RecFolder = DirList[RecFolderNo-1]
-#    
-#    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-#        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, FileName)
-        
-#    if AnalogTTLs: Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-#    else: Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-#    
-#    if AnalogTTLs: Raw = Hdf5F.GetRecKeys(Raw, [0], AnalogTTLs)
-#    else:
-#        Raw, EventRec = Hdf5F.GetRecKeys(Raw, Events, AnalogTTLs)
-#        TTLsPerRec = GetTTLInfo(Events, EventRec, GPIASTTLCh)
-#    
-#    OEProc = Hdf5F.GetProc(Raw, Board)[0]
-    
-#    Rate = Raw[OEProc]['info']['0']['sample_rate']
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
     NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
@@ -527,11 +497,16 @@ def GPIASAnalysis(Data, DataInfo, Rate, RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GP
     XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
                /Rate)*10**3
     
-    GPIAS = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
-             for Freq in DataInfo['NoiseFrequency']}
+    GPIAS = {}
+    GPIAS['Trace'] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
+                      for Freq in DataInfo['NoiseFrequency']}
+    GPIAS['Index'] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
+                      for Freq in DataInfo['NoiseFrequency']}
+    GPIAS['PreAndPost'] = []
     
-    for Freq in GPIAS.keys():
-        GPIAS[Freq]['NoGap'] = []; GPIAS[Freq]['Gap'] = []
+    for Freq in GPIAS['Trace'].keys():
+        GPIAS['Trace'][Freq]['NoGap'] = []; GPIAS['Trace'][Freq]['Gap'] = []
+        GPIAS['Index'][Freq]['NoGap'] = []; GPIAS['Index'][Freq]['Gap'] = []
     
     for Rec in Data.keys():
         print('Slicing and filtering Rec ', Rec, '...')
@@ -544,69 +519,84 @@ def GPIASAnalysis(Data, DataInfo, Rate, RecFolderNo, GPIASCh=1, GPIASTTLCh=1, GP
         if Trial % 2 == 0: STrial = 'NoGap'
         else: STrial = 'Gap'
         
+        # Pre and post trials
+        if Trial == -1: STrial = 'PreAndPost'
+        
         if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, GPIASTTLCh)
-            GD = SliceData(Data, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
-                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
+            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:,DataInfo['TTLCh']-1])
+#            if len(TTLs) > 1: TTLs = [TTLs[0]]
+            GD = SliceData(Data[Rec][:,DataInfo['PiezoCh'][0]-1], TTLs, 
+                           NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
+                           AnalogTTLs)
 #        else:
 #            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
 #                                               TTLsPerRec=TTLsPerRec)
 #            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
 #                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
-        if GPIAS[SFreq][STrial] == []: GPIAS[SFreq][STrial] = GD[:]
-        else: 
-            # Cumulative moving average
-            ElNo = len(GPIAS[SFreq][STrial])
-            GPIAS[SFreq][STrial] = ((np.mean(GPIAS[SFreq][STrial], axis=0)
-                                     *ElNo) + GD[:])/(ElNo+1)
+        if Trial == -1: GPIAS['PreAndPost'].append(GD[:])
+        else:
+            GPIAS['Index'][SFreq][STrial].append(GD[0])
+            
+            if len(GPIAS['Trace'][SFreq][STrial]) == 0: 
+                GPIAS['Trace'][SFreq][STrial] = GD[:]
+            else: 
+                # Cumulative moving average
+                ElNo = len(GPIAS['Trace'][SFreq][STrial])
+                GPIAS['Trace'][SFreq][STrial] = ((np.mean(GPIAS['Trace'][SFreq][STrial], 
+                                                  axis=0) *ElNo) + GD[:])/(ElNo+1)
     
-    for Freq in GPIAS.keys():
+    for Freq in GPIAS['Trace'].keys():
         # Fix array location on dict
-        GPIAS[Freq]['Gap'] = GPIAS[Freq]['Gap'][0]
-        GPIAS[Freq]['NoGap'] = GPIAS[Freq]['NoGap'][0]
+        GPIAS['Trace'][Freq]['Gap'] = GPIAS['Trace'][Freq]['Gap'][0]
+        GPIAS['Trace'][Freq]['NoGap'] = GPIAS['Trace'][Freq]['NoGap'][0]
         
         # Bandpass filter
-        GPIAS[Freq]['Gap'] = FilterSignal(GPIAS[Freq]['Gap'], Rate, FilterFreq, 
-                                          FilterOrder, 'bandpass')
-        GPIAS[Freq]['NoGap'] = FilterSignal(GPIAS[Freq]['NoGap'], Rate, 
-                                            FilterFreq, FilterOrder, 
-                                            'bandpass')
+        GPIAS['Trace'][Freq]['Gap'] = FilterSignal(GPIAS['Trace'][Freq]['Gap'], 
+                                                   Rate, FilterFreq, FilterOrder, 
+                                                   'bandpass')
+        GPIAS['Trace'][Freq]['NoGap'] = FilterSignal(GPIAS['Trace'][Freq]['NoGap'], 
+                                                   Rate, FilterFreq, FilterOrder, 
+                                                   'bandpass')
         
         # V to mV
-        GPIAS[Freq]['Gap'] = GPIAS[Freq]['Gap'] * 1000
-        GPIAS[Freq]['NoGap'] = GPIAS[Freq]['NoGap'] * 1000
+        GPIAS['Trace'][Freq]['Gap'] = GPIAS['Trace'][Freq]['Gap'] * 1000
+        GPIAS['Trace'][Freq]['NoGap'] = GPIAS['Trace'][Freq]['NoGap'] * 1000
         
-        # Amplitude envelope
-        GapAE = abs(signal.hilbert(GPIAS[Freq]['Gap']))
-        NoGapAE = abs(signal.hilbert(GPIAS[Freq]['NoGap']))
+        for Tr in range(len(GPIAS['Index'][Freq]['Gap'])):
+            # Bandpass filter
+            GapAE = FilterSignal(GPIAS['Index'][Freq]['Gap'][Tr], Rate, 
+                                 FilterFreq, FilterOrder, 'bandpass')
+            
+            NoGapAE = FilterSignal(GPIAS['Index'][Freq]['NoGap'][Tr], Rate, 
+                                   FilterFreq, FilterOrder, 'bandpass')
+            
+            # Amplitude envelope
+            GapAE = abs(signal.hilbert(GapAE))
+            NoGapAE = abs(signal.hilbert(NoGapAE))
+            
+            GPIAS['Index'][Freq]['Gap'][Tr] = GapAE
+            GPIAS['Index'][Freq]['NoGap'][Tr] = NoGapAE
+        
+        GPIAS['Index'][Freq]['Gap'] = np.mean(GPIAS['Index'][Freq]['Gap'], axis=0)
+        GPIAS['Index'][Freq]['NoGap'] = np.mean(GPIAS['Index'][Freq]['NoGap'], axis=0)
         
         # RMS
         BGStart = 0; BGEnd = NoOfSamplesBefore - 1
-        PulseStart = NoOfSamplesBefore; PulseEnd = len(GapAE) - 1
-#        BinSize = XValues[-1] - XValues[-2]
+        PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq]['Gap']) - 1
         
-#        GapRMSBG = sum(GapAE[BGStart:BGEnd] * BinSize)**0.5
-#        GapRMSPulse = sum(GapAE[PulseStart:PulseEnd] * BinSize)**0.5
-        GapRMSBG = (np.mean(GapAE[BGStart:BGEnd]**2))**0.5
-        GapRMSPulse = (np.mean(GapAE[PulseStart:PulseEnd]**2))**0.5
+        GapRMSBG = (np.mean(GPIAS['Index'][Freq]['Gap'][BGStart:BGEnd]**2))**0.5
+        GapRMSPulse = (np.mean(GPIAS['Index'][Freq]['Gap'][PulseStart:PulseEnd]**2))**0.5
         GapRMS = GapRMSPulse - GapRMSBG
         
-#        NoGapRMSBG = sum(NoGapAE[BGStart:BGEnd] * BinSize)**0.5
-#        NoGapRMSPulse = sum(NoGapAE[PulseStart:PulseEnd] * BinSize)**0.5
-        NoGapRMSBG = (np.mean(NoGapAE[BGStart:BGEnd]**2))**0.5
-        NoGapRMSPulse = (np.mean(NoGapAE[PulseStart:PulseEnd]**2))**0.5
+        NoGapRMSBG = (np.mean(GPIAS['Index'][Freq]['NoGap'][BGStart:BGEnd]**2))**0.5
+        NoGapRMSPulse = (np.mean(GPIAS['Index'][Freq]['NoGap'][PulseStart:PulseEnd]**2))**0.5
         NoGapRMS = NoGapRMSPulse - NoGapRMSBG
         
         # GPIAS index (How much Gap is different from NoGap)
-        GPIAS[Freq]['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
+        GPIAS['Index'][Freq]['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
     
-    if 'DirList' in Override:
-        RecExp = RecFolder.split('/')[1]
-        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile, RecExp)
-    else:
-        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile)
-    
+    Hdf5F.WriteGPIAS(GPIAS, AnalysisKey, AnalysisFile, XValues)
     return(None)
 
 
@@ -891,45 +881,3 @@ class Plot():
                 UnitPlot.start(); print('PID =', UnitPlot.pid)
                 UnitPlot.join()
 
-
-#%% Tests
-#Here = os.getcwd(); Path = 'SepCh/'; ClusterPath = Here + '/' + Path
-#
-#RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
-#A16 = {'Tip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-#       'Head': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
-#
-#ChannelMap = RemapChannels(A16['Tip'], A16['Head'], RHAHeadstage)
-#
-#Rate = np.array([25000]); AnalogTTLs = True; Override={}
-#
-#Files = [['IntanSound/Arch3n2-43S_184905.int', [154934, 4121425]],
-#         ['IntanSound/Arch3n2-35S_175902.int', [1702747]]]
-#
-#AnalysisFile = './CaMKIIaArch3_02.hdf5'
-#
-#for File in Files:
-#    Data = {}; Rec = File[0].split('-')[-1].split('_')[0]
-#    Data[Rec] = IntanBin.IntLoad(File)[0]
-#    Override['RecS'] = Rec
-#    
-#    Clusters = ClusterizeSpks(Data, Rate, ClusterPath, AnalysisFile, 
-#                              ChannelMap, Override, Return=True)
-#    
-##    Clusters = Hdf5F.LoadClusters(AnalysisFile)
-##    UnitsSpks(Clusters, AnalysisFile, Override)
-#    
-#    
-#    Starts = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:, 16])
-#    Override['TTLs'] = GenerateFakeTTLsRising(Starts, int(0.003*Rate), 200, int(0.090*Rate))
-#    TimeBeforeTTL = 0; TimeAfterTTL = 300
-#    
-#    UnitsPSTH(Clusters, [], Rate, AnalysisFile, TimeBeforeTTL, TimeAfterTTL, 
-#              AnalogTTLs, Override)
-#
-#    Plot.UnitsSpksPSTH(AnalysisFile, 'svg', Override)
-#
-#
-#
-#
-#

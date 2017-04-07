@@ -38,9 +38,9 @@ SoundPulseDur = 2
 # Amount of pulses per block
 SoundPulseNo = 1
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
-NoiseFrequency = [[8000, 10000], [12000, 14000]]
-#NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-#                  [14000, 16000], [8000, 16000]]
+#NoiseFrequency = [[8000, 10000], [12000, 14000]]
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
+                  [14000, 16000], [8000, 16000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa
@@ -68,13 +68,13 @@ import matplotlib.pyplot as plt
 SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundSystem, 'SBOutAmpF')
 SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundSystem, 'SBInAmpF')
 
-SoundAmpF = [2.15, 1.5, 1, 0.5, 0.1, 0]
-#SoundAmpF = np.hstack((
-#                np.arange(2.15, 1.05, -0.1), np.arange(1.0, 0.4, -0.05),
-#                np.arange(0.4, 0.15, -0.01), np.arange(0.15, 0.03, -0.005),
-#                np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
-#                np.arange(0.001, 0, -0.00002), np.array(0.0)
-#                ))
+#SoundAmpF = [1, 0.5, 0]
+SoundAmpF = np.hstack((
+                np.arange(2.15, 1.05, -0.1), np.arange(1.0, 0.4, -0.05),
+                np.arange(0.4, 0.15, -0.01), np.arange(0.15, 0.03, -0.005),
+                np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
+                np.arange(0.001, 0, -0.00002), np.array(0.0)
+                ))
 
 ## Prepare dict w/ experimental setup
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -124,15 +124,14 @@ for Freq in NoiseFrequency:
     SoundRec[str(Freq[0]) + '-' + str(Freq[1])] = {}
     Sound = ControlSoundBoard.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
                                         [Freq], TTLAmpF, SoundSystem, 
-                                        TTLs=False)
+                                        TTLs=False, Map=[2,1])
     
     for FKey in Sound:
         for AKey in Sound[FKey]:
             print(FKey, AKey)
             for Pulse in range(SoundPulseNo):
                 SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey], 
-                                                  blocking=True, 
-                                                  output_mapping=(2,1))
+                                                  blocking=True)
     
     print('Done playing/recording. Saving data... ', end='')
     

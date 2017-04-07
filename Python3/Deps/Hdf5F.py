@@ -531,28 +531,30 @@ def WriteExpInfo(StimType, DVCoord, Freq, FileName):
     return(None)
 
 
-def WriteGPIAS(GPIAS, XValues, RecFolder, FileName, Here=''):
+def WriteGPIAS(GPIAS, Path, FileName, XValues=[]):
     print('Writing data to', FileName+'... ', end='')
     Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    if Here == '': Here = os.getcwd().split(sep='/')[-1]
-    else: Here = Here.split('/')[-1]
-    
-    Group = Here + '_' + RecFolder.split('/')[-1] + '-GPIAS_' + Now
     
     with h5py.File(FileName) as F:
-        F.create_group(Group)
-        F[Group]['XValues'] = XValues
+        if Path in F: F[Now+'_'+Path] = F[Path]; del(F[Path])
         
-        for Freq in GPIAS:
-            if 'GPIAS' not in F[Group]: F[Group].create_group('GPIAS')
-            if Freq not in F[Group]['GPIAS']: 
-                F[Group]['GPIAS'].create_group(Freq)
+        F.create_group(Path)
+        F[Path]['XValues'] = XValues
+        
+        for Key in GPIAS:
+            if Key == 'PreAndPost':
+                F[Path]['GPIAS/' + Key] = GPIAS[Key]
             
-            for GKey, GVal in GPIAS[Freq].items():
-                F[Group]['GPIAS'][Freq][GKey] = GVal
-#                F[Group]['GPIAS'][Freq]['NoGap'] = GPIAS[Freq]['NoGap']
-#                F[Group]['GPIAS'][Freq]['Gap'] = GPIAS[Freq]['Gap']
-    
+            elif Key == 'Trace' or Key == 'Index':
+                for Freq in GPIAS[Key]:
+                    F[Path].create_group('GPIAS/'+Key+'/'+Freq)
+            
+                    for GKey, GVal in GPIAS[Key][Freq].items():
+                        F[Path]['GPIAS'][Key][Freq][GKey] = GVal
+            
+            else:
+                print('I cannot handle the key', Key)
+            
     print('Done.')
     return(None)
 

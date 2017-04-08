@@ -367,23 +367,6 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
                 ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
                 StimType='Sound', AnalogTTLs=False, Board='OE', Type='kwik',
                 Override={}):
-    """
-    Analyze ABRs from data. A '*ABRs.hdf5' file will be saved 
-    in cwd, containing:
-        - ABRs group, where data will be saved as 
-          ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
-              Ear = 0 (right) or 1 (left)
-              Freq = index of DataInfo['NoiseFrequency']
-              AmpF = index of DataInfo['SoundAmpF']['Freq']
-              DVCoord = string with DV coordinate at the moment of recording
-              Trial = Trial number - 1 (so if it is one trial, Trial=0)
-              
-        - XValues array, for x axis of the plot;
-        
-        - DataInfo dict, where all info will be saved.
-    
-    """
-    
     print('Load DataInfo...')
     DirList = glob('KwikFiles/*'); DirList.sort()
     DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
@@ -425,22 +408,6 @@ def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0,
 def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3, 
             TimeAfterTTL=12, AnalogTTLs=True, ABRCh=5, TTLCh=17, 
             FilterFreq=[300, 3000], FilterOrder=5, TTLsPerRec=[]):
-    """
-    Analyze ABRs from data. A '*ABRs.hdf5' file will be saved 
-    in cwd, containing:
-        - ABRs group, where data will be saved as 
-          ABRs[Ear][Freq][AmpF][DVCoord][Trial], where:
-              Ear = 0 (right) or 1 (left)
-              Freq = index of DataInfo['NoiseFrequency']
-              AmpF = index of DataInfo['SoundAmpF']['Freq']
-              DVCoord = string with DV coordinate at the moment of recording
-              Trial = Trial number - 1 (so if it is one trial, Trial=0)
-              
-        - XValues array, for x axis of the plot;
-        
-        - DataInfo dict, where all info will be saved.
-    
-    """
     ABRs = {}; Info = {}
     
     NoOfSamplesBefore = TimeBeforeTTL*int(Rate*10**-3)

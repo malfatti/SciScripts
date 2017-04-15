@@ -21,7 +21,7 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'Habituation'
+AnimalName = 'GPIAZon_SSaln05'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
                   'SoundMeasurements.hdf5'
@@ -35,7 +35,10 @@ System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
 Rate = 192000
 BaudRate = 115200
-SoundCh = 6; TTLCh = 3; PiezoCh = 8
+SoundCh = 3; TTLCh = 1; PiezoCh = 8
+
+# Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
+NoOfTrials = 9
 
 ## Sound durations IN SECONDS
 SoundBackgroundDur = 2.3
@@ -46,21 +49,18 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [50]
-PulseIntensity = [50]
+BackgroundIntensity = [60]
+PulseIntensity = [105]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 16000]]
-#NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
-#                  [12000, 14000], [14000, 16000], [8000, 16000]]
-
-# Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
-NoOfTrials = 9
+#NoiseFrequency = [[8000, 16000]]
+NoiseFrequency = [[8000, 10000], [10000, 12000], 
+                  [12000, 14000], [14000, 16000], [8000, 16000]]
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 1
+TTLAmpF = 0.7
 #==========#==========#==========#==========#
 
 from datetime import datetime
@@ -128,8 +128,8 @@ print("Running...")
 Stim.start()
 # Play the Pre-trials
 for Pre in range(3):
-    RealFreq = FreqsStr[0]
-    FreqOrder[len(FreqOrder)-1] = [0, -1]
+    RealFreq = FreqsStr[-1]
+    FreqOrder[len(FreqOrder)-1] = [-1, -1]
     FreqOrder.append([0])
     ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
     APulseKey = str(SoundPulseAmpF[RealFreq][0])
@@ -137,13 +137,13 @@ for Pre in range(3):
     
     print('Playing ', RealFreq, ' Pre-trial')
     Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
-    Arduino.write(b'P')
+    Arduino.write(b'd')
     Stim.write(SoundBackground[RealFreq][ABGKey])
-    Stim.write(SoundGap['Gap'][RealFreq][ABGKey])
+    Stim.write(SoundGap['NoGap'][RealFreq][ABGKey])
     Stim.write(SoundBackgroundPrePulse[RealFreq][ABGKey])
     Stim.write(SoundLoudPulse[RealFreq][APulseKey])
     Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
-    Arduino.write(b'P')
+    Arduino.write(b'w')
 
 # Play the test trials
 for Hz in range(len(Freqs)):
@@ -161,18 +161,18 @@ for Hz in range(len(Freqs)):
         
         print('Playing ', RealFreq, ' trial ', TrialsStr[Trial])
         Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
-        Arduino.write(b'P')
+        Arduino.write(b'd')
         Stim.write(SoundBackground[RealFreq][ABGKey])
         Stim.write(SoundGap[TrialsStr[Trial]][RealFreq][ABGKey])
         Stim.write(SoundBackgroundPrePulse[RealFreq][ABGKey])
         Stim.write(SoundLoudPulse[RealFreq][APulseKey])
         Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
-        Arduino.write(b'P')
+        Arduino.write(b'w')
 
 # Play the Pre-trials
 for Pre in range(3):
-    RealFreq = FreqsStr[0]
-    FreqOrder[len(FreqOrder)-1] = [0, -1]
+    RealFreq = FreqsStr[-1]
+    FreqOrder[len(FreqOrder)-1] = [-1, -1]
     FreqOrder.append([0])
     ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
     APulseKey = str(SoundPulseAmpF[RealFreq][0])
@@ -180,18 +180,18 @@ for Pre in range(3):
     
     print('Playing ', RealFreq, ' Post-trial')
     Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
-    Arduino.write(b'P')
+    Arduino.write(b'd')
     Stim.write(SoundBackground[RealFreq][ABGKey])
-    Stim.write(SoundGap['Gap'][RealFreq][ABGKey])
+    Stim.write(SoundGap['NoGap'][RealFreq][ABGKey])
     Stim.write(SoundBackgroundPrePulse[RealFreq][ABGKey])
     Stim.write(SoundLoudPulse[RealFreq][APulseKey])
     Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
-    Arduino.write(b'P')
+    Arduino.write(b'w')
 
 Stim.stop()
 FreqOrder.remove([0])
 
-print('Done. Saving info...', end='')
+print('Done. Saving info... ', end='')
 Hdf5F.WriteGPIASInfo(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
                      FreqOrder, FreqSlot, FileName)
 print('Data info saved.')

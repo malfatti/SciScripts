@@ -561,6 +561,7 @@ def WriteGPIAS(GPIAS, Path, FileName, XValues=[]):
 
 def WriteGPIASInfo(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
                    FreqOrder, FreqSlot, FileName):
+    print('Writing data to', FileName+'... ', end='')
     with h5py.File(FileName) as h5:
         h5.create_group('DataInfo')
         for Key, Value in DataInfo.items():
@@ -578,6 +579,43 @@ def WriteGPIASInfo(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs,
         h5['DataInfo']['Freqs'] = Freqs
         h5['DataInfo']['FreqOrder'] = FreqOrder
         h5['DataInfo']['FreqSlot'] = FreqSlot
+    
+    print('Done.')
+    return(None)
+
+
+def WriteSoundMeasurement(SoundRec, DataInfo, Group, FileName):
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    print('Writing data to', FileName+'... ', end='')
+    with h5py.File(FileName) as F:
+        for FKey in SoundRec:
+            FPath = Group+'/SoundRec/'+FKey
+            if FPath in F: F[Now+'_'+FPath] = F[FPath]; del(F[FPath])
+            
+            F.create_group(FPath)
+            for AKey, AVal in SoundRec[FKey].items():
+                F[Group]['SoundRec'][FKey][AKey] = AVal[:, 0]
+        
+        for Key, Value in DataInfo.items():
+            F[Group]['SoundRec'].attrs[Key] = Value
+    
+    print('Done.')
+    return(None)
+
+
+def WriteSoundIntensity(SoundIntensity, Group, FileName):
+    print('Writing data to', FileName+'... ', end='')
+    with h5py.File(FileName) as h5:
+        if Group not in h5: h5.create_group(Group)
+        
+        for Freq in SoundIntensity:
+            h5[Group].create_group('SoundIntensity/'+Freq)
+            
+            for AKey, AVal in SoundIntensity[Freq].items():
+                h5[Group]['SoundIntensity'][Freq][AKey] = AVal
+    
+    print('Done.')
+    return(None)
 
 
 def WriteTTLslatency(TTLsLatency, XValues, FileName):

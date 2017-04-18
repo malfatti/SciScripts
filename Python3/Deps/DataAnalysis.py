@@ -143,6 +143,14 @@ def GetTTLThreshold(TTLCh):
         return(Threshold) 
 
 
+def PSD(Data, Rate, Scaling='density'):
+    Window = signal.hanning(len(Data)//(Rate/1000))
+    F, PxxSp = signal.welch(Data, Rate, Window, nperseg=len(Window), 
+                            noverlap=0, scaling=Scaling)
+    
+    return(F, PxxSp)
+
+
 def RemapChannels(Tip, Head, Connector):
     """
     Get probe channels order. It doesn't matter what logic you follow to order 
@@ -275,6 +283,26 @@ def QuantifyTTLsPerRec(AnalogTTLs, Data=[]):
         
         print('Done.')
 #        return(RawTime, TTLs)
+
+
+def SignalIntensity(Data, Rate, FreqBand, Ref):
+    Intensity = {}
+    
+    if Data.shape[-1] == 2: F, PxxSp = PSD(Data[:,0], Rate)
+    else: F, PxxSp = PSD(Data, Rate)
+    
+    Start = np.where(F > FreqBand[0])[0][0]-1
+    End = np.where(F > FreqBand[1])[0][0]-1
+#    BinSize = F[1] - F[0]
+#    RMS = (sum(PxxSp) * BinSize)**0.5
+    RMS = (sum(PxxSp[Start:End]))**0.5
+    dB = 20*(np.log10(RMS/Ref)) + 94
+    
+    Intensity['PSD'] = [F, PxxSp]
+    Intensity['RMS'] = RMS
+    Intensity['dB'] = dB
+    
+    return(Intensity)
 
 
 def SliceData(Data, TTLs, NoOfSamplesBefore, 

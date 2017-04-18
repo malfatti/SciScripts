@@ -21,7 +21,7 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'GPIAZon_SSaln05'
+AnimalName = 'GPIAZon_NaCln02'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
                   'SoundMeasurements.hdf5'
@@ -191,7 +191,9 @@ for Pre in range(3):
 Stim.stop()
 FreqOrder.remove([0])
 
-print('Done. Saving info... ', end='')
+DataInfo['FreqOrder'] = FreqOrder
+DataInfo['FreqSlot'] = FreqSlot
+DataInfo['Freqs'] = Freqs
+
 Hdf5F.WriteGPIASInfo(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
                      FreqOrder, FreqSlot, FileName)
-print('Data info saved.')

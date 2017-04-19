@@ -45,6 +45,16 @@ def CallWaveClus(Rate, Path):
     return(None)
 
 
+def CumulativeMA(Base, Add):
+    if len(Base) == 0: 
+        Base = Add
+    else:
+        ElNo = len(Base)
+        Base = ((np.mean(Base, axis=0) *ElNo) + Add)/(ElNo+1)
+    
+    return(Base)
+
+
 def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
     if Type not in ['bandpass', 'lowpass', 'highpass']:
         print("Choose 'bandpass', 'lowpass' or 'highpass'.")
@@ -139,7 +149,7 @@ def GetTTLThreshold(TTLCh):
         print('square pulses stimulation')
         Top = max(TTLCh) + abs(min(TTLCh))
         Bot = min(TTLCh) + abs(min(TTLCh))
-        Threshold = max(TTLCh) - (Top - Bot)/3 # + 2*(np.std(TTL))
+        Threshold = max(TTLCh) - (Top - Bot)/3 + 2*(np.std(TTLCh))
         return(Threshold) 
 
 
@@ -483,7 +493,7 @@ def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3,
 def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
                   GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
                   FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
-                  Override={}):
+                  Return=False):
     
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
     NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
@@ -497,11 +507,14 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                       for Freq in DataInfo['NoiseFrequency']}
     GPIAS['Index'] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
                       for Freq in DataInfo['NoiseFrequency']}
-    GPIAS['PreAndPost'] = []
+    GPIAS['PrePost'] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {} 
+                        for Freq in DataInfo['NoiseFrequency']}
     
     for Freq in GPIAS['Trace'].keys():
         GPIAS['Trace'][Freq]['NoGap'] = []; GPIAS['Trace'][Freq]['Gap'] = []
+        GPIAS['PrePost'][Freq]['Pre'] = []; GPIAS['PrePost'][Freq]['Post'] = []
         GPIAS['Index'][Freq]['NoGap'] = []; GPIAS['Index'][Freq]['Gap'] = []
+        GPIAS['Index'][Freq]['Pre'] = []; GPIAS['Index'][Freq]['Post'] = []
     
     for Rec in Data.keys():
         print('Slicing and filtering Rec ', Rec, '...')
@@ -511,11 +524,10 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
         SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
                          str(DataInfo['NoiseFrequency'][Freq][1])])
         
-        if Trial % 2 == 0: STrial = 'NoGap'
+        if Trial == -1: STrial = 'Pre'
+        elif Trial == -2: STrial = 'Post'
+        elif Trial % 2 == 0: STrial = 'NoGap'
         else: STrial = 'Gap'
-        
-        # Pre and post trials
-        if Trial == -1: STrial = 'PreAndPost'
         
         if AnalogTTLs:
             TTLs = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:,DataInfo['TTLCh']-1])
@@ -529,22 +541,18 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
 #            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
 #                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
-        if Trial == -1: GPIAS['PreAndPost'].append(GD[:])
+        GPIAS['Index'][SFreq][STrial].append(GD[0])
+        if Trial < 0:
+            GPIAS['PrePost'][SFreq][STrial] = CumulativeMA(GPIAS['PrePost'][SFreq][STrial], GD[:])
         else:
-            GPIAS['Index'][SFreq][STrial].append(GD[0])
-            
-            if len(GPIAS['Trace'][SFreq][STrial]) == 0: 
-                GPIAS['Trace'][SFreq][STrial] = GD[:]
-            else: 
-                # Cumulative moving average
-                ElNo = len(GPIAS['Trace'][SFreq][STrial])
-                GPIAS['Trace'][SFreq][STrial] = ((np.mean(GPIAS['Trace'][SFreq][STrial], 
-                                                  axis=0) *ElNo) + GD[:])/(ElNo+1)
+            GPIAS['Trace'][SFreq][STrial] = CumulativeMA(GPIAS['Trace'][SFreq][STrial], GD[:])
     
     for Freq in GPIAS['Trace'].keys():
         # Fix array location on dict
         GPIAS['Trace'][Freq]['Gap'] = GPIAS['Trace'][Freq]['Gap'][0]
         GPIAS['Trace'][Freq]['NoGap'] = GPIAS['Trace'][Freq]['NoGap'][0]
+        GPIAS['PrePost'][Freq]['Pre'] = GPIAS['PrePost'][Freq]['Pre'][0]
+        GPIAS['PrePost'][Freq]['Post'] = GPIAS['PrePost'][Freq]['Post'][0]
         
         # Bandpass filter
         GPIAS['Trace'][Freq]['Gap'] = FilterSignal(GPIAS['Trace'][Freq]['Gap'], 
@@ -553,10 +561,12 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
         GPIAS['Trace'][Freq]['NoGap'] = FilterSignal(GPIAS['Trace'][Freq]['NoGap'], 
                                                    Rate, FilterFreq, FilterOrder, 
                                                    'bandpass')
-        
-        # V to mV
-        GPIAS['Trace'][Freq]['Gap'] = GPIAS['Trace'][Freq]['Gap'] * 1000
-        GPIAS['Trace'][Freq]['NoGap'] = GPIAS['Trace'][Freq]['NoGap'] * 1000
+        GPIAS['PrePost'][Freq]['Pre'] = FilterSignal(GPIAS['PrePost'][Freq]['Pre'], 
+                                                   Rate, FilterFreq, FilterOrder, 
+                                                   'bandpass')
+        GPIAS['PrePost'][Freq]['Post'] = FilterSignal(GPIAS['PrePost'][Freq]['Post'], 
+                                                   Rate, FilterFreq, FilterOrder, 
+                                                   'bandpass')
         
         for Tr in range(len(GPIAS['Index'][Freq]['Gap'])):
             # Bandpass filter
@@ -566,15 +576,26 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
             NoGapAE = FilterSignal(GPIAS['Index'][Freq]['NoGap'][Tr], Rate, 
                                    FilterFreq, FilterOrder, 'bandpass')
             
+            PreAE = FilterSignal(GPIAS['Index'][Freq]['Pre'][Tr], Rate, 
+                                 FilterFreq, FilterOrder, 'bandpass')
+            PostAE = FilterSignal(GPIAS['Index'][Freq]['Post'][Tr], Rate, 
+                                 FilterFreq, FilterOrder, 'bandpass')
+            
             # Amplitude envelope
             GapAE = abs(signal.hilbert(GapAE))
             NoGapAE = abs(signal.hilbert(NoGapAE))
+            PreAE = abs(signal.hilbert(PreAE))
+            PostAE = abs(signal.hilbert(PostAE))
             
             GPIAS['Index'][Freq]['Gap'][Tr] = GapAE
             GPIAS['Index'][Freq]['NoGap'][Tr] = NoGapAE
+            GPIAS['Index'][Freq]['Pre'][Tr] = PreAE
+            GPIAS['Index'][Freq]['Post'][Tr] = PostAE
         
         GPIAS['Index'][Freq]['Gap'] = np.mean(GPIAS['Index'][Freq]['Gap'], axis=0)
         GPIAS['Index'][Freq]['NoGap'] = np.mean(GPIAS['Index'][Freq]['NoGap'], axis=0)
+        GPIAS['Index'][Freq]['Pre'] = np.mean(GPIAS['Index'][Freq]['Pre'], axis=0)
+        GPIAS['Index'][Freq]['Post'] = np.mean(GPIAS['Index'][Freq]['Post'], axis=0)
         
         # RMS
         BGStart = 0; BGEnd = NoOfSamplesBefore - 1
@@ -588,11 +609,22 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
         NoGapRMSPulse = (np.mean(GPIAS['Index'][Freq]['NoGap'][PulseStart:PulseEnd]**2))**0.5
         NoGapRMS = NoGapRMSPulse - NoGapRMSBG
         
+        PreRMSBG = (np.mean(GPIAS['Index'][Freq]['Pre'][BGStart:BGEnd]**2))**0.5
+        PreRMSPulse = (np.mean(GPIAS['Index'][Freq]['Pre'][PulseStart:PulseEnd]**2))**0.5
+        PreRMS = PreRMSPulse - PreRMSBG
+        
+        PostRMSBG = (np.mean(GPIAS['Index'][Freq]['Post'][BGStart:BGEnd]**2))**0.5
+        PostRMSPulse = (np.mean(GPIAS['Index'][Freq]['Post'][PulseStart:PulseEnd]**2))**0.5
+        PostRMS = PostRMSPulse - PostRMSBG
+        
         # GPIAS index (How much Gap is different from NoGap)
         GPIAS['Index'][Freq]['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
+        GPIAS['Index'][Freq]['PrePost'] = (PostRMS-PreRMS)/PostRMS
     
     Hdf5F.WriteGPIAS(GPIAS, AnalysisKey, AnalysisFile, XValues)
-    return(None)
+    
+    if Return: return(GPIAS, XValues)
+    else: return(None)
 
 
 ## Classes
@@ -635,6 +667,45 @@ class Plot():
     
     
     ## Level 1
+    def GPIASPlot(GPIAS, XValues, SoundPulseDur, Path, RecFolder, Visible=False):
+        os.makedirs(Path, exist_ok=True)
+        
+        Params = Plot.Set(Params=True)
+        from matplotlib import rcParams; rcParams.update(Params)
+        from matplotlib import pyplot as plt
+        
+        print('Plotting...')
+        Ind1 = list(XValues).index(0)
+        Ind2 = list(XValues).index(int(SoundPulseDur*1000))
+        
+        for Freq in GPIAS.keys():
+            FigTitle = Freq + ' Hz' + 'Index = ' + str(GPIAS[Freq]['GPIASIndex'])
+            LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
+            SpanLabel = 'Sound Pulse'
+            XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
+            
+            plt.figure()
+            plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
+                        lw=0, label=SpanLabel)
+            plt.plot(XValues, GPIAS[Freq]['NoGap'], 
+                     color='r', label=LineNoGapLabel, lw=2)
+            plt.plot(XValues, GPIAS[Freq]['Gap'], 
+                     color='b', label=LineGapLabel, lw=2)
+    
+            Plot.Set(AxesObj=plt.axes(), Axes=True)
+            Plot.Set(FigObj=plt, FigTitle=FigTitle, Plot=True)
+            plt.ylabel(YLabel); plt.xlabel(XLabel)
+            plt.legend(loc='lower right')
+            
+            FigName = Path + RecFolder.split('/')[-1][:-5] + '-' + Freq + '.svg'
+            plt.savefig(FigName, format='svg')
+        
+        if Visible: plt.show()
+        
+        print('Done.')
+        return(None)
+    
+    
     def RawCh(Ch, Lines, Cols, XValues=[], Slice=[], Leg=[], Colors='', 
               Visible=True, Save=True, FigName=''):
         Params = Plot.Set(Backend='Qt5Agg', Params=True)

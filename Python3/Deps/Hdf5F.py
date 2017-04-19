@@ -262,22 +262,20 @@ def LoadExpPerStim(StimType, DirList, FileName):
     return(Exps)
 
 
-def LoadGPIAS(FileName, Key=None):
+def LoadGPIAS(FileName, Path):
     with h5py.File(FileName, 'r') as F:
-        Key = GetExpKeys('GPIAS_', F, KeyStr=Key)
-        
         GPIAS = {}
-        for Freq in F[Key]['GPIAS']:
+        for Freq in F[Path]['GPIAS']:
             GPIAS[Freq] = {}
             
-            for GKey, GVal in F[Key]['GPIAS'][Freq].items():
+            for GKey, GVal in F[Path]['GPIAS'][Freq].items():
                 try: GPIAS[Freq][GKey] = GVal[:]
                 except ValueError: GPIAS[Freq][GKey] = GVal[()]
             
 #                GPIAS[Freq]['NoGap'] = F[Key]['GPIAS'][Freq]['NoGap'][:]
 #                GPIAS[Freq]['Gap'] = F[Key]['GPIAS'][Freq]['Gap'][:]
     
-        XValues = F[Key]['XValues'][:]
+        XValues = F[Path]['XValues'][:]
     
     return(GPIAS, XValues)
 

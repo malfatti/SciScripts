@@ -35,7 +35,7 @@ System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
 Rate = 192000
 BaudRate = 115200
-SoundCh = 3; TTLCh = 1; PiezoCh = 8
+SoundCh = 3; TTLCh = 1; PiezoCh = [8]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 9

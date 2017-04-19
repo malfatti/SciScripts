@@ -401,43 +401,43 @@ def UnitsPSTH(Clusters, TTLCh, Rate, AnalysisFile, AnalysisKey, Rec='0',
 
 
 ## Level 3
-def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
-                ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
-                StimType='Sound', AnalogTTLs=False, Board='OE', Type='kwik',
-                Override={}):
-    print('Load DataInfo...')
-    DirList = glob('KwikFiles/*'); DirList.sort()
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    
-    AnalysisFile = './' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Here = os.getcwd().split(sep='/')[-1]
-    Group = Here + '-ABRs_' + Now
-        
-    for Stim in StimType:
-        if Override != {}: 
-            if 'Stim' in Override.keys(): Stim = Override['Stim']
-        
-        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
-        
-        for RecFolder in Exps:
-            if AnalogTTLs: 
-                Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            else: 
-                Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            
-            ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
-            OEProc, RHAProc, ABRProc = Hdf5F.GetProc(Raw, Board)
-            
-            if AnalogTTLs: Raw = Hdf5F.GetRecKeys(Raw, [0], AnalogTTLs)
-            else:
-                Raw, EventRec = Hdf5F.GetRecKeys(Raw, Events, AnalogTTLs)
-#                TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
-            
-            Rate = Raw['100']['info']['0']['sample_rate']
-            ABRs, Info = ABRCalc(Raw, Rate, ExpInfo)
-            Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Info['Path'], AnalysisFile)
-        
+#def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
+#                ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
+#                StimType='Sound', AnalogTTLs=False, Board='OE', Type='kwik',
+#                Override={}):
+#    print('Load DataInfo...')
+#    DirList = glob('KwikFiles/*'); DirList.sort()
+#    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
+#    
+#    AnalysisFile = './' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+#    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+#    Here = os.getcwd().split(sep='/')[-1]
+#    Group = Here + '-ABRs_' + Now
+#        
+#    for Stim in StimType:
+#        if Override != {}: 
+#            if 'Stim' in Override.keys(): Stim = Override['Stim']
+#        
+#        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+#        
+#        for RecFolder in Exps:
+#            if AnalogTTLs: 
+#                Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+#            else: 
+#                Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
+#            
+#            ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
+#            OEProc, RHAProc, ABRProc = Hdf5F.GetProc(Raw, Board)
+#            
+#            if AnalogTTLs: Raw = Hdf5F.GetRecKeys(Raw, [0], AnalogTTLs)
+#            else:
+#                Raw, EventRec = Hdf5F.GetRecKeys(Raw, Events, AnalogTTLs)
+##                TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
+#            
+#            Rate = Raw['100']['info']['0']['sample_rate']
+#            ABRs, Info = ABRCalc(Raw, Rate, ExpInfo)
+#            Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Info['Path'], AnalysisFile)
+#        
 
 #FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
 #                ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
@@ -503,18 +503,22 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                /Rate)*10**3
     
     GPIAS = {}
-    GPIAS['Trace'] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
+    for Key in ['Trace', 'Index']:
+        GPIAS[Key] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
                       for Freq in DataInfo['NoiseFrequency']}
-    GPIAS['Index'] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
-                      for Freq in DataInfo['NoiseFrequency']}
-    GPIAS['PrePost'] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {} 
-                        for Freq in DataInfo['NoiseFrequency']}
+    
+    PrePostFreq = DataInfo['FreqOrder'][0][0]
+    PrePostFreq = '-'.join([str(DataInfo['NoiseFrequency'][PrePostFreq][0]),
+                            str(DataInfo['NoiseFrequency'][PrePostFreq][1])])
+    
+    GPIAS['Trace'][PrePostFreq]['Pre'] = []
+    GPIAS['Trace'][PrePostFreq]['Post'] = []
+    GPIAS['Index'][PrePostFreq]['Pre'] = []
+    GPIAS['Index'][PrePostFreq]['Post'] = []
     
     for Freq in GPIAS['Trace'].keys():
         GPIAS['Trace'][Freq]['NoGap'] = []; GPIAS['Trace'][Freq]['Gap'] = []
-        GPIAS['PrePost'][Freq]['Pre'] = []; GPIAS['PrePost'][Freq]['Post'] = []
         GPIAS['Index'][Freq]['NoGap'] = []; GPIAS['Index'][Freq]['Gap'] = []
-        GPIAS['Index'][Freq]['Pre'] = []; GPIAS['Index'][Freq]['Post'] = []
     
     for Rec in Data.keys():
         print('Slicing and filtering Rec ', Rec, '...')
@@ -542,84 +546,46 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
 #                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
         GPIAS['Index'][SFreq][STrial].append(GD[0])
-        if Trial < 0:
-            GPIAS['PrePost'][SFreq][STrial] = CumulativeMA(GPIAS['PrePost'][SFreq][STrial], GD[:])
-        else:
-            GPIAS['Trace'][SFreq][STrial] = CumulativeMA(GPIAS['Trace'][SFreq][STrial], GD[:])
+        GPIAS['Trace'][SFreq][STrial] = CumulativeMA(GPIAS['Trace'][SFreq][STrial], GD[:])
     
-    for Freq in GPIAS['Trace'].keys():
-        # Fix array location on dict
-        GPIAS['Trace'][Freq]['Gap'] = GPIAS['Trace'][Freq]['Gap'][0]
-        GPIAS['Trace'][Freq]['NoGap'] = GPIAS['Trace'][Freq]['NoGap'][0]
-        GPIAS['PrePost'][Freq]['Pre'] = GPIAS['PrePost'][Freq]['Pre'][0]
-        GPIAS['PrePost'][Freq]['Post'] = GPIAS['PrePost'][Freq]['Post'][0]
-        
-        # Bandpass filter
-        GPIAS['Trace'][Freq]['Gap'] = FilterSignal(GPIAS['Trace'][Freq]['Gap'], 
-                                                   Rate, FilterFreq, FilterOrder, 
-                                                   'bandpass')
-        GPIAS['Trace'][Freq]['NoGap'] = FilterSignal(GPIAS['Trace'][Freq]['NoGap'], 
-                                                   Rate, FilterFreq, FilterOrder, 
-                                                   'bandpass')
-        GPIAS['PrePost'][Freq]['Pre'] = FilterSignal(GPIAS['PrePost'][Freq]['Pre'], 
-                                                   Rate, FilterFreq, FilterOrder, 
-                                                   'bandpass')
-        GPIAS['PrePost'][Freq]['Post'] = FilterSignal(GPIAS['PrePost'][Freq]['Post'], 
-                                                   Rate, FilterFreq, FilterOrder, 
-                                                   'bandpass')
-        
-        for Tr in range(len(GPIAS['Index'][Freq]['Gap'])):
+  
+    for Freq in GPIAS[Key].keys():
+        for Key in GPIAS[Key][Freq].keys():
+            # Fix array location on dict
+            GPIAS['Trace'][Freq][Key] = GPIAS['Trace'][Freq][Key][0]
+            
             # Bandpass filter
-            GapAE = FilterSignal(GPIAS['Index'][Freq]['Gap'][Tr], Rate, 
-                                 FilterFreq, FilterOrder, 'bandpass')
+            GPIAS['Trace'][Freq][Key] = FilterSignal(GPIAS['Trace'][Freq][Key], 
+                                                       Rate, FilterFreq, FilterOrder, 
+                                                       'bandpass')
             
-            NoGapAE = FilterSignal(GPIAS['Index'][Freq]['NoGap'][Tr], Rate, 
-                                   FilterFreq, FilterOrder, 'bandpass')
+            for Tr in range(len(GPIAS['Index'][Freq][Key])):
+                # Bandpass filter
+                AE = FilterSignal(GPIAS['Index'][Freq][Key][Tr], Rate, 
+                                     FilterFreq, FilterOrder, 'bandpass')
+                
+                # Amplitude envelope
+                AE = abs(signal.hilbert(AE))
+                
+                GPIAS['Index'][Freq][Key][Tr] = AE
             
-            PreAE = FilterSignal(GPIAS['Index'][Freq]['Pre'][Tr], Rate, 
-                                 FilterFreq, FilterOrder, 'bandpass')
-            PostAE = FilterSignal(GPIAS['Index'][Freq]['Post'][Tr], Rate, 
-                                 FilterFreq, FilterOrder, 'bandpass')
+            GPIAS['Index'][Freq][Key] = np.mean(GPIAS['Index'][Freq][Key], axis=0)
             
-            # Amplitude envelope
-            GapAE = abs(signal.hilbert(GapAE))
-            NoGapAE = abs(signal.hilbert(NoGapAE))
-            PreAE = abs(signal.hilbert(PreAE))
-            PostAE = abs(signal.hilbert(PostAE))
-            
-            GPIAS['Index'][Freq]['Gap'][Tr] = GapAE
-            GPIAS['Index'][Freq]['NoGap'][Tr] = NoGapAE
-            GPIAS['Index'][Freq]['Pre'][Tr] = PreAE
-            GPIAS['Index'][Freq]['Post'][Tr] = PostAE
-        
-        GPIAS['Index'][Freq]['Gap'] = np.mean(GPIAS['Index'][Freq]['Gap'], axis=0)
-        GPIAS['Index'][Freq]['NoGap'] = np.mean(GPIAS['Index'][Freq]['NoGap'], axis=0)
-        GPIAS['Index'][Freq]['Pre'] = np.mean(GPIAS['Index'][Freq]['Pre'], axis=0)
-        GPIAS['Index'][Freq]['Post'] = np.mean(GPIAS['Index'][Freq]['Post'], axis=0)
-        
         # RMS
-        BGStart = 0; BGEnd = NoOfSamplesBefore - 1
-        PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq]['Gap']) - 1
-        
-        GapRMSBG = (np.mean(GPIAS['Index'][Freq]['Gap'][BGStart:BGEnd]**2))**0.5
-        GapRMSPulse = (np.mean(GPIAS['Index'][Freq]['Gap'][PulseStart:PulseEnd]**2))**0.5
-        GapRMS = GapRMSPulse - GapRMSBG
-        
-        NoGapRMSBG = (np.mean(GPIAS['Index'][Freq]['NoGap'][BGStart:BGEnd]**2))**0.5
-        NoGapRMSPulse = (np.mean(GPIAS['Index'][Freq]['NoGap'][PulseStart:PulseEnd]**2))**0.5
-        NoGapRMS = NoGapRMSPulse - NoGapRMSBG
-        
-        PreRMSBG = (np.mean(GPIAS['Index'][Freq]['Pre'][BGStart:BGEnd]**2))**0.5
-        PreRMSPulse = (np.mean(GPIAS['Index'][Freq]['Pre'][PulseStart:PulseEnd]**2))**0.5
-        PreRMS = PreRMSPulse - PreRMSBG
-        
-        PostRMSBG = (np.mean(GPIAS['Index'][Freq]['Post'][BGStart:BGEnd]**2))**0.5
-        PostRMSPulse = (np.mean(GPIAS['Index'][Freq]['Post'][PulseStart:PulseEnd]**2))**0.5
-        PostRMS = PostRMSPulse - PostRMSBG
-        
-        # GPIAS index (How much Gap is different from NoGap)
-        GPIAS['Index'][Freq]['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
-        GPIAS['Index'][Freq]['PrePost'] = (PostRMS-PreRMS)/PostRMS
+        for Key in [['Gap', 'NoGap', 'GPIASIndex'], ['Post', 'Pre', 'PrePost']]:
+            BGStart = 0; BGEnd = NoOfSamplesBefore - 1
+            PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq][Key[0]]) - 1
+            
+            ResRMSBG = (np.mean(GPIAS['Index'][Freq][Key[0]][BGStart:BGEnd]**2))**0.5
+            ResRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[0]][PulseStart:PulseEnd]**2))**0.5
+            ResRMS = ResRMSPulse - ResRMSBG
+            
+            RefRMSBG = (np.mean(GPIAS['Index'][Freq][Key[1]][BGStart:BGEnd]**2))**0.5
+            RefRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[1]][PulseStart:PulseEnd]**2))**0.5
+            RefRMS = RefRMSPulse - RefRMSBG
+                
+            # GPIAS index (How much Res is different from Ref)
+            GPIAS['Index'][Freq][Key[2]] = (RefRMS-ResRMS)/RefRMS
     
     Hdf5F.WriteGPIAS(GPIAS, AnalysisKey, AnalysisFile, XValues)
     
@@ -888,31 +854,24 @@ class Plot():
     
     
     ## Level 2
-    def UnitsSpksPSTH(AnalysisFile, AnalysisKey, DataFolder='', Ext='svg', 
-                      Override={}, Procs=8):
-        Units, XValues = Hdf5F.LoadUnits(AnalysisFile, AnalysisKey, Override)
-        if 'XValues' in Override: XValues = Override['XValues']
-        
-#        AnalysisFileName = AnalysisFile.split('/')[-1]
-        
-        if not DataFolder: DataFolder = '/'.join(AnalysisFile.split('/')[:-1])
-        DataFolder += '/Figures'
-        
-        os.makedirs(DataFolder, exist_ok=True)
-        
-    #    Thrash = {} [a[s:s+8] for s in range(0,len(a),8)]
+    def UnitsSpksPSTH(Units, XValues, FigName, Mode='SpksPSTH', Ext='svg', Procs=8):
         for RKey in Units:
             ChNo = len(Units[RKey])
             ProcLists = [[] for _ in range(0, ChNo, Procs)]
             
             for Ind, Ch in enumerate(Units[RKey]):
-                FigName = ''.join([DataFolder, '/', DataFolder.split('/')[0],
-                                   '_', DataFolder.split('/')[-1], '_Rec', 
-                                   RKey, '_', Ch, '.', Ext])
-                ProcLists[Ind//Procs].append(
+                if Mode == 'BinSizeTest':
+                    FigName = FigName + '_' + Ch + '-BinSizeTest.', Ext
+                    ProcLists[Ind//Procs].append(
+                        Process(target=Plot.UnitTestBinSizeCh, 
+                                args=(Units[RKey][Ch], Ch, XValues, FigName, Ext))
+                    )
+                elif Mode == 'SpksPSTH':
+                    FigName = FigName + '_' + Ch + '-UnitsPSTH.' + Ext
+                    ProcLists[Ind//Procs].append(
                         Process(target=Plot.UnitPerCh, 
                                 args=(Units[RKey][Ch], Ch, XValues, FigName, Ext))
-                        )
+                    )
             
             for ProcList in ProcLists:
                 for Proc in ProcList:
@@ -920,30 +879,5 @@ class Plot():
                 Proc.join()
             
             return(None)
-#                UnitPlot.start(); print('PID =', UnitPlot.pid)
-#                UnitPlot.join()
-            
     
     
-    def UnitsPSTHTestBin(XValuesList, AnalysisFile, DataFolder='', Ext='svg', 
-                         Override={}):
-        Units = Hdf5F.LoadUnits(AnalysisFile, Override)[0]
-        
-        AnalysisFileName = AnalysisFile.split('/')[-1]
-        
-        if not DataFolder: DataFolder = '/'.join(AnalysisFile.split('/')[:-1])
-        DataFolder += '/Figures/'
-        
-        os.makedirs(DataFolder, exist_ok=True)
-        
-    #    Thrash = {}
-        for RKey in Units:
-            for Ch in Units[RKey]:
-                FigName = ''.join([DataFolder, AnalysisFileName[:-5], '_Rec', 
-                                   RKey, '_', Ch, '-BinSizeTest.', Ext])
-                UnitPlot = Process(target=Plot.UnitTestBinSizeCh, 
-                                   args=(Units[RKey][Ch], Ch, XValuesList, 
-                                         FigName, Ext))
-                UnitPlot.start(); print('PID =', UnitPlot.pid)
-                UnitPlot.join()
-

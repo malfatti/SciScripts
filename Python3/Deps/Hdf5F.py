@@ -265,12 +265,15 @@ def LoadExpPerStim(StimType, DirList, FileName):
 def LoadGPIAS(FileName, Path):
     with h5py.File(FileName, 'r') as F:
         GPIAS = {}
-        for Freq in F[Path]['GPIAS']:
-            GPIAS[Freq] = {}
+        for Key in F[Path]['GPIAS']:
+            GPIAS[Key] = {}
             
-            for GKey, GVal in F[Path]['GPIAS'][Freq].items():
-                try: GPIAS[Freq][GKey] = GVal[:]
-                except ValueError: GPIAS[Freq][GKey] = GVal[()]
+            for Freq in F[Path]['GPIAS'][Key]:
+                GPIAS[Key][Freq] = {}
+                
+                for GKey, GVal in F[Path]['GPIAS'][Key][Freq].items():
+                    try: GPIAS[Key][Freq][GKey] = GVal[:]
+                    except ValueError: GPIAS[Freq][GKey] = GVal[()]
             
 #                GPIAS[Freq]['NoGap'] = F[Key]['GPIAS'][Freq]['NoGap'][:]
 #                GPIAS[Freq]['Gap'] = F[Key]['GPIAS'][Freq]['Gap'][:]
@@ -540,18 +543,24 @@ def WriteGPIAS(GPIAS, Path, FileName, XValues=[]):
         F[Path]['XValues'] = XValues
         
         for Key in GPIAS:
-            if Key == 'PreAndPost':
-                F[Path]['GPIAS/' + Key] = GPIAS[Key]
+            for Freq in GPIAS[Key]:
+                F[Path].create_group('GPIAS/'+Key+'/'+Freq)
+                
+                for GKey, GVal in GPIAS[Key][Freq].items():
+                    F[Path]['GPIAS'][Key][Freq][GKey] = GVal
             
-            elif Key == 'Trace' or Key == 'Index':
-                for Freq in GPIAS[Key]:
-                    F[Path].create_group('GPIAS/'+Key+'/'+Freq)
-            
-                    for GKey, GVal in GPIAS[Key][Freq].items():
-                        F[Path]['GPIAS'][Key][Freq][GKey] = GVal
-            
-            else:
-                print('I cannot handle the key', Key)
+#            if Key == 'PrePost':
+#                F[Path]['GPIAS/' + Key] = GPIAS[Key]
+#            
+#            elif Key == 'Trace' or Key == 'Index':
+#                for Freq in GPIAS[Key]:
+#                    F[Path].create_group('GPIAS/'+Key+'/'+Freq)
+#            
+#                    for GKey, GVal in GPIAS[Key][Freq].items():
+#                        F[Path]['GPIAS'][Key][Freq][GKey] = GVal
+#            
+#            else:
+#                print('I cannot handle the key', Key)
             
     print('Done.')
     return(None)

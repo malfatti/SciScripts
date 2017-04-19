@@ -65,9 +65,11 @@ for RecFolder in RecFolders:
                                    Rec, TimeBeforeTTL, TimeAfterTTL, AnalogTTLs)
             
             Override = {'Rec': Rec}
-            Override['XValues'] = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
-            DataAnalysis.Plot.UnitsSpksPSTH(AnalysisFile, AnalysisKey, 
-                                            RecFolder, 'svg', Override)
+            XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
+            Units = Hdf5F.LoadUnits(AnalysisFile, AnalysisKey, Override)[0]
+            FigBase = RecFolder + '/Figs/' + Exp + '_Rec' + Rec
+            
+            DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Ext='svg')
             
             del(Clusters)
         
@@ -153,11 +155,15 @@ for Rec in Clusters.keys():
                            Rec, TimeBeforeTTL, TimeAfterTTL, AnalogTTLs)
     
     Override = {'Rec': Rec}
-    Override['XValues'] = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
-    DataAnalysis.Plot.UnitsSpksPSTH(AnalysisFile, AnalysisKey, 'svg', Override)
+    XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
+    Units = Hdf5F.LoadUnits(AnalysisFile, AnalysisKey, Override)[0]
+    FigBase = DataFolder + '/Figs/' + Exp + '_Rec' + Rec
+            
+    DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Ext='svg')
 
 
 #%% Old Arch recs w/o TTLs
+Animal = 'CaMKIIaArch3_02'
 Here = os.getcwd(); Path = 'SepCh/'
 ClusterPath = Here + '/' + Path
 
@@ -181,7 +187,7 @@ Files = [#['IntanSound/Arch3n2-43S_184905.int', [154934, 4121425]],
 #         ['IntanSound/Arch3n3-43S_125706.int', [604540]],
 #         ['IntanSound/Arch3n3-45S_130436.int', [327500]]]
 
-AnalysisFile = './CaMKIIaArch3_02.hdf5'
+AnalysisFile = './'+Animal+'.hdf5'
 TimeBeforeTTL = 0; TimeAfterTTL = 300
 
 for File in Files:
@@ -201,15 +207,17 @@ for File in Files:
     DataAnalysis.UnitsPSTH(Clusters, [], Rate, AnalysisFile, TimeBeforeTTL, TimeAfterTTL, 
                            AnalogTTLs, Override)
     
-    Override['XValues'] = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
-    DataAnalysis.Plot.UnitsSpksPSTH(AnalysisFile, 'svg', Override)
+    XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
+    Units = Hdf5F.LoadUnits(AnalysisFile, AnalysisKey, Override)[0]
+    FigBase = './Figs/' + Animal + '_Rec' + Rec
+    DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Ext='svg')
     
-    XValuesList = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 2, 3]]
-    DataAnalysis.Plot.UnitsPSTHTestBin(XValuesList, AnalysisFile, 'svg', Override)
+    XValues = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 2, 3]]
+    DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Mode='BinSizeTest', Ext='svg')
 
 
 #%% Old arch SoundLight
-
+Animal = 'CaMKIIaArch3_01'
 Here = os.getcwd(); Path = 'SepCh/'; ClusterPath = Here + '/' + Path
 
 RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -222,7 +230,7 @@ Rate = np.array([25000]); AnalogTTLs = True; Override={}
 
 Files = glob('Intan/*LS*') + glob('Intan/*SL*')
 
-AnalysisFile = './CaMKIIaArch3_01.hdf5'
+AnalysisFile = './'+Animal+'.hdf5'
 TimeBeforeTTL = 0; TimeAfterTTL = 300
 
 for File in Files:
@@ -239,18 +247,20 @@ for File in Files:
 ##    
     Starts = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:, 16])
     Override['TTLs'] = DataAnalysis.GenerateFakeTTLsRising(Starts, int(0.003*Rate), 200, int(0.090*Rate))
+    FigBase = './Figs/' + Animal + '_Rec' + Rec
 #    
 #    DataAnalysis.UnitsPSTH(Clusters, [], Rate, AnalysisFile, TimeBeforeTTL, TimeAfterTTL, 
 #              AnalogTTLs, Override)
-#    
-#    Override['XValues'] = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
-#    DataAnalysis.Plot.UnitsSpksPSTH(AnalysisFile, 'svg', Override)
+#    XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
+#    Units = Hdf5F.LoadUnits(AnalysisFile, AnalysisKey, Override)[0]
+#    DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Ext='svg')
     
-    XValuesList = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 2, 3]]
-    DataAnalysis.Plot.UnitsPSTHTestBin(XValuesList, AnalysisFile, 'svg', Override)
+    XValues = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 2, 3]]
+    DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Mode='BinSizeTest', Ext='svg')
 
 
 #%% CaMKIIaArch3_04
+Animal = 'CaMKIIaArch3_04'
 Here = os.getcwd(); Path = 'SepCh/'; ClusterPath = Here + '/' + Path
 
 RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -263,7 +273,7 @@ Rate = np.array([25000]); AnalogTTLs = True; Override={}
 
 Files = glob('Intan/*.int'); Files.sort()
 
-AnalysisFile = './CaMKIIaArch3_04.hdf5'
+AnalysisFile = './'+Animal+'.hdf5'
 TimeBeforeTTL = 0; TimeAfterTTL = 300
 
 for File in Files:
@@ -286,11 +296,13 @@ for File in Files:
     DataAnalysis.UnitsPSTH(Clusters, [], Rate, AnalysisFile, TimeBeforeTTL, TimeAfterTTL, 
               AnalogTTLs, Override)
     
-    Override['XValues'] = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
-    DataAnalysis.Plot.UnitsSpksPSTH(AnalysisFile, 'svg', Override)
+    XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, 1)
+    Units = Hdf5F.LoadUnits(AnalysisFile, AnalysisKey, Override)[0]
+    FigBase = './Figs/' + Animal + '_Rec' + Rec
+    DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Ext='svg')
     
-    XValuesList = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 2, 3]]
-    DataAnalysis.Plot.UnitsPSTHTestBin(XValuesList, AnalysisFile, 'svg', Override)
+    XValues = [np.arange(TimeBeforeTTL, TimeAfterTTL, _) for _ in [0.3, 1, 2, 3]]
+    DataAnalysis.Plot.UnitsSpksPSTH(Units, XValues, FigBase, Mode='BinSizeTest', Ext='svg')
 
 
 #%% Plot raw channels

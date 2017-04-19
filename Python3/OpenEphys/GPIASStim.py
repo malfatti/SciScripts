@@ -21,7 +21,7 @@ the acoustic startle reflex (GPIAS).
 
 #%% Set parameters of the experiment
 
-AnimalName = 'GPIAZon_NaCln02'
+AnimalName = 'GPIAZon_NaCln05'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
                   'SoundMeasurements.hdf5'
@@ -169,10 +169,10 @@ for Hz in range(len(Freqs)):
         Stim.write(SoundBackgroundAfterPulse[RealFreq][ABGKey])
         Arduino.write(b'w')
 
-# Play the Pre-trials
+# Play the Post-trials
 for Pre in range(3):
     RealFreq = FreqsStr[-1]
-    FreqOrder[len(FreqOrder)-1] = [-1, -1]
+    FreqOrder[len(FreqOrder)-1] = [-1, -2]
     FreqOrder.append([0])
     ABGKey = str(SoundBackgroundAmpF[RealFreq][0])
     APulseKey = str(SoundPulseAmpF[RealFreq][0])

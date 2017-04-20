@@ -39,31 +39,32 @@ for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
 
 DataInfo['FreqOrder'][-3:][:,1] = -2
 
-# Fix stupid breaks in recs
-def CheckGPIASRecs(Data, SizeLimits):
-    ToCheck = [Rec for Rec in Data.keys() 
-                   if len(Data[Rec])<min(SizeLimits) or len(Data[Rec])>max(SizeLimits)]
-    
-    if ToCheck:
-        Params = {'backend': 'Qt5Agg'}
-        from matplotlib import rcParams; rcParams.update(Params)
-        import matplotlib.pyplot as plt
-        
-        for Rec in ToCheck:
-            print('Showing rec ' + Rec)
-            plt.plot(Data[Rec])
-            plt.show()
-        
-        return(ToCheck)
-    else:
-        print('All recs within expected size.')
-        return(None)
-
-CheckGPIASRecs(Data[Proc]['data'], [30000, 100000])
+## Fix stupid breaks in recs
+#def CheckGPIASRecs(Data, SizeLimits):
+#    ToCheck = [Rec for Rec in Data.keys() 
+#                   if len(Data[Rec])<min(SizeLimits) or len(Data[Rec])>max(SizeLimits)]
+#    
+#    if ToCheck:
+#        Params = {'backend': 'Qt5Agg'}
+#        from matplotlib import rcParams; rcParams.update(Params)
+#        import matplotlib.pyplot as plt
+#        
+#        for Rec in ToCheck:
+#            print('Showing rec ' + Rec)
+#            plt.plot(Data[Rec])
+#            plt.show()
+#        
+#        return(ToCheck)
+#    else:
+#        print('All recs within expected size.')
+#        return(None)
+#
+#CheckGPIASRecs(Data[Proc]['data'], [30000, 100000])
 
 # 20170411141734-GPIAZon_NaCln01-GPIAS.hdf5
 DataInfo['FreqOrder'] = np.delete(DataInfo['FreqOrder'], [60], 0)
 for Key in Data[Proc].keys(): del(Data[Proc][Key]['59'])
+
 
 #%% Run Analysis
 GPIASTimeBeforeTTL = 200   # in ms

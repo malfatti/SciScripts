@@ -548,9 +548,10 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
         GPIAS['Index'][SFreq][STrial].append(GD[0])
         GPIAS['Trace'][SFreq][STrial] = CumulativeMA(GPIAS['Trace'][SFreq][STrial], GD[:])
     
-  
-    for Freq in GPIAS[Key].keys():
-        for Key in GPIAS[Key][Freq].keys():
+    for Freq in GPIAS['Index'].keys():
+        for Key in GPIAS['Index'][Freq].keys():
+            if not len(GPIAS['Trace'][Freq][Key]): continue
+            
             # Fix array location on dict
             GPIAS['Trace'][Freq][Key] = GPIAS['Trace'][Freq][Key][0]
             
@@ -572,20 +573,35 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
             GPIAS['Index'][Freq][Key] = np.mean(GPIAS['Index'][Freq][Key], axis=0)
             
         # RMS
-        for Key in [['Gap', 'NoGap', 'GPIASIndex'], ['Post', 'Pre', 'PrePost']]:
+        if Freq == PrePostFreq:
+            for Key in [['Gap', 'NoGap', 'GPIASIndex'], ['Post', 'Pre', 'PrePost']]:
+                BGStart = 0; BGEnd = NoOfSamplesBefore - 1
+                PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq][Key[0]]) - 1
+                
+                ResRMSBG = (np.mean(GPIAS['Index'][Freq][Key[0]][BGStart:BGEnd]**2))**0.5
+                ResRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[0]][PulseStart:PulseEnd]**2))**0.5
+                ResRMS = ResRMSPulse - ResRMSBG
+                
+                RefRMSBG = (np.mean(GPIAS['Index'][Freq][Key[1]][BGStart:BGEnd]**2))**0.5
+                RefRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[1]][PulseStart:PulseEnd]**2))**0.5
+                RefRMS = RefRMSPulse - RefRMSBG
+                    
+                # GPIAS index (How much Res is different from Ref)
+                GPIAS['Index'][Freq][Key[2]] = (RefRMS-ResRMS)/RefRMS
+        else:
             BGStart = 0; BGEnd = NoOfSamplesBefore - 1
-            PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq][Key[0]]) - 1
+            PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq]['Gap']) - 1
             
-            ResRMSBG = (np.mean(GPIAS['Index'][Freq][Key[0]][BGStart:BGEnd]**2))**0.5
-            ResRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[0]][PulseStart:PulseEnd]**2))**0.5
+            ResRMSBG = (np.mean(GPIAS['Index'][Freq]['Gap'][BGStart:BGEnd]**2))**0.5
+            ResRMSPulse = (np.mean(GPIAS['Index'][Freq]['Gap'][PulseStart:PulseEnd]**2))**0.5
             ResRMS = ResRMSPulse - ResRMSBG
             
-            RefRMSBG = (np.mean(GPIAS['Index'][Freq][Key[1]][BGStart:BGEnd]**2))**0.5
-            RefRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[1]][PulseStart:PulseEnd]**2))**0.5
+            RefRMSBG = (np.mean(GPIAS['Index'][Freq]['NoGap'][BGStart:BGEnd]**2))**0.5
+            RefRMSPulse = (np.mean(GPIAS['Index'][Freq]['NoGap'][PulseStart:PulseEnd]**2))**0.5
             RefRMS = RefRMSPulse - RefRMSBG
                 
             # GPIAS index (How much Res is different from Ref)
-            GPIAS['Index'][Freq][Key[2]] = (RefRMS-ResRMS)/RefRMS
+            GPIAS['Index'][Freq]['GPIASIndex'] = (RefRMS-ResRMS)/RefRMS
     
     Hdf5F.WriteGPIAS(GPIAS, AnalysisKey, AnalysisFile, XValues)
     

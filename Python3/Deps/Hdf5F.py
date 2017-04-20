@@ -273,7 +273,7 @@ def LoadGPIAS(FileName, Path):
                 
                 for GKey, GVal in F[Path]['GPIAS'][Key][Freq].items():
                     try: GPIAS[Key][Freq][GKey] = GVal[:]
-                    except ValueError: GPIAS[Freq][GKey] = GVal[()]
+                    except ValueError: GPIAS[Key][Freq][GKey] = GVal[()]
             
 #                GPIAS[Freq]['NoGap'] = F[Key]['GPIAS'][Freq]['NoGap'][:]
 #                GPIAS[Freq]['Gap'] = F[Key]['GPIAS'][Freq]['Gap'][:]

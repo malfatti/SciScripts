@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>15 Apr 2017 15:23:30</DATE>
+    <DATE>20 Apr 2017 8:00:20</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -59,7 +59,7 @@
       <EVENTCHANNEL name="13" number="13"/>
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.4463944847925775949"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.577845136933671899"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"
@@ -237,5 +237,5 @@
     <COLOR ID="805" R="147" G="149" B="152"/>
   </PROCESSORLIST>
   <MESSAGECENTER sourceNodeId="100"/>
-  <UICOMPONENT isProcessorListOpen="1" isEditorViewportOpen="1"/>
+  <UICOMPONENT isProcessorListOpen="0" isEditorViewportOpen="1"/>
 </SETTINGS>

@@ -45,12 +45,11 @@ def CallWaveClus(Rate, Path):
     return(None)
 
 
-def CumulativeMA(Base, Add):
+def CumulativeMA(Base, Add, ElNo):
     if len(Base) == 0: 
         Base = Add
     else:
-        ElNo = len(Base)
-        Base = ((np.mean(Base, axis=0) *ElNo) + Add)/(ElNo+1)
+        Base = ((Base * ElNo) + Add)/(ElNo+1)
     
     return(Base)
 
@@ -318,7 +317,8 @@ def SignalIntensity(Data, Rate, FreqBand, Ref):
 def SliceData(Data, TTLs, NoOfSamplesBefore, 
               NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime=[]):
     print('Slicing data around TTL...')
-    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
+#    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
+    Array = np.zeros((len(TTLs), NoOfSamples))
     TTLsToFix = []
     
     for TTL in range(len(TTLs)):
@@ -334,7 +334,7 @@ def SliceData(Data, TTLs, NoOfSamplesBefore,
         
         if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
             
-    Array = FixTTLs(Array, TTLsToFix)
+    if TTLsToFix: Array = FixTTLs(Array, TTLsToFix)
     
     print('Done.')
     return(Array)
@@ -520,7 +520,7 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
         GPIAS['Trace'][Freq]['NoGap'] = []; GPIAS['Trace'][Freq]['Gap'] = []
         GPIAS['Index'][Freq]['NoGap'] = []; GPIAS['Index'][Freq]['Gap'] = []
     
-    for Rec in Data.keys():
+    for ElNo, Rec in enumerate(Data.keys()):
         print('Slicing and filtering Rec ', Rec, '...')
         Freq = DataInfo['FreqOrder'][int(Rec)][0]; 
         Trial = DataInfo['FreqOrder'][int(Rec)][1];
@@ -545,12 +545,13 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
 #            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
 #                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
-        GPIAS['Index'][SFreq][STrial].append(GD[0])
-        GPIAS['Trace'][SFreq][STrial] = CumulativeMA(GPIAS['Trace'][SFreq][STrial], GD[:])
+        GPIAS['Index'][SFreq][STrial].append(GD)
+        GPIAS['Trace'][SFreq][STrial] = CumulativeMA(GPIAS['Trace'][SFreq][STrial], 
+                                                     GD, ElNo)
     
     for Freq in GPIAS['Index'].keys():
         for Key in GPIAS['Index'][Freq].keys():
-            if not len(GPIAS['Trace'][Freq][Key]): continue
+#            if not len(GPIAS['Trace'][Freq][Key]): continue
             
             # Fix array location on dict
             GPIAS['Trace'][Freq][Key] = GPIAS['Trace'][Freq][Key][0]
@@ -612,7 +613,7 @@ def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
 ## Classes
 class Plot():
     ## Level 0
-    def Set(Backend='Qt5Agg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
+    def Set(Backend='TkAgg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
                 Plot=False, Axes=False):
         if Params:
 #            print('Set plot parameters...')
@@ -649,9 +650,8 @@ class Plot():
     
     
     ## Level 1
-    def GPIASPlot(GPIAS, XValues, SoundPulseDur, Path, RecFolder, Visible=False):
-        os.makedirs(Path, exist_ok=True)
-        
+    def GPIASPlot(GPIAS, XValues, SoundPulseDur, FigName, Ext='svg', 
+                  Save=True, Visible=False):
         Params = Plot.Set(Params=True)
         from matplotlib import rcParams; rcParams.update(Params)
         from matplotlib import pyplot as plt
@@ -660,37 +660,41 @@ class Plot():
         Ind1 = list(XValues).index(0)
         Ind2 = list(XValues).index(int(SoundPulseDur*1000))
         
-        for Freq in GPIAS.keys():
-            FigTitle = Freq + ' Hz' + 'Index = ' + str(GPIAS[Freq]['GPIASIndex'])
+        PlotNo = len(GPIAS['Trace'].keys())
+        Fig, Axes = plt.subplots(PlotNo, 1, figsize=(8, 3*PlotNo), sharex=True)
+#        
+        for FInd, Freq in enumerate(GPIAS['Trace'].keys()):
+            SubTitle = Freq + ' Hz' + ' Index = ' + str(GPIAS['Index'][Freq]['GPIASIndex'])
             LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
             SpanLabel = 'Sound Pulse'
             XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
             
-            plt.figure()
-            plt.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
+            Axes[FInd].axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
                         lw=0, label=SpanLabel)
-            plt.plot(XValues, GPIAS[Freq]['NoGap'], 
+            Axes[FInd].plot(XValues, GPIAS['Trace'][Freq]['NoGap'], 
                      color='r', label=LineNoGapLabel, lw=2)
-            plt.plot(XValues, GPIAS[Freq]['Gap'], 
+            Axes[FInd].plot(XValues, GPIAS['Trace'][Freq]['Gap'], 
                      color='b', label=LineGapLabel, lw=2)
+            Axes[FInd].legend(loc='best')
+            Axes[FInd].set_title(SubTitle)
+            Axes[FInd].set_ylabel(YLabel); Axes[FInd].set_xlabel(XLabel)
     
-            Plot.Set(AxesObj=plt.axes(), Axes=True)
-            Plot.Set(FigObj=plt, FigTitle=FigTitle, Plot=True)
-            plt.ylabel(YLabel); plt.xlabel(XLabel)
-            plt.legend(loc='lower right')
-            
-            FigName = Path + RecFolder.split('/')[-1][:-5] + '-' + Freq + '.svg'
-            plt.savefig(FigName, format='svg')
+            Plot.Set(AxesObj=Axes[FInd], Axes=True)
         
+        FigTitle = FigName.split('/')[-1]
+        FigName = FigName + '.' + Ext
+        Plot.Set(FigObj=Fig, FigTitle=FigTitle, Plot=True)
+        
+        if Save: Fig.savefig(FigName, format=Ext)
         if Visible: plt.show()
         
         print('Done.')
         return(None)
     
     
-    def RawCh(Ch, Lines, Cols, XValues=[], Slice=[], Leg=[], Colors='', 
-              Visible=True, Save=True, FigName=''):
-        Params = Plot.Set(Backend='Qt5Agg', Params=True)
+    def RawCh(Ch, Lines, Cols, XValues=[], Slice=[], Leg=[], FigName='', Colors='', 
+              Visible=True, Save=True):
+        Params = Plot.Set(Params=True)
         from matplotlib import rcParams; rcParams.update(Params)
         from matplotlib import pyplot as plt
         

@@ -21,7 +21,7 @@ import numpy as np
 DataFolder = Animal + '/' + Exp + '/' + RecFolder
 AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
 AnalysisKey = Exp + '/' + RecFolder.split('/')[-1]
-FigsFolder = Animal + '/' + Exp + '/' + 'Figs'
+FigName = '/'.join([Animal, Exp, 'Figs', RecFolder+'-GPIAS'])
 
 Data = Hdf5F.LoadOEKwik(DataFolder, AnalogTTLs, 'Bits')[0]
 DataInfo = Hdf5F.LoadDict('/DataInfo', Animal + '/' + Exp + '/' + ExpFile)
@@ -34,6 +34,7 @@ for Rec in Data[Proc]['data'].keys():
 
 DataInfo['PiezoCh'] = PiezoCh
 DataInfo['TTLCh'] = TTLCh
+
 for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
     DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Animal + '/' + Exp + '/' + ExpFile)
 
@@ -80,4 +81,4 @@ GPIAS, XValues = DataAnalysis.GPIASAnalysis(
 
 
 DataAnalysis.Plot.GPIASPlot(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
-                            FigsFolder, RecFolder, Visible=False)
+                            FigName, Save=False, Visible=True)

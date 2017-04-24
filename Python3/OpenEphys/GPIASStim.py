@@ -18,12 +18,10 @@
 This is a script to generate sound stimulation for gap-prepulse inhibition of 
 the acoustic startle reflex (GPIAS).
 """
-['GTK', 'GTKAgg', 'GTKCairo', 'MacOSX', 'Qt4Agg', 'Qt5Agg', 'TkAgg', 'WX', 'WXAgg', 
- 'CocoaAgg', 'GTK3Cairo', 'GTK3Agg', 'WebAgg', 'nbAgg', 'agg', 'cairo', 'emf', 'gdk', 
- 'pdf', 'pgf', 'ps', 'svg', 'template']
+
 #%% Set parameters of the experiment
 
-AnimalName = 'GPIAZon_SSaln01'
+AnimalName = 'GPIAZon_SSaln05'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
                   'SoundMeasurements.hdf5'

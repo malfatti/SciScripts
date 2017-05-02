@@ -7,11 +7,95 @@ GPIAS analysis
 
 import DataAnalysis, Hdf5F
 import os
+import numpy as np
 from glob import glob
+
+#%% Group Analysis
+Params = DataAnalysis.Plot.Set(Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
+
+AnalysisFile = 'GPIAZon/GPIAZon-Analysis.hdf5'
+FigPath = 'GPIAZon/Figs'; os.makedirs(FigPath, exist_ok=True)
+Groups = ['GPIAZon_NaCl', 'GPIAZon_SSal']
+Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
+        'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
+Wid = 0.2
+
+Index = {}
+for Group in Groups:
+    Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
+    Index[Group] = {}
+    
+    for Animal in Animals:
+        Paths = glob('GPIAZon/' + Group + '/*' + Animal); Paths.sort()
+        Index[Group][Animal] = {}
+        
+        for P,Path in enumerate(Paths):
+            AnalysisKey = Group + '/' + Path.split('/')[-1]
+            GPIAS = Hdf5F.LoadGPIAS(AnalysisFile, AnalysisKey)[0]
+            Index[Group][Animal][Exps[Group][P]] = {}
+#            Freqs = list(GPIAS['Index'].keys())
+#            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
+            
+            for Freq in GPIAS['Index'].keys(): 
+                if Freq == '9000-11000': continue
+                Index[Group][Animal][Exps[Group][P]][Freq] = GPIAS['Index'][Freq]['GPIASIndex']
+            
+            del(GPIAS)
+
+Means = {}
+for Group in Groups:
+    Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
+    Means[Group] = {}
+    
+    for Animal in Animals:
+        for Exp in Index[Group][Animal].keys():
+            if Exp not in Means[Group]: Means[Group][Exp] = {}
+            
+            for Freq in Index[Group][Animal][Exp].keys():
+                if Freq not in Means[Group][Exp].keys(): 
+                    Means[Group][Exp][Freq] = []
+                
+                Means[Group][Exp][Freq].append(abs(Index[Group][Animal][Exp][Freq]))
+
+SEMs = {}
+for Group in Groups:
+    SEMs[Group] = {}
+    for Exp in Means[Group].keys():
+        SEMs[Group][Exp] = {Freq: np.std(Val)/len(Val) for Freq, Val in Means[Group][Exp].items()}
+        Means[Group][Exp] = {Freq: np.mean(Val) for Freq, Val in Means[Group][Exp].items()}
+        
+
+# Plot
+Fig, Axes = plt.subplots(len(Means), 1, sharex=True, figsize=(8,3*len(Means)))
+Colors = ['r', 'g', 'b', 'm', 'k', '#ffa500', '#00b2b2']
+ExpList = ['NaCl', 'SSal', 'Atr']
+for G, Group in enumerate(Means.keys()):
+    for E, Exp in enumerate(ExpList):
+        Freqs = list(Means[Group][Exp].keys())
+        Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
+        Freqs = [Freqs[0]] + Freqs[2:] + [Freqs[1]]
+        
+        X = np.arange(len(Freqs))
+        Y = [Means[Group][Exp][Freq] for Freq in Freqs]
+        Error = [SEMs[Group][Exp][Freq] for Freq in Freqs]
+        
+        Axes[G].bar(X+(E*Wid), Y, width=Wid, color=Colors[E], label=ExpList[E])
+        Axes[G].errorbar(X+(E*Wid)+(Wid/2), Y, Error, color='k', fmt='.')
+    
+    Axes[G].legend(loc='best')
+    Axes[G].set_title(Group)
+    Axes[G].set_xticks(np.arange(len(Freqs))+0.3); Axes[G].set_xticklabels(Freqs)
+    Axes[G].set_ylabel('Mean GPIAS index')
+
+FigName = FigPath + '/GPIAZon-GPIASIndexMeanPerFreqPerExp.svg'
+Fig.savefig(FigName, format='svg')
+plt.show()
 
 #%% Batch
 Animal = 'GPIAZon'
-Exp = 'GPIAZon_SSal'
+Exp = 'GPIAZon_NaCl'
 AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -21,11 +105,8 @@ FilterOrder = 3       # butter order
 PiezoCh = [8]
 TTLCh = 1
 
-Paths = glob(Animal + '/' + Exp + '/2017-*'); Paths.sort()
-Files = glob(Animal + '/' + Exp + '/201704*'); Files.sort()
-
-for _ in [5, 4, 0] : del(Paths[_], Files[_])
-
+Paths = glob(Animal + '/' + Exp + '/2017-04-1[8,9]*'); Paths.sort()
+Files = glob(Animal + '/' + Exp + '/2017041[8,9]*'); Files.sort()
 
 for Ind, DataPath in enumerate(Paths):
     RecFolder = DataPath.split('/')[-1]
@@ -45,7 +126,7 @@ for Ind, DataPath in enumerate(Paths):
 #        print(); print(DataPath)
 #        print(); print(SOAB); print()
 #    else: print(); print(DataPath, 'clear.'); print()
-        
+    
     for Rec in Data[Proc]['data'].keys():
         BitVolts = 10000/(2**16)
         Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
@@ -66,6 +147,8 @@ for Ind, DataPath in enumerate(Paths):
     
     DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
                             FigName, Save=True, Visible=True)
+    
+    del(GPIAS, XValues)
 
 
 #%% Individual

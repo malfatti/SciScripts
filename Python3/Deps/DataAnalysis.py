@@ -19,7 +19,6 @@
 """
 
 import Hdf5F
-#import IntanBin
 import numpy as np
 import os
 from datetime import datetime
@@ -29,22 +28,6 @@ from scipy import io, signal
 from subprocess import call
 
 ## Level 0
-def CallWaveClus(Rate, Path):
-    print('Clustering spikes...')
-    
-#    MLab = '/home/cerebro/Software/Programs/MatLabR2014a/bin/matlab'
-    MLab = '/home/malfatti/Software/Programs/MatLabR2015a/bin/matlab'
-    CmdCd = 'cd ' + Path + '; '
-    CmdCluster = 'try, par.sr=' + str(int(Rate)) + '; ' + \
-                 "Get_spikes('Files.txt', 'parallel', true, 'par', par);" + \
-                 "Files = dir('./*spikes.mat'); Files = {Files.name}; " + \
-                 "Do_clustering(Files, 'make_plots', false); end; quit"
-    call([MLab, '-nosplash', '-r', CmdCd+CmdCluster])
-    
-    print('Done clustering.')
-    return(None)
-
-
 def CumulativeMA(Base, Add, ElNo):
     if len(Base) == 0: 
         Base = Add
@@ -190,80 +173,7 @@ def RemapChannels(Tip, Head, Connector):
     return(ChMap)
 
 
-def SepSpksPerCluster(Clusters, Ch):
-    Classes = np.unique(Clusters['ClusterClass'])
-    Dict = {}                    
-#    Dict['Spks'] = [[] for _ in range(len(Classes))]
-    Dict['Spks'] = {}
-    
-    print(Ch+':', str(len(Classes)), 'clusters:')
-    for Class in Classes:
-        ClassIndex = Clusters['ClusterClass'] == Class
-        
-        SpkNo = len(Clusters['Spikes'][ClassIndex,:])
-        if not SpkNo: continue
-        
-        Class = "{0:02d}".format(int(Class))
-        Dict['Spks'][Class] =  Clusters['Spikes'][ClassIndex,:][:]
-    
-        print('    Class', Class, '-', str(SpkNo), 'spikes.')
-    
-    if len(Dict): return(Dict)
-    else: return({})
-
-
 ## Level 1
-def ClusterizeSpks(Data, Rate, ChannelMap, ClusterPath, AnalysisFile, 
-                   AnalysisKey, Rec='0', Override={}, Return=False):
-    """ Detect and clusterize spks using WaveClus """
-    
-    os.makedirs(ClusterPath, exist_ok=True)
-    
-    Data = [Data[:, _-1] for _ in sorted(ChannelMap)]
-    print('Writing files for clustering... ', end='')
-    FileList = []
-    
-    try: Rec = "{0:02d}".format(int(Rec))
-    except ValueError: pass
-    
-    for Ind, Ch in enumerate(Data):
-        MatName = 'Rec' + Rec + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
-        
-        FileList.append(MatName)
-        io.savemat(ClusterPath + '/' + MatName, {'data': Ch})
-    
-    TxtFile = open(ClusterPath + '/Files.txt', 'w')
-    for File in FileList: TxtFile.write(File + '\n')
-    TxtFile.close()
-    print('Done.')
-    
-    CallWaveClus(Rate, ClusterPath)
-    
-    ClusterList = glob(ClusterPath + '/times_*'); ClusterList.sort()
-    ClusterList = [_ for _ in ClusterList if _.split('-')[-2].split('_')[-1] == 'Rec'+Rec]
-    print(ClusterList)
-    Clusters = {Rec: {}}
-    for File in ClusterList:
-        Ch = File[-8:-4]
-        
-        ClusterFile = io.loadmat(File)
-        Clusters[Rec][Ch] = {}
-        Clusters[Rec][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
-        Clusters[Rec][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
-        Clusters[Rec][Ch]['Spikes'] = ClusterFile['spikes'][:]
-    
-    Group = AnalysisKey + '/SpkClusters'
-    Hdf5F.WriteClusters(Clusters, AnalysisFile, Group)
-    
-    ToDelete = glob(ClusterPath + '/*')
-    for File in ToDelete: 
-        if File not in glob(ClusterPath + '/times_*'): os.remove(File)
-#    os.removedirs(ClusterPath)
-    
-    if Return: return(Clusters)
-    else: return(None)
-
-
 def QuantifyTTLsPerRec(AnalogTTLs, Data=[]):
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:
@@ -338,66 +248,6 @@ def SliceData(Data, TTLs, NoOfSamplesBefore,
     
     print('Done.')
     return(Array)
-
-
-def UnitsSpks(Clusters, AnalysisFile, AnalysisKey, Rec='0', Override={}):
-    try: Rec = "{0:02d}".format(int(Rec))
-    except ValueError: pass
-    
-    Units = {Rec: {}}
-    for Ch in Clusters[Rec].keys():
-        Units[Rec][Ch] = SepSpksPerCluster(Clusters[Rec][Ch], Ch)
-    
-    Group = AnalysisKey + '/Units'
-    Hdf5F.WriteUnits(Units, AnalysisFile, Group)
-    return(None)
-
-
-## Level 2
-def UnitsPSTH(Clusters, TTLCh, Rate, AnalysisFile, AnalysisKey, Rec='0', 
-              TimeBeforeTTL=0, TimeAfterTTL=300, AnalogTTLs=True, 
-              Override={}):
-    try: Rec = "{0:02d}".format(int(Rec))
-    except ValueError: pass
-        
-    if 'TTLs' in Override.keys(): TTLs = Override['TTLs']
-    else: TTLs = QuantifyTTLsPerRec(AnalogTTLs, TTLCh)
-    
-    XValues = GetRecXValues(TTLs, Rate, TimeBeforeTTL, TimeAfterTTL)
-    Units = {Rec: {}}
-    
-    print('Preparing histograms and spike waveforms...')
-    for CKey in Clusters[Rec].keys():
-        Classes = np.unique(Clusters[Rec][CKey]['ClusterClass'])
-#            Units[URecS][CKey] = SepSpksPerCluster(Clusters[Rec][CKey], CKey)
-        Units[Rec][CKey] = {'PSTH': {}}
-        
-        for Class in Classes:
-            ClassIndex = Clusters[Rec][CKey]['ClusterClass'] == Class
-            if not len(Clusters[Rec][CKey]['Spikes'][ClassIndex,:]): continue
-            
-            Class = "{0:02d}".format(int(Class))
-            
-            Hist = np.array([])
-            for TTL in range(len(TTLs)):
-                Firing = Clusters[Rec][CKey]['Timestamps'][ClassIndex] \
-                         - (TTLs[TTL]/(Rate/1000))
-                Firing = Firing[(Firing >= XValues[0]) * 
-                                (Firing < XValues[-1])]
-                
-                Hist = np.concatenate((Hist, Firing)); del(Firing)
-            
-            Units[Rec][CKey]['PSTH'][Class] = Hist[:]
-            del(Hist)
-        
-        print(CKey+':', str(len(Classes)), 'clusters.')
-    
-    del(TTLs)
-    
-    Group = AnalysisKey + '/Units'
-    Hdf5F.WriteUnits(Units, AnalysisFile, Group, XValues)
-    del(Units)
-    return(None)
 
 
 ## Level 3
@@ -490,127 +340,162 @@ def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3,
     return(ABRs, Info)
 
 
-def GPIASAnalysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
-                  GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
-                  FilterFreq=[70, 400], FilterOrder=4, AnalogTTLs=False, 
-                  Return=False):
-    
-    NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
-    NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
-    NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-    
-    XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
-               /Rate)*10**3
-    
-    GPIAS = {}
-    for Key in ['Trace', 'Index']:
-        GPIAS[Key] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
-                      for Freq in DataInfo['NoiseFrequency']}
-    
-    PrePostFreq = DataInfo['FreqOrder'][0][0]
-    PrePostFreq = '-'.join([str(DataInfo['NoiseFrequency'][PrePostFreq][0]),
-                            str(DataInfo['NoiseFrequency'][PrePostFreq][1])])
-    
-    GPIAS['Trace'][PrePostFreq]['Pre'] = []
-    GPIAS['Trace'][PrePostFreq]['Post'] = []
-    GPIAS['Index'][PrePostFreq]['Pre'] = []
-    GPIAS['Index'][PrePostFreq]['Post'] = []
-    
-    for Freq in GPIAS['Trace'].keys():
-        GPIAS['Trace'][Freq]['NoGap'] = []; GPIAS['Trace'][Freq]['Gap'] = []
-        GPIAS['Index'][Freq]['NoGap'] = []; GPIAS['Index'][Freq]['Gap'] = []
-    
-    for ElNo, Rec in enumerate(Data.keys()):
-        print('Slicing and filtering Rec ', Rec, '...')
-        Freq = DataInfo['FreqOrder'][int(Rec)][0]; 
-        Trial = DataInfo['FreqOrder'][int(Rec)][1];
+
+## Classes
+class GPIAS():
+    ## Level 0
+    def CheckGPIASRecs(Data, SizeLimits, Plot=False):
+        ToCheck = [Rec for Rec in Data.keys() 
+                       if len(Data[Rec])<min(SizeLimits)
+                       or len(Data[Rec])>max(SizeLimits)]
         
-        SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
-                         str(DataInfo['NoiseFrequency'][Freq][1])])
-        
-        if Trial == -1: STrial = 'Pre'
-        elif Trial == -2: STrial = 'Post'
-        elif Trial % 2 == 0: STrial = 'NoGap'
-        else: STrial = 'Gap'
-        
-        if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:,DataInfo['TTLCh']-1])
-#            if len(TTLs) > 1: TTLs = [TTLs[0]]
-            GD = SliceData(Data[Rec][:,DataInfo['PiezoCh'][0]-1], TTLs, 
-                           NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
-                           AnalogTTLs)
-#        else:
-#            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
-#                                               TTLsPerRec=TTLsPerRec)
-#            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
-#                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
-        
-        GPIAS['Index'][SFreq][STrial].append(GD)
-        GPIAS['Trace'][SFreq][STrial] = CumulativeMA(GPIAS['Trace'][SFreq][STrial], 
-                                                     GD, ElNo)
-    
-    for Freq in GPIAS['Index'].keys():
-        for Key in GPIAS['Index'][Freq].keys():
-#            if not len(GPIAS['Trace'][Freq][Key]): continue
-            
-            # Fix array location on dict
-            GPIAS['Trace'][Freq][Key] = GPIAS['Trace'][Freq][Key][0]
-            
-            # Bandpass filter
-            GPIAS['Trace'][Freq][Key] = FilterSignal(GPIAS['Trace'][Freq][Key], 
-                                                       Rate, FilterFreq, FilterOrder, 
-                                                       'bandpass')
-            
-            for Tr in range(len(GPIAS['Index'][Freq][Key])):
-                # Bandpass filter
-                AE = FilterSignal(GPIAS['Index'][Freq][Key][Tr], Rate, 
-                                     FilterFreq, FilterOrder, 'bandpass')
+        if ToCheck:
+            if Plot:
+                Params = {'backend': 'TkAgg'}
+                from matplotlib import rcParams; rcParams.update(Params)
+                import matplotlib.pyplot as plt
                 
-                # Amplitude envelope
-                AE = abs(signal.hilbert(AE))
+                for Rec in ToCheck:
+                    print('Showing Rec', Rec+', size', Data[Rec].shape[0])
+                    plt.plot(Data[Rec])
+                    plt.show()
                 
-                GPIAS['Index'][Freq][Key][Tr] = AE
-            
-            GPIAS['Index'][Freq][Key] = np.mean(GPIAS['Index'][Freq][Key], axis=0)
-            
-        # RMS
-        if Freq == PrePostFreq:
-            for Key in [['Gap', 'NoGap', 'GPIASIndex'], ['Post', 'Pre', 'PrePost']]:
-                BGStart = 0; BGEnd = NoOfSamplesBefore - 1
-                PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq][Key[0]]) - 1
-                
-                ResRMSBG = (np.mean(GPIAS['Index'][Freq][Key[0]][BGStart:BGEnd]**2))**0.5
-                ResRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[0]][PulseStart:PulseEnd]**2))**0.5
-                ResRMS = ResRMSPulse - ResRMSBG
-                
-                RefRMSBG = (np.mean(GPIAS['Index'][Freq][Key[1]][BGStart:BGEnd]**2))**0.5
-                RefRMSPulse = (np.mean(GPIAS['Index'][Freq][Key[1]][PulseStart:PulseEnd]**2))**0.5
-                RefRMS = RefRMSPulse - RefRMSBG
-                    
-                # GPIAS index (How much Res is different from Ref)
-                GPIAS['Index'][Freq][Key[2]] = (RefRMS-ResRMS)/RefRMS
+            return(ToCheck)
         else:
-            BGStart = 0; BGEnd = NoOfSamplesBefore - 1
-            PulseStart = NoOfSamplesBefore; PulseEnd = len(GPIAS['Index'][Freq]['Gap']) - 1
+            print('All recs within expected size.')
+            return(None)
+
+    def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
+        Index = {}
+        for Key in Keys:
+            BGStart = PulseSampleStart - SliceSize; BGEnd = PulseSampleStart
+            PulseStart = PulseSampleStart; PulseEnd = PulseSampleStart + SliceSize
             
-            ResRMSBG = (np.mean(GPIAS['Index'][Freq]['Gap'][BGStart:BGEnd]**2))**0.5
-            ResRMSPulse = (np.mean(GPIAS['Index'][Freq]['Gap'][PulseStart:PulseEnd]**2))**0.5
+            ResRMSBG = (np.mean(Data[Key[0]][BGStart:BGEnd]**2))**0.5
+            ResRMSPulse = (np.mean(Data[Key[0]][PulseStart:PulseEnd]**2))**0.5
             ResRMS = ResRMSPulse - ResRMSBG
             
-            RefRMSBG = (np.mean(GPIAS['Index'][Freq]['NoGap'][BGStart:BGEnd]**2))**0.5
-            RefRMSPulse = (np.mean(GPIAS['Index'][Freq]['NoGap'][PulseStart:PulseEnd]**2))**0.5
+            RefRMSBG = (np.mean(Data[Key[1]][BGStart:BGEnd]**2))**0.5
+            RefRMSPulse = (np.mean(Data[Key[1]][PulseStart:PulseEnd]**2))**0.5
             RefRMS = RefRMSPulse - RefRMSBG
                 
             # GPIAS index (How much Res is different from Ref)
-            GPIAS['Index'][Freq]['GPIASIndex'] = (RefRMS-ResRMS)/RefRMS
+            Index[Key[2]] = (RefRMS-ResRMS)/RefRMS
+        
+        return(Index)
     
-    Hdf5F.WriteGPIAS(GPIAS, AnalysisKey, AnalysisFile, XValues)
     
-    if Return: return(GPIAS, XValues)
-    else: return(None)
+    def PreallocateDict(DataInfo, PrePostFreq):
+        Dict = {}
+        for Key in ['Trace', 'Index']:
+            Dict[Key] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
+                         for Freq in DataInfo['NoiseFrequency']}
+        
+        Dict['Trace'][PrePostFreq]['Pre'] = []
+        Dict['Trace'][PrePostFreq]['Post'] = []
+        Dict['Index'][PrePostFreq]['Pre'] = []
+        Dict['Index'][PrePostFreq]['Post'] = []
+        
+        for Freq in Dict['Trace'].keys():
+            Dict['Trace'][Freq]['NoGap'] = []; Dict['Trace'][Freq]['Gap'] = []
+            Dict['Index'][Freq]['NoGap'] = []; Dict['Index'][Freq]['Gap'] = []
+        
+        return(Dict)
+    
+    
+    def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore, 
+                     NoOfSamplesAfter, NoOfSamples):
+        for Rec in Data.keys():
+            print('Slicing and filtering Rec ', Rec, '...')
+            Freq = DataInfo['FreqOrder'][int(Rec)][0]; 
+            Trial = DataInfo['FreqOrder'][int(Rec)][1];
+            
+            SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
+                             str(DataInfo['NoiseFrequency'][Freq][1])])
+            
+            if Trial == -1: STrial = 'Pre'
+            elif Trial == -2: STrial = 'Post'
+            elif Trial % 2 == 0: STrial = 'NoGap'
+            else: STrial = 'Gap'
+            
+            if AnalogTTLs:
+                TTLs = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:,DataInfo['TTLCh']-1])
+    #            if len(TTLs) > 1: TTLs = [TTLs[0]]
+                GD = SliceData(Data[Rec][:,DataInfo['PiezoCh'][0]-1], TTLs, 
+                               NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
+                               AnalogTTLs)
+    #        else:
+    #            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
+    #                                               TTLsPerRec=TTLsPerRec)
+    #            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+    #                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
+            
+            Dict['Index'][SFreq][STrial].append(GD[0])
+            Dict['Trace'][SFreq][STrial].append(GD[0])
+        
+        return(Dict)
+        
+    
+    ## Level 1    
+    def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
+                 GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
+                 FilterFreq=[70, 400], FilterOrder=4, SliceSize=100,
+                 AnalogTTLs=True, Return=False):
+        
+        NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
+        NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
+        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+        
+        XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
+                   /Rate)*10**3
+        
+        PrePostFreq = DataInfo['FreqOrder'][0][0]
+        PrePostFreq = '-'.join([str(DataInfo['NoiseFrequency'][PrePostFreq][0]),
+                                str(DataInfo['NoiseFrequency'][PrePostFreq][1])])
+        
+        GPIASData = GPIAS.PreallocateDict(DataInfo, PrePostFreq)
+        GPIASData = GPIAS.OrganizeRecs(GPIASData, Data, DataInfo, AnalogTTLs,
+                                       NoOfSamplesBefore, NoOfSamplesAfter, 
+                                       NoOfSamples)
+        
+        for Freq in GPIASData['Index'].keys():
+            for Key in GPIASData['Index'][Freq].keys():
+                # Average trials for traces
+                GPIASData['Trace'][Freq][Key] = np.mean(GPIASData['Trace'][Freq][Key], axis=0)
+                
+                # Bandpass filter
+                GPIASData['Trace'][Freq][Key] = FilterSignal(GPIASData['Trace'][Freq][Key], 
+                                                           Rate, FilterFreq, FilterOrder, 
+                                                           'bandpass')
+                
+                for Tr in range(len(GPIASData['Index'][Freq][Key])):
+                    # Bandpass filter
+                    AE = FilterSignal(GPIASData['Index'][Freq][Key][Tr], Rate, 
+                                         FilterFreq, FilterOrder, 'bandpass')
+                    
+                    # Amplitude envelope
+                    AE = abs(signal.hilbert(AE))
+                    
+                    GPIASData['Index'][Freq][Key][Tr] = AE
+                
+                GPIASData['Index'][Freq][Key] = np.mean(GPIASData['Index'][Freq][Key], axis=0)
+                
+            # RMS
+            SliceSize = int(SliceSize * (Rate/1000))
+            if Freq == PrePostFreq: Keys = [['Gap', 'NoGap', 'GPIASIndex'], 
+                                            ['Post', 'Pre', 'PrePost']]
+            else: Keys = [['Gap', 'NoGap', 'GPIASIndex']]
+            
+            GPIASData['Index'][Freq] = GPIAS.IndexCalc(
+                                           GPIASData['Index'][Freq], Keys, 
+                                           NoOfSamplesBefore, SliceSize)
+        
+        Hdf5F.WriteGPIAS(GPIASData, AnalysisKey, AnalysisFile, XValues)
+        
+        if Return: return(GPIASData, XValues)
+        else: return(None)
 
 
-## Classes
 class Plot():
     ## Level 0
     def Set(Backend='TkAgg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
@@ -650,7 +535,7 @@ class Plot():
     
     
     ## Level 1
-    def GPIASPlot(GPIAS, XValues, SoundPulseDur, FigName, Ext='svg', 
+    def GPIAS(GPIAS, XValues, SoundPulseDur, FigName, Ext='svg', 
                   Save=True, Visible=False):
         Params = Plot.Set(Params=True)
         from matplotlib import rcParams; rcParams.update(Params)
@@ -899,5 +784,155 @@ class Plot():
                 Proc.join()
             
             return(None)
+
+
+class Units():
+    ## Level 0
+    def CallWaveClus(Rate, Path):
+        print('Clustering spikes...')
+        
+    #    MLab = '/home/cerebro/Software/Programs/MatLabR2014a/bin/matlab'
+        MLab = '/home/malfatti/Software/Programs/MatLabR2015a/bin/matlab'
+        CmdCd = 'cd ' + Path + '; '
+        CmdCluster = 'try, par.sr=' + str(int(Rate)) + '; ' + \
+                     "Get_spikes('Files.txt', 'parallel', true, 'par', par);" + \
+                     "Files = dir('./*spikes.mat'); Files = {Files.name}; " + \
+                     "Do_clustering(Files, 'make_plots', false); end; quit"
+        call([MLab, '-nosplash', '-r', CmdCd+CmdCluster])
+        
+        print('Done clustering.')
+        return(None)
     
     
+    def SepSpksPerCluster(Clusters, Ch):
+        Classes = np.unique(Clusters['ClusterClass'])
+        Dict = {}                    
+    #    Dict['Spks'] = [[] for _ in range(len(Classes))]
+        Dict['Spks'] = {}
+        
+        print(Ch+':', str(len(Classes)), 'clusters:')
+        for Class in Classes:
+            ClassIndex = Clusters['ClusterClass'] == Class
+            
+            SpkNo = len(Clusters['Spikes'][ClassIndex,:])
+            if not SpkNo: continue
+            
+            Class = "{0:02d}".format(int(Class))
+            Dict['Spks'][Class] =  Clusters['Spikes'][ClassIndex,:][:]
+        
+            print('    Class', Class, '-', str(SpkNo), 'spikes.')
+        
+        if len(Dict): return(Dict)
+        else: return({})
+    
+    
+    def PSTH(Clusters, TTLCh, Rate, AnalysisFile, AnalysisKey, Rec='0', 
+                  TimeBeforeTTL=0, TimeAfterTTL=300, AnalogTTLs=True, 
+                  Override={}):
+        try: Rec = "{0:02d}".format(int(Rec))
+        except ValueError: pass
+            
+        if 'TTLs' in Override.keys(): TTLs = Override['TTLs']
+        else: TTLs = QuantifyTTLsPerRec(AnalogTTLs, TTLCh)
+        
+        XValues = GetRecXValues(TTLs, Rate, TimeBeforeTTL, TimeAfterTTL)
+        UnitsData = {Rec: {}}
+        
+        print('Preparing histograms and spike waveforms...')
+        for CKey in Clusters[Rec].keys():
+            Classes = np.unique(Clusters[Rec][CKey]['ClusterClass'])
+    #            UnitsData[URecS][CKey] = SepSpksPerCluster(Clusters[Rec][CKey], CKey)
+            UnitsData[Rec][CKey] = {'PSTH': {}}
+            
+            for Class in Classes:
+                ClassIndex = Clusters[Rec][CKey]['ClusterClass'] == Class
+                if not len(Clusters[Rec][CKey]['Spikes'][ClassIndex,:]): continue
+                
+                Class = "{0:02d}".format(int(Class))
+                
+                Hist = np.array([])
+                for TTL in range(len(TTLs)):
+                    Firing = Clusters[Rec][CKey]['Timestamps'][ClassIndex] \
+                             - (TTLs[TTL]/(Rate/1000))
+                    Firing = Firing[(Firing >= XValues[0]) * 
+                                    (Firing < XValues[-1])]
+                    
+                    Hist = np.concatenate((Hist, Firing)); del(Firing)
+                
+                UnitsData[Rec][CKey]['PSTH'][Class] = Hist[:]
+                del(Hist)
+            
+            print(CKey+':', str(len(Classes)), 'clusters.')
+        
+        del(TTLs)
+        
+        Group = AnalysisKey + '/Units'
+        Hdf5F.WriteUnits(UnitsData, AnalysisFile, Group, XValues)
+        del(UnitsData)
+        return(None)
+    
+    
+    ## Level 1
+    def ClusterizeSpks(Data, Rate, ChannelMap, ClusterPath, AnalysisFile, 
+                       AnalysisKey, Rec='0', Override={}, Return=False):
+        """ Detect and clusterize spks using WaveClus """
+        
+        os.makedirs(ClusterPath, exist_ok=True)
+        
+        Data = [Data[:, _-1] for _ in sorted(ChannelMap)]
+        print('Writing files for clustering... ', end='')
+        FileList = []
+        
+        try: Rec = "{0:02d}".format(int(Rec))
+        except ValueError: pass
+        
+        for Ind, Ch in enumerate(Data):
+            MatName = 'Rec' + Rec + '-Ch' + "{0:02d}".format(Ind+1) + '.mat'
+            
+            FileList.append(MatName)
+            io.savemat(ClusterPath + '/' + MatName, {'data': Ch})
+        
+        TxtFile = open(ClusterPath + '/Files.txt', 'w')
+        for File in FileList: TxtFile.write(File + '\n')
+        TxtFile.close()
+        print('Done.')
+        
+        Units.CallWaveClus(Rate, ClusterPath)
+        
+        ClusterList = glob(ClusterPath + '/times_*'); ClusterList.sort()
+        ClusterList = [_ for _ in ClusterList if _.split('-')[-2].split('_')[-1] == 'Rec'+Rec]
+        print(ClusterList)
+        Clusters = {Rec: {}}
+        for File in ClusterList:
+            Ch = File[-8:-4]
+            
+            ClusterFile = io.loadmat(File)
+            Clusters[Rec][Ch] = {}
+            Clusters[Rec][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
+            Clusters[Rec][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
+            Clusters[Rec][Ch]['Spikes'] = ClusterFile['spikes'][:]
+        
+        Group = AnalysisKey + '/SpkClusters'
+        Hdf5F.WriteClusters(Clusters, AnalysisFile, Group)
+        
+        ToDelete = glob(ClusterPath + '/*')
+        for File in ToDelete: 
+            if File not in glob(ClusterPath + '/times_*'): os.remove(File)
+    #    os.removedirs(ClusterPath)
+        
+        if Return: return(Clusters)
+        else: return(None)
+    
+    
+    def Spks(Clusters, AnalysisFile, AnalysisKey, Rec='0', Override={}):
+        try: Rec = "{0:02d}".format(int(Rec))
+        except ValueError: pass
+        
+        UnitsData = {Rec: {}}
+        for Ch in Clusters[Rec].keys():
+            UnitsData[Rec][Ch] = Units.SepSpksPerCluster(Clusters[Rec][Ch], Ch)
+        
+        Group = AnalysisKey + '/Units'
+        Hdf5F.WriteUnits(UnitsData, AnalysisFile, Group)
+        return(None)
+

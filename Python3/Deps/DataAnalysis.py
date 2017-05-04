@@ -19,11 +19,13 @@
 """
 
 import Hdf5F
-import numpy as np
 import os
+import numpy as np
 from datetime import datetime
 from glob import glob
 from multiprocessing import Process
+from rpy2.robjects import packages as RPackages
+from rpy2 import robjects as RObj
 from scipy import io, signal
 from subprocess import call
 
@@ -171,6 +173,15 @@ def RemapChannels(Tip, Head, Connector):
     
     print('Done.')
     return(ChMap)
+
+
+def StrRange(Start='a', End='e', Step=1):
+    if max(len(Start), len(End)) > 1: 
+        print('Only 1-char length strings are accepted.')
+        return(None)
+    else:
+        Range = map(chr, range(ord(Start), ord(End), Step))
+        return(Range)
 
 
 ## Level 1
@@ -534,8 +545,25 @@ class Plot():
         return(None)
     
     
+    def SignificanceBar(XStart, XEnd, Y, Text, Ax, TicksDir='down', lw=1, color='k'):
+        from matplotlib.markers import TICKDOWN, TICKUP
+        if TicksDir == 'down': Tick = TICKDOWN
+        elif TicksDir == 'up': Tick = TICKUP
+        
+        if TicksDir == 'down': Yy = Y-(Y*0.1)
+        elif TicksDir == 'up': Yy = Y+(Y*0.1)
+        else: print('TicksDir should be "up" or "down".'); return(None)
+        
+        Ax.plot([XStart, XEnd], [Y, Y], color=color, lw=lw, marker=Tick)
+    #    Ax.plot([XStart, XStart], [Yy, Y], color=color, lw=lw)
+    #    Ax.plot([XEnd, XEnd], [Yy, Y], color=color, lw=lw)
+        
+        Ax.text(0.5*(XStart+XEnd), Yy, Text, ha='center', va='center')
+        return(None)
+    
+    
     ## Level 1
-    def GPIAS(GPIAS, XValues, SoundPulseDur, FigName, Ext='svg', 
+    def GPIAS(GPIASData, XValues, SoundPulseDur, FigName, Ext='svg', 
                   Save=True, Visible=False):
         Params = Plot.Set(Params=True)
         from matplotlib import rcParams; rcParams.update(Params)
@@ -545,20 +573,20 @@ class Plot():
         Ind1 = list(XValues).index(0)
         Ind2 = list(XValues).index(int(SoundPulseDur*1000))
         
-        PlotNo = len(GPIAS['Trace'].keys())
+        PlotNo = len(GPIASData['Trace'].keys())
         Fig, Axes = plt.subplots(PlotNo, 1, figsize=(8, 3*PlotNo), sharex=True)
 #        
-        for FInd, Freq in enumerate(GPIAS['Trace'].keys()):
-            SubTitle = Freq + ' Hz' + ' Index = ' + str(GPIAS['Index'][Freq]['GPIASIndex'])
+        for FInd, Freq in enumerate(GPIASData['Trace'].keys()):
+            SubTitle = Freq + ' Hz' + ' Index = ' + str(GPIASData['Index'][Freq]['GPIASIndex'])
             LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
             SpanLabel = 'Sound Pulse'
             XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
             
             Axes[FInd].axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
                         lw=0, label=SpanLabel)
-            Axes[FInd].plot(XValues, GPIAS['Trace'][Freq]['NoGap'], 
+            Axes[FInd].plot(XValues, GPIASData['Trace'][Freq]['NoGap'], 
                      color='r', label=LineNoGapLabel, lw=2)
-            Axes[FInd].plot(XValues, GPIAS['Trace'][Freq]['Gap'], 
+            Axes[FInd].plot(XValues, GPIASData['Trace'][Freq]['Gap'], 
                      color='b', label=LineGapLabel, lw=2)
             Axes[FInd].legend(loc='best')
             Axes[FInd].set_title(SubTitle)
@@ -784,6 +812,78 @@ class Plot():
                 Proc.join()
             
             return(None)
+
+
+class Stats():
+    ## Level 0
+    def RCheckPackage(Packages):
+        RPacksToInstall = [Pack for Pack in Packages 
+                           if not RPackages.isinstalled(Pack)]
+        if len(RPacksToInstall) > 0:
+            print(str(RPacksToInstall), 'not installed. Install now?')
+            Ans = input('[y/N]: ')
+            
+            if Ans.lower() in ['y', 'yes']:
+                from rpy2.robjects.vectors import StrVector as RStrVector
+                
+                RUtils = RPackages.importr('utils')
+                RUtils.chooseCRANmirror(ind=1)
+                
+                RUtils.install_packages(RStrVector(RPacksToInstall))
+            
+            else: print('Aborted.')
+        
+        else: print('Packages', str(Packages), 'installed.')
+        
+        return(None)
+    
+    
+    def AdjustNaNs(Array):
+        NaN = RObj.NA_Integer
+        
+        for I, A in enumerate(Array):
+            if A != A: Array[I] = NaN
+            
+        return(Array)
+    
+    
+    ## Level 1
+    def RAnOVa(GroupNo=RObj.NULL, SampleSize=RObj.NULL, Power=RObj.NULL, 
+               SigLevel=RObj.NULL, EffectSize=RObj.NULL):
+        Stats.RCheckPackage(['pwr'])
+        Rpwr = RPackages.importr('pwr')
+        
+        Results = Rpwr.pwr_anova_test(k=GroupNo, power=Power, sig_level=SigLevel, 
+                                      f=EffectSize, n=SampleSize)
+        
+        print('Calculating', Results.rx('method')[0][0] + '... ', end='')
+        AnOVaResults = {}
+        for Key, Value in {'k': 'GroupNo', 'n': 'SampleSize', 'f': 'EffectSize', 
+                           'power':'Power', 'sig.level': 'SigLevel'}.items():
+            AnOVaResults[Value] = Results.rx(Key)[0][0]
+        
+        print('Done.')
+        return(AnOVaResults)
+    
+    
+    def RTTest(DataA, DataB, Paired=True, Alt='less', Confidence=0.95):
+        Rttest = RObj.r['t.test']
+        
+        DataA = Stats.AdjustNaNs(DataA); DataB = Stats.AdjustNaNs(DataB)
+        
+        Results = Rttest(RObj.IntVector(DataA), RObj.IntVector(DataB), 
+                         paired=Paired, var_equal=False, alternative=Alt, 
+                         conf_level=RObj.FloatVector([Confidence]), 
+                         na_action=RObj.r['na.omit'])
+        
+        print('Calculating', Results.rx('method')[0][0] + '... ', end='')
+        TTestResults = {}; Names = list(Results.names)
+        for Name in Names:
+            TTestResults[Name] = Results.rx(Name)[0][0]
+        
+        print('Done.')
+        return(TTestResults)
+
 
 
 class Units():

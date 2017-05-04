@@ -25,71 +25,6 @@ for File in Files:
 
 
 plt.plot(Jitter['Hist-NonRT-T0'], 'bo'); plt.show()
-#%% Statistics
-import numpy as np
-from itertools import permutations
-from rpy2.robjects import packages as RPackages
-from rpy2 import robjects as RObj
-
-def RCheckPackage(Packages):
-    RPacksUsed = Packages
-    RPacksToInstall = [Pack for Pack in RPacksUsed 
-                       if not RPackages.isinstalled(Pack)]
-    if len(RPacksToInstall) > 0:
-        print(str(RPacksToInstall), 'not installed. Install now?')
-        Ans = input('[y/N]: ')
-        
-        if Ans in ['y', 'yes', 'Yes', 'YES']:
-            from rpy2.robjects.vectors import StrVector as RStrVector
-            
-            RUtils = RPackages.importr('utils')
-            RUtils.chooseCRANmirror(ind=1)
-            
-            RUtils.install_packages(RStrVector(RPacksToInstall))
-        
-        else: print('Aborted.')
-    
-    else: print('Packages', str(Packages), 'installed.')
-    
-    return(None)
-
-
-def RAnOVa(GroupNo=RObj.NULL, SampleSize=RObj.NULL, Power=RObj.NULL, 
-           SigLevel=RObj.NULL, EffectSize=RObj.NULL):
-    RCheckPackage(['pwr'])
-    Rpwr = RPackages.importr('pwr')
-    
-    Results = Rpwr.pwr_anova_test(k=GroupNo, power=Power, sig_level=SigLevel, 
-                                  f=EffectSize, n=SampleSize)
-    
-    print('Calculating', Results.rx('method')[0][0] + '... ', end='')
-    AnOVaResults = {}
-    for Key, Value in {'k': 'GroupNo', 'n': 'SampleSize', 'f': 'EffectSize', 
-                       'power':'Power', 'sig.level': 'SigLevel'}.items():
-        AnOVaResults[Value] = Results.rx(Key)[0][0]
-    
-    print('Done.')
-    return(AnOVaResults)
-
-
-def RTTest(DataA, DataB, Paired=True, Alt='less', Confidence=0.95):
-    Rttest = RObj.r['t.test']
-    
-    if np.mean(DataA) > np.mean(DataB): DataA, DataB = DataB, DataA
-    
-    Results = Rttest(RObj.IntVector(DataA), RObj.IntVector(DataB), 
-                     paired=Paired, var_equal=False, alternative=Alt, 
-                     conf_level=RObj.FloatVector([Confidence]))
-    
-    print('Calculating', Results.rx('method')[0][0] + '... ', end='')
-    TTestResults = {}; Names = list(Results.names)
-    for Name in Names:
-        TTestResults[Name] = Results.rx(Name)[0][0]
-    
-    print('Done.')
-    return(TTestResults)
-
-
 
 #%% Nernst potential
 Temperature = 25    # in Celsius
@@ -350,22 +285,14 @@ plt.show()
 
 
 #%% Plot ABRThresholds
-import KwikAnalysis
-import Hdf5F
+import DataAnalysis, Hdf5F, KwikAnalysis
 import numpy as np
 from glob import glob
-
-def StrRange(Start='a', End='e', Step=1):
-    if max(len(Start), len(End)) > 1: 
-        print('Only 1-char length strings are accepted.')
-        return(None)
-    else:
-        Range = map(chr, range(ord(Start), ord(End), Step))
-        return(Range)
+from itertools import permutations
 
 Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 
-Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
+Params = {'backend': 'TkAgg'}
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
@@ -396,7 +323,7 @@ for EInd in range(2,4):
 
 # For t-tests
 Pairs = {}
-for Pair in permutations(''.join(StrRange('0', str(len(Exps)))), 2):
+for Pair in permutations(''.join(DataAnalysis.StrRange('0', str(len(Exps)))), 2):
     PKey = min(Pair)+max(Pair)
     if PKey in Pairs: continue
     
@@ -409,7 +336,7 @@ for Pair in permutations(''.join(StrRange('0', str(len(Exps)))), 2):
         DataB = TPFExpanded[int(Pair[1])][FInd]
         CL = 1 - (0.05/6)
         
-        Pairs[PKey][Freq] = RTTest(DataA, DataB, Confidence=CL)
+        Pairs[PKey][Freq] = DataAnalysis.Stats.RTTest(DataA, DataB, Confidence=CL)
         print('Pair', str(Pair), 'Freq', Freq + ':', 
               str(Pairs[PKey][Freq]['p.value']))
 
@@ -450,23 +377,6 @@ def DiffLine(XInd, Y, Text, Axes, lw=1):
     Axes.annotate(Text, xy=(X, Y+7), ha='center')#, zorder=10)
     Axes.annotate('', xy=(XInd[0], Y), xytext=(XInd[1], Y), arrowprops=props)
     
-    return(None)
-
-
-def SignificanceBar(XStart, XEnd, Y, Text, Ax, TicksDir='down', lw=1, color='k'):
-    from matplotlib.markers import TICKDOWN, TICKUP
-    if TicksDir == 'down': Tick = TICKDOWN
-    elif TicksDir == 'up': Tick = TICKUP
-    
-    if TicksDir == 'down': Yy = Y-(Y*0.1)
-    elif TicksDir == 'up': Yy = Y+(Y*0.1)
-    else: print('TicksDir should be "up" or "down".'); return(None)
-    
-    Ax.plot([XStart, XEnd], [Y, Y], color=color, lw=lw, marker=Tick)
-#    Ax.plot([XStart, XStart], [Yy, Y], color=color, lw=lw)
-#    Ax.plot([XEnd, XEnd], [Yy, Y], color=color, lw=lw)
-    
-    Ax.text(0.5*(XStart+XEnd), Yy, Text, ha='center', va='center')
     return(None)
 
 
@@ -516,7 +426,7 @@ for Pair in Pairs:
         Text = 'p = ' + str(round(Pairs[Pair][Freq]['p.value'], 4))
 #        DiffLine(XInd, Y, Text, Axes[1])
 #        print(Counter)
-        SignificanceBar(XInd[0], XInd[1], Counter, Text, Axes[1], TicksDir='up')
+        DataAnalysis.Plot.SignificanceBar(XInd[0], XInd[1], Counter, Text, Axes[1], TicksDir='up')
         Counter += 1
 
 for Ind in [0,1]:

@@ -6,9 +6,10 @@ GPIAS analysis
 #%% Import
 
 import DataAnalysis, Hdf5F
-import os
 import numpy as np
 from glob import glob
+from itertools import combinations
+from os import makedirs
 
 #%% Group Analysis
 Params = DataAnalysis.Plot.Set(Params=True)
@@ -16,8 +17,9 @@ from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
 AnalysisFile = 'GPIAZon/GPIAZon-Analysis.hdf5'
-FigPath = 'GPIAZon/Figs'; os.makedirs(FigPath, exist_ok=True)
+FigPath = 'GPIAZon/Figs'; makedirs(FigPath, exist_ok=True)
 Groups = ['GPIAZon_NaCl', 'GPIAZon_SSal']
+ExpList = ['NaCl', 'SSal', 'Atr']
 Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
         'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
 Wid = 0.2
@@ -44,33 +46,75 @@ for Group in Groups:
             
             del(GPIAS)
 
-Means = {}
+MeansV = {}
 for Group in Groups:
     Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
-    Means[Group] = {}
+    MeansV[Group] = {}
     
     for Animal in Animals:
         for Exp in Index[Group][Animal].keys():
-            if Exp not in Means[Group]: Means[Group][Exp] = {}
+            if Exp not in MeansV[Group]: MeansV[Group][Exp] = {}
             
             for Freq in Index[Group][Animal][Exp].keys():
-                if Freq not in Means[Group][Exp].keys(): 
-                    Means[Group][Exp][Freq] = []
+                if Freq not in MeansV[Group][Exp].keys(): 
+                    MeansV[Group][Exp][Freq] = []
                 
-                Means[Group][Exp][Freq].append(abs(Index[Group][Animal][Exp][Freq]))
+                MeansV[Group][Exp][Freq].append(abs(Index[Group][Animal][Exp][Freq]))
 
-SEMs = {}
+SEMs = {}; Means = {}
 for Group in Groups:
-    SEMs[Group] = {}
-    for Exp in Means[Group].keys():
-        SEMs[Group][Exp] = {Freq: np.std(Val)/len(Val) for Freq, Val in Means[Group][Exp].items()}
-        Means[Group][Exp] = {Freq: np.mean(Val) for Freq, Val in Means[Group][Exp].items()}
+    SEMs[Group] = {}; Means[Group] = {}
+    for Exp in MeansV[Group].keys():
+        for F, V in MeansV[Group][Exp].items():
+            if len(V) == 3: 
+                MeansV[Group][Exp][F] = MeansV[Group][Exp][F] + [float('NaN')]*2
         
+        SEMs[Group][Exp] = {Freq: np.std(Val)/len(Val) for Freq, Val in MeansV[Group][Exp].items()}
+        Means[Group][Exp] = {Freq: np.nanmean(Val) for Freq, Val in MeansV[Group][Exp].items()}
+
+Pairs = {}; PairList = list(combinations(ExpList, 2))
+for Group in MeansV.keys():
+    Pairs[Group] = {}
+    
+    for Pair in PairList:
+        PKey = '_'.join(Pair)
+        Pairs[Group][PKey] = {}
+        
+        for Freq in MeansV[Group][Pair[0]].keys():
+            CL = 1 - (0.05/len(PairList))
+            DataA = MeansV[Group][Pair[0]][Freq][:]
+            DataB = MeansV[Group][Pair[1]][Freq][:]
+            if np.mean(DataA) > np.mean(DataB): DataA, DataB = DataB, DataA
+            
+            Pairs[Group][PKey][Freq] = DataAnalysis.Stats.RTTest(DataA, DataB, Confidence=CL)
+            
+            print(Group, 'Pair', PKey, 'Freq', Freq + ':', 
+                  str(Pairs[Group][PKey][Freq]['p.value']))
+            print('')
+
+ToDelete = []
+for Group in Pairs.keys():
+    for Pair in Pairs[Group].keys():
+        for Freq in Pairs[Group][Pair].keys():
+            if Pairs[Group][Pair][Freq]['p.value'] > 0.05:
+                ToDelete.append([Group, Pair, Freq])
+            
+            if Pairs[Group][Pair][Freq]['p.value'] != Pairs[Group][Pair][Freq]['p.value']:
+                ToDelete.append([Group, Pair, Freq])
+        
+
+for KeyPair in ToDelete: del(Pairs[KeyPair[0]][KeyPair[1]][KeyPair[2]])
+
+EmptyPairs = []
+for Pair in Pairs:
+    if len(Pairs[Pair]) == 0: EmptyPairs.append(Pair)
+
+for Pair in EmptyPairs: del(Pairs[Pair])
+
 
 # Plot
 Fig, Axes = plt.subplots(len(Means), 1, sharex=True, figsize=(8,3*len(Means)))
 Colors = ['r', 'g', 'b', 'm', 'k', '#ffa500', '#00b2b2']
-ExpList = ['NaCl', 'SSal', 'Atr']
 for G, Group in enumerate(Means.keys()):
     for E, Exp in enumerate(ExpList):
         Freqs = list(Means[Group][Exp].keys())
@@ -113,7 +157,7 @@ for Ind, DataPath in enumerate(Paths):
     AnalysisKey = Exp + '/' + RecFolder.split('/')[-1]
     FigName = '/'.join([Animal, Exp, 'Figs', RecFolder+'-GPIAS'])
     FigPath = '/'.join(FigName.split('/')[:-1])
-    os.makedirs(FigPath, exist_ok=True)
+    makedirs(FigPath, exist_ok=True)
     
     Data = Hdf5F.LoadOEKwik(DataPath, AnalogTTLs=True, Unit='Bits')[0]
     DataInfo = Hdf5F.LoadDict('/DataInfo', Files[Ind])
@@ -154,23 +198,23 @@ for Ind, DataPath in enumerate(Paths):
 #%% Individual
 
 Animal = 'GPIAZon'
-Exp = 'GPIAZon_SSal'
-RecFolder = '2017-04-15_14-28-03_GPIAZon_SSaln04'
-ExpFile = '20170415142722-GPIAZon_SSaln04-GPIAS.hdf5'
+Exp = 'GPIAZon_NaCl'
+RecFolder = '2017-04-11_14-18-12_GPIAZon_NaCln01'
+ExpFile = '20170411141734-GPIAZon_NaCln01-GPIAS.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
 PiezoCh = [8]
-TTLCh = 1
+TTLCh = 6
 
 DataPath = Animal + '/' + Exp + '/' + RecFolder
 AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
 AnalysisKey = Exp + '/' + RecFolder.split('/')[-1]
 FigName = '/'.join([Animal, Exp, 'Figs', RecFolder+'-GPIAS'])
 FigPath = '/'.join(FigName.split('/')[:-1])
-os.makedirs(FigPath, exist_ok=True)
+makedirs(FigPath, exist_ok=True)
 
 Data = Hdf5F.LoadOEKwik(DataPath, AnalogTTLs=True, Unit='Bits')[0]
 DataInfo = Hdf5F.LoadDict('/DataInfo', Animal + '/' + Exp + '/' + ExpFile)

@@ -379,17 +379,21 @@ class GPIAS():
     def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
         Index = {}
         for Key in Keys:
-            BGStart = PulseSampleStart - SliceSize; BGEnd = PulseSampleStart
+            BGStart = 0; BGEnd = SliceSize
             PulseStart = PulseSampleStart; PulseEnd = PulseSampleStart + SliceSize
             
             ResRMSBG = (np.mean(Data[Key[0]][BGStart:BGEnd]**2))**0.5
             ResRMSPulse = (np.mean(Data[Key[0]][PulseStart:PulseEnd]**2))**0.5
-            ResRMS = ResRMSPulse - ResRMSBG
+#            ResRMS = ResRMSPulse
+            if ResRMSPulse < ResRMSBG: ResRMS = ResRMSPulse
+            else: ResRMS = ResRMSPulse - ResRMSBG
             
             RefRMSBG = (np.mean(Data[Key[1]][BGStart:BGEnd]**2))**0.5
             RefRMSPulse = (np.mean(Data[Key[1]][PulseStart:PulseEnd]**2))**0.5
-            RefRMS = RefRMSPulse - RefRMSBG
-                
+#            RefRMS = RefRMSPulse
+            if RefRMSPulse < RefRMSBG: RefRMS = RefRMSPulse
+            else: RefRMS = RefRMSPulse - RefRMSBG
+            
             # GPIAS index (How much Res is different from Ref)
             Index[Key[2]] = (RefRMS-ResRMS)/RefRMS
         
@@ -469,6 +473,8 @@ class GPIAS():
                                        NoOfSamplesBefore, NoOfSamplesAfter, 
                                        NoOfSamples)
         
+        SliceSize = int(SliceSize * (Rate/1000))
+        
         for Freq in GPIASData['Index'].keys():
             for Key in GPIASData['Index'][Freq].keys():
                 # Average trials for traces
@@ -492,7 +498,6 @@ class GPIAS():
                 GPIASData['Index'][Freq][Key] = np.mean(GPIASData['Index'][Freq][Key], axis=0)
                 
             # RMS
-            SliceSize = int(SliceSize * (Rate/1000))
             if Freq == PrePostFreq: Keys = [['Gap', 'NoGap', 'GPIASIndex'], 
                                             ['Post', 'Pre', 'PrePost']]
             else: Keys = [['Gap', 'NoGap', 'GPIASIndex']]
@@ -545,20 +550,17 @@ class Plot():
         return(None)
     
     
-    def SignificanceBar(XStart, XEnd, Y, Text, Ax, TicksDir='down', lw=1, color='k'):
-        from matplotlib.markers import TICKDOWN, TICKUP
-        if TicksDir == 'down': Tick = TICKDOWN
-        elif TicksDir == 'up': Tick = TICKUP
-        
-        if TicksDir == 'down': Yy = Y-(Y*0.1)
-        elif TicksDir == 'up': Yy = Y+(Y*0.1)
+    def SignificanceBar(X, Y, Text, Ax, TicksDir='down', lw=1, color='k'):
+        if TicksDir == 'down':
+            from matplotlib.markers import TICKDOWN as Tick
+            Yy = max(Y)+(max(Y)*0.05)
+        elif TicksDir == 'up':
+            from matplotlib.markers import TICKUP as Tick
+            Yy = max(Y)-(max(Y)*0.01)
         else: print('TicksDir should be "up" or "down".'); return(None)
         
-        Ax.plot([XStart, XEnd], [Y, Y], color=color, lw=lw, marker=Tick)
-    #    Ax.plot([XStart, XStart], [Yy, Y], color=color, lw=lw)
-    #    Ax.plot([XEnd, XEnd], [Yy, Y], color=color, lw=lw)
-        
-        Ax.text(0.5*(XStart+XEnd), Yy, Text, ha='center', va='center')
+        Ax.plot(X, Y, color=color, lw=lw, marker=Tick)
+        Ax.text(sum(X)/2, Yy, Text, fontsize=6, ha='center', va='center')
         return(None)
     
     
@@ -600,6 +602,7 @@ class Plot():
         
         if Save: Fig.savefig(FigName, format=Ext)
         if Visible: plt.show()
+        else: plt.close()
         
         print('Done.')
         return(None)
@@ -634,6 +637,7 @@ class Plot():
             print('Done.')
         
         if Visible: plt.show()
+        else: plt.close()
         return(None)
     
     
@@ -839,7 +843,7 @@ class Stats():
     
     
     def AdjustNaNs(Array):
-        NaN = RObj.NA_Integer
+        NaN = RObj.NA_Real
         
         for I, A in enumerate(Array):
             if A != A: Array[I] = NaN
@@ -848,10 +852,24 @@ class Stats():
     
     
     ## Level 1
-    def RAnOVa(GroupNo=RObj.NULL, SampleSize=RObj.NULL, Power=RObj.NULL, 
+    def RAnOVa(DataA, DataB):
+        Raov = RObj.r['aov']
+        
+        Data = DataA + DataB
+        Trtmnt = ['A']*len(DataA) + ['B']*len(DataB)
+        Formula = RObj.Formula('Data ~ Trtmnt'); FEnv = Formula.environment
+        FEnv['Data'] = RObj.FloatVector(Data)
+        FEnv['Trtmnt'] = RObj.StrVector(Trtmnt)
+        
+        Results = Raov(Formula)
+        print(RObj.r['summary'](Results))
+        
+        return(Results)
+    
+    
+    def RPwrAnOVa(GroupNo=RObj.NULL, SampleSize=RObj.NULL, Power=RObj.NULL, 
                SigLevel=RObj.NULL, EffectSize=RObj.NULL):
-        Stats.RCheckPackage(['pwr'])
-        Rpwr = RPackages.importr('pwr')
+        Stats.RCheckPackage(['pwr']); Rpwr = RPackages.importr('pwr')
         
         Results = Rpwr.pwr_anova_test(k=GroupNo, power=Power, sig_level=SigLevel, 
                                       f=EffectSize, n=SampleSize)
@@ -871,7 +889,7 @@ class Stats():
         
         DataA = Stats.AdjustNaNs(DataA); DataB = Stats.AdjustNaNs(DataB)
         
-        Results = Rttest(RObj.IntVector(DataA), RObj.IntVector(DataB), 
+        Results = Rttest(RObj.FloatVector(DataA), RObj.FloatVector(DataB), 
                          paired=Paired, var_equal=False, alternative=Alt, 
                          conf_level=RObj.FloatVector([Confidence]), 
                          na_action=RObj.r['na.omit'])

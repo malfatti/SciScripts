@@ -4,138 +4,34 @@
 GPIAS analysis
 """
 #%% Import
-
-import DataAnalysis, Hdf5F
+import DataAnalysis, GPIAZon, Hdf5F
 import numpy as np
 from glob import glob
-from itertools import combinations
 from os import makedirs
 
-#%% Group Analysis
-Params = DataAnalysis.Plot.Set(Params=True)
-from matplotlib import rcParams; rcParams.update(Params)
-from matplotlib import pyplot as plt
-
+#%% Group
 AnalysisFile = 'GPIAZon/GPIAZon-Analysis.hdf5'
-FigPath = 'GPIAZon/Figs'; makedirs(FigPath, exist_ok=True)
 Groups = ['GPIAZon_NaCl', 'GPIAZon_SSal']
-ExpList = ['NaCl', 'SSal', 'Atr']
+ExpList = ['NaCl', 'SSal']#, 'Atr']
 Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
         'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
-Wid = 0.2
 
-Index = {}
-for Group in Groups:
-    Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
-    Index[Group] = {}
-    
-    for Animal in Animals:
-        Paths = glob('GPIAZon/' + Group + '/*' + Animal); Paths.sort()
-        Index[Group][Animal] = {}
-        
-        for P,Path in enumerate(Paths):
-            AnalysisKey = Group + '/' + Path.split('/')[-1]
-            GPIAS = Hdf5F.LoadGPIAS(AnalysisFile, AnalysisKey)[0]
-            Index[Group][Animal][Exps[Group][P]] = {}
-#            Freqs = list(GPIAS['Index'].keys())
-#            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
-            
-            for Freq in GPIAS['Index'].keys(): 
-                if Freq == '9000-11000': continue
-                Index[Group][Animal][Exps[Group][P]][Freq] = GPIAS['Index'][Freq]['GPIASIndex']
-            
-            del(GPIAS)
+Save = False; Invalid = False
+DiffThr = 0.6; InvalidThr = 0.1
 
-MeansV = {}
-for Group in Groups:
-    Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
-    MeansV[Group] = {}
-    
-    for Animal in Animals:
-        for Exp in Index[Group][Animal].keys():
-            if Exp not in MeansV[Group]: MeansV[Group][Exp] = {}
-            
-            for Freq in Index[Group][Animal][Exp].keys():
-                if Freq not in MeansV[Group][Exp].keys(): 
-                    MeansV[Group][Exp][Freq] = []
-                
-                MeansV[Group][Exp][Freq].append(abs(Index[Group][Animal][Exp][Freq]))
+Index = GPIAZon.GetIndex(Groups, Exps, AnalysisFile)
+Diff = GPIAZon.GetDiff(Index, Groups, ExpList, DiffThr, Invalid, InvalidThr)
 
-SEMs = {}; Means = {}
-for Group in Groups:
-    SEMs[Group] = {}; Means[Group] = {}
-    for Exp in MeansV[Group].keys():
-        for F, V in MeansV[Group][Exp].items():
-            if len(V) == 3: 
-                MeansV[Group][Exp][F] = MeansV[Group][Exp][F] + [float('NaN')]*2
-        
-        SEMs[Group][Exp] = {Freq: np.std(Val)/len(Val) for Freq, Val in MeansV[Group][Exp].items()}
-        Means[Group][Exp] = {Freq: np.nanmean(Val) for Freq, Val in MeansV[Group][Exp].items()}
+MeansV, MeansFull = GPIAZon.GetMeansV(Index, Groups, ExpList)
+NaCl, SSal = GPIAZon.GetIndFreqMean(Index, Diff, Groups)
 
-Pairs = {}; PairList = list(combinations(ExpList, 2))
-for Group in MeansV.keys():
-    Pairs[Group] = {}
-    
-    for Pair in PairList:
-        PKey = '_'.join(Pair)
-        Pairs[Group][PKey] = {}
-        
-        for Freq in MeansV[Group][Pair[0]].keys():
-            CL = 1 - (0.05/len(PairList))
-            DataA = MeansV[Group][Pair[0]][Freq][:]
-            DataB = MeansV[Group][Pair[1]][Freq][:]
-            if np.mean(DataA) > np.mean(DataB): DataA, DataB = DataB, DataA
-            
-            Pairs[Group][PKey][Freq] = DataAnalysis.Stats.RTTest(DataA, DataB, Confidence=CL)
-            
-            print(Group, 'Pair', PKey, 'Freq', Freq + ':', 
-                  str(Pairs[Group][PKey][Freq]['p.value']))
-            print('')
+Pairs, PairsFull = GPIAZon.GetPairs(MeansV, MeansFull, Groups, ExpList)
+Pairs, PairsFull = GPIAZon.ClearPairs(Pairs, PairsFull)
 
-ToDelete = []
-for Group in Pairs.keys():
-    for Pair in Pairs[Group].keys():
-        for Freq in Pairs[Group][Pair].keys():
-            if Pairs[Group][Pair][Freq]['p.value'] > 0.05:
-                ToDelete.append([Group, Pair, Freq])
-            
-            if Pairs[Group][Pair][Freq]['p.value'] != Pairs[Group][Pair][Freq]['p.value']:
-                ToDelete.append([Group, Pair, Freq])
-        
+YMax = 0.4
+GPIAZon.Plot.Index_Freq_Exp_BP(MeansFull, PairsFull, ExpList, Save)
+GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
 
-for KeyPair in ToDelete: del(Pairs[KeyPair[0]][KeyPair[1]][KeyPair[2]])
-
-EmptyPairs = []
-for Pair in Pairs:
-    if len(Pairs[Pair]) == 0: EmptyPairs.append(Pair)
-
-for Pair in EmptyPairs: del(Pairs[Pair])
-
-
-# Plot
-Fig, Axes = plt.subplots(len(Means), 1, sharex=True, figsize=(8,3*len(Means)))
-Colors = ['r', 'g', 'b', 'm', 'k', '#ffa500', '#00b2b2']
-for G, Group in enumerate(Means.keys()):
-    for E, Exp in enumerate(ExpList):
-        Freqs = list(Means[Group][Exp].keys())
-        Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
-        Freqs = [Freqs[0]] + Freqs[2:] + [Freqs[1]]
-        
-        X = np.arange(len(Freqs))
-        Y = [Means[Group][Exp][Freq] for Freq in Freqs]
-        Error = [SEMs[Group][Exp][Freq] for Freq in Freqs]
-        
-        Axes[G].bar(X+(E*Wid), Y, width=Wid, color=Colors[E], label=ExpList[E])
-        Axes[G].errorbar(X+(E*Wid)+(Wid/2), Y, Error, color='k', fmt='.')
-    
-    Axes[G].legend(loc='best')
-    Axes[G].set_title(Group)
-    Axes[G].set_xticks(np.arange(len(Freqs))+0.3); Axes[G].set_xticklabels(Freqs)
-    Axes[G].set_ylabel('Mean GPIAS index')
-
-FigName = FigPath + '/GPIAZon-GPIASIndexMeanPerFreqPerExp.svg'
-Fig.savefig(FigName, format='svg')
-plt.show()
 
 #%% Batch
 Animal = 'GPIAZon'
@@ -146,11 +42,14 @@ GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
-PiezoCh = [8]
-TTLCh = 1
 
-Paths = glob(Animal + '/' + Exp + '/2017-04-1[8,9]*'); Paths.sort()
-Files = glob(Animal + '/' + Exp + '/2017041[8,9]*'); Files.sort()
+Paths = glob(Animal + '/' + Exp + '/2017-*'); Paths.sort()
+Files = glob(Animal + '/' + Exp + '/20170*'); Files.sort()
+
+# NaCl
+del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
+# SSal
+#del(Paths[-2:], Paths[5], Paths[0]); del(Files[-2:], Files[5], Files[0])
 
 for Ind, DataPath in enumerate(Paths):
     RecFolder = DataPath.split('/')[-1]
@@ -164,8 +63,12 @@ for Ind, DataPath in enumerate(Paths):
     Proc = Hdf5F.GetProc(Data, 'OE')
     Rate = Data[Proc]['info']['0']['sample_rate']
     
+    # Test TTLCh
+#    plt.plot(Data[Proc]['data']['0'][:,TTLCh-1]); plt.show()
+#    print(DataInfo['TTLCh'])
+    
     # Test recs
-#    SOAB = DataAnalysis.GPIAS.CheckGPIASRecs(Data[Proc]['data'], [60000, 100000])
+#    SOAB = DataAnalysis.GPIAS.CheckGPIASRecs(Data[Proc]['data'], [65000, 100000])
 #    if SOAB: 
 #        print(); print(DataPath)
 #        print(); print(SOAB); print()
@@ -175,13 +78,93 @@ for Ind, DataPath in enumerate(Paths):
         BitVolts = 10000/(2**16)
         Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
     
-    DataInfo['PiezoCh'] = PiezoCh
-    DataInfo['TTLCh'] = TTLCh
+    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
+    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
     
     for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
         DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[Ind])
     
     DataInfo['FreqOrder'][-3:][:,1] = -2
+    
+    GPIAS, XValues = DataAnalysis.GPIAS.Analysis(
+                         Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
+                         AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+                         FilterFreq, FilterOrder, Return=True)
+    
+    
+    DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
+                            FigName, Save=True, Visible=False)
+    
+    del(GPIAS, XValues)
+
+
+#%% Batch broken
+Animal = 'GPIAZon'
+AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
+
+GPIASTimeBeforeTTL = 200   # in ms
+GPIASTimeAfterTTL = 200    # in ms
+FilterFreq = [100, 300]     # frequency for filter
+FilterOrder = 3       # butter order
+
+Paths = [
+    'GPIAZon/GPIAZon_NaCl/2017-04-11_14-18-12_GPIAZon_NaCln01',
+    'GPIAZon/GPIAZon_NaCl/2017-04-11_16-01-38_GPIAZon_NaCln03',
+    'GPIAZon/GPIAZon_NaCl/2017-04-11_16-53-06_GPIAZon_NaCln04',
+    'GPIAZon/GPIAZon_SSal/2017-04-13_12-48-26_GPIAZon_SSaln01',
+    'GPIAZon/GPIAZon_SSal/2017-04-15_14-28-03_GPIAZon_SSaln04',
+    'GPIAZon/GPIAZon_SSal/2017-04-21_14-47-12_GPIAZon_SSaln04',
+    'GPIAZon/GPIAZon_SSal/2017-04-24_13-54-34_GPIAZon_SSaln05'
+    ]
+
+Files = [
+    'GPIAZon/GPIAZon_NaCl/20170411141734-GPIAZon_NaCln01-GPIAS.hdf5',
+    'GPIAZon/GPIAZon_NaCl/20170411160111-GPIAZon_NaCln03-GPIAS.hdf5',
+    'GPIAZon/GPIAZon_NaCl/20170411165239-GPIAZon_NaCln04-GPIAS.hdf5',
+    'GPIAZon/GPIAZon_SSal/20170413124748-GPIAZon_SSaln01-GPIAS.hdf5',
+    'GPIAZon/GPIAZon_SSal/20170415142722-GPIAZon_SSaln04-GPIAS.hdf5',
+    'GPIAZon/GPIAZon_SSal/20170421144530-GPIAZon_SSaln04-GPIAS.hdf5',
+    'GPIAZon/GPIAZon_SSal/20170424135406-GPIAZon_SSaln05-GPIAS.hdf5'
+    ]
+
+ToDelete = [
+    [['59'], [60]],
+    [['110'], []],
+    [['15'], []],
+    [['51', '46', '36', '54', '38', '58', '23', '63', '70', '48', '34'], [35, 36, 37, 38, 39, 42, 43, 44, 47, 48, 49, 50, 51, 52, 53, 54]],
+    [['13', '14', '16', '2', '20', '33', '37', '49', '50', '54', '55', '56', '70', '71', '80', '87'], []],
+    [['49'], []],
+    [['53'], []]
+    ]
+
+for Ind, DataPath in enumerate(Paths):
+    Exp = DataPath.split('/')[1]
+    RecFolder = DataPath.split('/')[-1]
+    AnalysisKey = Exp + '/' + RecFolder.split('/')[-1]
+    FigName = '/'.join([Animal, Exp, 'Figs', RecFolder+'-GPIAS'])
+    FigPath = '/'.join(FigName.split('/')[:-1])
+    makedirs(FigPath, exist_ok=True)
+    
+    Data = Hdf5F.LoadOEKwik(DataPath, AnalogTTLs=True, Unit='Bits')[0]
+    DataInfo = Hdf5F.LoadDict('/DataInfo', Files[Ind])
+    Proc = Hdf5F.GetProc(Data, 'OE')
+    Rate = Data[Proc]['info']['0']['sample_rate']
+    
+    for Rec in Data[Proc]['data'].keys():
+        BitVolts = 10000/(2**16)
+        Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
+    
+    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
+    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
+    
+    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[Ind])
+    
+    DataInfo['FreqOrder'][-3:][:,1] = -2
+    
+    DataInfo['FreqOrder'] = np.delete(DataInfo['FreqOrder'], ToDelete[Ind][1], 0)
+    for Key in Data[Proc].keys(): 
+        for r in ToDelete[Ind][0]: del(Data[Proc][Key][r])
     
     GPIAS, XValues = DataAnalysis.GPIAS.Analysis(
                          Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
@@ -199,8 +182,8 @@ for Ind, DataPath in enumerate(Paths):
 
 Animal = 'GPIAZon'
 Exp = 'GPIAZon_NaCl'
-RecFolder = '2017-04-11_14-18-12_GPIAZon_NaCln01'
-ExpFile = '20170411141734-GPIAZon_NaCln01-GPIAS.hdf5'
+RecFolder = '2017-04-11_16-53-06_GPIAZon_NaCln04'
+ExpFile = '20170411165239-GPIAZon_NaCln04-GPIAS.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
@@ -273,6 +256,7 @@ DataInfo['FreqOrder'][-3:][:,1] = -2
 #    for r in SOAB: del(Data[Proc][Key][r])
 
 # 20170415142722-GPIAZon_SSaln04-GPIAS.hdf5
+#SOAB = ['13', '14', '16', '2', '20', '33', '37', '49', '50', '54', '55', '56', '70', '71', '80', '87']
 #for Key in Data[Proc].keys(): 
 #    for r in SOAB: del(Data[Proc][Key][r])
 

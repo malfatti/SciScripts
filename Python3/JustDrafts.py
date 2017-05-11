@@ -2,6 +2,14 @@
 """
 Just drafts
 """
+#%% Treadmill
+import DataAnalysis, Hdf5F
+
+DataPath = ''
+
+Data = Hdf5F.LoadOEKwik(DataPath)
+
+
 #%% RT plots
 import KwikAnalysis
 

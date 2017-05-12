@@ -283,7 +283,7 @@ def LoadGPIAS(FileName, Path):
     return(GPIAS, XValues)
 
 
-def LoadOEKwik(RecFolder, AnalogTTLs, Unit='uV', ChannelMap=[]):
+def LoadOEKwik(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
     if AnalogTTLs: RawRO, _, Spks, Files = Kwik.load_all_files(RecFolder)
     else: RawRO, Events, Spks, Files = Kwik.load_all_files(RecFolder)
     

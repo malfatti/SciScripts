@@ -4,10 +4,42 @@ Just drafts
 """
 #%% Treadmill
 import DataAnalysis, Hdf5F
+import numpy as np
 
-DataPath = ''
+from glob import glob
 
+Params = DataAnalysis.Plot.SetPlot(Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
+
+SensorCh = 17
+Diameter = 60; PeaksPerCycle = 12
+
+Paths = glob('Treadmilltina/2017-03-08*')
+DataPath = Paths[0]
 Data = Hdf5F.LoadOEKwik(DataPath)
+Proc = Hdf5F.GetProc(Data, 'OE')
+
+PeakDist = (np.pi*Diameter)/PeaksPerCycle
+
+Recs = Data[Proc]['data'].keys()
+for Rec in Recs:
+    RecData = Data[Proc]['data'][Rec]
+    Rate = Data[Proc]['info'][Rec]['sample_rate']
+    SensorData = RecData[:,SensorCh]*-1
+    
+    Peaks = DataAnalysis.QuantifyTTLsPerRec(True, SensorData)
+    
+    V = [float('NaN')]*Peaks[0]
+    for P in range(1, len(Peaks)):
+        Samples = Peaks[P] - Peaks[P-1]; Time = Samples/Rate
+        Speed = PeakDist/Time; V = V + [Speed]*Samples
+    
+    Ch = 7
+    Pxx, F, B, I = plt.specgram(RecData[:Ch], 200, Rate, noverlap=100)
+    
+    
+    
 
 
 #%% RT plots

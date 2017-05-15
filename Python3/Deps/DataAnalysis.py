@@ -55,6 +55,23 @@ def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
         return(Signal)
 
 
+def FindPeaks(Data, Dist, LowThr=None, HighThr=None):
+    if not LowThr: LowThr = np.mean(Data) + (np.std(Data)/(len(Data)**0.5))
+    if not HighThr: HighThr = np.mean(Data) + (2*np.std(Data))
+    
+    Range = np.arange(0, len(Data), Dist, dtype=int)
+    
+    PVal = [max(Data[Range[i-1]:Range[i]])
+             for i in range(1, len(Range)) 
+             if max(Data[Range[i-1]:Range[i]]) > LowThr 
+             and max(Data[Range[i-1]:Range[i]]) < HighThr]
+#    PInd = [np.where(Data == max(Data[Range[i-1]:Range[i]]))[0][0]
+#             for i in range(1, len(Range)) if max(Data[Range[i-1]:Range[i]]) > Thr]
+    PInd = [np.where(Data == Val)[0][0] for Val in PVal]
+    
+    return(PInd, PVal)
+
+
 def FixTTLs(Array, TTLsToFix):
     for TTL in TTLsToFix:
         nInd = np.random.randint(1, 100)

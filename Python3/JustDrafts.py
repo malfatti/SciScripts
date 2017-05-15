@@ -7,36 +7,65 @@ import DataAnalysis, Hdf5F
 import numpy as np
 
 from glob import glob
+from scipy import signal
 
-Params = DataAnalysis.Plot.SetPlot(Params=True)
+Params = DataAnalysis.Plot.Set(Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
-SensorCh = 17
-Diameter = 60; PeaksPerCycle = 12
+def FindPeaks(Data, Dist, Thr=None):
+    if not Thr: Thr = np.mean(Data) + (2*np.std(Data))
 
-Paths = glob('Treadmilltina/2017-03-08*')
+    Range = np.arange(0, len(Data), Dist)
+    Peaks = [max(Data[I:I-1]) for I in range(a) ]
+        
+
+
+Delta, Theta = [2, 4], [7, 10]
+SensorCh = 17
+Diameter = 0.6; PeaksPerCycle = 12
+Lowpass = 5; FilterOrder = 2
+
+#cd /run/media/malfatti/Malfatti1TB3/Data/Martina/Data/201703
+Paths = glob('2017-03-08*'); Paths.sort()
 DataPath = Paths[0]
-Data = Hdf5F.LoadOEKwik(DataPath)
+Data = Hdf5F.LoadOEKwik(DataPath)[0]
 Proc = Hdf5F.GetProc(Data, 'OE')
 
 PeakDist = (np.pi*Diameter)/PeaksPerCycle
 
-Recs = Data[Proc]['data'].keys()
+Recs = list(Data[Proc]['data'].keys())
 for Rec in Recs:
     RecData = Data[Proc]['data'][Rec]
     Rate = Data[Proc]['info'][Rec]['sample_rate']
-    SensorData = RecData[:,SensorCh]*-1
+    SensorData = RecData[:,SensorCh-1]*-1
+    SensorData = DataAnalysis.FilterSignal(SensorData, Rate, [Lowpass], 
+                                           FilterOrder, 'lowpass')
     
     Peaks = DataAnalysis.QuantifyTTLsPerRec(True, SensorData)
     
-    V = [float('NaN')]*Peaks[0]
+    V = np.zeros(len(SensorData))
     for P in range(1, len(Peaks)):
         Samples = Peaks[P] - Peaks[P-1]; Time = Samples/Rate
-        Speed = PeakDist/Time; V = V + [Speed]*Samples
+        Speed = PeakDist/Time; V[Peaks[P-1]:Peaks[P]] = [Speed]*Samples
     
-    Ch = 7
-    Pxx, F, B, I = plt.specgram(RecData[:Ch], 200, Rate, noverlap=100)
+#    Start = int(Peaks[0]); End = int(Start + (180*Rate))
+    Start = 0; End = -1
+    NFFT = (1/max(Theta))*10*Rate#(End-Start)*0.003
+    
+    Fig = plt.subplots(1,1,figsize=(6, 2)); plt.plot(V[Start:End], 'k', lw=2)
+    Fig = plt.subplots(1,1,figsize=(6, 4))
+    Pxx, F, B, I = plt.specgram(
+                           RecData[Start:End,12], NFFT=int(NFFT), Fs=Rate, 
+                           noverlap=int(NFFT*0.01), cmap='inferno')
+    plt.ylim(0, 100)
+    
+    Window = signal.hanning(NFFT)
+    F, T, Sxx = signal.spectrogram(RecData[Start:End,12], Rate, window=Window, nperseg=int(NFFT), noverlap=int(NFFT*0.5), nfft=int(NFFT))
+    Fig = plt.subplots(1,1,figsize=(6, 4)); plt.pcolormesh(T, F, Sxx, cmap='inferno'); plt.ylim(0,100)
+    Fig = plt.subplots(1,1,figsize=(6, 2)); plt.plot(V[Start:End], 'k', lw=2)
+    plt.show()
+    
     
     
     

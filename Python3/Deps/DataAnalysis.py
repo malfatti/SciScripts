@@ -131,9 +131,11 @@ def GetTTLThreshold(TTLCh):
         return(Threshold)
     else:
         print('square pulses stimulation')
-        Top = max(TTLCh) + abs(min(TTLCh))
-        Bot = min(TTLCh) + abs(min(TTLCh))
-        Threshold = max(TTLCh) - (Top - Bot)/3 + 2*(np.std(TTLCh))
+#        Top = max(TTLCh) + abs(min(TTLCh))
+#        Bot = min(TTLCh) + abs(min(TTLCh))
+#        Threshold = max(TTLCh) - (Top - Bot)/3 + 2*(np.std(TTLCh))
+        Amp = max(TTLCh) - min(TTLCh)
+        Threshold = max(TTLCh) - (Amp/4)
         return(Threshold) 
 
 

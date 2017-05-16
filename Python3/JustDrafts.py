@@ -8,11 +8,10 @@ import numpy as np
 
 from glob import glob
 from scipy import signal
-from scipy.interpolate import interp1d
 
 Params = DataAnalysis.Plot.Set(Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
-from matplotlib import pyplot as plt        
+import matplotlib.pyplot as plt
 
 Delta, Theta = [2, 4], [7, 10]
 SensorCh = 17
@@ -31,74 +30,25 @@ Recs = list(Data[Proc]['data'].keys())
 for Rec in Recs:
     RecData = Data[Proc]['data'][Rec]
     Rate = Data[Proc]['info'][Rec]['sample_rate']
-    SensorData = RecData[:,SensorCh-1]*-1
-    SensorData = DataAnalysis.FilterSignal(SensorData, Rate, [Lowpass], 
-                                           FilterOrder, 'lowpass')
+    
+    Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, Theta, Delta, 
+                                                SensorCh, Lowpass, FilterOrder, 
+                                                PeakDist)
     
     
-    Peaks = DataAnalysis.QuantifyTTLsPerRec(True, SensorData)
     
-    V = np.zeros(len(SensorData))
-    for P in range(1, len(Peaks)):
-        Samples = Peaks[P] - Peaks[P-1]; Time = Samples/Rate
-        Speed = PeakDist/Time; V[Peaks[P-1]:Peaks[P]] = [Speed]*Samples
+    DataAnalysis.Plot.TreadMill_AllPerCh(T, F, Sxx, SxxMaxs, SxxPerV, VMeans, VMeansSorted, 
+                                         VInds, FigName=None, Ext='svg', Save=False, Visible=True)
+#    Spectrogram(VMeansSorted, F, SxxPerV, HighFreqThr=100, Line=True, 
+#                LineX=VMeansSorted, LineY=SxxMaxs[VInds], LineColor='r', 
+#                LineLim=(-max(SxxMaxs)/3, max(SxxMaxs)), 
+#                LineYLabel='ThetaPxx/DeltaPxx', Save=False, Visible=True)
+#    
     
-    VInd, VPeaks = DataAnalysis.FindPeaks(V, Rate*3)
-    f = interp1d(VInd, VPeaks, fill_value=0.0, bounds_error=False)
-    V = f(np.arange(len(V))); V[V!=V] = 0.0
-    VXValues = np.arange(len(V))/Rate
+    # T per F per Sxx + VMeans + Sxx
+#    Fig, SxxAx = plt.subplots(1,1,figsize=(10, 4))
+#    Fig.subplots_adjust(bottom=0.15, right=0.85)
     
-    Start = int(Peaks[0]); End = int(Peaks[-1])
-#    Start = 0; End = -1
-    NFFT = (1/max(Theta))*10*Rate#(End-Start)*0.003
-    
-    Window = signal.hanning(NFFT)
-    F, T, Sxx = signal.spectrogram(RecData[:,12], Rate, window=Window, 
-                                   nperseg=int(NFFT), noverlap=int(NFFT*0.5), 
-                                   nfft=int(NFFT))
-    
-    VMeans = [np.mean(V[int(T[t]*Rate):int(T[t+1]*Rate)]) 
-              for t in range(len(T)-1)] + [0.0]
-    VMeansSorted = sorted(VMeans)
-    VInds = [VMeansSorted.index(v) for v in VMeans]
-    SxxPerV = Sxx[:,VInds]
-    
-    SxxMeans = [np.mean(Sxx[(F>=min(Theta))*(F<max(Theta)),t]) for t in range(len(T))]
-#    SxxSR = 1/(T[1]-T[0]); SxxLowPass = SxxSR*5/100
-#    SxxMeans = DataAnalysis.FilterSignal(SxxMeans, SxxSR, [SxxLowPass], 1, 'lowpass')
-    
-    Treadmill[Ch] = dict((Name, eval(Name)) for Name in [
-                        'F', 'T', 'Sxx',                    # Spectrogram
-                        'VMeans', 'VMeansSorted', #
-                        'SxxMeans', 'SxxPerV',
-                        ])
-
-    # V per t
-    Fig, Ax = plt.subplots(1,1,figsize=(6, 2)); Ax.plot(V, 'k', lw=2)
-    
-    # V per F + Sxx
-    Fig, SxxAx = plt.subplots(1,1,figsize=(6, 4))
-    SxxAx.pcolormesh(VMeansSorted, F, SxxPerV, cmap='inferno'); SxxAx.set_ylim(0,100)
-    SAx = SxxAx.twinx()
-    SAx.plot(VMeansSorted, SxxMeans[VInds], 'g')
-    
-    # T per F per Sxx + V + Sxx
-    Fig, SxxAx = plt.subplots(1,1,figsize=(6, 4))
-    Fig.subplots_adjust(bottom=0.15, right=0.85)
-    VAx = Fig.add_axes(SxxAx.get_position()); VAx.patch.set_visible(False)
-    VAx.yaxis.set_label_position('right'); VAx.yaxis.set_ticks_position('right')
-    VAx.spines['bottom'].set_visible(False)
-    
-    SxxAx.pcolormesh(T, F, Sxx, cmap='inferno'); SxxAx.set_ylim(0,100)
-    SxxAx.yaxis.set_ticks_position('left')
-    SxxAx.set_xlabel('Time [s]', color='k')
-    SxxAx.set_ylabel('Frequency [Hz]', color='red')
-    
-    SAx = SxxAx.twinx()
-    SAx.plot(T, SxxMeans, 'r', lw=2)
-    
-    VAx.plot(VXValues, V, 'g', lw=2)
-    VAx.set_ylabel('Speed [m/s]', color='green')
     
     plt.show()
 

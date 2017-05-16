@@ -27,6 +27,7 @@ from multiprocessing import Process
 from rpy2.robjects import packages as RPackages
 from rpy2 import robjects as RObj
 from scipy import io, signal
+from scipy.interpolate import interp1d
 from subprocess import call
 
 ## Level 0
@@ -192,6 +193,17 @@ def RemapChannels(Tip, Head, Connector):
     
     print('Done.')
     return(ChMap)
+
+
+def Spectrogram(Data, Rate, HigherFreq):
+    NFFT = (1/max(HigherFreq))*10*Rate
+    
+    Window = signal.hanning(NFFT)
+    F, T, Sxx = signal.spectrogram(Data[:,12], Rate, window=Window, 
+                                   nperseg=int(NFFT), noverlap=int(NFFT*0.5), 
+                                   nfft=int(NFFT))
+    
+    return(F, T, Sxx)
 
 
 def StrRange(Start='a', End='e', Step=1):
@@ -660,6 +672,115 @@ class Plot():
         return(None)
     
     
+    def Spectrogram(SxxAx, T, F, Sxx, Colormap='inferno', HighFreqThr=None, 
+                    Line=None, LineX=None, LineY=None, LineColor='b', LineLim=None, 
+                    LineYLabel=None):
+        if Line:
+            if LineY == None: 
+                print('If Line=True, LineY should receive plottable data.')
+                return(None)
+            if LineX == None: LineX = np.arange(len(LineY))
+            if LineLim == None: LineLim = [min(LineY), max(LineY)]
+        
+        if HighFreqThr == None: HighFreqThr = max(F)
+        
+#        Params = Plot.Set(Params=True)
+#        from matplotlib import rcParams; rcParams.update(Params)
+#        from matplotlib import pyplot as plt
+        
+#        Fig, SxxAx = plt.subplots(1,1,figsize=(6, 4))
+#        Fig.subplots_adjust(bottom=0.15, right=0.85)
+        
+        SxxAx.pcolormesh(T, F, Sxx, cmap='inferno')
+        SxxAx.set_ylim(0,HighFreqThr)
+        SxxAx.yaxis.set_ticks_position('left')
+        SxxAx.xaxis.set_ticks_position('bottom')
+        SxxAx.set_xlabel('Time [s]'); SxxAx.set_ylabel('Frequency [Hz]')
+        
+        if Line:
+            SAx = SxxAx.twinx()
+            SAx.plot(LineX, LineY, LineColor); SAx.set_ylim(LineLim)
+            SAx.set_ylabel(LineYLabel, color=LineColor)
+            SAx.xaxis.set_ticks_position('bottom')
+        
+#        if not FigName: FigName = 'Spectrogram.' + Ext
+#        if Save: Fig.savefig(FigName, format=Ext)
+#        if Visible: plt.show()
+#        else: plt.close()
+    
+    
+    def Treadmill_AllChs(Treadmill, FigName=None, Ext='svg', Save=False, 
+                         Visible=True):
+        Params = Plot.Set(Params=True)
+        from matplotlib import rcParams; rcParams.update(Params)
+        from matplotlib import pyplot as plt
+        
+        ChNo = len(Treadmill)-1
+        
+        Fig, SxxAx = plt.subplots(ChNo,1,figsize=(8, 4*ChNo))
+        for C, Ch in Treadmill.items():
+            if C == 'V': continue
+            
+            T, F, Sxx, VMeans = Ch['T'], Ch['F'], Ch['Sxx'], Ch['VMeans']
+            
+            Plot.Spectrogram(SxxAx[int(C)-1], T, F, Sxx, HighFreqThr=100, 
+                             Line=True, LineX=T, LineY=VMeans, LineColor='r', 
+                             LineYLabel='Speed [m/s]')
+        
+        if not FigName: FigName = 'Spectrogram.' + Ext
+        if Save: Fig.savefig(FigName, format=Ext)
+        if Visible: plt.show()
+        else: plt.close()
+    
+    
+    def Treadmill_AllPerCh(T, F, Sxx, SxxMaxs, SxxPerV, VMeans, VMeansSorted, 
+                           VInds, FigName=None, Ext='svg', Save=False, Visible=True):
+        Params = Plot.Set(Params=True)
+        from matplotlib import rcParams; rcParams.update(Params)
+        from matplotlib import pyplot as plt
+        
+        SAx = [0,0]
+        Fig, SxxAx = plt.subplots(2,1,figsize=(10, 8))
+        Fig.subplots_adjust(bottom=0.15, right=0.85)
+        
+        SxxAx[0].pcolormesh(T, F, Sxx, cmap='inferno'); SxxAx[0].set_ylim(0,100)
+        SxxAx[0].yaxis.set_ticks_position('left')
+        SxxAx[0].set_xlabel('Time [s]'); SxxAx[0].set_ylabel('Frequency [Hz]')
+        SxxAx[0].spines['left'].set_position(('outward', 5))
+        
+        SAx[0] = SxxAx[0].twinx()
+        SAx[0].plot(T, SxxMaxs, 'r', lw=2); 
+        SAx[0].set_ylim(-max(SxxMaxs)/3, max(SxxMaxs))
+        SAx[0].spines['right'].set_position(('outward', 55))
+        SAx[0].yaxis.set_label_position('right'); SAx[0].yaxis.set_ticks_position('right')
+        SAx[0].set_ylabel('ThetaPxx/DeltaPxx', color='red')
+        
+        VAx = Fig.add_axes(SxxAx[0].get_position()); VAx.patch.set_visible(False)
+        VAx.yaxis.set_label_position('right'); VAx.yaxis.set_ticks_position('right')
+        VAx.spines['bottom'].set_visible(False)
+        
+        VAx.plot(T, VMeans, 'g', lw=2)
+        VAx.set_ylabel('Mean speed [m/s]', color='green')
+        VAx.spines['right'].set_position(('outward', 5))
+        
+        SxxAx[1].pcolormesh(VMeansSorted, F, SxxPerV, cmap='inferno'); SxxAx[1].set_ylim(0,100)
+        SxxAx[1].yaxis.set_ticks_position('left'); SxxAx[1].xaxis.set_ticks_position('bottom')
+        SxxAx[1].set_xlabel('Velocity [m/s]', color='k')
+        SxxAx[1].set_ylabel('Frequency [Hz]', color='k')
+        
+        SAx[1] = SxxAx[1].twinx()
+        SAx[1].plot(VMeansSorted, SxxMaxs[VInds], 'r'); 
+        SAx[1].set_ylim(-max(SxxMaxs)/3, max(SxxMaxs))
+        SAx[1].spines['right'].set_position(('outward', 5))
+        SAx[1].xaxis.set_ticks_position('bottom')
+        SAx[1].set_ylabel('ThetaPxx/DeltaPxx', color='r')
+        
+        if not FigName: FigName = 'SpectrogramsPerCh.' + Ext
+        if Save: Fig.savefig(FigName, format=Ext)
+        if Visible: plt.show()
+        else: plt.close()
+    
+    
     def UnitPerCh(ChDict, Ch, XValues, FigName, Ext):
         ClusterNo = len(ChDict['Spks'])
         if ClusterNo == 0: print(Ch, 'had no spikes :('); return(None)
@@ -921,6 +1042,52 @@ class Stats():
         print('Done.')
         return(TTestResults)
 
+
+class Treadmill():
+    def Analysis(Data, Rate, Theta, Delta, SensorCh, Lowpass, FilterOrder, PeakDist):
+        SensorData = Data[:,SensorCh-1]*-1
+        SensorData = FilterSignal(SensorData, Rate, [Lowpass], FilterOrder, 'lowpass')
+        
+        Peaks = QuantifyTTLsPerRec(True, SensorData)
+        
+        V = np.zeros(len(SensorData))
+        for P in range(1, len(Peaks)):
+            Samples = Peaks[P] - Peaks[P-1]; Time = Samples/Rate
+            Speed = PeakDist/Time; V[Peaks[P-1]:Peaks[P]] = [Speed]*Samples
+        
+        VInd, VPeaks = FindPeaks(V, Rate*3)
+        f = interp1d(VInd, VPeaks, fill_value=0.0, bounds_error=False)
+        V = f(np.arange(len(V))); V[V!=V] = 0.0
+        
+        Treadmill = {'V': V}
+        for C in range(Data.shape[1]-1):
+            Ch = "{0:02d}".format(C+1); Treadmill[Ch] = {}
+            
+            F, T, Sxx = Spectrogram(Data[:,Ch], Rate, max(Theta))
+            
+            VMeans = [np.mean(V[int(T[t]*Rate):int(T[t+1]*Rate)]) 
+                      for t in range(len(T)-1)] + [0.0]
+            VMeansSorted = sorted(VMeans)
+            VInds = [VMeansSorted.index(v) for v in VMeans]
+            SxxPerV = Sxx[:,VInds]
+            
+            ThetaMaxs = [max(Sxx[(F>=min(Theta))*(F<max(Theta)),t]) for t in range(len(T))]
+            DeltaMaxs = [max(Sxx[(F>=min(Delta))*(F<max(Delta)),t]) for t in range(len(T))]
+            SxxMaxs = np.array(ThetaMaxs)/np.array(DeltaMaxs)
+            
+            Start = np.where(T>Peaks[0]/Rate)[0][0]
+            End = np.where(T<Peaks[-1]/Rate)[0][-1]
+            TDIndex = max(ThetaMaxs[Start:End])/max(DeltaMaxs[Start:End])
+    #        SxxSR = 1/(T[1]-T[0]); SxxLowPass = SxxSR*5/100
+    #        SxxMeans = DataAnalysis.FilterSignal(SxxMeans, SxxSR, [SxxLowPass], 1, 'lowpass')
+            
+            Treadmill[Ch] = {
+                'F': F, 'T': T, 'Sxx': Sxx, 'SxxMaxs': SxxMaxs, 
+                'SxxPerV': SxxPerV, 'TDIndex': TDIndex, 'VMeans': VMeans, 
+                'VMeansSorted': VMeansSorted, 'VInds':VInds
+            }
+        
+        return(Treadmill)
 
 
 class Units():

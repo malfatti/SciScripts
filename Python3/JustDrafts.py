@@ -7,11 +7,6 @@ import DataAnalysis, Hdf5F
 import numpy as np
 
 from glob import glob
-from scipy import signal
-
-Params = DataAnalysis.Plot.Set(Params=True)
-from matplotlib import rcParams; rcParams.update(Params)
-import matplotlib.pyplot as plt
 
 Delta, Theta = [2, 4], [7, 10]
 SensorCh = 17
@@ -19,26 +14,59 @@ Diameter = 0.6; PeaksPerCycle = 12
 Lowpass = 5; FilterOrder = 2
 
 #cd /run/media/malfatti/Malfatti1TB3/Data/Martina/Data/201703
-Paths = glob('2017-03-08*'); Paths.sort()
-DataPath = Paths[0]
-Data = Hdf5F.LoadOEKwik(DataPath)[0]
-Proc = Hdf5F.GetProc(Data, 'OE')
+AnalysisFile = '201703-Treadmill.hdf5'
+Paths = glob('2017-03-09*'); Paths.sort()
 
 PeakDist = (np.pi*Diameter)/PeaksPerCycle
 
-Recs = list(Data[Proc]['data'].keys())
-for Rec in Recs:
-    RecData = Data[Proc]['data'][Rec]
-    Rate = Data[Proc]['info'][Rec]['sample_rate']
+Done, Errors, ErrorsLog = [], [], []
+for Path in Paths:
+    Data = Hdf5F.LoadOEKwik(Path)[0]
+    Proc = Hdf5F.GetProc(Data, 'OE')
     
-    Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, Theta, Delta, 
-                                                SensorCh, Lowpass, FilterOrder, 
-                                                PeakDist)
+    Recs = list(Data[Proc]['data'].keys())
+    for Rec in Recs:
+        print('Processing Rec', "{0:02d}".format(int(Rec)), '...')
+        RecData = Data[Proc]['data'][Rec]
+        Rate = Data[Proc]['info'][Rec]['sample_rate']
+        
+        try:
+            Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, SensorCh, 
+                                                        PeakDist, Lowpass, 
+                                                        FilterOrder, Theta, 
+                                                        Delta)
+            
+            AnalysisKey = Path + '/' + "{0:02d}".format(int(Rec))
+            Hdf5F.WriteTreadmill(Treadmill, AnalysisKey, AnalysisFile)
+            del(Treadmill)
+            Done.append([Path, Rec])
+        
+        except Exception as E:
+            Errors.append([Path, Rec])
+            ErrorsLog.append(E)
+            print(''); print('!!!==========')
+            print(E)
+            print('!!!=========='); print(''); 
+
+
+TDIndexes = {}
+for Path in Paths:
+    Treadmill = Hdf5F.LoadTreadmill(Path, AnalysisFile)
+    Recs = list(Treadmill.keys()).sort()
+    Animal = '_'.join(Path.split('_')[-2:])
     
+    TDIndexes[Animal] = np.zeros((len(Treadmill[Recs[0]])-1, len(Recs)))
+    for R, Rec in enumerate(Recs):
+        Channels = list(Treadmill[Rec].keys()).sort()
+        del(Channels[Channels.index('V')])
+        
+        TDIndexes[Animal][:,R] = [Treadmill[Rec][Ch]['TDIndex'] for Ch in Channels]
     
+    TDIndexes[Animal]['BestCh'] = [[np.where(TDIndexes[Animal][:,R], max(TDIndexes[Animal][:,R])] for R in range(len(Recs))]
     
-    DataAnalysis.Plot.TreadMill_AllPerCh(T, F, Sxx, SxxMaxs, SxxPerV, VMeans, VMeansSorted, 
-                                         VInds, FigName=None, Ext='svg', Save=False, Visible=True)
+
+#    DataAnalysis.Plot.TreadMill_AllPerCh(T, F, Sxx, SxxMaxs, SxxPerV, VMeans, VMeansSorted, 
+#                                         VInds, FigName=None, Ext='svg', Save=False, Visible=True)
 #    Spectrogram(VMeansSorted, F, SxxPerV, HighFreqThr=100, Line=True, 
 #                LineX=VMeansSorted, LineY=SxxMaxs[VInds], LineColor='r', 
 #                LineLim=(-max(SxxMaxs)/3, max(SxxMaxs)), 
@@ -49,9 +77,6 @@ for Rec in Recs:
 #    Fig, SxxAx = plt.subplots(1,1,figsize=(10, 4))
 #    Fig.subplots_adjust(bottom=0.15, right=0.85)
     
-    
-    plt.show()
-
 
 #%% RT plots
 import KwikAnalysis

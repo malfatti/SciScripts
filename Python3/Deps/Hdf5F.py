@@ -134,7 +134,7 @@ def GetExpKeys(ExpStr, OpenedFile, KeyInd=None, KeyStr=None):
 
 def GetProc(Data, Board):
     print('Get proc no. for', Board, 'board... ', end='')
-    ProcChs = {Proc: len(Data[Proc]['data']['0'][1,:]) 
+    ProcChs = {Proc: len(Data[Proc]['data'][list(Data[Proc]['data'].keys())[0]][1,:]) 
                for Proc in Data.keys()}
     
     for Proc, Chs in ProcChs.items():
@@ -359,6 +359,20 @@ def LoadSoundMeasurement(FileName, Path, Var='SoundIntensity'):
             print('Supported variables: DataInfo, SoundRec, SoundIntensity.')
 
 
+def LoadTreadmill(Path, AnalysisFile):
+    Treadmill = {}
+    
+    with h5py.File(AnalysisFile, 'r') as F:
+        for R in F[Path].keys():
+            for C, Ch in F[Path][R].items():
+                if C == 'V': Treadmill[R]['V'] = Ch; continue
+                
+                for K, Key in F[Path][C].items():
+                    Treadmill[R][C][K] = Key
+    
+    return(Treadmill)
+
+
 def LoadTTLsLatency(FileName):
     
     return(None)
@@ -548,20 +562,7 @@ def WriteGPIAS(GPIAS, Path, FileName, XValues=[]):
                 
                 for GKey, GVal in GPIAS[Key][Freq].items():
                     F[Path]['GPIAS'][Key][Freq][GKey] = GVal
-            
-#            if Key == 'PrePost':
-#                F[Path]['GPIAS/' + Key] = GPIAS[Key]
-#            
-#            elif Key == 'Trace' or Key == 'Index':
-#                for Freq in GPIAS[Key]:
-#                    F[Path].create_group('GPIAS/'+Key+'/'+Freq)
-#            
-#                    for GKey, GVal in GPIAS[Key][Freq].items():
-#                        F[Path]['GPIAS'][Key][Freq][GKey] = GVal
-#            
-#            else:
-#                print('I cannot handle the key', Key)
-            
+    
     print('Done.')
     return(None)
 
@@ -642,6 +643,27 @@ def WriteTTLslatency(TTLsLatency, XValues, FileName):
     
     print('Done.')
     return(None)
+
+
+def WriteTreadmill(Treadmill, Path, FileName):
+    print('Writing data to', FileName+'... ', end='')
+    Now = datetime.now().strftime("%Y%m%d%H%M%S")
+    
+    with h5py.File(FileName) as F:
+        if Path in F: F[Now+'_'+Path] = F[Path]; del(F[Path])
+        
+        F.create_group(Path); F[Path]['V'] = Treadmill['V']
+        
+        for Ch in Treadmill.keys():
+            if Ch == 'V': continue
+            
+            F[Path].create_group(Ch)
+            for K, Key in Treadmill[Ch].items():
+                F[Path][Ch][K] = Key
+    
+    print('Done.')
+    return(None)
+
 
 def WriteUnitsPerCh(Units, Path, FileName, XValues=[]):
     Now = datetime.now().strftime("%Y%m%d%H%M%S")

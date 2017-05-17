@@ -196,13 +196,15 @@ def RemapChannels(Tip, Head, Connector):
 
 
 def Spectrogram(Data, Rate, HigherFreq):
-    NFFT = (1/max(HigherFreq))*10*Rate
+    print('Analyzing data spectrum... ', end='')
+    NFFT = int((1/HigherFreq)*10*Rate)
     
     Window = signal.hanning(NFFT)
-    F, T, Sxx = signal.spectrogram(Data[:,12], Rate, window=Window, 
+    F, T, Sxx = signal.spectrogram(Data, Rate, window=Window, 
                                    nperseg=int(NFFT), noverlap=int(NFFT*0.5), 
                                    nfft=int(NFFT))
     
+    print('Done.')
     return(F, T, Sxx)
 
 
@@ -1044,7 +1046,7 @@ class Stats():
 
 
 class Treadmill():
-    def Analysis(Data, Rate, Theta, Delta, SensorCh, Lowpass, FilterOrder, PeakDist):
+    def Analysis(Data, Rate, SensorCh, PeakDist, Lowpass=5, FilterOrder=2, Theta=[7, 10], Delta=[2, 4]):
         SensorData = Data[:,SensorCh-1]*-1
         SensorData = FilterSignal(SensorData, Rate, [Lowpass], FilterOrder, 'lowpass')
         
@@ -1062,8 +1064,9 @@ class Treadmill():
         Treadmill = {'V': V}
         for C in range(Data.shape[1]-1):
             Ch = "{0:02d}".format(C+1); Treadmill[Ch] = {}
+            print('Processing Ch', Ch, '...')
             
-            F, T, Sxx = Spectrogram(Data[:,Ch], Rate, max(Theta))
+            F, T, Sxx = Spectrogram(Data[:,C], Rate, max(Theta))
             
             VMeans = [np.mean(V[int(T[t]*Rate):int(T[t+1]*Rate)]) 
                       for t in range(len(T)-1)] + [0.0]
@@ -1087,6 +1090,7 @@ class Treadmill():
                 'VMeansSorted': VMeansSorted, 'VInds':VInds
             }
         
+        print('Done.')
         return(Treadmill)
 
 

@@ -2,6 +2,19 @@
 """
 Just drafts
 """
+#%% Klusta :)
+
+def DataToFlatBinary():
+    Header = {
+        'OriginalType': Data.dtype,
+        'ConvertedType': 'int16',
+        'Shape': Data.shape
+    }
+    Data.astype('int16').tofile(filename)
+    
+    return(None)
+
+
 #%% Treadmill
 import DataAnalysis, Hdf5F
 import numpy as np

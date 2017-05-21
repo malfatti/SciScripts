@@ -8,61 +8,69 @@ import numpy as np
 
 from glob import glob
 
-Delta, Theta = [2, 4], [7, 10]
-SensorCh = 17
-Diameter = 0.6; PeaksPerCycle = 12
-Lowpass = 5; FilterOrder = 2
-
+#Delta, Theta = [2, 4], [7, 10]
+#SensorCh = 17
+#Diameter = 0.6; PeaksPerCycle = 12
+#Lowpass = 5; FilterOrder = 2
+#
 #cd /run/media/malfatti/Malfatti1TB3/Data/Martina/Data/201703
+#AnalysisFile = '201703-Treadmill.hdf5'
+#Paths = glob('2017-03-08*'); Paths.sort()
+#
+#PeakDist = (np.pi*Diameter)/PeaksPerCycle
+#
+#Done, Errors, ErrorsLog = [], [], []
+#for Path in Paths:
+#    Data = Hdf5F.LoadOEKwik(Path)[0]
+#    Proc = Hdf5F.GetProc(Data, 'OE')
+#    
+#    Recs = list(Data[Proc]['data'].keys())
+#    for Rec in Recs:
+#        print('Processing Rec', "{0:02d}".format(int(Rec)), '...')
+#        RecData = Data[Proc]['data'][Rec]
+#        Rate = Data[Proc]['info'][Rec]['sample_rate']
+#        
+#        try:
+#            Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, SensorCh, 
+#                                                        PeakDist, Lowpass, 
+#                                                        FilterOrder, Theta, 
+#                                                        Delta)
+#            
+#            AnalysisKey = Path + '/' + "{0:02d}".format(int(Rec))
+#            Hdf5F.WriteTreadmill(Treadmill, AnalysisKey, AnalysisFile)
+#            del(Treadmill)
+#            Done.append([Path, Rec])
+#        
+#        except Exception as E:
+#            Errors.append([Path, Rec])
+#            ErrorsLog.append(E)
+#            print(''); print('!!!==========')
+#            print(E)
+#            print('!!!=========='); print(''); 
+
 AnalysisFile = '201703-Treadmill.hdf5'
-Paths = glob('2017-03-09*'); Paths.sort()
-
-PeakDist = (np.pi*Diameter)/PeaksPerCycle
-
-Done, Errors, ErrorsLog = [], [], []
-for Path in Paths:
-    Data = Hdf5F.LoadOEKwik(Path)[0]
-    Proc = Hdf5F.GetProc(Data, 'OE')
-    
-    Recs = list(Data[Proc]['data'].keys())
-    for Rec in Recs:
-        print('Processing Rec', "{0:02d}".format(int(Rec)), '...')
-        RecData = Data[Proc]['data'][Rec]
-        Rate = Data[Proc]['info'][Rec]['sample_rate']
-        
-        try:
-            Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, SensorCh, 
-                                                        PeakDist, Lowpass, 
-                                                        FilterOrder, Theta, 
-                                                        Delta)
-            
-            AnalysisKey = Path + '/' + "{0:02d}".format(int(Rec))
-            Hdf5F.WriteTreadmill(Treadmill, AnalysisKey, AnalysisFile)
-            del(Treadmill)
-            Done.append([Path, Rec])
-        
-        except Exception as E:
-            Errors.append([Path, Rec])
-            ErrorsLog.append(E)
-            print(''); print('!!!==========')
-            print(E)
-            print('!!!=========='); print(''); 
-
-
+Paths = glob('2017-03-08*'); Paths.sort()
 TDIndexes = {}
 for Path in Paths:
     Treadmill = Hdf5F.LoadTreadmill(Path, AnalysisFile)
-    Recs = list(Treadmill.keys()).sort()
-    Animal = '_'.join(Path.split('_')[-2:])
+#    Recs = list(Treadmill.keys()).sort()
+    Animal = Path.split('_')[-2:]
+    Animal, Exp = Animal[1], Animal[0]
     
-    TDIndexes[Animal] = np.zeros((len(Treadmill[Recs[0]])-1, len(Recs)))
-    for R, Rec in enumerate(Recs):
-        Channels = list(Treadmill[Rec].keys()).sort()
-        del(Channels[Channels.index('V')])
+    TDIndexes[Animal] = {Exp: {}}; BestCh = [[0,0,0]]
+    for R, Rec in Treadmill.items():
+        Max = max([Ch['TDIndex'] for C, Ch in Rec.items() if C != 'V'])
+        TDIndexes[Animal][Exp][R] = [[R, C, Ch['TDIndex']] 
+                                     for C, Ch in Rec.items()
+                                     if C != 'V'
+                                     if Ch['TDIndex'] == Max]
         
-        TDIndexes[Animal][:,R] = [Treadmill[Rec][Ch]['TDIndex'] for Ch in Channels]
+        BCMax = max([Ch[2] for Ch in BestCh])
+        if Max > BCMax: BestCh = TDIndexes[Animal][Exp][R][:]
     
-    TDIndexes[Animal]['BestCh'] = [[np.where(TDIndexes[Animal][:,R], max(TDIndexes[Animal][:,R])] for R in range(len(Recs))]
+    TDIndexes[Animal][Exp]['BestCh'] = BestCh
+    
+    
     
 
 #    DataAnalysis.Plot.TreadMill_AllPerCh(T, F, Sxx, SxxMaxs, SxxPerV, VMeans, VMeansSorted, 

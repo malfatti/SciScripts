@@ -249,7 +249,7 @@ def LoadDict(Path, FileName, Attrs=True):
 
 
 def LoadDataset(Path, FileName):
-    with h5py.File(FileName, 'r') as F: Dataset = F[Path][:]
+    with h5py.File(FileName, 'r') as F: Dataset = ReturnCopy(F[Path])
     return(Dataset)
 
 
@@ -272,8 +272,9 @@ def LoadGPIAS(FileName, Path):
                 GPIAS[Key][Freq] = {}
                 
                 for GKey, GVal in F[Path]['GPIAS'][Key][Freq].items():
-                    try: GPIAS[Key][Freq][GKey] = GVal[:]
-                    except ValueError: GPIAS[Key][Freq][GKey] = GVal[()]
+                    GPIAS[Key][Freq][GKey] = ReturnCopy(GVal)
+#                    try: GPIAS[Key][Freq][GKey] = GVal[:]
+#                    except ValueError: GPIAS[Key][Freq][GKey] = GVal[()]
             
 #                GPIAS[Freq]['NoGap'] = F[Key]['GPIAS'][Freq]['NoGap'][:]
 #                GPIAS[Freq]['Gap'] = F[Key]['GPIAS'][Freq]['Gap'][:]
@@ -297,20 +298,26 @@ def LoadOEKwik(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
             print('.kwe/.kwik file is corrupted. Skipping dataset...')
             return(None)
     
+    print('Data from', RecFolder, 'loaded. Preparing dictionaries...')
     Raw = {}
     for Proc in RawRO.keys():
         Raw[Proc] = {Key: {} for Key in ['data', 'channel_bit_volts', 'info', 'timestamps']}
         
         for Rec in RawRO[Proc]['data'].keys():
-            Raw[Proc]['data'][Rec] = RawRO[Proc]['data'][Rec][()]
-            Raw[Proc]['channel_bit_volts'][Rec] = RawRO[Proc]['channel_bit_volts'][Rec][:]
+            Raw[Proc]['data'][Rec] = ReturnCopy(RawRO[Proc]['data'][Rec])
+            Raw[Proc]['channel_bit_volts'][Rec] = ReturnCopy(RawRO[Proc]['channel_bit_volts'][Rec])
             Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
-            Raw[Proc]['timestamps'][Rec] = RawRO[Proc]['timestamps'][Rec][()]
+            Raw[Proc]['timestamps'][Rec] = ReturnCopy(RawRO[Proc]['timestamps'][Rec])
+#            Raw[Proc]['data'][Rec] = RawRO[Proc]['data'][Rec][()]
+#            Raw[Proc]['channel_bit_volts'][Rec] = RawRO[Proc]['channel_bit_volts'][Rec][:]
+#            Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
+#            Raw[Proc]['timestamps'][Rec] = RawRO[Proc]['timestamps'][Rec][()]
     
     del(RawRO)
     
-    if Unit == 'uV': Raw = BitsToVolts(Raw)
+    if Unit == 'uV': print('Converting to', Unit+'...'); Raw = BitsToVolts(Raw)
     if ChannelMap:
+        print('Retrieving channels according to ChannelMap...')
         ChannelMap = [_-1 for _ in ChannelMap]
         for Proc in Raw.keys():
             for Rec in Raw[Proc]['data'].keys():
@@ -319,8 +326,7 @@ def LoadOEKwik(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
                 Chs = sorted(ChannelMap)
                 Raw[Proc]['data'][Rec][:, Chs] = Raw[Proc]['data'][Rec][:, ChannelMap]
             
-    print('Data from', RecFolder, 'loaded.')
-    
+    print('Done.')
     if AnalogTTLs: return(Raw, Spks, Files)
     else: return(Raw, Events, Spks, Files)
 
@@ -342,7 +348,7 @@ def LoadSoundMeasurement(FileName, Path, Var='SoundIntensity'):
                 SoundRec[FKey] = {}
                 
                 for AKey, AVal in h5[Path]['SoundRec'][FKey].items():
-                    SoundRec[FKey][AKey] = AVal[:]
+                    SoundRec[FKey][AKey] = ReturnCopy(AVal)
             
             return(SoundRec)
         
@@ -363,12 +369,15 @@ def LoadTreadmill(Path, AnalysisFile):
     Treadmill = {}
     
     with h5py.File(AnalysisFile, 'r') as F:
-        for R in F[Path].keys():
-            for C, Ch in F[Path][R].items():
-                if C == 'V': Treadmill[R]['V'] = Ch; continue
+        for R, Rec in F[Path].items():
+            Treadmill[R] = {}
+            
+            for C, Ch in Rec.items():
+                if C == 'V': Treadmill[R]['V'] = ReturnCopy(Ch); continue
                 
-                for K, Key in F[Path][C].items():
-                    Treadmill[R][C][K] = Key
+                Treadmill[R][C] = {}
+                for K, Key in Ch.items():
+                    Treadmill[R][C][K] = ReturnCopy(Key)
     
     return(Treadmill)
 
@@ -439,6 +448,13 @@ def LoadUnits(FileName, AnalysisKey, Override={}):
             if 'RecS' in Override.keys(): break
     
     return(Units, XValues)
+
+
+def ReturnCopy(Dataset):
+    Array = np.zeros(Dataset.shape, dtype=Dataset.dtype)
+    Dataset.read_direct(Array)
+    
+    return(Array)
 
 
 def SoundCalibration(SBAmpFsFile, SoundBoard, Key):

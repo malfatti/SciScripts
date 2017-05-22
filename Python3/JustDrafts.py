@@ -3,16 +3,47 @@
 Just drafts
 """
 #%% Klusta :)
+import TarBinPy
+import numpy as np
 
-def DataToFlatBinary():
-    Header = {
-        'OriginalType': Data.dtype,
-        'ConvertedType': 'int16',
-        'Shape': Data.shape
-    }
-    Data.astype('int16').tofile(filename)
+Data = np.random.randn(1000, 2)
+Data[:, 0] = Data[:, 0]+10
+Data[:, 1] = Data[:, 1]+20
+
+DataFile = 'Noise.dat'
+TarBinPy.BinWrite(DataFile, '.', Data)
+
+def PrintDict(value, htchar='    ', lfchar='\n', indent=0):
+    ''' Written by y.petremann.
+        Source: https://stackoverflow.com/a/26209900 '''
     
-    return(None)
+    nlch = lfchar + htchar * (indent + 1)
+    if type(value) is dict:
+        items = [
+            nlch + repr(key) + ': ' + PrintDict(value[key], htchar, lfchar, indent + 1)
+            for key in value
+        ]
+        return '{%s}' % (','.join(items) + lfchar + htchar * indent)
+    elif type(value) is list:
+        items = [
+            nlch + PrintDict(item, htchar, lfchar, indent + 1)
+            for item in value
+        ]
+        return '[%s]' % (','.join(items) + lfchar + htchar * indent)
+    elif type(value) is tuple:
+        items = [
+            nlch + PrintDict(item, htchar, lfchar, indent + 1)
+            for item in value
+        ]
+        return '(%s)' % (','.join(items) + lfchar + htchar * indent)
+    else:
+        return repr(value)
+
+
+def ClusterizeSpikes_Klusta():
+    
+    return(Clusters)
+
 
 
 #%% Treadmill

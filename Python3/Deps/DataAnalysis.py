@@ -1096,42 +1096,19 @@ class Treadmill():
 
 class Units():
     ## Level 0
-    def CallWaveClus(Rate, Path):
-        print('Clustering spikes...')
+    def LoadClusters(FileList, SW='Klusta'):
+        if SW.lower() == 'waveclus':
+            Clusters = {}
+            for File in FileList:
+                Ch = File[-8:-4]
+                
+                ClusterFile = io.loadmat(File)
+                Clusters[Ch] = {}
+                Clusters[Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
+                Clusters[Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
+                Clusters[Ch]['Spikes'] = ClusterFile['spikes'][:]
         
-    #    MLab = '/home/cerebro/Software/Programs/MatLabR2014a/bin/matlab'
-        MLab = '/home/malfatti/Software/Programs/MatLabR2015a/bin/matlab'
-        CmdCd = 'cd ' + Path + '; '
-        CmdCluster = 'try, par.sr=' + str(int(Rate)) + '; ' + \
-                     "Get_spikes('Files.txt', 'parallel', true, 'par', par);" + \
-                     "Files = dir('./*spikes.mat'); Files = {Files.name}; " + \
-                     "Do_clustering(Files, 'make_plots', false); end; quit"
-        call([MLab, '-nosplash', '-r', CmdCd+CmdCluster])
-        
-        print('Done clustering.')
-        return(None)
-    
-    
-    def SepSpksPerCluster(Clusters, Ch):
-        Classes = np.unique(Clusters['ClusterClass'])
-        Dict = {}                    
-    #    Dict['Spks'] = [[] for _ in range(len(Classes))]
-        Dict['Spks'] = {}
-        
-        print(Ch+':', str(len(Classes)), 'clusters:')
-        for Class in Classes:
-            ClassIndex = Clusters['ClusterClass'] == Class
-            
-            SpkNo = len(Clusters['Spikes'][ClassIndex,:])
-            if not SpkNo: continue
-            
-            Class = "{0:02d}".format(int(Class))
-            Dict['Spks'][Class] =  Clusters['Spikes'][ClassIndex,:][:]
-        
-            print('    Class', Class, '-', str(SpkNo), 'spikes.')
-        
-        if len(Dict): return(Dict)
-        else: return({})
+        return(Clusters)
     
     
     def PSTH(Clusters, TTLCh, Rate, AnalysisFile, AnalysisKey, Rec='0', 
@@ -1180,6 +1157,44 @@ class Units():
         return(None)
     
     
+    def SepSpksPerCluster(Clusters, Ch):
+        Classes = np.unique(Clusters['ClusterClass'])
+        Dict = {}                    
+    #    Dict['Spks'] = [[] for _ in range(len(Classes))]
+        Dict['Spks'] = {}
+        
+        print(Ch+':', str(len(Classes)), 'clusters:')
+        for Class in Classes:
+            ClassIndex = Clusters['ClusterClass'] == Class
+            
+            SpkNo = len(Clusters['Spikes'][ClassIndex,:])
+            if not SpkNo: continue
+            
+            Class = "{0:02d}".format(int(Class))
+            Dict['Spks'][Class] =  Clusters['Spikes'][ClassIndex,:][:]
+        
+            print('    Class', Class, '-', str(SpkNo), 'spikes.')
+        
+        if len(Dict): return(Dict)
+        else: return({})
+    
+    
+    def WaveClus_Run(Rate, Path):
+        print('Clustering spikes...')
+        
+    #    MLab = '/home/cerebro/Software/Programs/MatLabR2014a/bin/matlab'
+        MLab = '/home/malfatti/Software/Programs/MatLabR2015a/bin/matlab'
+        CmdCd = 'cd ' + Path + '; '
+        CmdCluster = 'try, par.sr=' + str(int(Rate)) + '; ' + \
+                     "Get_spikes('Files.txt', 'parallel', true, 'par', par);" + \
+                     "Files = dir('./*spikes.mat'); Files = {Files.name}; " + \
+                     "Do_clustering(Files, 'make_plots', false); end; quit"
+        call([MLab, '-nosplash', '-r', CmdCd+CmdCluster])
+        
+        print('Done clustering.')
+        return(None)
+    
+    
     ## Level 1
     def ClusterizeSpks(Data, Rate, ChannelMap, ClusterPath, AnalysisFile, 
                        AnalysisKey, Rec='0', Override={}, Return=False):
@@ -1205,21 +1220,23 @@ class Units():
         TxtFile.close()
         print('Done.')
         
-        Units.CallWaveClus(Rate, ClusterPath)
+        Units.WaveClus_Run(Rate, ClusterPath)
         
         ClusterList = glob(ClusterPath + '/times_*'); ClusterList.sort()
         ClusterList = [_ for _ in ClusterList if _.split('-')[-2].split('_')[-1] == 'Rec'+Rec]
-        print(ClusterList)
-        Clusters = {Rec: {}}
-        for File in ClusterList:
-            Ch = File[-8:-4]
-            
-            ClusterFile = io.loadmat(File)
-            Clusters[Rec][Ch] = {}
-            Clusters[Rec][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
-            Clusters[Rec][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
-            Clusters[Rec][Ch]['Spikes'] = ClusterFile['spikes'][:]
-        
+#        print(ClusterList)
+        Clusters = {}
+        Clusters[Rec] = Units.LoadClusters(ClusterList, 'WaveClus')
+#        Clusters = {Rec: {}}
+#        for File in ClusterList:
+#            Ch = File[-8:-4]
+#            
+#            ClusterFile = io.loadmat(File)
+#            Clusters[Rec][Ch] = {}
+#            Clusters[Rec][Ch]['ClusterClass'] = ClusterFile['cluster_class'][:, 0]
+#            Clusters[Rec][Ch]['Timestamps'] = ClusterFile['cluster_class'][:, 1]
+#            Clusters[Rec][Ch]['Spikes'] = ClusterFile['spikes'][:]
+#        
         Group = AnalysisKey + '/SpkClusters'
         Hdf5F.WriteClusters(Clusters, AnalysisFile, Group)
         

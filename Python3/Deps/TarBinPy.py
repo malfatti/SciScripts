@@ -70,30 +70,29 @@ def BinRead(DataFile, Path, ChList=[]):
         will be loaded.
         
         This function needs a text file containing a dictionary with the data 
-        info. The minimal information needed is Info['DataShape'] and 
-        Info['DataDType']. """
+        info. The minimal information needed is Info['Shape'] and 
+        Info['DType']. """
     
     # Read Data and Info files
-    with open(Path + DataFile, 'rb') as File: Raw = File.read()
+    with open(Path + '/' + DataFile, 'rb') as File: Raw = File.read()
     InfoFile = ''.join(DataFile.split('.')[:-1]) + '-Info.dict'
-    Info = DictRead(Path + InfoFile)
+    Info = DictRead(Path + '/' + InfoFile)
     
     # Convert bytes to linear array
-    RawData = np.fromstring(Raw, Info['DataDType'])
+    RawData = np.fromstring(Raw, Info['DType'])
     
     # Reshape data according to info in the Info dictionary
     if ChList:
-        Data = np.zeros((len(ChList), Info['DataShape'][1]))
-        Data = np.array(Data, Info['DataDType'])
+        Data = np.zeros((Info['Shape'][0], len(ChList)), dtype=Info['DType'])
         
         for Ind, Ch in enumerate(ChList):
-            Data[Ind, :] = RawData[range(Ch-1,RawData.size,Info['DataShape'][0])]
+            Data[:, Ind] = RawData[range(Ch-1,RawData.size,Info['Shape'][1])]
     else:
-        Data = np.zeros((Info['DataShape'][0], Info['DataShape'][1]))
-        Data = np.array(Data, Info['DataDType'])
+        Data = np.zeros((Info['Shape'][0], Info['Shape'][1]), 
+                        dtype=Info['DType'])
         
-        for Ch in range(Info['DataShape'][0]):
-            Data[Ch, :] = RawData[range(Ch,RawData.size,Info['DataShape'][0])]
+        for Ch in range(Info['Shape'][1]):
+            Data[:, Ch] = RawData[range(Ch,RawData.size,Info['Shape'][1])]
     
     return(Data, Info)
 
@@ -105,18 +104,17 @@ def BinWrite(DataFile, Path, Data, Info={}):
         Also, write a text file containing data info for data loading. """
     
     # Get info and generate path
-    Info['DataShape'] = Data.shape
-    Info['DataDType'] = str(Data.dtype)
+    Info['Shape'] = Data.shape
+    Info['DType'] = str(Data.dtype)
     InfoFile = ''.join(DataFile.split('.')[:-1]) + '-Info.dict'
     
-    if Path[-1] != '/': Path = Path + '/'
     os.makedirs(Path, exist_ok=True)
     
     # Write text info file
-    DictWrite(Path + InfoFile, Info)
+    DictWrite(Path + '/' + InfoFile, Info)
     
     # Write interleaved data
-    with open(Path + DataFile, 'wb') as File: File.write(Data.T.tobytes())
+    with open(Path + '/' + DataFile, 'wb') as File: File.write(Data.tobytes())
     
     return(None)
 
@@ -147,16 +145,16 @@ def DataWrite(DataFile, TarFile, DataPath, Data, Info):
 #DataTest, InfoTest = BinRead(DataFile, InfoFile, ChList)
 
 #%% Test WriteTar
-Exp = 'SC-20170121-132017'; Conn = 'I-M-M-S'; Setup = 'UnitRec'
-Path = Exp + '/' + Conn + '/' + Setup + '/'
-TarFile = Exp + '.tar'
-DataFile = Exp +'.flat'
-
-Info = {'ChNo': 27, 'Format': '<f'}
-Data = np.random.randn(Info['ChNo'], 30000)
-Data = np.array(Data, Info['Format'])
-
-DataWrite(DataFile, TarFile, Path, Data, Info)
-
-#F = tarfile.open(TarFile, 'r')
-#F.getmembers()
+#Exp = 'SC-20170121-132017'; Conn = 'I-M-M-S'; Setup = 'UnitRec'
+#Path = Exp + '/' + Conn + '/' + Setup + '/'
+#TarFile = Exp + '.tar'
+#DataFile = Exp +'.flat'
+#
+#Info = {'ChNo': 27, 'Format': '<f'}
+#Data = np.random.randn(Info['ChNo'], 30000)
+#Data = np.array(Data, Info['Format'])
+#
+#DataWrite(DataFile, TarFile, Path, Data, Info)
+#
+##F = tarfile.open(TarFile, 'r')
+##F.getmembers()

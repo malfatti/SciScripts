@@ -19,9 +19,18 @@ This is a script to generate sound stimulation for gap-prepulse inhibition of
 the acoustic startle reflex (GPIAS).
 """
 
+#%% Import
+from datetime import datetime
+import ControlArduino
+import ControlSoundBoard
+import Hdf5F
+import numpy as np
+import random
+import sounddevice as SD
+
 #%% Set parameters of the experiment
 
-AnimalName = 'GPIAZon_SSaln05'
+AnimalName = 'Prevention_A5'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
                   'SoundMeasurements.hdf5'
@@ -63,13 +72,6 @@ NoiseFrequency = [[8000, 10000], [10000, 12000],
 TTLAmpF = 0.7
 #==========#==========#==========#==========#
 
-from datetime import datetime
-import ControlArduino
-import ControlSoundBoard
-import Hdf5F
-import numpy as np
-import random
-import sounddevice as SD
 
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
 FileName = ''.join([Date, '-', AnimalName, '-GPIAS.hdf5'])
@@ -84,8 +86,10 @@ SoundPulseAmpF = ControlSoundBoard.dBToAmpF(PulseIntensity,
 
 
 ## Prepare dict w/ experimental setup
-DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'Rate', 'BaudRate',
+DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'CalibrationFile', 
+                                       'Setup', 'System', 'Rate', 'BaudRate',
                                        'Date', 'SoundCh', 'TTLCh', 'PiezoCh', 
+                                       'BackgroundIntensity', 'PulseIntensity',
                                        'SoundBackgroundDur', 'SoundGapDur', 
                                        'SoundBackgroundPrePulseDur', 
                                        'SoundLoudPulseDur', 
@@ -123,11 +127,12 @@ for FE in range(len(Freqs)):
     FreqSlot[FE*2+1] = (Freqs[0:FE+1].count(Freqs[FE])-1)*2+1
 
 FreqOrder = [[0]]
-
+Rec = -1
 print("Running...")
 Stim.start()
 # Play the Pre-trials
 for Pre in range(3):
+    Rec += 1
     RealFreq = FreqsStr[-1]
     FreqOrder[len(FreqOrder)-1] = [-1, -1]
     FreqOrder.append([0])
@@ -135,7 +140,7 @@ for Pre in range(3):
     APulseKey = str(SoundPulseAmpF[RealFreq][0])
     SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
     
-    print('Playing ', RealFreq, ' Pre-trial')
+    print('Playing ', RealFreq, ' Pre-trial', 'Rec', Rec)
     Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
     Arduino.write(b'd')
     Stim.write(SoundBackground[RealFreq][ABGKey])
@@ -152,6 +157,7 @@ for Hz in range(len(Freqs)):
     print(str(Hz+1), 'of', str(len(Freqs)))
     
     for Trial in Trials:
+        Rec += 1
         RealFreq = FreqsStr[Freqs[Hz]]; RealTrial = FreqSlot[Hz*2+Trial]
         FreqOrder[len(FreqOrder)-1] = [Freqs[Hz], RealTrial]
         FreqOrder.append([0])
@@ -159,7 +165,7 @@ for Hz in range(len(Freqs)):
         APulseKey = str(SoundPulseAmpF[RealFreq][0])
         SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
         
-        print('Playing ', RealFreq, ' trial ', TrialsStr[Trial])
+        print('Playing ', RealFreq, ' trial ', TrialsStr[Trial], 'Rec', Rec)
         Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
         Arduino.write(b'd')
         Stim.write(SoundBackground[RealFreq][ABGKey])
@@ -171,6 +177,7 @@ for Hz in range(len(Freqs)):
 
 # Play the Post-trials
 for Pre in range(3):
+    Rec += 1
     RealFreq = FreqsStr[-1]
     FreqOrder[len(FreqOrder)-1] = [-1, -2]
     FreqOrder.append([0])
@@ -178,7 +185,7 @@ for Pre in range(3):
     APulseKey = str(SoundPulseAmpF[RealFreq][0])
     SBSDur = random.randrange(SoundBetweenStimDur[0], SoundBetweenStimDur[1])
     
-    print('Playing ', RealFreq, ' Post-trial')
+    print('Playing ', RealFreq, ' Post-trial', 'Rec', Rec)
     Stim.write(SoundBetweenStim[RealFreq][ABGKey][:SBSDur*Rate, :])        
     Arduino.write(b'd')
     Stim.write(SoundBackground[RealFreq][ABGKey])

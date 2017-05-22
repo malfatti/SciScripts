@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>20 Apr 2017 8:00:20</DATE>
+    <DATE>21 May 2017 13:33:01</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -23,22 +23,22 @@
         <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="1" number="1">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
         <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="4" number="4">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="5" number="5">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="6" number="6">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="7" number="7">
         <SELECTIONSTATE param="1" record="1" audio="0"/>
@@ -59,7 +59,7 @@
       <EVENTCHANNEL name="13" number="13"/>
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.577845136933671899"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.7116550693042453801"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"
@@ -211,15 +211,15 @@
       <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
         <TAB Active="1"/>
         <WINDOW Active="0"/>
-        <LFPDISPLAY Range="1000,2000,0.1" Timebase="2.0" Spread="70" colorGrouping="1"
-                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="11100001"
+        <LFPDISPLAY Range="1000,2000,0.1" Timebase="2.0" Spread="100" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="10100001"
                     ScrollX="0" ScrollY="0"/>
       </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>
   <AUDIO bufferSize="1024"/>
   <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
-                appendText="GPIAZon_SSaln03" recordEngine="2"/>
+                appendText="Prevention_A3" recordEngine="2"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">

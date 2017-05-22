@@ -2,16 +2,16 @@
 
 <SETTINGS>
   <INFO>
-    <VERSION>0.4.1</VERSION>
-    <PLUGIN_API_VERSION>3</PLUGIN_API_VERSION>
-    <DATE>15 Apr 2017 15:11:02</DATE>
+    <VERSION>0.4.2</VERSION>
+    <PLUGIN_API_VERSION>5</PLUGIN_API_VERSION>
+    <DATE>21 May 2017 11:16:49</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
   <SIGNALCHAIN>
-    <PROCESSOR name="Sources/Rhythm FPGA" insertionPoint="1" pluginName="" pluginType="-1"
-               pluginIndex="0" libraryName="" libraryVersion="-1" isSource="1"
-               isSink="0" NodeId="101">
+    <PROCESSOR name="Sources/Rhythm FPGA" insertionPoint="1" pluginName="Rhythm FPGA"
+               pluginType="-1" pluginIndex="0" libraryName="" libraryVersion="-1"
+               isSource="1" isSink="0" NodeId="100">
       <CHANNEL_INFO>
         <CHANNEL name="ADC1" number="0" gain="0.000152587890625"/>
         <CHANNEL name="ADC2" number="1" gain="0.000152587890625"/>
@@ -26,51 +26,37 @@
         <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="1" number="1">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
         <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="4" number="4">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="5" number="5">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="6" number="6">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="7" number="7">
         <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
-      <EVENTCHANNEL name="1" number="1"/>
-      <EVENTCHANNEL name="2" number="2"/>
-      <EVENTCHANNEL name="3" number="3"/>
-      <EVENTCHANNEL name="4" number="4"/>
-      <EVENTCHANNEL name="5" number="5"/>
-      <EVENTCHANNEL name="6" number="6"/>
-      <EVENTCHANNEL name="7" number="7"/>
-      <EVENTCHANNEL name="8" number="8"/>
-      <EVENTCHANNEL name="9" number="9"/>
-      <EVENTCHANNEL name="10" number="10"/>
-      <EVENTCHANNEL name="11" number="11"/>
-      <EVENTCHANNEL name="12" number="12"/>
-      <EVENTCHANNEL name="13" number="13"/>
-      <EVENTCHANNEL name="14" number="14"/>
-      <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1"
-              HighCut="7500" ADCsOn="1" AudioOutputL="-1" AudioOutputR="-1"
-              NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0" DAC_HPF="1" DSPOffset="1"
-              DSPCutoffFreq="1.3906499419328771327e-309" save_impedance_measurements="0"
-              auto_measure_impedances="0" LEDs="1" ClockDivideRatio="1"/>
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.0976697113114399773"
+              HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
+              AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
+              DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"
+              save_impedance_measurements="0" auto_measure_impedances="0" LEDs="1"
+              ClockDivideRatio="1"/>
     </PROCESSOR>
     <PROCESSOR name="Utilities/Record Control" insertionPoint="1" pluginName="Record Control"
-               pluginType="0" pluginIndex="11" libraryName="Record Control"
-               libraryVersion="1" isSource="0" isSink="0" NodeId="102">
+               pluginType="1" pluginIndex="11" libraryName="Record Control"
+               libraryVersion="1" isSource="0" isSink="0" NodeId="101">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="0" record="0" audio="0"/>
       </CHANNEL>
@@ -96,83 +82,53 @@
         <SELECTIONSTATE param="0" record="0" audio="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
-      <EVENTCHANNEL name="1" number="1"/>
-      <EVENTCHANNEL name="2" number="2"/>
-      <EVENTCHANNEL name="3" number="3"/>
-      <EVENTCHANNEL name="4" number="4"/>
-      <EVENTCHANNEL name="5" number="5"/>
-      <EVENTCHANNEL name="6" number="6"/>
-      <EVENTCHANNEL name="7" number="7"/>
-      <EVENTCHANNEL name="8" number="8"/>
-      <EVENTCHANNEL name="9" number="9"/>
-      <EVENTCHANNEL name="10" number="10"/>
-      <EVENTCHANNEL name="11" number="11"/>
-      <EVENTCHANNEL name="12" number="12"/>
-      <EVENTCHANNEL name="13" number="13"/>
-      <EVENTCHANNEL name="14" number="14"/>
-      <EVENTCHANNEL name="15" number="15"/>
       <EDITOR isCollapsed="0" displayName="Record Control">
         <PARAMETERS Type="RecordControlEditor" Channel="5" Mode="1" Edge="1"/>
       </EDITOR>
     </PROCESSOR>
     <PROCESSOR name="Filters/Bandpass Filter" insertionPoint="1" pluginName="Bandpass Filter"
-               pluginType="0" pluginIndex="10" libraryName="Bandpass Filter"
+               pluginType="1" pluginIndex="10" libraryName="Bandpass Filter"
                libraryVersion="1" isSource="0" isSink="0" NodeId="103">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="1" number="1">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="4" number="4">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="5" number="5">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="6" number="6">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="7" number="7">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="400" lowcut="80" shouldFilter="0"/>
+        <PARAMETERS highcut="400" lowcut="70" shouldFilter="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
-      <EVENTCHANNEL name="1" number="1"/>
-      <EVENTCHANNEL name="2" number="2"/>
-      <EVENTCHANNEL name="3" number="3"/>
-      <EVENTCHANNEL name="4" number="4"/>
-      <EVENTCHANNEL name="5" number="5"/>
-      <EVENTCHANNEL name="6" number="6"/>
-      <EVENTCHANNEL name="7" number="7"/>
-      <EVENTCHANNEL name="8" number="8"/>
-      <EVENTCHANNEL name="9" number="9"/>
-      <EVENTCHANNEL name="10" number="10"/>
-      <EVENTCHANNEL name="11" number="11"/>
-      <EVENTCHANNEL name="12" number="12"/>
-      <EVENTCHANNEL name="13" number="13"/>
-      <EVENTCHANNEL name="14" number="14"/>
-      <EVENTCHANNEL name="15" number="15"/>
       <EDITOR isCollapsed="0" displayName="Bandpass Filter" Type="FilterEditor">
-        <VALUES HighCut="400" LowCut="80" ApplyToADC="0"/>
+        <VALUES HighCut="400" LowCut="70" ApplyToADC="0"/>
       </EDITOR>
     </PROCESSOR>
-    <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" pluginName="LFP Viewer"
-               pluginType="0" pluginIndex="15" libraryName="LFP viewer" libraryVersion="1"
-               isSource="0" isSink="1" NodeId="104">
+    <PROCESSOR name="Sinks/LFP Viewer Beta" insertionPoint="1" pluginName="LFP Viewer Beta"
+               pluginType="1" pluginIndex="8" libraryName="LFP viewer Beta"
+               libraryVersion="1" isSource="0" isSink="1" NodeId="102">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
@@ -197,37 +153,20 @@
       <CHANNEL name="7" number="7">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
-      <CHANNEL name="8" number="8">
-        <SELECTIONSTATE param="0" record="0" audio="0"/>
-      </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
-      <EVENTCHANNEL name="1" number="1"/>
-      <EVENTCHANNEL name="2" number="2"/>
-      <EVENTCHANNEL name="3" number="3"/>
-      <EVENTCHANNEL name="4" number="4"/>
-      <EVENTCHANNEL name="5" number="5"/>
-      <EVENTCHANNEL name="6" number="6"/>
-      <EVENTCHANNEL name="7" number="7"/>
-      <EVENTCHANNEL name="8" number="8"/>
-      <EVENTCHANNEL name="9" number="9"/>
-      <EVENTCHANNEL name="10" number="10"/>
-      <EVENTCHANNEL name="11" number="11"/>
-      <EVENTCHANNEL name="12" number="12"/>
-      <EVENTCHANNEL name="13" number="13"/>
-      <EVENTCHANNEL name="14" number="14"/>
-      <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
+      <EDITOR isCollapsed="0" displayName="LFP Viewer Beta" Type="Visualizer">
         <TAB Active="1"/>
         <WINDOW Active="0"/>
-        <LFPDISPLAY Range="1000,2000,0.1" Timebase="2.0" Spread="70" colorGrouping="1"
-                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="11100001"
+        <LFPDISPLAY Range="1000,2000,0.1" Timebase="5.0" Spread="100" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="10100001"
                     ScrollX="0" ScrollY="0"/>
       </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>
   <AUDIO bufferSize="1024"/>
+  <GLOBAL_TIMESTAMP selected_index="0" selected_sub_index="0"/>
   <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
-                appendText="Test" recordEngine="KWIK"/>
+                appendText="Prevention_A1" recordEngine="KWIK"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">
@@ -235,6 +174,10 @@
       <PARAMETER id="1" type="bool" value="0"/>
       <PARAMETER id="2" type="string" value="CH"/>
     </ENGINE>
+    <ENGINE id="NWB" name="NWB">
+      <PARAMETER id="0" type="string" value=""/>
+    </ENGINE>
+    <ENGINE id="RAWBINARY" name="Binary"/>
     <ENGINE id="KWIK" name="Kwik"/>
   </RECORDENGINES>
   <PROCESSORLIST>
@@ -244,6 +187,5 @@
     <COLOR ID="803" R="0" G="166" B="81"/>
     <COLOR ID="805" R="147" G="149" B="152"/>
   </PROCESSORLIST>
-  <MESSAGECENTER sourceNodeId="101"/>
   <UICOMPONENT isProcessorListOpen="1" isEditorViewportOpen="1"/>
 </SETTINGS>

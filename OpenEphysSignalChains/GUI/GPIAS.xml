@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>21 May 2017 13:33:01</DATE>
+    <DATE>22 May 2017 16:00:22</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -59,7 +59,7 @@
       <EVENTCHANNEL name="13" number="13"/>
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.7116550693042453801"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.8392965460350640949"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"

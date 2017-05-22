@@ -30,7 +30,7 @@ import sounddevice as SD
 
 #%% Set parameters of the experiment
 
-AnimalName = 'Prevention_A5'
+AnimalName = 'Prevention_B5'
 
 CalibrationFile = '/home/cerebro/Malfatti/Test/' + 'SoundMeasurements/' + \
                   'SoundMeasurements.hdf5'

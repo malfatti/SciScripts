@@ -298,20 +298,21 @@ def LoadOEKwik(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
             print('.kwe/.kwik file is corrupted. Skipping dataset...')
             return(None)
     
-    print('Data from', RecFolder, 'loaded. Preparing dictionaries...')
+    print('Data from', RecFolder, 'loaded.')
+    print('Preparing dictionaries... ', end='')
     Raw = {}
     for Proc in RawRO.keys():
         Raw[Proc] = {Key: {} for Key in ['data', 'channel_bit_volts', 'info', 'timestamps']}
         
         for Rec in RawRO[Proc]['data'].keys():
             Raw[Proc]['data'][Rec] = ReturnCopy(RawRO[Proc]['data'][Rec])
-            Raw[Proc]['channel_bit_volts'][Rec] = ReturnCopy(RawRO[Proc]['channel_bit_volts'][Rec])
+#            Raw[Proc]['channel_bit_volts'][Rec] = ReturnCopy(RawRO[Proc]['channel_bit_volts'][Rec])
             Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
-            Raw[Proc]['timestamps'][Rec] = ReturnCopy(RawRO[Proc]['timestamps'][Rec])
+#            Raw[Proc]['timestamps'][Rec] = ReturnCopy(RawRO[Proc]['timestamps'][Rec])
 #            Raw[Proc]['data'][Rec] = RawRO[Proc]['data'][Rec][()]
-#            Raw[Proc]['channel_bit_volts'][Rec] = RawRO[Proc]['channel_bit_volts'][Rec][:]
+            Raw[Proc]['channel_bit_volts'][Rec] = RawRO[Proc]['channel_bit_volts'][Rec][:]
 #            Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
-#            Raw[Proc]['timestamps'][Rec] = RawRO[Proc]['timestamps'][Rec][()]
+            Raw[Proc]['timestamps'][Rec] = RawRO[Proc]['timestamps'][Rec][()]
     
     del(RawRO)
     

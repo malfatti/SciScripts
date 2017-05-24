@@ -34,8 +34,8 @@ GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
 
 
 #%% Batch
-Animal = 'GPIAZon'
-Exp = 'GPIAZon_NaCl'
+Animal = 'Prevention'
+Exp = 'PreventionB'
 AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -47,7 +47,7 @@ Paths = glob(Animal + '/' + Exp + '/2017-*'); Paths.sort()
 Files = glob(Animal + '/' + Exp + '/20170*'); Files.sort()
 
 # NaCl
-del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
+#del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
 # SSal
 #del(Paths[-2:], Paths[5], Paths[0]); del(Files[-2:], Files[5], Files[0])
 
@@ -78,8 +78,9 @@ for Ind, DataPath in enumerate(Paths):
         BitVolts = 10000/(2**16)
         Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
     
-    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
-    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
+#    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
+#    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
+    DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
     
     for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
         DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[Ind])
@@ -93,7 +94,7 @@ for Ind, DataPath in enumerate(Paths):
     
     
     DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
-                            FigName, Save=True, Visible=False)
+                            FigName, Save=True, Visible=True)
     
     del(GPIAS, XValues)
 

@@ -79,45 +79,45 @@ import numpy as np
 
 from glob import glob
 
-#Delta, Theta = [2, 4], [7, 10]
-#SensorCh = 17
-#Diameter = 0.6; PeaksPerCycle = 12
-#Lowpass = 5; FilterOrder = 2
-#
-#cd /run/media/malfatti/Malfatti1TB3/Data/Martina/Data/201703
-#AnalysisFile = '201703-Treadmill.hdf5'
-#Paths = glob('2017-03-08*'); Paths.sort()
-#
-#PeakDist = (np.pi*Diameter)/PeaksPerCycle
-#
-#Done, Errors, ErrorsLog = [], [], []
-#for Path in Paths:
-#    Data = Hdf5F.LoadOEKwik(Path)[0]
-#    Proc = Hdf5F.GetProc(Data, 'OE')
-#    
+Delta, Theta = [2, 4], [7, 10]
+SensorCh = 17
+Diameter = 0.6; PeaksPerCycle = 12
+Lowpass = 5; FilterOrder = 2
+
+#cd ~/Martina/Treadmill/Data/201703/
+AnalysisFile = '201703-Treadmill.hdf5'
+Paths = glob('2017-03-08*'); Paths.sort()
+
+PeakDist = (np.pi*Diameter)/PeaksPerCycle
+
+Done, Errors, ErrorsLog = [], [], []
+for Path in Paths:
+    Data = Hdf5F.LoadOEKwik(Path)[0]
+    Proc = Hdf5F.GetProc(Data, 'OE')
+    
 #    Recs = list(Data[Proc]['data'].keys())
-#    for Rec in Recs:
-#        print('Processing Rec', "{0:02d}".format(int(Rec)), '...')
-#        RecData = Data[Proc]['data'][Rec]
-#        Rate = Data[Proc]['info'][Rec]['sample_rate']
-#        
-#        try:
-#            Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, SensorCh, 
-#                                                        PeakDist, Lowpass, 
-#                                                        FilterOrder, Theta, 
-#                                                        Delta)
-#            
-#            AnalysisKey = Path + '/' + "{0:02d}".format(int(Rec))
-#            Hdf5F.WriteTreadmill(Treadmill, AnalysisKey, AnalysisFile)
-#            del(Treadmill)
-#            Done.append([Path, Rec])
-#        
-#        except Exception as E:
-#            Errors.append([Path, Rec])
-#            ErrorsLog.append(E)
-#            print(''); print('!!!==========')
-#            print(E)
-#            print('!!!=========='); print(''); 
+    for Rec in Data[Proc]['data'].keys():
+        print('Processing Rec', "{0:02d}".format(int(Rec)), '...')
+        RecData = Data[Proc]['data'][Rec]
+        Rate = Data[Proc]['info'][Rec]['sample_rate']
+        
+        try:
+            Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, SensorCh, 
+                                                        PeakDist, Lowpass, 
+                                                        FilterOrder, Theta, 
+                                                        Delta)
+            
+            AnalysisKey = Path + '/' + "{0:02d}".format(int(Rec))
+            Hdf5F.WriteTreadmill(Treadmill, AnalysisKey, AnalysisFile)
+            del(Treadmill)
+            Done.append([Path, Rec])
+        
+        except Exception as E:
+            Errors.append([Path, Rec])
+            ErrorsLog.append(E)
+            print(''); print('!!!==========')
+            print(E)
+            print('!!!=========='); print(''); 
 
 AnalysisFile = '201703-Treadmill.hdf5'
 Paths = glob('2017-03-08*'); Paths.sort()
@@ -143,9 +143,15 @@ for Path in Paths:
     
     
     
-
-#    DataAnalysis.Plot.TreadMill_AllPerCh(T, F, Sxx, SxxMaxs, SxxPerV, VMeans, VMeansSorted, 
-#                                         VInds, FigName=None, Ext='svg', Save=False, Visible=True)
+    DataAnalysis.Plot.Treadmill_AllPerCh(Treadmill['00']['15']['T'], 
+                                         Treadmill['00']['15']['F'], 
+                                         Treadmill['00']['15']['Sxx'], 
+                                         Treadmill['00']['15']['SxxMaxs'], 
+                                         Treadmill['00']['15']['SxxPerV'], 
+                                         Treadmill['00']['15']['VMeans'], 
+                                         Treadmill['00']['15']['VMeansSorted'], 
+                                         Treadmill['00']['15']['VInds'], 
+                                         FigName=None, Ext='svg', Save=False, Visible=True)
 #    Spectrogram(VMeansSorted, F, SxxPerV, HighFreqThr=100, Line=True, 
 #                LineX=VMeansSorted, LineY=SxxMaxs[VInds], LineColor='r', 
 #                LineLim=(-max(SxxMaxs)/3, max(SxxMaxs)), 

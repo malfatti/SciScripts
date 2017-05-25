@@ -10,11 +10,17 @@ from glob import glob
 from os import makedirs
 
 #%% Group
-AnalysisFile = 'GPIAZon/GPIAZon-Analysis.hdf5'
-Groups = ['GPIAZon_NaCl', 'GPIAZon_SSal']
-ExpList = ['NaCl', 'SSal']#, 'Atr']
-Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
-        'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
+#AnalysisFile = 'GPIAZon/GPIAZon-Analysis.hdf5'
+#Groups = ['GPIAZon_NaCl', 'GPIAZon_SSal']
+#ExpList = ['NaCl', 'SSal']#, 'Atr']
+#Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
+#        'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
+
+AnalysisFile = 'Prevention/Prevention-Analysis.hdf5'
+Groups = ['PreventionA', 'PreventionB']
+ExpList = ['Scr']
+Exps = {'PreventionA': ['Scr'],
+        'PreventionB': ['Scr']}
 
 Save = False; Invalid = False
 DiffThr = 0.6; InvalidThr = 0.1
@@ -35,13 +41,14 @@ GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
 
 #%% Batch
 Animal = 'Prevention'
-Exp = 'PreventionB'
+Exp = 'PreventionA'
 AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
+Filter = 'butter'
 
 Paths = glob(Animal + '/' + Exp + '/2017-*'); Paths.sort()
 Files = glob(Animal + '/' + Exp + '/20170*'); Files.sort()
@@ -50,6 +57,8 @@ Files = glob(Animal + '/' + Exp + '/20170*'); Files.sort()
 #del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
 # SSal
 #del(Paths[-2:], Paths[5], Paths[0]); del(Files[-2:], Files[5], Files[0])
+# PreventionA
+del(Paths[:2]); del(Files[:2])
 
 for Ind, DataPath in enumerate(Paths):
     RecFolder = DataPath.split('/')[-1]
@@ -78,19 +87,19 @@ for Ind, DataPath in enumerate(Paths):
         BitVolts = 10000/(2**16)
         Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
     
+#    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+#        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[Ind])
+#    
+#    DataInfo['FreqOrder'][-3:][:,1] = -2
 #    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
 #    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
+    
     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
-    
-    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[Ind])
-    
-    DataInfo['FreqOrder'][-3:][:,1] = -2
     
     GPIAS, XValues = DataAnalysis.GPIAS.Analysis(
                          Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
                          AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                         FilterFreq, FilterOrder, Return=True)
+                         FilterFreq, FilterOrder, Filter, Return=True)
     
     
     DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
@@ -181,15 +190,16 @@ for Ind, DataPath in enumerate(Paths):
 
 #%% Individual
 
-Animal = 'GPIAZon'
-Exp = 'GPIAZon_NaCl'
-RecFolder = '2017-04-11_16-53-06_GPIAZon_NaCln04'
-ExpFile = '20170411165239-GPIAZon_NaCln04-GPIAS.hdf5'
+Animal = 'Prevention'
+Exp = 'PreventionA'
+RecFolder = '2017-05-21_11-18-08_Prevention_A2'
+ExpFile = '20170521111251-Prevention_A2-GPIAS.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
-FilterOrder = 3       # butter order
+FilterOrder = 3       # filter order
+Filter = 'butter'
 PiezoCh = [8]
 TTLCh = 6
 
@@ -209,13 +219,14 @@ for Rec in Data[Proc]['data'].keys():
     BitVolts = 10000/(2**16)
     Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
 
-DataInfo['PiezoCh'] = PiezoCh
-DataInfo['TTLCh'] = TTLCh
-
-for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-    DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Animal + '/' + Exp + '/' + ExpFile)
-
-DataInfo['FreqOrder'][-3:][:,1] = -2
+DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
+#DataInfo['PiezoCh'] = PiezoCh
+#DataInfo['TTLCh'] = TTLCh
+#
+#for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+#    DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Animal + '/' + Exp + '/' + ExpFile)
+#
+#DataInfo['FreqOrder'][-3:][:,1] = -2
 
 ## Fix stupid breaks in recs
 #import numpy as np
@@ -261,11 +272,21 @@ DataInfo['FreqOrder'][-3:][:,1] = -2
 #for Key in Data[Proc].keys(): 
 #    for r in SOAB: del(Data[Proc][Key][r])
 
+# 20170521102604-Prevention_A1-GPIAS.hdf5
+#for Key in Data[Proc].keys(): 
+#    for r in ['50', '51', '90']: del(Data[Proc][Key][r])
+#DataInfo['FreqOrder'] = np.concatenate((DataInfo['FreqOrder'][:51], 
+#                                        np.array([[-99, -99]]), 
+#                                        DataInfo['FreqOrder'][51:]))
+
+# 20170521111251-Prevention_A2-GPIAS.hdf5
+for Key in Data[Proc].keys(): del(Data[Proc][Key]['85'])
+
 ## Run Analysis
 GPIAS, XValues = DataAnalysis.GPIAS.Analysis(
                      Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
                      AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                     FilterFreq, FilterOrder, Return=True)
+                     FilterFreq, FilterOrder, Filter, Return=True)
 
 
 DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 

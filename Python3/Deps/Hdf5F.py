@@ -669,7 +669,7 @@ def WriteTreadmill(Treadmill, Path, FileName):
     with h5py.File(FileName) as F:
         if Path in F: F[Now+'_'+Path] = F[Path]; del(F[Path])
         
-        F.create_group(Path); F[Path]['V'] = Treadmill['V']
+        F.create_group(Path)#; F[Path]['V'] = Treadmill['V']
         
         for Ch in Treadmill.keys():
             if Ch == 'V': continue

@@ -22,11 +22,13 @@ Colors = ['k', 'r', 'b', 'm', 'g', '#ffa500', '#00b2b2']
 def GetIndex(Groups, Exps, AnalysisFile):
     Index = {}
     for Group in Groups:
-        Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
+#        Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
+        Animals = [Group[:-1] + '_' + Group[-1] + str(_) for _ in range(1,6)]
         Index[Group] = {}
         
         for Animal in Animals:
-            Paths = glob('GPIAZon/' + Group + '/*' + Animal); Paths.sort()
+#            Paths = glob('GPIAZon/' + Group + '/*' + Animal); Paths.sort()
+            Paths = glob('Prevention/' + Group + '/*' + Animal); Paths.sort()
             Index[Group][Animal] = {}
             
             for P,Path in enumerate(Paths):
@@ -73,10 +75,46 @@ def GetMeansV(Index, Groups, ExpList):
     
     return(MeansV, MeansFull)
 
+def GetValid(Index, Groups, ExpList, DiffThr=0.6, Invalid=False, InvalidThr=0.1):
+    Valid = {}
+    for G, Group in enumerate(Groups):
+#        Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
+        Animals = [Group[:-1] + '_' + Group[-1] + str(_) for _ in range(1,6)]
+        
+        for A, Animal in enumerate(Animals):
+            if Animal not in Valid: Valid[Animal] = []
+            
+            for E, Exp in enumerate(ExpList):
+                if Exp not in Index[Group][Animal]: continue
+                
+                Freqs = list(Index[Group][Animal][Exp].keys())
+                Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
+                Freqs = [Freqs[0]] + Freqs[2:] + [Freqs[1]]
+                
+                Y = [abs(Index[Group][Animal][Exp][Freq]) for Freq in Freqs]
+                Valid[Animal].append(np.array(Y))
+            
+#                if not Invalid: 
+#                    inv = np.where(Valid[Animal][E] < InvalidThr)[0]
+#        #            Diff[Animal][0] = np.delete(Diff[Animal][0], inv)
+#        #            Diff[Animal][1] = np.delete(Diff[Animal][1], inv)
+#                    Valid[Animal][E][inv] = -1
+                
+                if max(Valid[Animal][E]) < InvalidThr: del(Valid[Animal][E])
+                else:
+                    F = np.where(Valid[Animal][E] > InvalidThr)[0]
+                    freqs = [Freqs[f] for f in F]
+                    Valid[Animal][E] = [freqs, Valid[Animal][E][F]]
+                    
+                    if len(Valid[Animal][E]) == 0: del(Valid[Animal][E])
+    
+    return(Valid)
+
 def GetDiff(Index, Groups, ExpList, DiffThr=0.6, Invalid=False, InvalidThr=0.1):
     Diff = {}
     for G, Group in enumerate(Groups):
-        Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
+#        Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
+        Animals = [Group[:-1] + '_' + Group[-1] + str(_) for _ in range(1,6)]
         
         for A, Animal in enumerate(Animals):
             if Animal not in Diff: Diff[Animal] = []

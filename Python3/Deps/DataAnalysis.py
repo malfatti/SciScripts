@@ -40,20 +40,33 @@ def CumulativeMA(Base, Add, ElNo):
     return(Base)
 
 
-def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
-    if Type not in ['bandpass', 'lowpass', 'highpass']:
-        print("Choose 'bandpass', 'lowpass' or 'highpass'.")
+def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Coeff='butter', Type='bandpass'):
+    if Coeff == 'butter':
+        if Type not in ['bandpass', 'lowpass', 'highpass']:
+            print("Choose 'bandpass', 'lowpass' or 'highpass'.")
+        
+        elif len(Frequency) not in [1, 2]:
+            print('Frequency must have 2 elements for bandpass; or 1 element for \
+            lowpass or highpass.')
+        
+        else:
+            passband = [_/(Rate/2) for _ in Frequency]
+            f2, f1 = signal.butter(FilterOrder, passband, Type)
+            Signal = signal.filtfilt(f2, f1, Signal, padtype='odd', padlen=0)
+            
+            return(Signal)
     
-    elif len(Frequency) not in [1, 2]:
-        print('Frequency must have 2 elements for bandpass; or 1 element for \
-        lowpass or highpass.')
-    
-    else:
-        passband = [_/(Rate/2) for _ in Frequency]
-        f2, f1 = signal.butter(FilterOrder, passband, Type)
-        Signal = signal.filtfilt(f2, f1, Signal, padtype='odd', padlen=0)
+    elif Coeff == 'fir':
+        Freqs = np.arange(1,(Rate/2)+1)
+        DesiredFreqs = np.zeros(int(Rate/2))
+        DesiredFreqs[min(Frequency):max(Frequency)] = 1
+        
+        o = FilterOrder + ((FilterOrder%2)*-1) +1
+        a = signal.firls(o, Freqs, DesiredFreqs, nyq=Rate/2)
+        Signal = signal.filtfilt(a, 1.0, Signal, padtype='odd', padlen=0)
         
         return(Signal)
+        
 
 
 def FindPeaks(Data, Dist, LowThr=None, HighThr=None):
@@ -370,11 +383,11 @@ def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3,
         
         for TTL in range(len(TTLs)):
             ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
-                                    FilterOrder, 'highpass')
+                                    FilterOrder, 'butter', 'highpass')
         
         ABR = np.mean(ABR, axis=0)
         ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
-                           'lowpass')
+                           'butter', 'lowpass')
         
         dB = str(DataInfo['Intensities'][int(Rec)]) + 'dB'
         ABRs[dB] = ABR[:]; del(ABR)
@@ -487,8 +500,8 @@ class GPIAS():
     ## Level 1    
     def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
                  GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
-                 FilterFreq=[70, 400], FilterOrder=4, SliceSize=100,
-                 AnalogTTLs=True, Return=False):
+                 FilterFreq=[70, 400], FilterOrder=4, Filter='fir', 
+                 SliceSize=100, AnalogTTLs=True, Return=False):
         
         NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
         NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
@@ -516,18 +529,23 @@ class GPIAS():
                 # Bandpass filter
                 GPIASData['Trace'][Freq][Key] = FilterSignal(GPIASData['Trace'][Freq][Key], 
                                                            Rate, FilterFreq, FilterOrder, 
-                                                           'bandpass')
+                                                           Filter, 'bandpass')
                 
                 for Tr in range(len(GPIASData['Index'][Freq][Key])):
                     # Bandpass filter
+#                    TR = FilterSignal(GPIASData['Trace'][Freq][Key][Tr], Rate, 
+#                                      FilterFreq, FilterOrder, Filter, 'bandpass')
+                    
                     AE = FilterSignal(GPIASData['Index'][Freq][Key][Tr], Rate, 
-                                         FilterFreq, FilterOrder, 'bandpass')
+                                         FilterFreq, FilterOrder, Filter, 'bandpass')
                     
                     # Amplitude envelope
                     AE = abs(signal.hilbert(AE))
                     
+#                    GPIASData['Trace'][Freq][Key][Tr] = TR
                     GPIASData['Index'][Freq][Key][Tr] = AE
                 
+#                GPIASData['Trace'][Freq][Key] = np.mean(GPIASData['Trace'][Freq][Key], axis=0)
                 GPIASData['Index'][Freq][Key] = np.mean(GPIASData['Index'][Freq][Key], axis=0)
                 
             # RMS
@@ -717,7 +735,7 @@ class Plot():
         from matplotlib import rcParams; rcParams.update(Params)
         from matplotlib import pyplot as plt
         
-        ChNo = len(Treadmill)-1
+        ChNo = len(Treadmill)
         
         Fig, SxxAx = plt.subplots(ChNo,1,figsize=(8, 4*ChNo))
         for C, Ch in Treadmill.items():
@@ -1048,7 +1066,8 @@ class Stats():
 class Treadmill():
     def Analysis(Data, Rate, SensorCh, PeakDist, Lowpass=5, FilterOrder=2, Theta=[7, 10], Delta=[2, 4]):
         SensorData = Data[:,SensorCh-1]*-1
-        SensorData = FilterSignal(SensorData, Rate, [Lowpass], FilterOrder, 'lowpass')
+        SensorData = FilterSignal(SensorData, Rate, [Lowpass], FilterOrder, 
+                                  'butter', 'lowpass')
         
         Peaks = QuantifyTTLsPerRec(True, SensorData)
         
@@ -1061,7 +1080,8 @@ class Treadmill():
         f = interp1d(VInd, VPeaks, fill_value=0.0, bounds_error=False)
         V = f(np.arange(len(V))); V[V!=V] = 0.0
         
-        Treadmill = {'V': V}
+        Treadmill = {}
+#        Treadmill = {'V': V}
         for C in range(Data.shape[1]-1):
             Ch = "{0:02d}".format(C+1); Treadmill[Ch] = {}
             print('Processing Ch', Ch, '...')
@@ -1081,8 +1101,10 @@ class Treadmill():
             Start = np.where(T>Peaks[0]/Rate)[0][0]
             End = np.where(T<Peaks[-1]/Rate)[0][-1]
             TDIndex = max(ThetaMaxs[Start:End])/max(DeltaMaxs[Start:End])
-    #        SxxSR = 1/(T[1]-T[0]); SxxLowPass = SxxSR*5/100
-    #        SxxMeans = DataAnalysis.FilterSignal(SxxMeans, SxxSR, [SxxLowPass], 1, 'lowpass')
+#            SxxSR = 1/(T[1]-T[0]); SxxLowPass = SxxSR*5/100
+#            SxxMeans = DataAnalysis.FilterSignal(SxxMeans, SxxSR, 
+#                                                  [SxxLowPass], 1, 'butter', 
+#                                                    'lowpass')
             
             Treadmill[Ch] = {
                 'F': F, 'T': T, 'Sxx': Sxx, 'SxxMaxs': SxxMaxs, 

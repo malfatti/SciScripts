@@ -65,7 +65,7 @@ PulseIntensity = [105]
 # USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
 # just run the cell once and then list(SoundIntensity).
 #NoiseFrequency = [[8000, 16000]]
-NoiseFrequency = [[8000, 10000], [10000, 12000], 
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
                   [12000, 14000], [14000, 16000], [8000, 16000]]
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.

@@ -735,9 +735,10 @@ class Plot():
         from matplotlib import rcParams; rcParams.update(Params)
         from matplotlib import pyplot as plt
         
-        ChNo = len(Treadmill)
+        if 'V' in Treadmill.keys(): ChNo = len(Treadmill) - 1
+        else: ChNo = len(Treadmill)
         
-        Fig, SxxAx = plt.subplots(ChNo,1,figsize=(8, 4*ChNo))
+        Fig, SxxAx = plt.subplots(ChNo,1,figsize=(8, 3*ChNo))
         for C, Ch in Treadmill.items():
             if C == 'V': continue
             

@@ -73,102 +73,8 @@ def ClusterizeSpikes_Klusta():
 
 
 
-#%% Treadmill
-import DataAnalysis, Hdf5F
-import numpy as np
-
-from glob import glob
-from os import makedirs
-
-#Delta, Theta = [2, 4], [7, 10]
-#SensorCh = 17
-#Diameter = 0.6; PeaksPerCycle = 12
-#Lowpass = 5; FilterOrder = 2
-#
-##cd ~/Martina/Treadmill/Data/201703/
-#AnalysisFile = '201703-Treadmill.hdf5'
-#Paths = glob('2017-03-08*'); Paths.sort()
-#
-#PeakDist = (np.pi*Diameter)/PeaksPerCycle
-#
-#Done, Errors, ErrorsLog = [], [], []
-#for Path in Paths:
-#    Data = Hdf5F.LoadOEKwik(Path)[0]
-#    Proc = Hdf5F.GetProc(Data, 'OE')
-#    
-##    Recs = list(Data[Proc]['data'].keys())
-#    for Rec in Data[Proc]['data'].keys():
-#        print('Processing Rec', "{0:02d}".format(int(Rec)), '...')
-#        RecData = Data[Proc]['data'][Rec]
-#        Rate = Data[Proc]['info'][Rec]['sample_rate']
-#        
-#        try:
-#            Treadmill = DataAnalysis.Treadmill.Analysis(RecData, Rate, SensorCh, 
-#                                                        PeakDist, Lowpass, 
-#                                                        FilterOrder, Theta, 
-#                                                        Delta)
-#            
-#            AnalysisKey = Path + '/' + "{0:02d}".format(int(Rec))
-#            Hdf5F.WriteTreadmill(Treadmill, AnalysisKey, AnalysisFile)
-#            del(Treadmill)
-#            Done.append([Path, Rec])
-#        
-#        except Exception as E:
-#            Errors.append([Path, Rec])
-#            ErrorsLog.append(E)
-#            print(''); print('!!!==========')
-#            print(E)
-#            print('!!!=========='); print(''); 
-
-makedirs('Figs', exist_ok=True)
-AnalysisFile = '201703-Treadmill.hdf5'
-Paths = glob('2017-03-08*'); Paths.sort()
-TDIndexes = {}
-for Path in Paths:
-    Treadmill = Hdf5F.LoadTreadmill(Path, AnalysisFile)
-#    Recs = list(Treadmill.keys()).sort()
-    Animal = Path.split('_')[-2:]
-    Animal, Exp = Animal[1], Animal[0]
-    FigName = 'Figs/' + Path; Ext = 'pdf'
-    
-    TDIndexes[Animal] = {Exp: {}}; BestCh = [0,0,0]
-    for R, Rec in Treadmill.items():
-        Max = max([Ch['TDIndex'] for C, Ch in Rec.items() if C != 'V'])
-        TDIndexes[Animal][Exp][R] = [[C, Ch['TDIndex']] 
-                                     for C, Ch in Rec.items()
-                                     if C != 'V'
-                                     if Ch['TDIndex'] == Max]
-        
-        if Max > BestCh[2]: BestCh = [R] + TDIndexes[Animal][Exp][R][0]
-        DataAnalysis.Plot.Treadmill_AllChs(Rec, FigName+'-AllChs-'+R+'.'+Ext, Ext, Save=True, Visible=False)
-    
-    TDIndexes[Animal][Exp]['BestCh'] = BestCh
-    
-    DataAnalysis.Plot.Treadmill_AllPerCh(Treadmill[BestCh[0]][BestCh[1]]['T'], 
-                                         Treadmill[BestCh[0]][BestCh[1]]['F'], 
-                                         Treadmill[BestCh[0]][BestCh[1]]['Sxx'], 
-                                         Treadmill[BestCh[0]][BestCh[1]]['SxxMaxs'], 
-                                         Treadmill[BestCh[0]][BestCh[1]]['SxxPerV'], 
-                                         Treadmill[BestCh[0]][BestCh[1]]['VMeans'], 
-                                         Treadmill[BestCh[0]][BestCh[1]]['VMeansSorted'], 
-                                         Treadmill[BestCh[0]][BestCh[1]]['VInds'], 
-                                         FigName+'-BestCh.'+Ext, Ext, Save=True, Visible=False)
-    
-#    Spectrogram(VMeansSorted, F, SxxPerV, HighFreqThr=100, Line=True, 
-#                LineX=VMeansSorted, LineY=SxxMaxs[VInds], LineColor='r', 
-#                LineLim=(-max(SxxMaxs)/3, max(SxxMaxs)), 
-#                LineYLabel='ThetaPxx/DeltaPxx', Save=False, Visible=True)
-#    
-    
-    # T per F per Sxx + VMeans + Sxx
-#    Fig, SxxAx = plt.subplots(1,1,figsize=(10, 4))
-#    Fig.subplots_adjust(bottom=0.15, right=0.85)
-    
-
 #%% RT plots
-import KwikAnalysis
-
-Params = KwikAnalysis.SetPlot(Params=True)
+Params = {'backend': 'TkAgg'}
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
@@ -188,38 +94,6 @@ for File in Files:
 
 
 plt.plot(Jitter['Hist-NonRT-T0'], 'bo'); plt.show()
-
-#%% Nernst potential
-Temperature = 25    # in Celsius
-Ions = ['Sodium', 'Potassium', 'Chloride']
-
-Sodium = {'In':8,
-          'Out': 130 + 20,
-          'z': +1}
-
-Potassium = {'In': 108,
-             'Out': 3 + 1.2,
-             'z': +1}
-
-Chloride = {'In': 9,
-            'Out': 130 + 3 + 4.8,
-            'z':-1}
-
-
-import numpy as np
-
-e = 1.6021766 * 10**-19
-Na = 6.022141 * 10**23
-
-F = e*Na 
-R = 8.314472
-T = Temperature + 274.150
-
-Nernst = {}
-for Ion in Ions:
-    IonDict = eval(Ion)
-    Nernst[Ion] = (((R*T)/(IonDict['z']*F)) * 
-                   np.log(IonDict['Out']/IonDict['In']) * 1000) # in mV
 
 
 #%% TTLs figure
@@ -364,14 +238,6 @@ def GeneralPlot(Data, Visible=True):
 
 for Signal in Signals:
     GeneralPlot(Signals[Signal])
-
-
-#%% GPIASDrafts
-import Hdf5F
-Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn06/CaMKIIahM4Dn06-Analysis.hdf5', All=True)
-Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn07/CaMKIIahM4Dn07-Analysis.hdf5', All=True)
-Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn08/CaMKIIahM4Dn08-Analysis.hdf5', All=True)
-Hdf5F.DeleteGroup('GPIAS', 'CaMKIIahM4Dn09/CaMKIIahM4Dn09-Analysis.hdf5', All=True)
 
 
 #%% GPIASIndex
@@ -685,7 +551,6 @@ Override = {}
 import Hdf5F
 import numpy as np
 import os
-import struct
 import tarfile
 import wave
 from datetime import datetime
@@ -965,24 +830,6 @@ for Stim in StimType:
         Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
 
 
-#%% Fix old ExpInfo files
-import h5py
-
-for ind, key in enumerate(F['ExpInfo'].keys()):
-    if ind <5: F['ExpInfo'][key].attrs['StimType'] = np.string_(['Sound_NaCl'])
-    else: F['ExpInfo'][key].attrs['StimType'] = np.string_(['Sound_CNO'])
-
-
-
-
-#%% SavGol
-        # SavGol smooth
-#        GPIAS[Freq]['NoGap'] = signal.savgol_filter(GPIAS[Freq]['NoGap'], 5, 2, 
-#                                                    mode='nearest')
-#        GPIAS[Freq]['Gap'] = signal.savgol_filter(GPIAS[Freq]['Gap'], 5, 2, 
-#                                                  mode='nearest')
-        
-
 #%% RenameFiles
 import os
 from glob import glob
@@ -1029,12 +876,3 @@ for Folder in ModifyFreq:
         elif File[Start:Start+5] == '1ODE-': NewFile = File[:Start] + '1LR_' + File[Start+5:]
         
         os.rename(File, NewFile)
-
-#%% Freq sort
-
-FKeys = list(Sound.keys()); ToPrepend = []
-for FF in ['8000-10000', '9000-11000']:
-    if FF in FKeys:
-        del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
-
-ToPrepend.sort(); FKeys = ToPrepend + FKeys

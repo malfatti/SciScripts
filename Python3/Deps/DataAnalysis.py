@@ -696,13 +696,13 @@ class Plot():
                     Line=None, LineX=None, LineY=None, LineColor='b', LineLim=None, 
                     LineYLabel=None):
         if Line:
-            if LineY == None: 
+            if LineY is None: 
                 print('If Line=True, LineY should receive plottable data.')
                 return(None)
-            if LineX == None: LineX = np.arange(len(LineY))
-            if LineLim == None: LineLim = [min(LineY), max(LineY)]
+            if LineX is None: LineX = np.arange(len(LineY))
+            if LineLim is None: LineLim = [min(LineY), max(LineY)]
         
-        if HighFreqThr == None: HighFreqThr = max(F)
+        if HighFreqThr is None: HighFreqThr = max(F)
         
 #        Params = Plot.Set(Params=True)
 #        from matplotlib import rcParams; rcParams.update(Params)
@@ -751,7 +751,7 @@ class Plot():
         if not FigName: FigName = 'Spectrogram.' + Ext
         if Save: Fig.savefig(FigName, format=Ext)
         if Visible: plt.show()
-        else: plt.close()
+        Fig.clf(); plt.close()
     
     
     def Treadmill_AllPerCh(T, F, Sxx, SxxMaxs, SxxPerV, VMeans, VMeansSorted, 
@@ -797,6 +797,52 @@ class Plot():
         SAx[1].set_ylabel('ThetaPxx/DeltaPxx', color='r')
         
         if not FigName: FigName = 'SpectrogramsPerCh.' + Ext
+        if Save: Fig.savefig(FigName, format=Ext)
+        if Visible: plt.show()
+        Fig.clf(); plt.close()
+    
+    
+    def Treadmill_ChPair(Ch1, Ch2, Ch1Title='', Ch2Title='', FigName=None, 
+                         Ext='svg', Save=False, Visible=True):
+        Params = Plot.Set(Params=True)
+        from matplotlib import rcParams; rcParams.update(Params)
+        from matplotlib import pyplot as plt
+        
+        Titles = [Ch1Title, Ch2Title]
+        Fig, SxxAx = plt.subplots(2,1,figsize=(8, 3*4))
+        for C, Ch in enumerate([Ch1, Ch2]):
+            T, F, Sxx, VMeans = Ch['T'], Ch['F'], Ch['Sxx'], Ch['VMeans']
+            
+            Plot.Spectrogram(SxxAx[C], T, F, Sxx, HighFreqThr=100, 
+                             Line=True, LineX=T, LineY=VMeans, LineColor='r', 
+                             LineYLabel='Speed [m/s]')
+            
+            SxxAx[C].set_title(Titles[C])
+        
+        if not FigName: FigName = 'Spectrogram.' + Ext
+        if Save: Fig.savefig(FigName, format=Ext)
+        if Visible: plt.show()
+        Fig.clf(); plt.close()
+    
+    
+    def Treadmill_SepChs(Treadmill, FigName=None, Ext='svg', Save=False, 
+                         Visible=True):
+        Params = Plot.Set(Params=True)
+        from matplotlib import rcParams; rcParams.update(Params)
+        from matplotlib import pyplot as plt
+        
+        for C, Ch in Treadmill.items():
+            if C == 'V': continue
+            
+            Fig, SxxAx = plt.subplots(1,1,figsize=(8, 3))
+            
+            T, F, Sxx, VMeans = Ch['T'], Ch['F'], Ch['Sxx'], Ch['VMeans']
+            
+            Plot.Spectrogram(SxxAx, T, F, Sxx, HighFreqThr=100, 
+                             Line=True, LineX=T, LineY=VMeans, LineColor='r', 
+                             LineYLabel='Speed [m/s]')
+        
+        if not FigName: FigName = 'Spectrogram.' + Ext
         if Save: Fig.savefig(FigName, format=Ext)
         if Visible: plt.show()
         else: plt.close()

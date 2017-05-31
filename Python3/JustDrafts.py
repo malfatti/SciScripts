@@ -6,70 +6,70 @@ Just drafts
 import TarBinPy
 import numpy as np
 
-Data = np.random.randn(1000, 2)
-Data[:, 0] = Data[:, 0]+10
-Data[:, 1] = Data[:, 1]+20
+from itertools import tee
+from os import makedirs, getcwd
 
-DataFile = 'Noise.dat'
-TarBinPy.BinWrite(DataFile, '.', Data)
 
-def PrintDict(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n', indent=0):
-    ''' Modified from y.petremann's code.
-        Added options to set item separator for list or tuple and to set a number
-        of items per line, or yet, to calculate items per line so it will not 
-        have more than 80 chars per line.
-        Source: https://stackoverflow.com/a/26209900 '''
+def pairwise(iterable):
+    """ from https://docs.python.org/3.6/library/itertools.html#itertools-recipes
+    s -> (s0,s1), (s1,s2), (s2, s3), ..."""
     
-    nlch = lfchar + htchar * (indent + 1)
-    if type(value) is dict:
-        items = [
-            nlch + repr(key) + ': ' + PrintDict(value[key], htchar, itemchar, breaklineat, lfchar, indent + 1)
-            for key in value
-        ]
-        
-        return '{%s}' % (','.join(items) + lfchar + htchar * indent)
-    
-    elif type(value) is list:
-        items = [
-            itemchar + PrintDict(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
-            for item in value
-        ]
-        
-        if breaklineat == 'auto':
-           bl = (80 - (len(htchar)*(indent + 1)))// \
-                ((sum([len(i)+4 for i in items])-2)//len(items))
-        else: bl = breaklineat
-       
-        if len(items) > bl:
-            for i in list(range(bl, len(items), bl)):
-                items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
-        
-        return '[%s]' % (','.join(items))
-    
-    elif type(value) is tuple:
-        items = [
-            itemchar + PrintDict(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
-            for item in value
-        ]
-        
-        if breaklineat == 'auto':
-           bl = (80 - (len(htchar)*(indent + 1)))// \
-                ((sum([len(i)+4 for i in items])-2)//len(items))
-        else: bl = breaklineat
-       
-        if len(items) > bl:
-            for i in list(range(bl, len(items), bl)):
-                items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
-        
-        return '(%s)' % (','.join(items))
-    
-    else:
-        return repr(value)
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 def ClusterizeSpikes_Klusta():
     
-    return(Clusters)
+    return(None)
+
+
+def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate, 
+             n_channels, dtype, spikedetekt={}, klustakwik2={}):
+    traces = dict((Name, eval(Name)) 
+                  for Name in ['raw_data_files', 'sample_rate', 
+                               'n_channels', 'dtype'])
+    
+    with open(File, 'w') as F:
+        F.write('experiment_name = "'+experiment_name+'"')
+        F.write('\n\n')
+        F.write('prb_file = "'+prb_file+'"')
+        F.write('\n\n')
+        F.write('traces = '+TarBinPy.PrintDict(traces))
+        F.write('\n\n')
+        F.write('spikedetekt = '+TarBinPy.PrintDict(spikedetekt))
+        F.write('\n\n')
+        F.write('klustakwik2 = '+TarBinPy.PrintDict(klustakwik2))
+        F.write('\n\n')
+    
+    return(None)
+
+
+Data = np.random.randn(90000, 16)
+#for Ch in Data.shape[1]: Data[:, Ch] += 10*Ch
+Spacing = 50
+Path = 'TestKlusta'; DataFile = 'Noise.dat'; PrbFile = 'A16-50.prb'; PrmFile = 'Noise.prm'
+makedirs(Path, exist_ok=True)
+
+TarBinPy.BinWrite(Path+'/'+DataFile, '.', Data)
+DataInfo = TarBinPy.DictRead(Path+'/'+DataFile.split('.')[0]+'-Info.dict')
+
+experiment_name = 'TestKlustaNoise'
+prb_file = PrbFile
+raw_data_files = getcwd()+'/'+Path+'/'+DataFile
+sample_rate = 30000
+n_channels = DataInfo['Shape'][1]
+dtype = DataInfo['DType']
+PrmWrite(Path+'/'+PrmFile, experiment_name, prb_file, raw_data_files, 
+         sample_rate, n_channels, dtype)
+
+Prb = {'0': {}}
+Prb['0']['channels'] = list(range(n_channels))
+Prb['0']['graph'] = list(pairwise(Prb['0']['channels']))
+Pos = list(range(0, len(Prb['0']['channels'])*Spacing, Spacing))
+Prb['0']['geometry'] = {str(Ch):(0,Pos[C]) for C,Ch in enumerate(Prb['0']['channels'])}
+TarBinPy.DictWrite(Path+'/'+PrbFile, 'channel_groups = '+TarBinPy.PrintDict(Prb))
+
 
 
 

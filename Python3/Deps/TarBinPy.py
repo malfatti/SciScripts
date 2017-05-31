@@ -6,60 +6,113 @@ Created on Wed Jan 18 10:28:45 2017
 @author: cerebro
 """
 #%%
-from datetime import datetime
+#from datetime import datetime
+from ast import literal_eval
 from glob import glob
 
-import json
+#import json
 import numpy as np
 import os
 import shutil
 import tarfile
 
 ### Level 0 ###
-def DictRead(DictFile):
-    with open(DictFile, 'r') as File: Dict = json.load(File)
+def DictRead(File):
+    Dict = literal_eval(open(File).read())
     return(Dict)
 
 
-def DictWrite(DictFile, Dict):
-    with open(DictFile, 'w') as File: json.dump(Dict, File)
+def DictWrite(File, Str):
+    with open(File, 'w') as F: F.write(Str)
     return(None)
+
+
+def PrintDict(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n', indent=0):
+    ''' Modified from y.petremann's code.
+        Added options to set item separator for list or tuple and to set a number
+        of items per line, or yet, to calculate items per line so it will not 
+        have more than 80 chars per line.
+        Source: https://stackoverflow.com/a/26209900 '''
+    
+    nlch = lfchar + htchar * (indent + 1)
+    if type(value) is dict:
+        items = [
+            nlch + repr(key) + ': ' + PrintDict(value[key], htchar, itemchar, breaklineat, lfchar, indent + 1)
+            for key in value
+        ]
+        
+        return '{%s}' % (','.join(items) + lfchar + htchar * indent)
+    
+    elif type(value) is list:
+        items = [
+            itemchar + PrintDict(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
+            for item in value
+        ]
+        
+        if breaklineat == 'auto':
+           bl = (80 - (len(htchar)*(indent + 1)))// \
+                ((sum([len(i)+4 for i in items])-2)//len(items))
+        else: bl = breaklineat
+       
+        if len(items) > bl:
+            for i in list(range(bl, len(items), bl)):
+                items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
+        
+        return '[%s]' % (','.join(items))
+    
+    elif type(value) is tuple:
+        items = [
+            itemchar + PrintDict(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
+            for item in value
+        ]
+        
+        if breaklineat == 'auto':
+           bl = (80 - (len(htchar)*(indent + 1)))// \
+                ((sum([len(i)+4 for i in items])-2)//len(items))
+        else: bl = breaklineat
+       
+        if len(items) > bl:
+            for i in list(range(bl, len(items), bl)):
+                items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
+        
+        return '(%s)' % (','.join(items))
+    
+    else:
+        return repr(value)
 
 
 def TarWrite(TarFile, FileList):
     with tarfile.open(TarFile, 'a') as F:
-        for File in FileList:
-            F.add(File)
+        for File in FileList: F.add(File)
     
     return(None)
 
 
-def TarWriteNew(TarFile, FileList):
-    with tarfile.open(TarFile, 'a') as F:
-        FilesInTar = F.getnames()
-        FilesToExclude = []
-        FilesToAdd = []
-        
-        for File in FileList:
-            if File in FilesInTar: FilesToExclude.append(File)
-            else: FilesToAdd.append(File)
-    
-    
-    if FilesToExclude:
-        Now = '_' + datetime.now().strftime("%Y%m%d%H%M%S")
-        
-        with tarfile.open(TarFile + Now, 'a') as NewF:
-            with tarfile.open(TarFile, 'r') as F:
-                for File in FileList: NewF.add(File)
-                
-                for File in FilesInTar:
-                    if File not in FileList:
-                        FileExtr = F.extractfile(File)
-                        NewF.add(FileExtr)
-    else:
-        for File in FileList:
-            F.add(File)
-            
+#def TarWriteNew(TarFile, FileList):
+#    with tarfile.open(TarFile, 'a') as F:
+#        FilesInTar = F.getnames()
+#        FilesToExclude = []
+#        FilesToAdd = []
+#        
+#        for File in FileList:
+#            if File in FilesInTar: FilesToExclude.append(File)
+#            else: FilesToAdd.append(File)
+#    
+#    
+#    if FilesToExclude:
+#        Now = '_' + datetime.now().strftime("%Y%m%d%H%M%S")
+#        
+#        with tarfile.open(TarFile + Now, 'a') as NewF:
+#            with tarfile.open(TarFile, 'r') as F:
+#                for File in FileList: NewF.add(File)
+#                
+#                for File in FilesInTar:
+#                    if File not in FileList:
+#                        FileExtr = F.extractfile(File)
+#                        NewF.add(FileExtr)
+#    else:
+#        for File in FileList:
+#            F.add(File)
 
 
 ### Level 1 ###
@@ -111,7 +164,7 @@ def BinWrite(DataFile, Path, Data, Info={}):
     os.makedirs(Path, exist_ok=True)
     
     # Write text info file
-    DictWrite(Path + '/' + InfoFile, Info)
+    DictWrite(Path + '/' + InfoFile, PrintDict(Info))
     
     # Write interleaved data
     with open(Path + '/' + DataFile, 'wb') as File: File.write(Data.tobytes())

@@ -3,7 +3,7 @@
 Just drafts
 """
 #%% Klusta :)
-import TarBinPy
+import DataAnalysis, Hdf5F, TarBinPy
 import numpy as np
 
 from itertools import tee
@@ -45,16 +45,21 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
     return(None)
 
 
-Data = np.random.randn(90000, 16)
-#for Ch in Data.shape[1]: Data[:, Ch] += 10*Ch
-Spacing = 50
-Path = 'TestKlusta'; DataFile = 'Noise.dat'; PrbFile = 'A16-50.prb'; PrmFile = 'Noise.prm'
+#Data = np.random.randn(90000, 16)
+CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
+A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+       'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+Map = DataAnalysis.RemapChannels(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
+Data = Hdf5F.LoadOEKwik('/home/malfatti/Documents/PhD/Data/CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/', True, 'Bits', Map)
+
+Spacing = 25
+Path = '.'; DataFile = 'Rec0.dat'; PrbFile = 'A16-25.prb'; PrmFile = 'Rec0.prm'
 makedirs(Path, exist_ok=True)
 
 TarBinPy.BinWrite(Path+'/'+DataFile, '.', Data)
 DataInfo = TarBinPy.DictRead(Path+'/'+DataFile.split('.')[0]+'-Info.dict')
 
-experiment_name = 'TestKlustaNoise'
+experiment_name = 'TestRec0'
 prb_file = PrbFile
 raw_data_files = getcwd()+'/'+Path+'/'+DataFile
 sample_rate = 30000
@@ -64,7 +69,7 @@ PrmWrite(Path+'/'+PrmFile, experiment_name, prb_file, raw_data_files,
          sample_rate, n_channels, dtype)
 
 Prb = {'0': {}}
-Prb['0']['channels'] = list(range(n_channels))
+Prb['0']['channels'] = list(range(16))
 Prb['0']['graph'] = list(pairwise(Prb['0']['channels']))
 Pos = list(range(0, len(Prb['0']['channels'])*Spacing, Spacing))
 Prb['0']['geometry'] = {str(Ch):(0,Pos[C]) for C,Ch in enumerate(Prb['0']['channels'])}

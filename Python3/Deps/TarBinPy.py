@@ -50,8 +50,8 @@ def PrintDict(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n
         ]
         
         if breaklineat == 'auto':
-           bl = (80 - (len(htchar)*(indent + 1)))// \
-                ((sum([len(i)+4 for i in items])-2)//len(items))
+           bl = int((80 - (len(htchar)*(indent + 1)))/
+                (int((sum([len(i)+4 for i in items])-2)/len(items))))
         else: bl = breaklineat
        
         if len(items) > bl:

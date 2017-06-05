@@ -2,12 +2,18 @@
 """
 Just drafts
 """
+
 #%% Klusta :)
-import DataAnalysis, Hdf5F, TarBinPy
+import DataAnalysis, Hdf5F, subprocess, TarBinPy
 import numpy as np
 
 from itertools import tee
-from os import makedirs, getcwd
+from klusta.kwik import KwikModel
+from os import chdir, getcwd, makedirs
+
+Params = {'backend': 'TkAgg'}
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
 
 
 def pairwise(iterable):
@@ -44,6 +50,124 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
     
     return(None)
 
+#https://stackoverflow.com/a/13135985
+def run_command(command):
+    p = subprocess.Popen(command,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    return iter(p.stdout.readline, b'')
+
+for line in run_command(['ping', '-c 3', 'gentoo.org']):
+    print(line)
+## Max Ekman
+
+def Klusta_Run(PrmFile, Path, Overwrite=False):
+    print('Clustering spikes...')
+    Here = getcwd(); chdir(Path)
+    Klusta = '~/Software/Miniconda3/envs/klusta/bin/klusta'
+    Cmd = [Klusta, PrmFile]
+    if Overwrite: Cmd.append('--overwrite')
+    
+    run(Cmd); chdir(Here)
+    
+    print('Done clustering.')
+    return(None)
+
+
+def Phy_Run(KwikFile, Path, Overwrite=False):
+    Here = getcwd(); chdir(Path)
+    Phy = '~/Software/Miniconda3/envs/klusta/bin/phy'
+    Cmd = [Phy, 'kwik-gui', KwikFile]
+    
+    run(Cmd); chdir(Here)
+    
+    print('Done clustering.')
+    return(None)
+
+
+## https://groups.google.com/d/msg/klustaviewas/r2w5Im5VTng/GLieizEVCQAJ
+SpksToPlot = 500
+Clusters = KwikModel('TestRec0.kwik')
+Good = Clusters.cluster_groups
+Good = [Id for Id,Key in Good.items() if Key == 'good']
+
+ClusterId = np.argwhere(Clusters.spike_clusters == Good[4])
+Cluster = Clusters.all_waveforms[ClusterId]
+Spks = np.arange(Cluster.shape[0]); np.random.shuffle(Spks)
+Spks = Spks[:SpksToPlot]; ChNo = Cluster.shape[2]
+
+Fig, Axes = plt.subplots(ChNo, 1, figsize=(4, 3*ChNo))
+for Ch in range(ChNo):
+    for Spk in Spks: Axes[Ch].plot(Cluster[Spk, :, Ch], 'r')
+    Axes[Ch].plot(np.mean(Cluster[:, :, Ch], axis=0), 'k')
+plt.show()
+
+
+
+
+def get_cluster_waveforms (kwik_model,cluster_id):
+    try:
+        if (not(type(kwik_model) is KwikModel)):
+            raise ValueError       
+    except ValueError:
+            print ("Exception: the first argument should be a KwikModel object")
+            return
+        
+    clusters = kwik_model.spike_clusters
+    try:
+        if ((not(cluster_id in clusters))):
+            raise ValueError       
+    except ValueError:
+            print ("Exception: cluster_id (%d) not found !! " % cluster_id)
+            return
+    
+    idx=np.argwhere (clusters==cluster_id)
+    w=model.all_waveforms[idx]
+    return w
+
+def plot_cluster_waveforms (kwik_model,cluster_id,nspikes, save=False,save_path=None):
+    
+    w = get_cluster_waveforms (kwik_model,cluster_id)
+    y_scale = .5
+    x_scale = 2
+    num_channels = w.shape[2]
+    waveform_size = w.shape[1]
+    np.random.seed(int(time.time()))
+    
+    fig=plt.figure(num=None, figsize=(6, 12), dpi=200, facecolor='w', edgecolor='k')
+    plt.clf()
+    spike_id = np.arange(w.shape[0])
+    np.random.shuffle(spike_id)
+    spike_id = spike_id[0:nspikes]
+    for ch in range (0,num_channels):
+        x_offset = model.channel_positions [ch,0]
+        y_offset = model.channel_positions [ch,1]*y_scale
+        mu_spikes = np.mean(w[:,:,ch],0)
+        for i in spike_id:
+            spike = w[i,:,ch]
+            x=x_scale*x_offset+range(0,waveform_size)
+            plt.plot (x,0.05*spike+y_offset,color="gray",alpha=0.5)
+        plt.plot (x,0.05*mu_spikes+y_offset,"--",color="black",linewidth=2,alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+    if (save):
+        if (save_path):
+            filename = "%s/waveform_%02d.pdf" % (save_path,cluster_id)
+        else:
+            filename = "waveform_%02d.pdf" % cluster_id
+        fig.savefig (filename)
+
+
+
+model = KwikModel(kwik_path)
+model.describe()
+print("\nGroup labels: ", model.default_cluster_groups)
+print(model.all_waveforms)
+
+
+plot_cluster_waveforms(model,50,100,True)
+
+## Nivaldo Vasconcelos
 
 #Data = np.random.randn(90000, 16)
 CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]

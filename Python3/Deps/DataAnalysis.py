@@ -604,10 +604,10 @@ class Plot():
     def SignificanceBar(X, Y, Text, Ax, TicksDir='down', lw=1, color='k'):
         if TicksDir == 'down':
             from matplotlib.markers import TICKDOWN as Tick
-            Yy = max(Y)+(max(Y)*0.05)
+            Yy = max(Y)+(max(Y)*0.02)
         elif TicksDir == 'up':
             from matplotlib.markers import TICKUP as Tick
-            Yy = max(Y)-(max(Y)*0.01)
+            Yy = max(Y)-(max(Y)*0.02)
         else: print('TicksDir should be "up" or "down".'); return(None)
         
         Ax.plot(X, Y, color=color, lw=lw, marker=Tick)

@@ -19,7 +19,8 @@ Params = DataAnalysis.Plot.Set(Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
-Files = glob('/home/malfatti/Barbara/Analysis/*/*/*allEventsExported.xml'); Files.sort()
+Files = glob('/home/malfatti/Barbara/Data/*/*allEventsExported.xml'); Files.sort()
+#Files = glob('/home/malfatti/Barbara/Data/InvertedXMLs/*allEventsExported.xml'); Files.sort()
 CoordFiles = ['.'.join(F.split('.')[:-2]) for F in Files]
 FPS = 23
 

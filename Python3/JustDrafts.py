@@ -2,6 +2,96 @@
 """
 Just drafts
 """
+#%% Plot Vocs
+import DataAnalysis
+import numpy as np
+
+from scipy import io
+from itertools import combinations
+
+Params = DataAnalysis.Plot.Set(Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
+
+VocsFile = 'G32G7-Vocs.mat'
+Vocs = io.loadmat(VocsFile, squeeze_me=True, struct_as_record=False)
+
+def BoxPlots(Data, FigTitle, XLabel, YLabel, Names, FigName, Ext, Save):
+    if type(Data) is not type([]):
+        Data = Data.tolist()
+    
+    Fig, Ax = plt.subplots(1,1)
+    BoxPlot = Ax.boxplot(Data, showmeans=True)
+    
+    for K in ['boxes', 'whiskers', 'caps', 'medians', 'fliers']:
+        for I in range(len(Data)): 
+            BoxPlot[K][I].set(color='k')
+            BoxPlot[K][I].set(color='k')
+    
+    LineY = np.amax(Data) + ((np.amax(Data)-np.amin(Data))*0.1)
+    
+    TPairs = list(combinations(range(len(Data)), 2))
+    TPairs = [(0,3), (1,2)]
+    for TP in TPairs:
+        SS = Data[TP[0]]; DD = Data[TP[1]]
+        if np.mean(SS) > np.mean(DD): SS, DD = DD, SS
+        
+        p = DataAnalysis.Stats.RTTest(SS, DD, Confidence=1-(0.05/len(TPairs)))
+        p = p['p.value']
+        
+        if p < 0.05: 
+            LineY = LineY+(TP[1]*2)
+            DataAnalysis.Plot.SignificanceBar([TP[0]+1, TP[1]+1], [LineY, LineY], str(p), Ax)
+    
+    DataAnalysis.Plot.Set(AxesObj=Ax, Axes=True)
+    Ax.spines['left'].set_position(('outward', 5))
+    Ax.spines['bottom'].set_position(('outward', 5))
+    Ax.set_ylabel(YLabel); Ax.set_xlabel(XLabel)
+    Ax.set_xticks(list(range(1,len(Data)+1))); Ax.set_xticklabels(Names)
+    Fig.suptitle(FigTitle)
+    if Save:
+        for Ex in Ext:
+            Fig.savefig(FigName+Ex, format=Ex)
+    
+    return(Fig, Ax)
+
+#Fields = Vocs['Vocs']._fieldnames
+
+STNames = ['STMS', 'STMD', 'STFS', 'STFD']
+SINames = ['SIMSFS', 'SIMSFD', 'SIMDFS', 'SIMDFD']
+OFNames = ['OFMSFS', 'OFMSFD', 'OFMDFS', 'OFMDFD']
+Names = [STNames, SINames, OFNames]
+ST = [getattr(Vocs['Vocs'], Pair) for Pair in STNames]
+SI = [getattr(Vocs['Vocs'], Pair) for Pair in SINames]
+OF = [getattr(Vocs['Vocs'], Pair) for Pair in OFNames]
+
+Exps = [(ST,'ShortTrack'), (SI,'SexualInteraction'), (OF,'OpenField')]
+for E, Exp in enumerate(Exps):
+    FigName = 'G32G7-'+Names[E][0][:2]+'-Vocs'
+    
+    XLabels = [N[2:] for N in Names[E]]
+    Fig, Ax = BoxPlots(Exp[0], Exp[1], 'Pairs', 'Mean amount of vocalizations', XLabels, FigName, ['pdf', 'eps'], Save=True)
+plt.show()
+
+
+#%% Plot Behaviours
+BehavioursFile = 'G32G7-Behaviours.mat'
+Behaviours = io.loadmat(BehavioursFile, squeeze_me=True, struct_as_record=False)
+
+Keys = list(Behaviours.keys())
+for K in Keys:
+    if K[0] == '_': del(Behaviours[K])
+
+Pairs = Behaviours['Cols']; del(Behaviours['Cols'])
+Groups = Behaviours['Lines']; del(Behaviours['Lines'])
+
+for B, Behaviour in Behaviours.items():
+    if B[:2] == 'OF': FigName = 'G32G7-OF-'+B
+    else: FigName = 'G32G7-SI-'+B
+    
+    Fig, Ax = BoxPlots(Behaviour.T.tolist(), B, 'Pairs', 'Number of events', Pairs, FigName, ['pdf', 'eps'], Save=True)
+plt.show()
+    
 
 #%% Klusta :)
 import DataAnalysis, Hdf5F, subprocess, TarBinPy

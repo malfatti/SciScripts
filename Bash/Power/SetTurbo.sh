@@ -1,17 +1,18 @@
 #!/bin/bash
 
 Set=$@
+TurboFile=/sys/devices/system/cpu/intel_pstate/no_turbo
 
 if [ \( "${Set,,}" == on \) ]; then
-    echo "1" | sudo tee /sys/devices/system/cpu/cpufreq/boost > /dev/null
+    echo "0" | sudo tee "$TurboFile" > /dev/null
 
 elif [ \( "${Set,,}" == off \) ]; then
-    echo "0" | sudo tee /sys/devices/system/cpu/cpufreq/boost > /dev/null
+    echo "1" | sudo tee "$TurboFile" > /dev/null
 
 elif [ \( "${Set,,}" == status \) ]; then
-    cat /sys/devices/system/cpu/cpufreq/boost
+    cat "$TurboFile"
 
 else
-    echo "Please use 'on', 'off' or 'status'."
+    echo "Usage: "$0" [on | off | status]"
 
 fi

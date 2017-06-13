@@ -34,51 +34,54 @@ Map = DataAnalysis.RemapChannels(A16['ProbeTip'], A16['ProbeHead'], CustomAdapto
 Spacing = 25
 PrbFile = os.environ['SCRIPTSPATH'] + '/Python3/Klusta/A16-'+str(Spacing)+'.prb'
 
-Folders = glob('*/**/*UnitRec/**/*.kwd', recursive=True)
+Folders = glob('*UnitRec/**/*.kwd', recursive=True) + glob('*/**/*UnitRec/**/*.kwd', recursive=True)
 Folders = ['/'.join(F.split('/')[:-1]) for F in Folders]
 Folders = DataAnalysis.UniqueStr(Folders)
 
 Done = []; Errors = []; ErrorsLog = []; Skipped = []
-Done = [
-'CaMKIIahM3Dn01-20150903-UnitRec/CaMKIIa-hM3D-LeftEar_2015-09-03_15-39-51_1800/KlustaFiles',
-'CaMKIIahM3Dn01-20150903-UnitRec/CaMKIIa-hM3D-LeftEar_2015-09-03_19-23-00_4500-CNO06-Kwik/KlustaFiles',
-'CaMKIIahM4Dn04-20151012-UnitRec/Test_2015-10-12_07-22-14_Kwik/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-03-56_NaCl/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-08-21_NaCl/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-12-50_NaCl/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-18-49_NaCl/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-23-16_NaCl/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-56-02_CNO/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-00-26_CNO/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-04-59_CNO/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-09-31_CNO/KlustaFiles',
-'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-13-54_CNO/KlustaFiles',
-'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-14-32_NaCl/KlustaFiles',
-'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-19-01_NaCl/KlustaFiles',
-'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-23-27_NaCl/KlustaFiles',
-'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-27-52_NaCl/KlustaFiles',
-'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-32-51_NaCl/KlustaFiles',
-'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_11-37-17_CNO/KlustaFiles',
-'EarBarTest/EarBarTest_02-20170217-UnitRec/2017-02-17_13-59-06_Ear/KlustaFiles'
-]
-Done = ['/'.join(F.split('/')[:-1]) for F in Done]
+#Done = [
+#'CaMKIIahM3Dn01-20150903-UnitRec/CaMKIIa-hM3D-LeftEar_2015-09-03_15-39-51_1800/KlustaFiles',
+#'CaMKIIahM3Dn01-20150903-UnitRec/CaMKIIa-hM3D-LeftEar_2015-09-03_19-23-00_4500-CNO06-Kwik/KlustaFiles',
+#'CaMKIIahM4Dn04-20151012-UnitRec/Test_2015-10-12_07-22-14_Kwik/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-03-56_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-08-21_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-12-50_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-18-49_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-23-16_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_19-56-02_CNO/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-00-26_CNO/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-04-59_CNO/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-09-31_CNO/KlustaFiles',
+#'CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/KwikFiles/2016-07-03_20-13-54_CNO/KlustaFiles',
+#'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-14-32_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-19-01_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-23-27_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-27-52_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_10-32-51_NaCl/KlustaFiles',
+#'CaMKIIahM4Dn09/CaMKIIahM4Dn09-20160703-UnitRec/KwikFiles/2016-07-04_11-37-17_CNO/KlustaFiles',
+#'EarBarTest/EarBarTest_02-20170217-UnitRec/2017-02-17_13-59-06_Ear/KlustaFiles'
+#]
+#Done = ['/'.join(F.split('/')[:-1]) for F in Done]
 
 for Folder in Folders:
     try:
         if Folder in Done+Errors+Skipped: continue
         
-        Data = Hdf5.LoadOEKwik(Folder, True, 'Bits', Map)[0]
-        Proc = Hdf5.GetProc(Data, Board)
-        
-        Keys = list(Data[Proc]['data'].keys())
-        if Data[Proc]['data'][Keys[0]].shape[1] < 16: Skipped.append(Folder); continue
-        
         ExpFolder = Folder + '/KlustaFiles'; os.makedirs(ExpFolder, exist_ok=True)
         ExpName = Folder.split('/')[-1]
-        for R, Rec in Data[Proc]['data'].items():
-            DataInfo = {'Rate': int(Data[Proc]['info'][R]['sample_rate'])}
-            DataFile = ExpName + '_Rec' + "{0:02d}".format(int(R))
-            Bin.Write(DataFile+'.dat', ExpFolder, Rec, DataInfo)
+        Exps = glob(Folder+'/*')
+        
+        for E, Exp in enumerate(Exps):
+            Data = Hdf5.LoadOEKwik(Exp, True, 'Bits', Map)[0]
+            Proc = Hdf5.GetProc(Data, Board)
+            
+#            Keys = list(Data[Proc]['data'].keys())
+#            if Data[Proc]['data'][Keys[0]].shape[1] < 16: Skipped.append(Exp); continue
+            
+            for R, Rec in Data[Proc]['data'].items():
+                DataInfo = {'Rate': int(Data[Proc]['info'][R]['sample_rate'])}
+                DataFile = ExpName + '_Exp' + '_Rec' + "{0:02d}".format(int(R))
+                Bin.Write(DataFile+'.dat', ExpFolder, Rec, DataInfo)
         
         DataInfo = DictRead(ExpFolder+'/'+DataFile+'-Info.dict')
         raw_data_files = glob(os.getcwd()+'/'+ExpFolder+'/'+ExpName+'*.dat')

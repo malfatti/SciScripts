@@ -258,7 +258,7 @@ def ResampleData(NewRate, Folder, AnalogTTLs=False, Board='OE', Override={}):
         RecS = "{0:02d}".format(int(Rec))
         
         print('Resampling data...')
-        Data = Raw[OEProc]['data'][Rec][::Rate/NewRate, :-1]
+        Data = Raw[OEProc]['data'][Rec][::int(Rate/NewRate), :-1]
 #        Data = [Raw[OEProc]['data'][Rec][:, _] * 
 #                Raw[OEProc]['channel_bit_volts'][Rec][_]
 #                for _ in range(len(Raw[OEProc]['data'][Rec][0,:-1]))]

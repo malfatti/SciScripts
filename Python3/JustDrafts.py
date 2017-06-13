@@ -2,317 +2,74 @@
 """
 Just drafts
 """
-#%% Plot Vocs
-import DataAnalysis
-import numpy as np
-
-from scipy import io
-from itertools import combinations
-
-Params = DataAnalysis.Plot.Set(Params=True)
-from matplotlib import rcParams; rcParams.update(Params)
-from matplotlib import pyplot as plt
-
-VocsFile = 'G32G7-Vocs.mat'
-Vocs = io.loadmat(VocsFile, squeeze_me=True, struct_as_record=False)
-
-def BoxPlots(Data, FigTitle, XLabel, YLabel, Names, FigName, Ext, Save):
-    if type(Data) is not type([]):
-        Data = Data.tolist()
-    
-    Fig, Ax = plt.subplots(1,1)
-    BoxPlot = Ax.boxplot(Data, showmeans=True)
-    
-    for K in ['boxes', 'whiskers', 'caps', 'medians', 'fliers']:
-        for I in range(len(Data)): 
-            BoxPlot[K][I].set(color='k')
-            BoxPlot[K][I].set(color='k')
-    
-    LineY = np.amax(Data) + ((np.amax(Data)-np.amin(Data))*0.1)
-    
-    TPairs = list(combinations(range(len(Data)), 2))
-    TPairs = [(0,3), (1,2)]
-    for TP in TPairs:
-        SS = Data[TP[0]]; DD = Data[TP[1]]
-        if np.mean(SS) > np.mean(DD): SS, DD = DD, SS
-        
-        p = DataAnalysis.Stats.RTTest(SS, DD, Confidence=1-(0.05/len(TPairs)))
-        p = p['p.value']
-        
-        if p < 0.05: 
-            LineY = LineY+(TP[1]*2)
-            DataAnalysis.Plot.SignificanceBar([TP[0]+1, TP[1]+1], [LineY, LineY], str(p), Ax)
-    
-    DataAnalysis.Plot.Set(AxesObj=Ax, Axes=True)
-    Ax.spines['left'].set_position(('outward', 5))
-    Ax.spines['bottom'].set_position(('outward', 5))
-    Ax.set_ylabel(YLabel); Ax.set_xlabel(XLabel)
-    Ax.set_xticks(list(range(1,len(Data)+1))); Ax.set_xticklabels(Names)
-    Fig.suptitle(FigTitle)
-    if Save:
-        for Ex in Ext:
-            Fig.savefig(FigName+Ex, format=Ex)
-    
-    return(Fig, Ax)
-
-#Fields = Vocs['Vocs']._fieldnames
-
-STNames = ['STMS', 'STMD', 'STFS', 'STFD']
-SINames = ['SIMSFS', 'SIMSFD', 'SIMDFS', 'SIMDFD']
-OFNames = ['OFMSFS', 'OFMSFD', 'OFMDFS', 'OFMDFD']
-Names = [STNames, SINames, OFNames]
-ST = [getattr(Vocs['Vocs'], Pair) for Pair in STNames]
-SI = [getattr(Vocs['Vocs'], Pair) for Pair in SINames]
-OF = [getattr(Vocs['Vocs'], Pair) for Pair in OFNames]
-
-Exps = [(ST,'ShortTrack'), (SI,'SexualInteraction'), (OF,'OpenField')]
-for E, Exp in enumerate(Exps):
-    FigName = 'G32G7-'+Names[E][0][:2]+'-Vocs'
-    
-    XLabels = [N[2:] for N in Names[E]]
-    Fig, Ax = BoxPlots(Exp[0], Exp[1], 'Pairs', 'Mean amount of vocalizations', XLabels, FigName, ['pdf', 'eps'], Save=True)
-plt.show()
-
-
-#%% Plot Behaviours
-BehavioursFile = 'G32G7-Behaviours.mat'
-Behaviours = io.loadmat(BehavioursFile, squeeze_me=True, struct_as_record=False)
-
-Keys = list(Behaviours.keys())
-for K in Keys:
-    if K[0] == '_': del(Behaviours[K])
-
-Pairs = Behaviours['Cols']; del(Behaviours['Cols'])
-Groups = Behaviours['Lines']; del(Behaviours['Lines'])
-
-for B, Behaviour in Behaviours.items():
-    if B[:2] == 'OF': FigName = 'G32G7-OF-'+B
-    else: FigName = 'G32G7-SI-'+B
-    
-    Fig, Ax = BoxPlots(Behaviour.T.tolist(), B, 'Pairs', 'Number of events', Pairs, FigName, ['pdf', 'eps'], Save=True)
-plt.show()
-    
-
 #%% Klusta :)
-import DataAnalysis, Hdf5F, subprocess, TarBinPy
-import numpy as np
 
-from itertools import tee
-from klusta.kwik import KwikModel
-from os import chdir, getcwd, makedirs
+#        Prb = {'0': {}}
+#        Prb['0']['channels'] = list(range(15,-1,-1))
+#        Prb['0']['graph'] = list(Klusta.pairwise(Prb['0']['channels']))
+#        Pos = list(range(0, len(Prb['0']['channels'])*Spacing, Spacing))
+#        Prb['0']['geometry'] = {str(Ch):(0,Pos[C]) for C,Ch in enumerate(Prb['0']['channels'])}
+#        TarBinPy.DictWrite(PrbFile, 'channel_groups = '+TarBinPy.PrintDict(Prb))
 
-Params = {'backend': 'TkAgg'}
-from matplotlib import rcParams; rcParams.update(Params)
-from matplotlib import pyplot as plt
+#XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, BinSize)
+#
+#        TTLs = Rec[:, 17-1]
+#        TTLs = DataAnalysis.QuantifyTTLsPerRec(True, TTLs)
+        
 
-
-def pairwise(iterable):
-    """ from https://docs.python.org/3.6/library/itertools.html#itertools-recipes
-    s -> (s0,s1), (s1,s2), (s2, s3), ..."""
-    
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
-
-
-def ClusterizeSpikes_Klusta():
-    
-    return(None)
-
-
-def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate, 
-             n_channels, dtype, spikedetekt={}, klustakwik2={}):
-    traces = dict((Name, eval(Name)) 
-                  for Name in ['raw_data_files', 'sample_rate', 
-                               'n_channels', 'dtype'])
-    
-    with open(File, 'w') as F:
-        F.write('experiment_name = "'+experiment_name+'"')
-        F.write('\n\n')
-        F.write('prb_file = "'+prb_file+'"')
-        F.write('\n\n')
-        F.write('traces = '+TarBinPy.PrintDict(traces))
-        F.write('\n\n')
-        F.write('spikedetekt = '+TarBinPy.PrintDict(spikedetekt))
-        F.write('\n\n')
-        F.write('klustakwik2 = '+TarBinPy.PrintDict(klustakwik2))
-        F.write('\n\n')
-    
-    return(None)
-
-#https://stackoverflow.com/a/13135985
-def run_command(command):
-    p = subprocess.Popen(command,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
-    return iter(p.stdout.readline, b'')
-
-for line in run_command(['ping', '-c 3', 'gentoo.org']):
-    print(line)
-## Max Ekman
-
-def Klusta_Run(PrmFile, Path, Overwrite=False):
-    print('Clustering spikes...')
-    Here = getcwd(); chdir(Path)
-    Klusta = '~/Software/Miniconda3/envs/klusta/bin/klusta'
-    Cmd = [Klusta, PrmFile]
-    if Overwrite: Cmd.append('--overwrite')
-    
-    run(Cmd); chdir(Here)
-    
-    print('Done clustering.')
-    return(None)
-
-
-def Phy_Run(KwikFile, Path, Overwrite=False):
-    Here = getcwd(); chdir(Path)
-    Phy = '~/Software/Miniconda3/envs/klusta/bin/phy'
-    Cmd = [Phy, 'kwik-gui', KwikFile]
-    
-    run(Cmd); chdir(Here)
-    
-    print('Done clustering.')
-    return(None)
-
-
-## https://groups.google.com/d/msg/klustaviewas/r2w5Im5VTng/GLieizEVCQAJ
 SpksToPlot = 500
 Clusters = KwikModel('TestRec0.kwik')
 Good = Clusters.cluster_groups
 Good = [Id for Id,Key in Good.items() if Key == 'good']
 
-ClusterId = np.argwhere(Clusters.spike_clusters == Good[4])
-Cluster = Clusters.all_waveforms[ClusterId]
-Spks = np.arange(Cluster.shape[0]); np.random.shuffle(Spks)
-Spks = Spks[:SpksToPlot]; ChNo = Cluster.shape[2]
-
-Fig, Axes = plt.subplots(ChNo, 1, figsize=(4, 3*ChNo))
-for Ch in range(ChNo):
-    for Spk in Spks: Axes[Ch].plot(Cluster[Spk, :, Ch], 'r')
-    Axes[Ch].plot(np.mean(Cluster[:, :, Ch], axis=0), 'k')
-plt.show()
-
-
-
-
-def get_cluster_waveforms (kwik_model,cluster_id):
-    try:
-        if (not(type(kwik_model) is KwikModel)):
-            raise ValueError       
-    except ValueError:
-            print ("Exception: the first argument should be a KwikModel object")
-            return
+for Id in Good:
+    SpksId = np.argwhere(Clusters.spike_clusters == Id)
+    Hist = np.array([])
+    
+    for TTL in TTLs:
+        Firing = Clusters.spike_samples[SpksId] \
+                 - (TTL/(Rate/1000))
+        Firing = Firing[(Firing >= XValues[0]) * 
+                        (Firing < XValues[-1])]
         
-    clusters = kwik_model.spike_clusters
-    try:
-        if ((not(cluster_id in clusters))):
-            raise ValueError       
-    except ValueError:
-            print ("Exception: cluster_id (%d) not found !! " % cluster_id)
-            return
+        Hist = np.concatenate((Hist, Firing)); del(Firing)
     
-    idx=np.argwhere (clusters==cluster_id)
-    w=model.all_waveforms[idx]
-    return w
-
-def plot_cluster_waveforms (kwik_model,cluster_id,nspikes, save=False,save_path=None):
+    Waveforms = Clusters.all_waveforms[SpksId]
+    Spks = np.arange(Waveforms.shape[0]); np.random.shuffle(Spks)
+    Spks = Spks[:SpksToPlot]; ChNo = Waveforms.shape[2]
     
-    w = get_cluster_waveforms (kwik_model,cluster_id)
-    y_scale = .5
-    x_scale = 2
-    num_channels = w.shape[2]
-    waveform_size = w.shape[1]
-    np.random.seed(int(time.time()))
+    RMSs = [(np.mean((np.mean(Waveforms[:, :, Ch], axis=0))**2))**0.5
+            for Ch in range(ChNo)]
+    BestCh = RMSs.index(max(RMSs))
     
-    fig=plt.figure(num=None, figsize=(6, 12), dpi=200, facecolor='w', edgecolor='k')
-    plt.clf()
-    spike_id = np.arange(w.shape[0])
-    np.random.shuffle(spike_id)
-    spike_id = spike_id[0:nspikes]
-    for ch in range (0,num_channels):
-        x_offset = model.channel_positions [ch,0]
-        y_offset = model.channel_positions [ch,1]*y_scale
-        mu_spikes = np.mean(w[:,:,ch],0)
-        for i in spike_id:
-            spike = w[i,:,ch]
-            x=x_scale*x_offset+range(0,waveform_size)
-            plt.plot (x,0.05*spike+y_offset,color="gray",alpha=0.5)
-        plt.plot (x,0.05*mu_spikes+y_offset,"--",color="black",linewidth=2,alpha=0.3)
-    plt.tight_layout()
+    Fig = plt.figure(figsize=(12, 4))
+    Grid = GridSpec(1, 3, width_ratios=[1, 3, 3]) 
+    Axes = [plt.subplot(G) for G in Grid]
+    Axes[0].plot(RMSs, range(ChNo,0,-1))
+    for Spk in Spks: Axes[1].plot(Waveforms[Spk, :, BestCh], 'r')
+    Axes[1].plot(np.mean(Waveforms[:, :, BestCh], axis=0), 'k')
+    Axes[2].hist(Hist, XValues)
     plt.show()
-    if (save):
-        if (save_path):
-            filename = "%s/waveform_%02d.pdf" % (save_path,cluster_id)
-        else:
-            filename = "waveform_%02d.pdf" % cluster_id
-        fig.savefig (filename)
+#    UnitsData[Rec][CKey]['PSTH'][Id] = Hist[:]
+#    del(Hist)
 
-
-
-model = KwikModel(kwik_path)
-model.describe()
-print("\nGroup labels: ", model.default_cluster_groups)
-print(model.all_waveforms)
-
-
-plot_cluster_waveforms(model,50,100,True)
-
-## Nivaldo Vasconcelos
-
-#Data = np.random.randn(90000, 16)
-CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
-A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-       'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
-Map = DataAnalysis.RemapChannels(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
-Data = Hdf5F.LoadOEKwik('/home/malfatti/Documents/PhD/Data/CaMKIIahM4Dn08/CaMKIIahM4Dn08-20160703-UnitRec/', True, 'Bits', Map)
-
-Spacing = 25
-Path = '.'; DataFile = 'Rec0.dat'; PrbFile = 'A16-25.prb'; PrmFile = 'Rec0.prm'
-makedirs(Path, exist_ok=True)
-
-TarBinPy.BinWrite(Path+'/'+DataFile, '.', Data)
-DataInfo = TarBinPy.DictRead(Path+'/'+DataFile.split('.')[0]+'-Info.dict')
-
-experiment_name = 'TestRec0'
-prb_file = PrbFile
-raw_data_files = getcwd()+'/'+Path+'/'+DataFile
-sample_rate = 30000
-n_channels = DataInfo['Shape'][1]
-dtype = DataInfo['DType']
-PrmWrite(Path+'/'+PrmFile, experiment_name, prb_file, raw_data_files, 
-         sample_rate, n_channels, dtype)
-
-Prb = {'0': {}}
-Prb['0']['channels'] = list(range(16))
-Prb['0']['graph'] = list(pairwise(Prb['0']['channels']))
-Pos = list(range(0, len(Prb['0']['channels'])*Spacing, Spacing))
-Prb['0']['geometry'] = {str(Ch):(0,Pos[C]) for C,Ch in enumerate(Prb['0']['channels'])}
-TarBinPy.DictWrite(Path+'/'+PrbFile, 'channel_groups = '+TarBinPy.PrintDict(Prb))
-
-
+#KClusters = {}
+#KClusterInd = np.where(pd.Index(pd.unique(Good)).get_indexer(Clusters.spike_clusters) >= 0)[0]
+#KClusters['Id'] = Clusters.spike_clusters[KClusterInd]
+#KClusters['Timestamps'] = Clusters.spike_samples[KClusterInd]
+#WfsAllCh = Clusters.all_waveforms[KClusterInd]
+#KClusters['Waveforms'] = np.zeros(WfsAllCh.shape[0:2])
+#for Spk in range(WfsAllCh.shape[0]):
+#    RMSs = [(np.mean((WfsAllCh[Spk, :, Ch])**2))**0.5
+#            for Ch in range(ChNo)]
+#    BestCh = RMSs.index(max(RMSs))
 
 
 #%% RT plots
-Params = {'backend': 'TkAgg'}
-from matplotlib import rcParams; rcParams.update(Params)
-from matplotlib import pyplot as plt
+from DataAnalysis.Plot import Plot
 
 Files = ['Hist-NonRT-T' + str(_) for _ in range (8)]
-Jitter = {}
-         
-for File in Files:
-    with open(File, 'r') as FHist:
-        for LineNo, Line in enumerate(FHist, 1):
-            pass
-    
-    Jitter[File] = [[] for _ in range(LineNo)]
-    with open(File, 'r') as FHist:
-        for Ind, Line in enumerate(FHist):
-            if Line == 'Avg:\n': Line = '51'
-            Jitter[File][Ind] = int(Line)
-
-
-plt.plot(Jitter['Hist-NonRT-T0'], 'bo'); plt.show()
+Jitter = Plot.RTTest(Files, Return=True)
 
 
 #%% TTLs figure
@@ -461,7 +218,6 @@ for Signal in Signals:
 
 #%% GPIASIndex
 import h5py
-import KwikAnalysis
 from glob import glob
 
 Params = KwikAnalysis.SetPlot(Backend='TkAgg', Params=True)
@@ -754,180 +510,7 @@ if Visible: plt.show()
 
 
 #%% Tar+Wave revolution
-
-ABRCh = [10]         # [RightChannel, LeftChannel], if order matters
-ABRTTLCh = 17            # TTL ch for ABR
-ABRTimeBeforeTTL = 3    # in ms
-ABRTimeAfterTTL = 9    # in ms
-FilterFreq = [300, 3000]         # frequeutter order
-AnalogTTLs = True
-FilterOrder = 5         # b
-StimType = ['Sound_NaCl', 'Sound_CNO']
-#StimType = ['Sound']
-Board = 'OE'
-Override = {}
-
-import Hdf5F
-import numpy as np
-import os
-import tarfile
-import wave
-from datetime import datetime
-from glob import glob
-from scipy import signal
-from scipy.io import wavfile
-
-FileName = glob('*.hdf5')[0]
-
-def GetProc(Raw, Board):
-    print('Get proc no. for', Board, 'board... ', end='')
-    ProcChs = {Proc: len(Raw[Proc]['data']['0'][1,:]) 
-               for Proc in Raw.keys()}
-    
-    for Proc, Chs in ProcChs.items():
-        if Chs == max(ProcChs.values()): OEProc = Proc
-        else: RHAProc = Proc
-    
-    if 'RHAProc' not in locals(): RHAProc = OEProc
-    
-    if Board == 'OE': Proc = OEProc
-    elif Board == 'RHA': Proc = RHAProc
-    else: print("Choose Board as 'OE' or 'RHA'."); return(None)
-    
-    print('Done.')
-    return(OEProc, RHAProc, Proc)
-
-
-def FilterSignal(Signal, Rate, Frequency, FilterOrder=4, Type='bandpass'):
-    if Type not in ['bandpass', 'lowpass', 'highpass']:
-        print("Choose 'bandpass', 'lowpass' or 'highpass'.")
-    
-    elif len(Frequency) not in [1, 2]:
-        print('Frequency must have 2 elements for bandpass; or 1 element for \
-        lowpass or highpass.')
-    
-    else:
-        passband = [_/(Rate/2) for _ in Frequency]
-        f2, f1 = signal.butter(FilterOrder, passband, Type)
-        Signal = signal.filtfilt(f2, f1, Signal, padtype='odd', padlen=0)
-        
-        return(Signal)
-
-
-def GetRecKeys(Raw, Events, AnalogTTLs):
-    for Processor in Raw.keys():
-        if '0' not in list(Raw[Processor]['data'].keys()):
-            print('Rec numbers are wrong. Fixing...')
-            for iKey in Raw[Processor].keys():
-                Recs = list(Raw[Processor][iKey].keys())
-                Recs = [int(_) for _ in Recs]; Min = min(Recs)
-                
-                for Key in Recs:
-                    Raw[Processor][iKey][str(Key-Min)] = \
-                        Raw[Processor][iKey].pop(str(Key))
-                
-                if AnalogTTLs:
-                    return(Raw)
-                else:
-                    EventRec = Events['TTLs']['recording'][:]
-                    for _ in range(len(EventRec)): 
-                        EventRec[_] = EventRec[_] - Min
-                    return(Raw, EventRec)
-            
-            print('Fixed.')
-    
-    else:
-        if AnalogTTLs: return(Raw)
-        else: EventRec = Events['TTLs']['recording']; return(Raw, EventRec)
-
-
-def GetTTLInfo(Events, EventRec, TTLCh):
-    print('Get TTL data...')
-    EventID = Events['TTLs']['user_data']['eventID']
-    EventCh = Events['TTLs']['user_data']['event_channels']
-    EventSample = Events['TTLs']['time_samples']
-
-#    TTLChs = np.nonzero(np.bincount(EventCh))[0]
-    TTLRecs = np.nonzero(np.bincount(EventRec))[0]
-    TTLRecs = ["{0:02d}".format(_) for _ in TTLRecs]
-    TTLsPerRec = {Rec: [EventSample[_] for _ in range(len(EventRec)) 
-                         if EventRec[_] == int(Rec)
-                         and EventCh[_] == TTLCh-1 
-                         and EventID[_] == 1]
-                  for Rec in TTLRecs}
-#    TTLRising = Kwik.get_rising_edge_times(Files['kwe'], TTLCh-1)
-    
-    return(TTLsPerRec)
-
-
-def QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ChTTL=-1, Proc='', TTLsPerRec=[], 
-                       Rate=[]):
-    print('Get TTL timestamps... ', end='')
-    if AnalogTTLs:
-        TTLCh = Raw[Proc]['data'][Rec][:, ChTTL-1]
-        Threshold = max(TTLCh)/2
-        TTLs = []
-        for _ in range(1, len(TTLCh)):
-            if TTLCh[_] > Threshold:
-                if TTLCh[_-1] < Threshold: TTLs.append(_)
-        
-        print('Done.')
-        return(TTLs)
-    else:
-#        TTLNo = [0]
-#        for _ in range(1, len(TTLsPerRec)+1):
-#            TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
-#        TTLNo = [0] + [TTLNo[_]-1 for _ in range(1, len(TTLNo))]
-#        
-#        if Rec == 0:
-#            sTTLNo = 0
-#        else:
-#            sTTLNo = TTLNo[Rec] + 1
-#        
-#        return(TTLNo, sTTLNo)
-        RawTime = [_*Rate for _ in Raw['timestamps'][int(Rec)]]
-        TTLs = TTLsPerRec[Rec]
-        
-        print('Done.')
-        return(RawTime, TTLs)
-
-
-def FixTTLs(Array, TTLsToFix):
-    for TTL in TTLsToFix:
-        nInd = np.random.randint(1, 100)
-        while nInd == TTL: nInd = np.random.randint(0, 100)
-        
-        print('TTL', str(TTL), 'was replaced by', str(nInd))
-        Array[TTL] = Array[nInd]
-    
-    return(Array)
-
-
-def SliceData(Data, Proc, Rec, TTLs, DataCh, NoOfSamplesBefore, 
-              NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime=[]):
-    print('Slicing data around TTL...')
-    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
-    TTLsToFix = []
-    
-    for TTL in range(len(TTLs)):
-        if AnalogTTLs: TTLLoc = int(TTLs[TTL])
-        else: TTLLoc = int(RawTime.index(TTLs[TTL]))#)/Rate)
-        
-        Start = TTLLoc-NoOfSamplesBefore
-        End = TTLLoc+NoOfSamplesAfter
-        
-        if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
-        
-        Array[TTL] = Data[Proc]['data'][Rec][Start:End, DataCh[0]-1] * \
-                     Data[Proc]['channel_bit_volts'][Rec][DataCh[0]-1] # in mV
-        
-        if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
-            
-    Array = FixTTLs(Array, TTLsToFix)
-    
-    print('Done.')
-    return(Array)
-
+import os, tarfile, wave
 
 def WriteABRTar(ABRs, XValues, Path, FileName):
     print('Writing data to', FileName+'... ', end='')    
@@ -965,7 +548,7 @@ def WriteABRWave(ABRs, XValues, Rate, Group, Path):
 #        Data = ABRs[Key].tobytes(); DataSize = len(Data)
         FileName = Path.split(sep='/'); del(FileName[0])
         FileName = Path + '/' + 'ABRs-' + '_'.join(FileName) + '_' + Key + '.wav'
-        wavfile.write(FileName, Rate, ABRs[Key])
+#        wavfile.write(FileName, Rate, ABRs[Key])
 #        WriteWav(Data, 1, DataSize, Rate, FileName)
     
     XValues = XValues.tobytes()
@@ -975,123 +558,3 @@ def WriteABRWave(ABRs, XValues, Rate, Group, Path):
     WriteWav(XValues, 1, len(XValues), Rate, FileName)
 
 
-print('Load DataInfo...')
-DirList = glob('KwikFiles/*'); DirList.sort()
-DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-
-AnalysisFile = '../' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-Now = datetime.now().strftime("%Y%m%d%H%M%S")
-Here = os.getcwd().split(sep='/')[-1]
-Group = Here + '-ABRs_' + Now
-    
-for Stim in StimType:
-    if Override != {}: 
-        if 'Stim' in Override.keys(): Stim = Override['Stim']
-    
-    Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
-    
-    for RecFolder in Exps:
-        ABRs = {}; Info = {}
-        ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
-        
-        if AnalogTTLs: 
-            Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-        else: 
-            Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-        
-        OEProc, RHAProc, ABRProc = GetProc(Raw, Board)
-        
-        if AnalogTTLs: Raw = GetRecKeys(Raw, [0], AnalogTTLs)
-        else:
-            Raw, EventRec = GetRecKeys(Raw, Events, AnalogTTLs)
-            TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
-        
-        Rate = Raw[OEProc]['info']['0']['sample_rate']
-        NoOfSamplesBefore = ABRTimeBeforeTTL*int(Rate*10**-3)
-        NoOfSamplesAfter = ABRTimeAfterTTL*int(Rate*10**-3)
-        NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-        
-        SFreq = ''.join([str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][0]),
-                         '-',
-                         str(DataInfo['NoiseFrequency'][ExpInfo['Hz']][1])])
-        
-        XValues = (range(-NoOfSamplesBefore, 
-                                 NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
-        
-        for Rec in Raw[OEProc]['data'].keys():
-            print('Slicing and filtering ABRs Rec ', str(Rec), '...')
-            
-            if AnalogTTLs:
-                TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, ABRTTLCh, 
-                                          OEProc)
-                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
-                                NoOfSamplesBefore, NoOfSamplesAfter, 
-                                NoOfSamples, AnalogTTLs)
-            else:
-                RawTime, TTLs = QuantifyTTLsPerRec(Raw, Rec, AnalogTTLs, 
-                                                   TTLsPerRec=TTLsPerRec)
-                ABR = SliceData(Raw, ABRProc, Rec, TTLs, ABRCh, 
-                                NoOfSamplesBefore, NoOfSamplesAfter, 
-                                AnalogTTLs, RawTime)
-            
-            for TTL in range(len(TTLs)):
-                ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
-                                        FilterOrder, 'highpass')
-            
-            ABR = np.mean(ABR, axis=0)
-            ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
-                               'lowpass')
-            
-            dB = str(DataInfo['Intensities'][int(Rec)]) + 'dB'
-            ABRs[dB] = ABR[:]; del(ABR)
-        
-        Path = Stim + '/' + ExpInfo['DVCoord'] + '/' + SFreq
-        Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Path, AnalysisFile)
-
-
-#%% RenameFiles
-import os
-from glob import glob
-
-ModifyFreq = ['20160217-GPIASn01Screening']
-
-for Folder in ModifyFreq:
-    Files = glob(Folder + '/*.mat')
-    
-    for File in Files:
-        NewFile = File.replace('  ', '_')
-        os.rename(File, NewFile)
-
-
-## 
-ModifyName = glob('*GPIAS*'); ModifyName.sort()
-
-for Folder in ModifyName:
-    Files = glob(Folder + '/*.mat')
-    Start = len(Folder) + 1
-        
-    for File in Files:
-        NewFile = File[Start:Start+14] + '_' + File[Start+15:]
-        NewFile = NewFile.split('_')
-        Date = NewFile[0]; Animal = NewFile[1]
-        DateIndex = NewFile.index(Date); AnimalIndex = NewFile.index(Animal)
-        NewFile[0], NewFile[1] = NewFile[AnimalIndex], NewFile[DateIndex]
-        NewFile = File[:Start] + '_'.join(NewFile)
-        os.rename(File, NewFile)
-#        print(File + '\n', NewFile)
-
-##
-ModifyFreq = ['20160217-GPIASn01Screening']
-
-for Folder in ModifyFreq:
-    Files = glob(Folder + '/*.mat')
-    Start = len(Folder) + 1
-    
-    for File in Files:
-        if File[Start:Start+4] == '1OD-': NewFile = File[:Start] + '1R_' + File[Start+4:]
-        elif File[Start:Start+4] == '1OE-': NewFile = File[:Start] + '1L_' + File[Start+4:]
-        elif File[Start:Start+4] == '2OD-': NewFile = File[:Start] + '2R_' + File[Start+4:]
-        elif File[Start:Start+4] == '2OE-': NewFile = File[:Start] + '2L_' + File[Start+4:]
-        elif File[Start:Start+5] == '1ODE-': NewFile = File[:Start] + '1LR_' + File[Start+5:]
-        
-        os.rename(File, NewFile)

@@ -17,17 +17,16 @@
 
 Functions for manipulating specific .mat files.
 """
-
-import DataAnalysis
-import Hdf5F
-import KwikAnalysis
 import numpy as np
 import os
+
+from DataAnalysis.DataAnalysis import FilterSignal
+from IO import Hdf5F
 from glob import glob
 from scipy import io, signal
 
 
-def GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL=20, GPIASTimeAfterTTL=100, 
+def GPIASAnalysis(RecFolderNo, GPIASTimeBeforeTTL=20, GPIASTimeAfterTTL=100, 
                      FilterFreq=[70, 400], FilterOrder=3, Override={}):
     if 'DirList' in Override: DirList = Override['DirList']
     else: DirList = glob('MatFiles/*'); DirList.sort()
@@ -71,11 +70,11 @@ def GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL=20, GPIASTimeAfterTTL=100,
         Data['Gap'] = Data['Gap'][0,Start:End] * 1000 # in mV
         Data['NoGap'] = Data['NoGap'][0,Start:End] * 1000 # in mV
         
-        Data['Gap'] = DataAnalysis.FilterSignal(Data['Gap'], Rate, 
+        Data['Gap'] = FilterSignal(Data['Gap'], Rate, 
                                                 FilterFreq, 
                                                 FilterOrder, 
                                                 'bandpass')
-        Data['NoGap'] = DataAnalysis.FilterSignal(Data['NoGap'], Rate, 
+        Data['NoGap'] = FilterSignal(Data['NoGap'], Rate, 
                                                   FilterFreq, 
                                                   FilterOrder, 
                                                   'bandpass')
@@ -108,9 +107,9 @@ def GPIASAnalysisMat(RecFolderNo, GPIASTimeBeforeTTL=20, GPIASTimeAfterTTL=100,
     
     if 'DirList' in Override:
         RecExp = RecFolder.split('/')[1]
-        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile, RecExp)
+        Hdf5F.GPIASWrite(GPIAS, XValues, RecFolder, AnalysisFile, RecExp)
     else:
-        Hdf5F.WriteGPIAS(GPIAS, XValues, RecFolder, AnalysisFile)
+        Hdf5F.GPIASWrite(GPIAS, XValues, RecFolder, AnalysisFile)
 
 
 def WriteDataToMMSS(FileName, StimType=['Sound'], Override={}):
@@ -120,12 +119,12 @@ def WriteDataToMMSS(FileName, StimType=['Sound'], Override={}):
             if 'Stim' in Override.keys():
                 Stim = Override['Stim']
         
-        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
+        Exps = Hdf5F.ExpPerStimLoad(Stim, DirList, FileName)
         
         for FInd, RecFolder in enumerate(Exps): 
             Path = os.getcwd() + '/' + RecFolder
             ClusterFile = Path + '/SpkClusters.hdf5'
-            Clusters = Hdf5F.LoadClusters(ClusterFile)
+            Clusters = Hdf5F.ClustersLoad(ClusterFile)
             
             Path = os.getcwd() + '/' + RecFolder +'/SepRec/'
             os.makedirs(Path, exist_ok=True)

@@ -29,7 +29,7 @@ def CreateObj(BaudRate):
     
     return(Arduino)
 
-def ArduinOscilloscope(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028), 
+def Oscilloscope(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028), 
                        FramesPerBuf=128):
     
     import matplotlib.animation as animation

@@ -171,7 +171,7 @@ for E, Exp in enumerate(Exps):
     
 #    Fig, Ax = BoxPlots(Exp[0], Exp[1], 'Pairs', 'Mean number of USVs per 20min', 
 #                       XLabels, FigName, 20, Save=False)
-    Fig, Ax = ScatterMean(Exp[0], Exp[1], 'Pairs', 'Number of USVs per 20min', 
+    Fig, Ax = ScatterMean(Exp[0], Exp[1], 'Pairs', 'Mean number of USVs per 10min', 
                               XLabels, FigName, 20, Save=True)
         
     if Names[E][0][:2] == 'ST':

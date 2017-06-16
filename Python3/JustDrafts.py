@@ -3,13 +3,7 @@
 Just drafts
 """
 #%% Klusta :)
-
-#        Prb = {'0': {}}
-#        Prb['0']['channels'] = list(range(15,-1,-1))
-#        Prb['0']['graph'] = list(Klusta.pairwise(Prb['0']['channels']))
-#        Pos = list(range(0, len(Prb['0']['channels'])*Spacing, Spacing))
-#        Prb['0']['geometry'] = {str(Ch):(0,Pos[C]) for C,Ch in enumerate(Prb['0']['channels'])}
-#        TarBinPy.DictWrite(PrbFile, 'channel_groups = '+TarBinPy.PrintDict(Prb))
+from klusta.kwik import KwikModel
 
 #XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, BinSize)
 #
@@ -18,11 +12,11 @@ Just drafts
         
 
 SpksToPlot = 500
-Clusters = KwikModel('TestRec0.kwik')
+Clusters = KwikModel(ExpFolder+'/'+ExpName+'.kwik')
 Good = Clusters.cluster_groups
 Good = [Id for Id,Key in Good.items() if Key == 'good']
 
-for Id in Good:
+for Id in Good.keys():
     SpksId = np.argwhere(Clusters.spike_clusters == Id)
     Hist = np.array([])
     

@@ -35,10 +35,11 @@ Spacing = 25
 PrbFile = os.environ['SCRIPTSPATH'] + '/Python3/Klusta/A16-'+str(Spacing)+'.prb'
 
 Folders = glob('*UnitRec/**/*.kwd', recursive=True) + glob('*/**/*UnitRec/**/*.kwd', recursive=True)
-Folders = ['/'.join(F.split('/')[:-1]) for F in Folders]
+Folders = ['/'.join(F.split('/')[:-2]) for F in Folders]
 Folders = DataAnalysis.UniqueStr(Folders)
 
 Done = []; Errors = []; ErrorsLog = []; Skipped = []
+Done = ['CaMKIIahM3Dn01-20150903-UnitRec/KwikFiles']
 #Done = [
 #'CaMKIIahM3Dn01-20150903-UnitRec/CaMKIIa-hM3D-LeftEar_2015-09-03_15-39-51_1800/KlustaFiles',
 #'CaMKIIahM3Dn01-20150903-UnitRec/CaMKIIa-hM3D-LeftEar_2015-09-03_19-23-00_4500-CNO06-Kwik/KlustaFiles',
@@ -67,12 +68,12 @@ for Folder in Folders:
     try:
         if Folder in Done+Errors+Skipped: continue
         
-        ExpFolder = Folder + '/KlustaFiles'; os.makedirs(ExpFolder, exist_ok=True)
-        ExpName = Folder.split('/')[-1]
-        Exps = glob(Folder+'/*')
+        ExpFolder = '/'.join(Folder.split('/')[:-1]) + '/KlustaFiles'; os.makedirs(ExpFolder, exist_ok=True)
+        ExpName = Folder.split('/')[-2]
+        Exps = glob(Folder+'/*'); Exps.sort()
         
         for E, Exp in enumerate(Exps):
-            Data = Hdf5.LoadOEKwik(Exp, True, 'Bits', Map)[0]
+            Data = Hdf5.OEKwikLoad(Exp, True, 'Bits', Map)[0]
             Proc = Hdf5.GetProc(Data, Board)
             
 #            Keys = list(Data[Proc]['data'].keys())
@@ -80,7 +81,7 @@ for Folder in Folders:
             
             for R, Rec in Data[Proc]['data'].items():
                 DataInfo = {'Rate': int(Data[Proc]['info'][R]['sample_rate'])}
-                DataFile = ExpName + '_Exp' + '_Rec' + "{0:02d}".format(int(R))
+                DataFile = ExpName + '_Exp' + "{0:02d}".format(int(E)) + '_Rec' + "{0:02d}".format(int(R))
                 Bin.Write(DataFile+'.dat', ExpFolder, Rec, DataInfo)
         
         DataInfo = DictRead(ExpFolder+'/'+DataFile+'-Info.dict')

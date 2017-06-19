@@ -50,7 +50,7 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
 
 def Run(PrmFile, Path, Overwrite=False):
     Here = os.getcwd(); os.chdir(Path)
-    Klusta = '/home/malfatti/Software/Miniconda3/envs/klusta/bin/klusta'
+    Klusta = os.environ['HOME']+'/Software/Miniconda3/envs/klusta/bin/klusta'
     Cmd = [Klusta, PrmFile]
     if Overwrite: Cmd.append('--overwrite')
     
@@ -66,7 +66,7 @@ def Run(PrmFile, Path, Overwrite=False):
 
 def Phy_Run(KwikFile, Path):
     Here = os.getcwd(); os.chdir(Path)
-    Phy = '/home/malfatti/Software/Miniconda3/envs/klusta/bin/phy'
+    Phy = os.environ['HOME']+'/Software/Miniconda3/envs/klusta/bin/phy'
     Cmd = [Phy, 'kwik-gui', KwikFile, '--debug']
     
     print('Entering in directory', Path, '...')

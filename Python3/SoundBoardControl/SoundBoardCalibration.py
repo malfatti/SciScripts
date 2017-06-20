@@ -37,24 +37,26 @@ frequency filter is being applied.
 Rate = 192000; Freq = 10000; WaveDur = 10
 SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 
-import ControlSoundBoard
-from datetime import datetime
-import h5py
+from IO import SoundCard
+import os, h5py
 import numpy as np
+
+Folder = os.environ['DATAPATH']+'/Tests/SoundMeasurements'
+FileName = Folder + '/' + 'SoundMeasurements.hdf5'
 
 #%% Output
 
-ControlSoundBoard.SoundCalOut(Rate, Freq, WaveDur)
+SoundCard.SoundCalOut(Rate, Freq, WaveDur)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1/2.15
+SBOutAmpF = 1/10
 
 #%% Input
 Repetitions = 4
 
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
-    Rec = ControlSoundBoard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF)
-    SBInAmpF[aa] = (max(Rec)+(min(Rec)*-1))/2
+    Rec = SoundCard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF)
+    SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
     print(SBInAmpF[aa])
 
 # Mean
@@ -65,12 +67,9 @@ SBInAmpF = 1/SBInAmpF
 print('SBInAmpF = ', str(SBInAmpF))
 
 #%% Save
-
-Date = datetime.now()
-FileName = Date.strftime("%Y%m%d%H%M%S") + '-SBAmpFs.hdf5'
-#FileName = '20161013123915-SBAmpFs.hdf5'
 with h5py.File(FileName, 'w') as F:
-    F.create_group(SoundSystem)
+    if SoundSystem not in F.keys(): F.create_group(SoundSystem)
+    
     F[SoundSystem]['SBOutAmpF'] = SBOutAmpF
     F[SoundSystem]['SBInAmpF'] = SBInAmpF
 
@@ -78,7 +77,3 @@ with h5py.File(FileName, 'r') as F:
     a = F[SoundSystem]['SBOutAmpF'][()]
     b = F[SoundSystem]['SBInAmpF'][()]
 
-"""
-Malfatti = '/home/malfatti/Documents/PhD/Tests/20161013174053-SBAmpFs.hdf5'
-Cerebro = '/home/cerebro/Malfatti/Test/20170213142143-SBAmpFs.hdf5'
-"""

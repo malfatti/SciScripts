@@ -5,13 +5,15 @@ Created on Mon Jun 12 16:02:43 2017
 
 @author: malfatti
 """
+import os
 import numpy as np
 
-from IO import Hdf5F
-from IO.SoundCard import SBAmpFsFile
+from IO import Hdf5
 from DataAnalysis.DataAnalysis import FilterSignal
 
 
+# Use one that was used in SoundBoardCalibration.py
+SBAmpFsFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
 
 ## Level 0
@@ -27,7 +29,12 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
 #    for Freq in range(len(NoiseFrequency)):
         SoundUnit[FKey] = {}
         
-        for AmpF in range(len(SoundAmpF[FKey])):
+        for AmpF in range(len(SoundAmpF[FKey])):       
+            if SoundAmpF[FKey][AmpF] > 1/SBOutAmpF:
+                print(SoundAmpF[FKey][AmpF], 
+                      'AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
+                SoundAmpF[FKey][AmpF] = 1/SBOutAmpF
+            
             AKey = str(SoundAmpF[FKey][AmpF])
             SoundUnit[FKey][AKey] = np.concatenate([SoundPrePause, 
                                                     SoundPulseFiltered[FKey],
@@ -40,26 +47,31 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
 def BandpassFilterSound(SoundPulse, Rate, NoiseFrequency):
     # Preallocating memory
     SoundPulseFiltered = {}
+    PulseAmp = (max(SoundPulse)-min(SoundPulse))/2
     
     print('Filtering sound: ', end='')
-    for Freq in range(len(NoiseFrequency)):
-        FKey = '-'.join([str(_) for _ in NoiseFrequency[Freq][0]])
+    for Freq in NoiseFrequency:
+        FKey = '-'.join([str(_) for _ in Freq])
         print(FKey, end='...')
         
-        SoundPulseFiltered[FKey] = FilterSignal(SoundPulse, Rate, NoiseFrequency[Freq])
+        SoundPulseFiltered[FKey] = FilterSignal(SoundPulse, Rate, Freq)
         SoundPulseFiltered[FKey] = SoundPulseFiltered[FKey].astype('float32')
+        PulseFilteredAmp = (max(SoundPulseFiltered[FKey])-min(SoundPulseFiltered[FKey]))/2
+        FilterAmpF = PulseAmp/PulseFilteredAmp
+        SoundPulseFiltered[FKey] = SoundPulseFiltered[FKey]*FilterAmpF
         SoundPulseFiltered[FKey][-1] = 0
+        
     print(end='\n')
     return(SoundPulseFiltered)
 
 
 def dBToAmpF(Intensities, CalibrationFile, Path):
     print('Converting dB to AmpF...')
-    SoundIntensity = Hdf5F.LoadSoundMeasurement(CalibrationFile, Path, 
+    SoundIntensity = Hdf5.SoundMeasurementLoad(CalibrationFile, Path, 
                                                 'SoundIntensity')
     
     SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
-                                key=lambda i: abs(SoundIntensity[Hz][i]-dB))) 
+                                key=lambda i: abs(SoundIntensity[Hz][i]['dB']-dB))) 
                       for dB in Intensities]
                  for Hz in list(SoundIntensity)}
     
@@ -108,8 +120,11 @@ def LaserStim(Rate, LaserPulseDur, TTLAmpF, SoundBoard, LaserPrePauseDur=0, Lase
         https://en.wikipedia.org/wiki/Diode
         """
     
-    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard,
+    SBOutAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard,
                                                'SBOutAmpF')
+    if TTLAmpF > 1/SBOutAmpF:
+        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
+        TTLAmpF = 1/SBOutAmpF
     
     LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
     
@@ -224,7 +239,11 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
+    SBOutAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
+    
+    if TTLAmpF > 1/SBOutAmpF:
+        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
+        TTLAmpF = 1/SBOutAmpF
     
     SoundPulse = Noise(Rate, SoundPulseDur)
     print('   ', end='')
@@ -266,7 +285,11 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
+    SBOutAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
+    
+    if TTLAmpF > 1/SBOutAmpF:
+        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
+        TTLAmpF = 1/SBOutAmpF
     
     SoundPulse = Noise(Rate, SoundPulseDur)
     print('   ', end='')

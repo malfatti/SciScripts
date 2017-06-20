@@ -481,25 +481,27 @@ def ReturnCopy(Dataset):
     Array = np.zeros(Dataset.shape, dtype=Dataset.dtype)
     Dataset.read_direct(Array)
     
+    if Array.size == 1: Array = Array[()]
     return(Array)
 
 
-def SoundCalibration(SBAmpFsFile, SoundBoard, Key):
+def SoundCalibration(SBAmpFsFile, SoundSystem, Key):
     with h5py.File(SBAmpFsFile, 'r') as h5: 
-        Var = h5[SoundBoard][Key][()]
+        Var = h5[SoundSystem][Key][()]
     return(Var)
 
 
 def SoundIntensityWrite(SoundIntensity, Group, FileName):
     print('Writing data to', FileName+'... ', end='')
-    with h5py.File(FileName) as h5:
-        if Group not in h5: h5.create_group(Group)
-        
-        for Freq in SoundIntensity:
-            h5[Group].create_group('SoundIntensity/'+Freq)
-            
-            for AKey, AVal in SoundIntensity[Freq].items():
-                h5[Group]['SoundIntensity'][Freq][AKey] = AVal
+    with h5py.File(FileName) as F:
+        for Fr, Freq in SoundIntensity.items():
+            for A, AmpF in Freq.items():
+                for K, Key in AmpF.items():
+                    Path = '/'+'/'.join([Group, 'SoundIntensity', Fr, A])
+                    if Path in F: del(F[Path])
+                    F.create_group(Path)
+                    
+                    F[Group]['SoundIntensity'][Fr][A][K] = Key
     
     print('Done.')
     return(None)
@@ -527,11 +529,14 @@ def SoundMeasurementLoad(FileName, Path, Var='SoundIntensity'):
             return(SoundRec)
         
         elif Var == 'SoundIntensity':
-            for FKey in h5[Path]['SoundIntensity']:
-                SoundIntensity[FKey] = {}
+            for F, Freq in h5[Path]['SoundIntensity'].items():
+                SoundIntensity[F] = {}
                 
-                for AmpF in h5[Path]['SoundIntensity'][FKey]:
-                    SoundIntensity[FKey][AmpF] = h5[Path]['SoundIntensity'][FKey][AmpF][()]
+                for A, AmpF in Freq.items():
+                    SoundIntensity[F][A] = {}
+                    
+                    for K, Key in AmpF.items():
+                        SoundIntensity[F][A][K] = ReturnCopy(Key)
             
             return(SoundIntensity)
         
@@ -540,14 +545,13 @@ def SoundMeasurementLoad(FileName, Path, Var='SoundIntensity'):
 
 
 def SoundMeasurementWrite(SoundRec, DataInfo, Group, FileName):
-    Now = datetime.now().strftime("%Y%m%d%H%M%S")
     print('Writing data to', FileName+'... ', end='')
     with h5py.File(FileName) as F:
         for FKey in SoundRec:
             FPath = Group+'/SoundRec/'+FKey
-            if FPath in F: F[Now+'_'+FPath] = F[FPath]; del(F[FPath])
-            
+            if FPath in F: del(F[FPath])
             F.create_group(FPath)
+            
             for AKey, AVal in SoundRec[FKey].items():
                 F[Group]['SoundRec'][FKey][AKey] = AVal[:, 0]
         

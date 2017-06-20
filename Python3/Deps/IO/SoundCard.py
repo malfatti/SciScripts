@@ -27,9 +27,6 @@ from IO import Hdf5
 from IO.SigGen import SineWave
 
 
-SBAmpFsFile = '/home/cerebro/Malfatti/Test/20170403123604-SBAmpFs.hdf5'
-#SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20170214093602-SBAmpFs.hdf5'
-
 def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=False):
     """ Read data from sound board input, record it to a video and plot it 
     until the windows is closed (with a delay). """
@@ -188,7 +185,7 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
 #    return(None)
 
 
-def SoundCalOut(Rate, Freq, WaveDur):
+def SoundCalOut(Rate, Freq, WaveDur, Ch=2):
     """ Generate a sine wave from 1 to -1 """
     Pulse = SineWave(Rate, Freq, 1, WaveDur)
     
@@ -206,24 +203,24 @@ def SoundCalOut(Rate, Freq, WaveDur):
 #            Stream.write(Pulse)
 #   
     print('Playing...', end='')
-    SD.play(Pulse, blocking=True, mapping=(2));
+    SD.play(Pulse, blocking=True, mapping=(Ch));
     print('Done.')
     
     return(None)
 
 
-def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF):
+def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF, Ch=2):
     """ Generate sine wave (1V to -1V) and read 1s of it. """
     Pulse = SineWave(Rate, Freq, SBOutAmpF, WaveDur)
     
     SD.default.device = 'system'
     SD.default.samplerate = Rate
     SD.default.channels = 1
-    SD.default.blocksize = 0    
-    SD.default.latency = 'low'
+    SD.default.blocksize = 384
+#    SD.default.latency = 'low'
     
     print('Measuring... ', end='')
-    Rec = SD.playrec(Pulse, blocking=True)
+    Rec = SD.playrec(Pulse, blocking=True, output_mapping=(Ch))
     print('Done.')
     return(Rec)
 

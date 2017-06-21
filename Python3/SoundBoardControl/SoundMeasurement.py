@@ -70,6 +70,7 @@ SoundAmpF = np.hstack((
 #                np.arange(0.001, 0, -0.00002), 
                 np.array(0.0)
                 ))
+SoundAmpF = np.array([round(_,6) for _ in SoundAmpF])
 
 ## Prepare dict w/ experimental setup
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -156,36 +157,36 @@ AmpFList = sorted(list(SoundIntensity[Freqs[0]].keys()), reverse=True)
 #ToAppend = AmpFList[:4] + [AmpFList[-1]]
 #AmpFList = AmpFList[4:-1] + ToAppend
 
-#TexTable = pandas.DataFrame([[float(AmpF)] + [SoundIntensity[Freq][AmpF]['dB'] 
-#                                              for Freq in SoundIntensity]
-#                             for AmpF in AmpFList])
-#
-#File = open(Folder+'/'+'IntensityTable_'+DataInfo['Date']+'.tex', 'w')
-#File.write(r"""%% Configs =====
-#\documentclass[12pt,a4paper]{report}
-#
-#\usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
-#\usepackage{longtable}
-#\usepackage{setspace}
-#\usepackage{titlesec}
-#\titleformat{\chapter}{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
-#
-#% Document ======
-#\begin{document}
-#
-#\cleardoublepage
-#\chapter{Sound measurements}
-#\input{IntensityTable-Contents""" +'_'+DataInfo['Date']+'.tex}')
-#File.write(r"""
-#\end{document}
-#""")
-#File.close()
-#del(File)
-#
-#File = open(Folder+'/'+'IntensityTable-Contents_'+DataInfo['Date']+'.tex', 'w')
-#File.write(TexTable.to_latex(longtable=True))
-#File.close()
-#del(File)
+TexTable = pandas.DataFrame([[float(AmpF)] + [SoundIntensity[Freq][AmpF]['dB'] 
+                                              for Freq in SoundIntensity]
+                             for AmpF in AmpFList])
+
+File = open(Folder+'/'+'IntensityTable_'+DataInfo['Date']+'.tex', 'w')
+File.write(r"""%% Configs =====
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
+\usepackage{longtable}
+\usepackage{setspace}
+\usepackage{titlesec}
+\titleformat{\chapter}{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
+
+% Document ======
+\begin{document}
+
+\cleardoublepage
+\chapter{Sound measurements}
+\input{IntensityTable-Contents""" +'_'+DataInfo['Date']+'.tex}')
+File.write(r"""
+\end{document}
+""")
+File.close()
+del(File)
+
+File = open(Folder+'/'+'IntensityTable-Contents_'+DataInfo['Date']+'.tex', 'w')
+File.write(TexTable.to_latex(longtable=True))
+File.close()
+del(File)
 
 Colors = ['r', 'g', 'b', 'm', 'k', '#ffa500', '#00b2b2']
 FreqList = list(SoundIntensity.keys()); FreqList.sort(); ToPrepend = []
@@ -208,7 +209,7 @@ for FKey in SoundIntensity:
                  label=LineLabel, color=Colors[FInd])
 
 plt.ylabel(YLabel); plt.xlabel(XLabel)
-plt.legend(loc='lower right')
+#plt.legend(loc='lower right')
 plt.locator_params(tight=True)
 plt.tick_params(direction='out')
 plt.axes().spines['right'].set_visible(False)
@@ -216,7 +217,7 @@ plt.axes().spines['top'].set_visible(False)
 plt.axes().yaxis.set_ticks_position('left')
 plt.axes().xaxis.set_ticks_position('bottom')
 plt.title(FigTitle)
-#plt.savefig(Folder+'/'+'SoundMeasurement_'+DataInfo['Date']+'.svg', format='svg')
+plt.savefig(Folder+'/'+'SoundMeasurement_'+DataInfo['Date']+'.svg', format='svg')
 
 
 Colormaps = [plt.get_cmap(Map) for Map in ['Reds', 'Greens', 'Blues', 
@@ -266,14 +267,14 @@ for FKey in FreqList:
     Axes[Freq].yaxis.set_ticks_position('left')
     Axes[Freq].xaxis.set_ticks_position('bottom')
     Axes[Freq].set_title(AxTitle)
-    if Freq < 2:
-        Axes[Freq].legend(loc='lower right')
-    else:
-        Axes[Freq].legend(loc='lower left')
+#    if Freq < 2:
+#        Axes[Freq].legend(loc='lower right')
+#    else:
+#        Axes[Freq].legend(loc='lower left')
 
 Fig.suptitle(FigTitle)
 Fig.tight_layout()
 Fig.subplots_adjust(top=0.93)
-#Fig.savefig(Folder+'/'+'PowerSpectrumDensity_'+DataInfo['Date']+'.svg', format='svg')
+Fig.savefig(Folder+'/'+'PowerSpectrumDensity_'+DataInfo['Date']+'.svg', format='svg')
 plt.show()
 print('Done.')

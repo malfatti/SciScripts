@@ -44,9 +44,9 @@ Setup = 'UnitRec'
 Rate = 192000
 SoundPulseDur = 2
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
-NoiseFrequency = [[8000, 16000], [12000, 14000]]
-#NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-#                  [14000, 16000], [8000, 16000]]
+#NoiseFrequency = [[8000, 16000], [12000, 14000]]
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
+                  [14000, 16000], [8000, 16000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa or in V/Pa
@@ -61,13 +61,15 @@ Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-SoundAmpF = [10.0, 1.0, 0.0]
-#SoundAmpF = np.hstack((
+#SoundAmpF = [10.0, 1.0, 0.0]
+SoundAmpF = np.hstack((
+                np.flipud(np.logspace(np.log10(1e-4), np.log10(10.0), 299)),
 #                np.arange(2.15, 1.05, -0.1), np.arange(1.0, 0.4, -0.05),
 #                np.arange(0.4, 0.15, -0.01), np.arange(0.15, 0.03, -0.005),
 #                np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
-#                np.arange(0.001, 0, -0.00002), np.array(0.0)
-#                ))
+#                np.arange(0.001, 0, -0.00002), 
+                np.array(0.0)
+                ))
 
 ## Prepare dict w/ experimental setup
 Date = datetime.now().strftime("%Y%m%d%H%M%S")

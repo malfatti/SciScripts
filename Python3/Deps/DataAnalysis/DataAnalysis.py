@@ -172,7 +172,8 @@ def Pairwise(iterable):
 
 
 def PSD(Data, Rate, Scaling='density'):
-    Window = signal.hanning(len(Data)//(Rate/1000), sym=False)
+    Window = signal.hanning(round(len(Data)/(Rate/1000)), sym=False)
+#    Window = signal.hanning(round(len(Data)/10), sym=False)
     F, PxxSp = signal.welch(Data, Rate, Window, nperseg=len(Window), 
                             noverlap=0, scaling=Scaling)
     
@@ -278,14 +279,11 @@ def SignalIntensity(Data, Rate, FreqBand, Ref):
     if Data.shape[-1] == 2: F, PxxSp = PSD(Data[:,0], Rate)
     else: F, PxxSp = PSD(Data, Rate)
     
-    Start = np.where(F > FreqBand[0])[0][0]
-    End = np.where(F > FreqBand[1])[0][0]-1
+    Range = (F > FreqBand[0])*(F < FreqBand[1])
 #    BinSize = F[1] - F[0]
-    BinSize = Rate/len(F)
+    BinSize = Rate/len(Data)
 #    RMS = (sum(PxxSp) * BinSize)**0.5
-    RMS = (sum(PxxSp[Start:End]) * BinSize)**0.5
-#    RMS = np.trapz(PxxSp[Start:End], dx=BinSize)
-#    dB = 20*(np.log10(RMS/Ref)) + 94
+    RMS = (sum(PxxSp[Range]) * BinSize)**0.5
     dB = 20*(np.log10((RMS/Ref)/0.00002))
     
     Intensity['PSD'] = [F, PxxSp]

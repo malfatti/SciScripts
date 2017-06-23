@@ -22,8 +22,7 @@ CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
 
 SoundBoard = 'USBPre2_oAux-iAux'
 
-import ControlArduino
-import ControlSoundBoard
+from IO import Arduino
 import pyaudio
 import time
 
@@ -49,25 +48,25 @@ Stimulation = p.open(format=pyaudio.paFloat32,
                      input=False,
                      output=True)
 
-Arduino = ControlArduino.CreateObj(38400)
+ArduinoObj = Arduino.CreateObj(115200)
 
 #%% Test TTL connections
 while True:
-    Arduino.write(b'A')
+    ArduinoObj.write(b'A')
     time.sleep(0.08)
-    Arduino.write(b'B')
+    ArduinoObj.write(b'B')
     time.sleep(0.08)
-    Arduino.write(b'C')
+    ArduinoObj.write(b'C')
     time.sleep(0.08)
-    Arduino.write(b'D')
+    ArduinoObj.write(b'D')
     time.sleep(0.08)
-    Arduino.write(b'E')
+    ArduinoObj.write(b'E')
     time.sleep(0.08)
-    Arduino.write(b'F')
+    ArduinoObj.write(b'F')
     time.sleep(0.08)
-    Arduino.write(b'G')
+    ArduinoObj.write(b'G')
     time.sleep(0.08)
-    Arduino.write(b'P')
+    ArduinoObj.write(b'P')
     time.sleep(3)
 
 #%% Test Sound-Arduino TTLs

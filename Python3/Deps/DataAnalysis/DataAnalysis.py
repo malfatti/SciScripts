@@ -172,7 +172,7 @@ def Pairwise(iterable):
 
 
 def PSD(Data, Rate, Scaling='density'):
-    Window = signal.hanning(len(Data)/(Rate/10000), sym=False)
+    Window = signal.hanning(round(len(Data)/(Rate/10000)), sym=False)
     F, PxxSp = signal.welch(Data, Rate, Window, nperseg=len(Window), 
                             noverlap=0, scaling=Scaling)
     

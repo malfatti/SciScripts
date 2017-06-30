@@ -7,9 +7,12 @@ Rat Behaviour analysis
 """
 #%% Plot Vocs and Behaviours
 import numpy as np
+import h5py
 
 from DataAnalysis import Stats
+from DataAnalysis.DataAnalysis import Spectrogram, PSD
 from DataAnalysis.Plot import Plot
+from IO import Txt
 from glob import glob
 from itertools import combinations
 from scipy import io
@@ -151,6 +154,57 @@ def STSameGender(Data, FigTitle, XLabel, YLabel, Names, FigName, LinesAmpF, Ext=
     return(Fig, Ax)
 
 
+def USVSort(File):
+    Vocs = io.loadmat(File, squeeze_me=True, struct_as_record=False)
+    Rate = getattr(Vocs['USVinfo'], 'soundFs')
+    VocsSorted = {'22kHz': [], '50kHz': [], 'Skipped': []}
+    
+    for V, Voc in enumerate(Vocs['USVclip'][0]):
+        if getattr(Vocs['USV'][0][V], 'q') == 'd': 
+            VocsSorted['Skipped'].append(V)
+            print('Skipped No', V); continue
+        
+        Break = False
+        
+        F, Pxx = PSD(Voc.sound, Rate)
+        PxxSp = Pxx[:]; Pxx[F<11000] = 0
+        Thr = Pxx.mean() + (3*Pxx.std())
+        
+        print('Voc No', str(V)+', peak at', str(F[Pxx.argmax()]/1000)+'kHz')
+        if Pxx.max() > Thr:
+            if F[Pxx.argmax()] > 30000: VocsSorted['50kHz'].append(V)
+            else: VocsSorted['22kHz'].append(V)
+        else:
+            ShowVoc = True
+            SF, ST, Sxx = Spectrogram(Voc.sound, Rate, 10000)
+            
+            while ShowVoc:
+                Fig, Axes = plt.subplots(2, 1)
+                Axes[0].plot(F, PxxSp, lw=2); Axes[0].plot([F[0], F[-1]], [Thr, Thr], lw=2)
+                Plot.Spectrogram(Axes[1], ST, SF, Sxx, HighFreqThr=100000)
+                plt.show()
+                
+                Ans = None
+                while Ans not in range(5):
+                    print('0) 22kHz')
+                    print('1) 50kHz')
+                    print('2) Show voc.', V, 'again')
+                    print('3) Skip voc.', V)
+                    print('4) Stop sorting')
+                    Ans = input(': '); Ans = int(Ans)
+                
+                ShowVoc = False
+                if Ans == 0: VocsSorted['22kHz'].append(V)
+                elif Ans == 1: VocsSorted['50kHz'].append(V)
+                elif Ans == 2: ShowVoc = True
+                elif Ans == 3: VocsSorted['Skipped'].append(V)
+                elif Ans == 4: Break = True
+        
+        if Break: break
+    
+    return(VocsSorted)
+
+
 #%% Vocs
 #Fields = Vocs['Vocs']._fieldnames
 VocsFile = 'G32G7-Vocs.mat'
@@ -180,6 +234,99 @@ for E, Exp in enumerate(Exps):
 plt.show()
 
 
+#%% Separate 22kHz and 50kHz vocs
+Files = glob('/run/media/malfatti/Malfatti1TB3/Bkp/Barbara/**/T000*.mat', recursive=True); Files.sort()
+PB = [F for F in Files if 'back' in F or 'G3-' in F]
+for F in PB: del(Files[Files.index(F)])
+
+Recs = Txt.DictRead('./Data/Recs.txt')
+VocsSorted = {}; Vocs = {}
+
+Groups = ['G3', 'G4', 'G5', 'G6', 'G7']
+Pairs = ['MSFS', 'MSFD', 'MDFS', 'MDFD']
+Classes = ['22kHz', '50kHz']
+
+for File in Files:
+    Rec = '/'.join(File.split('/')[-2:])
+    if Rec not in Recs: continue
+    
+    Group, Pair = Recs[Rec]
+    Setup = File.split('/')[-2].split('-')[2]
+    
+    if Group not in ['G4', 'G5', 'G6', 'G7']: Group = 'G3'
+    if Setup[-2:] == 'on': Setup = 'SI'
+    elif Setup[-2:] == 'ld': Setup = 'OF'
+    elif Setup[-4:] == 'back': Setup = 'OFPB'
+    else: 
+        print('Setup is now', Setup)
+        Setup = input('What setup is this? ')
+    
+    G = Groups.index(Group); P = Pairs.index(Pair)
+    
+    if Setup not in VocsSorted: VocsSorted[Setup] = {}
+    if Group not in VocsSorted[Setup]: VocsSorted[Setup][Group] = {}
+    
+    VocsSorted[Setup][Group][Pair] = USVSort(File)
+    
+    if Setup not in Vocs: Vocs[Setup] = {}
+    for Class in Classes:
+        if Class not in Vocs[Setup]: 
+            Vocs[Setup][Class] = np.zeros((len(Pairs), len(Groups)))
+        
+        Vocs[Setup][Class][P,G] = len(VocsSorted[Setup][Group][Pair][Class])
+    
+io.savemat('VocsSorted.mat', {'VocsSorted': VocsSorted},
+#                                             'Vocs': Vocs}, 
+            long_field_names=True, oned_as='column')
+
+with h5py.File('VocsSorted.hdf5') as F:
+    for S, Setup in Vocs.items():
+        F.create_group('/Vocs/'+S)
+        
+        for C, Class in Setup.items():
+            F['Vocs'][S][C] = Class
+        
+    for S, Setup in VocsSorted.items():    
+        for G, Group in Setup.items():
+            for P, Pair in Group.items():
+                F.create_group('/VocsSorted/'+S+'/'+G+'/'+P)
+                
+                for C, Class in Pair.items():
+                    F['VocsSorted'][S][G][P][C] = Class
+
+with h5py.File('VocsSorted.hdf5', 'r') as F:
+    a = {}
+    for S, Setup in F['Vocs'].items():
+        a[S] = {}
+        for C, Class in Setup.items():
+            a[S][C] = Class[:]
+    
+    b = {}
+    for S, Setup in F['VocsSorted'].items():
+        b[S] = {}
+        for G, Group in Setup.items():
+            b[S][G] = {}
+            for P, Pair in Group.items():
+                b[S][G][P] = {}
+                
+                for C, Class in Pair.items():
+                    b[S][G][P][C] = Class[:]
+
+
+#%% Speaker
+import matplotlib.pyplot as plt
+
+def on_click(event):
+    if event.inaxes is not None:
+        print(event.xdata, event.ydata)
+    else:
+        print('Clicked ouside axes bounds but inside plot window')
+
+fig, ax = plt.subplots()
+fig.canvas.callbacks.connect('button_press_event', on_click)
+plt.show()
+
+
 #%% Behaviours
 BehavioursFile = 'G32G7-Behaviours.mat'
 Behaviours = io.loadmat(BehavioursFile, squeeze_me=True, struct_as_record=False)
@@ -192,7 +339,9 @@ Groups = Behaviours['Cols']; del(Behaviours['Cols'])
 Pairs = Behaviours['Lines']; del(Behaviours['Lines'])
 
 for B, Behaviour in Behaviours.items():
-    if B[:2] == 'OF': FigName = 'G32G7-OF-'+B
+    if B[:2] == 'OF': 
+        if B[:4] == 'OFPB': FigName = 'G32G7-OFPB-'+B
+        else: FigName = 'G32G7-OF-'+B
     else: FigName = 'G32G7-SI-'+B
     
     if B == 'Darts': B = 'Dart/Hop'
@@ -204,43 +353,13 @@ plt.show()
 #%% Icy Mice Profiler analysis
 
 ## XMLs to Dict
+Recs = Txt.DictRead('./Data/Recs.txt')
+Files = glob('./Data/*/*allEventsExported.xml'); Files.sort()
+#Files = glob('./InvertedXMLs/*allEventsExported.xml'); Files.sort()
+#Files = glob('./G*/*allEventsExported.xml'); Files.sort()
 
-Files = glob('/home/malfatti/Barbara/Data/*/*allEventsExported.xml'); Files.sort()
-#Files = glob('/home/malfatti/Barbara/InvertedXMLs/*allEventsExported.xml'); Files.sort()
 CoordFiles = ['.'.join(F.split('.')[:-2]) for F in Files]
 FPS = 23
-
-Recs = {
-    # G3
-    'T0000002-H264': ['G3', 'MSFS'],
-    'T0000003-H264': ['G3', 'MDFD'],
-    'T0000005-H264': ['G3', 'MDFS'],
-    'T0000006-H264': ['G3', 'MSFD'],
-    
-    # G4
-    'fc2_save_2017-02-21-193715-0000': ['G4', 'MDFS',],
-    'fc2_save_2017-02-21-201357-0000': ['G4', 'MSFD',],
-    'fc2_save_2017-02-21-220718-0000': ['G4', 'MSFS',],
-    'fc2_save_2017-02-21-224114-0000': ['G4', 'MDFD',],
-    
-    # G5
-    'fc2_save_2017-02-22-183437-0000': ['G5', 'MDFD',],
-    'fc2_save_2017-02-22-190844-0000': ['G5', 'MSFS',],
-    'fc2_save_2017-02-22-211421-0000': ['G5', 'MDFS',],
-    'fc2_save_2017-02-22-214754-0000': ['G5', 'MSFD',],
-    
-    # G6
-    'fc2_save_2017-04-15-180049-0000': ['G6', 'MSFS',],
-    'fc2_save_2017-04-15-183537-0000': ['G6', 'MDFD',],
-    'fc2_save_2017-04-15-204341-0000': ['G6', 'MSFD',],
-    'fc2_save_2017-04-15-211652-0000': ['G6', 'MDFS',],
-    
-    # G7
-    'fc2_save_2017-04-15-190919-0000': ['G7', 'MSFS',],
-    'fc2_save_2017-04-15-194240-0000': ['G7', 'MDFD',],
-    'fc2_save_2017-04-15-215017-0000': ['G7', 'MDFS',],
-    'fc2_save_2017-04-15-225311-0000': ['G7', 'MSFD',],
-}
 
 def GetDataFromXMLs(Files, CoordFiles, Recs, Save=True):
     Data = {}

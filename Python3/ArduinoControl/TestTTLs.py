@@ -16,37 +16,37 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-                  '20160419093139-SoundMeasurement/' + \
-                  '20160419093139-SoundMeasurement.hdf5'
+#CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
+#                  '20160419093139-SoundMeasurement/' + \
+#                  '20160419093139-SoundMeasurement.hdf5'
 
-SoundBoard = 'USBPre2_oAux-iAux'
+#SoundBoard = 'USBPre2_oAux-iAux'
 
 from IO import Arduino
-import pyaudio
+#import pyaudio
 import time
 
-Sound = ControlSoundBoard.GenSound(128000, 0.003, 1, {'8000-10000': [0.04]}, 
-                                   [[8000, 10000]], 1, CalibrationFile, 
-                                   SoundBoard, SoundPostPauseDur=0.097)[0]
+#Sound = ControlSoundBoard.GenSound(128000, 0.003, 1, {'8000-10000': [0.04]}, 
+#                                   [[8000, 10000]], 1, CalibrationFile, 
+#                                   SoundBoard, SoundPostPauseDur=0.097)[0]
+#
+#Laser = ControlSoundBoard.GenLaser(128000, 0.01, 1, 1, CalibrationFile, 
+#                                   SoundBoard, LaserPostPauseDur=0.09)[0]
+#                                   
+#SoundLaser = ControlSoundBoard.GenSoundLaser(128000, 0.003, 1, 
+#                                             {'8000-10000': [0.04]}, 
+#                                             [[8000, 10000]], 0.01, 1, 1, 
+#                                             CalibrationFile, SoundBoard,
+#                                             SoundPrePauseDur=0.004, 
+#                                             SoundPostPauseDur=0.093,
+#                                             LaserPostPauseDur=0.09,)[0]
 
-Laser = ControlSoundBoard.GenLaser(128000, 0.01, 1, 1, CalibrationFile, 
-                                   SoundBoard, LaserPostPauseDur=0.09)[0]
-                                   
-SoundLaser = ControlSoundBoard.GenSoundLaser(128000, 0.003, 1, 
-                                             {'8000-10000': [0.04]}, 
-                                             [[8000, 10000]], 0.01, 1, 1, 
-                                             CalibrationFile, SoundBoard,
-                                             SoundPrePauseDur=0.004, 
-                                             SoundPostPauseDur=0.093,
-                                             LaserPostPauseDur=0.09,)[0]
-
-p = pyaudio.PyAudio()
-Stimulation = p.open(format=pyaudio.paFloat32,
-                     channels=2,
-                     rate=128000,
-                     input=False,
-                     output=True)
+#p = pyaudio.PyAudio()
+#Stimulation = p.open(format=pyaudio.paFloat32,
+#                     channels=2,
+#                     rate=128000,
+#                     input=False,
+#                     output=True)
 
 ArduinoObj = Arduino.CreateObj(115200)
 
@@ -86,17 +86,17 @@ time.sleep(3)
 #%% Test Intan RHA 120-145 40-70 180<
 print('Testing serial TTLs...')
 for _ in range(10):
-    Arduino.write(b'A')
+    ArduinoObj.write(b'A')
     time.sleep(0.08)
-    Arduino.write(b'B')
+    ArduinoObj.write(b'B')
     time.sleep(0.08)
-    Arduino.write(b'C')
+    ArduinoObj.write(b'C')
     time.sleep(0.08)
-    Arduino.write(b'D')
+    ArduinoObj.write(b'D')
     time.sleep(0.08)
-    Arduino.write(b'E')
+    ArduinoObj.write(b'E')
     time.sleep(0.08)
-    Arduino.write(b'P')
+    ArduinoObj.write(b'P')
     time.sleep(3)
 
 #%% Test Sound-Arduino TTLs
@@ -112,3 +112,11 @@ time.sleep(3)
 for _ in range(100):
     Stimulation.write(SoundLaser[0][0])
 time.sleep(3)
+
+#%% Test OpenEphys RecControl
+while True:
+    ArduinoObj.write(b'd')
+    time.sleep(1)
+    ArduinoObj.write(b'w')
+    time.sleep(2)
+    

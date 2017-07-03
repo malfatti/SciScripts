@@ -31,7 +31,7 @@ from IO import Arduino, Hdf5, SigGen
 
 #%% Set Parameters
 # Order: [2, 3, 5, 4, 6, 1]
-AnimalName = 'Prevention_A3'
+AnimalName = 'Prevention_B4'
 Rate = 192000
 BaudRate = 115200
 
@@ -40,7 +40,7 @@ System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'UnitRec'
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 1
+TTLAmpF = 0.4
 
 ## Fill all durations in SECONDS!
 
@@ -152,7 +152,7 @@ for FF in ['8000-10000', '9000-11000']:
 
 ToPrepend.sort(); FKeys = ToPrepend + FKeys
 
-# FreqOrder = ['8000-10000', '10000-12000', '9000-11000', '12000-14000', '14000-16000']
+# FreqOrder = ['8000-10000', '14000-16000', '9000-11000', '12000-14000', '10000-12000']
 Stim.start()
 while True:
     print('Remember to change folder name in OE!')

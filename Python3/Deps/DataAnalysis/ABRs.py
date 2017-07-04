@@ -19,6 +19,7 @@
 """
 import numpy as np
 
+from DataAnalysis.DataAnalysis import FilterSignal, QuantifyTTLsPerRec, SliceData
 from itertools import tee
 from scipy import signal
 
@@ -80,16 +81,16 @@ def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3,
     Info['XValues'] = (range(-NoOfSamplesBefore, 
                              NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
     
-    for Rec in Data.keys():
+    for R, Rec in Data.items():
         print('Slicing and filtering ABRs Rec ', str(Rec), '...')
         
-        if len(Data[Rec]) < 50*Rate:
-            print('Rec', Rec, 'is broken!!!')
+        if len(Rec) < 50*Rate:
+            print('Rec', R, 'is broken!!!')
             continue
         
         if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:,TTLCh-1])
-            ABR = SliceData(Data[Rec][:, ABRCh-1], TTLs, NoOfSamplesBefore, 
+            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
+            ABR = SliceData(Rec[:, ABRCh-1], TTLs, NoOfSamplesBefore, 
                             NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
 #        else:
 #            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
@@ -105,7 +106,7 @@ def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3,
         ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
                            'butter', 'lowpass')
         
-        dB = str(DataInfo['Intensities'][int(Rec)]) + 'dB'
+        dB = str(DataInfo['Intensities'][int(R)]) + 'dB'
         ABRs[dB] = ABR[:]; del(ABR)
     
     Info['Path'] = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']

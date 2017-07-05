@@ -513,6 +513,13 @@ for G, Group in Data.items():
             
             Data[G][P]['Behaviours'][A[-1]+'GoToSpeaker'] = Events
 
+for G, Group in Data.items():
+    for P, Pair in Group.items():
+        Data[G][P]['Behaviours']['APlusBGoToSpeaker'] = np.vstack((
+            Pair['Behaviours']['AGoToSpeaker'],
+            Pair['Behaviours']['BGoToSpeaker']          ))
+        
+
 Groups = list(Data.keys()); Groups.sort(); #Groups = ['G3', 'G4', 'G5', 'G7']
 Pairs = ['MSFS', 'MSFD', 'MDFS', 'MDFD']
 Spread = 0.2
@@ -694,9 +701,10 @@ for B in Behs:
     Ax[0].set_xticks([1, 2, 3, 4]); Ax[0].set_xticklabels(Pairs)
     Ax[1].set_xticks([1, 2, 3, 4]); Ax[1].set_xticklabels(Pairs)
     
-#    Fig.savefig('G32G7-OFPB-'+B+'.pdf', format='pdf')
-#    Fig.savefig('G32G7-OFPB-'+B+'.svg', format='svg')
-    Fig.savefig('G32G7-OFPB-'+'BFollowA'+'.pdf', format='pdf')
-    Fig.savefig('G32G7-OFPB-'+'BFollowA'+'.svg', format='svg')
+    Fig.savefig('G32G7-OFPB-'+B+'.pdf', format='pdf')
+    Fig.savefig('G32G7-OFPB-'+B+'.svg', format='svg')
+    Fig.savefig('G32G7-OFPB-'+B+'.eps', format='eps')
+#    Fig.savefig('G32G7-OFPB-'+'BFollowA'+'.pdf', format='pdf')
+#    Fig.savefig('G32G7-OFPB-'+'BFollowA'+'.svg', format='svg')
 plt.show()
 

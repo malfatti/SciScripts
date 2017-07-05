@@ -6,11 +6,12 @@ Created on Mon Jun 12 14:12:37 2017
 @author: malfatti
 """
 from rpy2 import robjects as RObj
+from rpy2.robjects import packages as RPkg
 
 ## Level 0
 def RCheckPackage(Packages):
     RPacksToInstall = [Pack for Pack in Packages 
-                       if not RObj.packages.isinstalled(Pack)]
+                       if not RPkg.isinstalled(Pack)]
     if len(RPacksToInstall) > 0:
         print(str(RPacksToInstall), 'not installed. Install now?')
         Ans = input('[y/N]: ')
@@ -18,7 +19,7 @@ def RCheckPackage(Packages):
         if Ans.lower() in ['y', 'yes']:
             from rpy2.robjects.vectors import StrVector as RStrVector
             
-            RUtils = RObj.packages.importr('utils')
+            RUtils = RPkg.importr('utils')
             RUtils.chooseCRANmirror(ind=1)
             
             RUtils.install_packages(RStrVector(RPacksToInstall))
@@ -57,12 +58,12 @@ def RAnOVa(DataA, DataB):
 
 def RPwrAnOVa(GroupNo=RObj.NULL, SampleSize=RObj.NULL, Power=RObj.NULL, 
            SigLevel=RObj.NULL, EffectSize=RObj.NULL):
-    RCheckPackage(['pwr']); Rpwr = RObj.packages.importr('pwr')
+    RCheckPackage(['pwr']); Rpwr = RPkg.importr('pwr')
     
     Results = Rpwr.pwr_anova_test(k=GroupNo, power=Power, sig_level=SigLevel, 
                                   f=EffectSize, n=SampleSize)
     
-    print('Calculating', Results.rx('method')[0][0] + '... ', end='')
+    print('Running', Results.rx('method')[0][0] + '... ', end='')
     AnOVaResults = {}
     for Key, Value in {'k': 'GroupNo', 'n': 'SampleSize', 'f': 'EffectSize', 
                        'power':'Power', 'sig.level': 'SigLevel'}.items():

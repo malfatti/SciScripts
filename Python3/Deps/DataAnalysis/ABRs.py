@@ -20,96 +20,88 @@
 import numpy as np
 
 from DataAnalysis.DataAnalysis import FilterSignal, QuantifyTTLsPerRec, SliceData
-from itertools import tee
-from scipy import signal
+from IO import Hdf5, OpenEphys
 
 
 ## Level 0
-def ABRAnalysis(FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
-                ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
-                StimType='Sound', AnalogTTLs=False, Board='OE', Type='kwik',
-                Override={}):
-    print('Load DataInfo...')
-    DirList = glob('KwikFiles/*'); DirList.sort()
-    DataInfo = Hdf5F.LoadDict('/DataInfo', FileName)
-    
-    AnalysisFile = './' + DataInfo['AnimalName'] + '-Analysis.hdf5'
-    Now = datetime.now().strftime("%Y%m%d%H%M%S")
-    Here = os.getcwd().split(sep='/')[-1]
-    Group = Here + '-ABRs_' + Now
-        
-    for Stim in StimType:
-        if Override != {}: 
-            if 'Stim' in Override.keys(): Stim = Override['Stim']
-        
-        Exps = Hdf5F.LoadExpPerStim(Stim, DirList, FileName)
-        
-        for RecFolder in Exps:
-            if AnalogTTLs: 
-                Raw, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            else: 
-                Raw, Events, _, Files = Hdf5F.LoadOEKwik(RecFolder, AnalogTTLs)
-            
-            ExpInfo = Hdf5F.ExpExpInfo(RecFolder, DirList, FileName)
-            OEProc, RHAProc, ABRProc = Hdf5F.GetProc(Raw, Board)
-            
-            if AnalogTTLs: Raw = Hdf5F.GetRecKeys(Raw, [0], AnalogTTLs)
-            else:
-                Raw, EventRec = Hdf5F.GetRecKeys(Raw, Events, AnalogTTLs)
-#                TTLsPerRec = GetTTLInfo(Events, EventRec, ABRTTLCh)
-            
-            Rate = Raw['100']['info']['0']['sample_rate']
-            ABRs, Info = ABRCalc(Raw, Rate, ExpInfo)
-            Hdf5F.WriteABR(ABRs, Info['XValues'], Group, Info['Path'], AnalysisFile)
-        
-
-#FileName, ABRCh=[1], ABRTTLCh=1, ABRTimeBeforeTTL=0, 
-#                ABRTimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
-#                StimType='Sound', AnalogTTLs=False, Board='OE', Type='kwik',
-#                Override={}
-def ABRCalc(Data, Rate, ExpInfo, DataInfo, Stim, TimeBeforeTTL=3, 
-            TimeAfterTTL=12, AnalogTTLs=True, ABRCh=5, TTLCh=17, 
-            FilterFreq=[300, 3000], FilterOrder=5, TTLsPerRec=[]):
+def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
+         TimeBeforeTTL=3, TimeAfterTTL=12, AnalogTTLs=True, 
+         FilterFreq=[300, 3000], FilterOrder=5, TTLsPerRec=[]):
     ABRs = {}; Info = {}
     
     NoOfSamplesBefore = TimeBeforeTTL*int(Rate*10**-3)
     NoOfSamplesAfter = TimeAfterTTL*int(Rate*10**-3)
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
     
-    Info['Frequency'] = ExpInfo['Hz']
+    Freq = DataInfo['NoiseFrequency'][ExpInfo['Hz']]
+    Info['Frequency'] = '-'.join([str(_) for _ in Freq])
     
     Info['XValues'] = (range(-NoOfSamplesBefore, 
                              NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
     
     for R, Rec in Data.items():
-        print('Slicing and filtering ABRs Rec ', str(Rec), '...')
+        print('Slicing and filtering ABRs Rec ', R, '...')
         
         if len(Rec) < 50*Rate:
             print('Rec', R, 'is broken!!!')
             continue
         
-        if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
-            ABR = SliceData(Rec[:, ABRCh-1], TTLs, NoOfSamplesBefore, 
-                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
-#        else:
-#            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
-#                                               TTLsPerRec=TTLsPerRec)
-#            ABR = SliceData(Data[Rec][:,ABRCh-1], TTLs,NoOfSamplesBefore, 
-#                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
-        
-        for TTL in range(len(TTLs)):
-            ABR[TTL] = FilterSignal(ABR[TTL], Rate, [min(FilterFreq)], 
-                                    FilterOrder, 'butter', 'highpass')
-        
-        ABR = np.mean(ABR, axis=0)
-        ABR = FilterSignal(ABR, Rate, [max(FilterFreq)], FilterOrder, 
-                           'butter', 'lowpass')
+        ABR = np.zeros((NoOfSamples, len(ABRCh)))
+        for C, Ch in enumerate(ABRCh):
+            if AnalogTTLs:
+                TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
+                print(len(TTLs), 'TTLs')
+                ABRData = SliceData(Rec[:, Ch-1], TTLs, NoOfSamplesBefore, 
+                                NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
+    #        else:
+    #            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
+    #                                               TTLsPerRec=TTLsPerRec)
+    #            ABRData = SliceData(Data[Rec][:,Ch-1], TTLs,NoOfSamplesBefore, 
+    #                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
+            
+            ABR[:,C] = np.mean(ABRData, axis=0)
+            ABR[:,C] = FilterSignal(ABR[:,C], Rate, FilterFreq, FilterOrder,  
+                                    'butter', 'bandpass')
         
         dB = str(DataInfo['Intensities'][int(R)]) + 'dB'
-        ABRs[dB] = ABR[:]; del(ABR)
+        ABRs[dB] = ABR[:]; del(ABR, ABRData)
     
     Info['Path'] = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
     
     return(ABRs, Info)
+
+
+## Level 1
+def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1], 
+             ABRTTLCh=0, TimeBeforeTTL=3, TimeAfterTTL=12, 
+             FilterFreq=[300, 3000], FilterOrder=4, StimType=['Sound'], 
+             AnalogTTLs=True, Proc='100'):
+    DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    if not AnalysisFile: 
+        AnalysisFile = './' + DataInfo['AnimalName'] + '-Analysis.hdf5'
+        
+    for Stim in StimType:
+        Exps = Hdf5.ExpPerStimLoad(Stim, Folders, InfoFile)
+        
+        Freqs = []; Trial = 0
+        for F, Folder in enumerate(Exps):
+            Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs)
+            ExpInfo = Hdf5.ExpExpInfo(Folder, F, InfoFile)
+            
+            ABRs, Info = Calc(Data[Proc], Rate[Proc], ExpInfo, DataInfo, 
+                              Stim, ABRCh, ABRTTLCh, TimeBeforeTTL, 
+                              TimeAfterTTL, AnalogTTLs, FilterFreq, 
+                              FilterOrder)
+            
+            Freq = Info['Frequency']
+            if Freq in Freqs: Freqs = []; Trial += 1
+            Path = '/'+Exp+'/ABRs'+'/'+Info['Path']+'/Trial'+str(Trial)
+            XValuesPath = '/'+Exp+'/XValues'+'/'+Info['Path']+'/Trial'+str(Trial)
+            print(Path)
+            
+            Hdf5.DataWrite(ABRs, Path, AnalysisFile)
+            Hdf5.DataWrite(Info['XValues'], XValuesPath, AnalysisFile)
+            Freqs.append(Freq)
+    
+    return(None)
 

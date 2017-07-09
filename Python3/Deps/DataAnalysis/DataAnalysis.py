@@ -20,10 +20,19 @@
 import numpy as np
 
 from itertools import tee
+from multiprocessing import Process
 from scipy import signal
 
 
 ## Level 0
+def BitsToVolts(Data, ChInfo):
+    for R in Data.keys():
+        for C, Ch in enumerate(sorted(ChInfo.keys())):
+            Data[R][:,C] = Data[R][:,C] * float(ChInfo[Ch]['gain'])
+    
+    return(Data)
+
+
 def CumulativeMA(Base, Add, ElNo):
     if len(Base) == 0: 
         Base = Add
@@ -162,6 +171,21 @@ def GetTTLThreshold(TTLCh):
         return(Threshold) 
 
 
+def MultiProcess(Function, Args, Procs=8):
+    TotalNo = len(Args)
+    ProcLists = [[] for _ in range(0, TotalNo, Procs)]
+    
+    for A, Arg in enumerate(Args):
+        ProcLists[A//Procs].append(Process(target=Function, args=Arg))
+    
+    for ProcList in ProcLists:
+        for Proc in ProcList:
+            Proc.start(); print('PID =', Proc.pid)
+        Proc.join()
+    
+    return(None)
+
+
 def Pairwise(iterable):
     """ from https://docs.python.org/3.6/library/itertools.html#itertools-recipes
     s -> (s0,s1), (s1,s2), (s2, s3), ..."""
@@ -298,7 +322,7 @@ def SliceData(Data, TTLs, NoOfSamplesBefore,
     print('Slicing data around TTL...')
 #    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
     Array = np.zeros((len(TTLs), NoOfSamples))
-    TTLsToFix = []
+#    TTLsToFix = []
     
     for TTL in range(len(TTLs)):
         if AnalogTTLs: TTLLoc = int(TTLs[TTL])
@@ -307,13 +331,16 @@ def SliceData(Data, TTLs, NoOfSamplesBefore,
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
         
-        if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
+#        if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
+        if Start < 0 or End > len(Data):
+            print('TTL too close to the edge. Skipping...')
+            continue
         
-        Array[TTL] = Data[Start:End]
+        Array[TTL,:] = Data[Start:End]
         
-        if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
+#        if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
             
-    if TTLsToFix: Array = FixTTLs(Array, TTLsToFix)
+#    if TTLsToFix: Array = FixTTLs(Array, TTLsToFix)
     
     print('Done.')
     return(Array)

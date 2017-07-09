@@ -7,7 +7,6 @@ Created on Mon Jun 12 15:25:24 2017
 """
 import subprocess
 
-
 def RunProcess(Cmd, LogFile=''):
     if LogFile == '': print('Logging disabled, outputting to STDOUT.')
     else: print('Check progress in file', LogFile)

@@ -188,6 +188,12 @@ for Ind, DataPath in enumerate(Paths):
     del(GPIAS, XValues)
 
 
+#%% New
+Animal = 'Prevention/PreventionB'
+Exp = '2017-05-22_16-40-10_Prevention_B4'
+InfoFile = '20170522163944-Prevention_B4-GPIAS.hdf5'
+
+
 #%% Individual
 
 Animal = 'Prevention'

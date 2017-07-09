@@ -18,11 +18,12 @@
 Functions for manipulating specific hdf5 files.
 """
 
-import h5py
-import Kwik
+import h5py, Kwik, os, SettingsXML
 import numpy as np
-import os
+
+from DataAnalysis.DataAnalysis import BitsToVolts
 from datetime import datetime
+from glob import glob
 from numbers import Number
 
 
@@ -97,17 +98,17 @@ def ABRWrite(ABRs, XValues, Group, Path, FileName):
     return(None)
 
 
-def BitsToVolts(Raw):
-    for Proc in Raw.keys():
-        for Rec in Raw[Proc]['data'].keys():
-            Raw[Proc]['data'][Rec] = np.array(Raw[Proc]['data'][Rec], 'float32')
-            for Ch in range(Raw[Proc]['data'][Rec].shape[1]):
-                Data = Raw[Proc]['data'][Rec][:, Ch]
-                BitVolts = Raw[Proc]['channel_bit_volts'][Rec][Ch]
-                
-                Data = Data * BitVolts
-                Raw[Proc]['data'][Rec][:, Ch] = Data[:]
-    return(Raw)
+#def BitsToVolts(Raw):
+#    for Proc in Raw.keys():
+#        for Rec in Raw[Proc]['data'].keys():
+#            Raw[Proc]['data'][Rec] = np.array(Raw[Proc]['data'][Rec], 'float32')
+#            for Ch in range(Raw[Proc]['data'][Rec].shape[1]):
+#                Data = Raw[Proc]['data'][Rec][:, Ch]
+#                BitVolts = Raw[Proc]['channel_bit_volts'][Rec][Ch]
+#                
+#                Data = Data * BitVolts
+#                Raw[Proc]['data'][Rec][:, Ch] = Data[:]
+#    return(Raw)
 
 
 def CheckGroup(FileName, Group):
@@ -173,6 +174,35 @@ def ClustersWrite(Clusters, FileName, Group):
     print('Done.')
     return(None)
 
+
+def Data2Hdf5(Data, Path, OpenedFile):
+    if type(Data) == dict:
+        for K, Key in Data.items(): Data2Hdf5(Key, Path+'/'+K, OpenedFile)
+    elif type(Data) == str:
+        if Path not in OpenedFile: OpenedFile.create_group(Path)
+        OpenedFile[Path] = np.string_(Data)
+    elif type(Data) == list:
+        if True in [D == str(D) for D in Data]: OpenedFile[Path] = np.string_(Data)
+        else: OpenedFile[Path] = Data
+    
+    elif type(Data) in [np.ndarray, tuple]: OpenedFile[Path] = Data
+    
+    else: print('Data type', type(Data), 'at', Path, 'not understood.')
+    
+    return(None)
+
+
+def DataLoad(Path, FileName):
+    with h5py.File(FileName) as F: Data, Attrs = Hdf52Dict(Path, F)
+    
+    return(Data, Attrs)
+
+
+def DataWrite(Data, Path, FileName):
+    with h5py.File(FileName) as F: Data2Hdf5(Data, Path, F)
+    
+    return(None)
+        
 
 def DatasetLoad(Path, FileName):
     with h5py.File(FileName, 'r') as F: Dataset = ReturnCopy(F[Path])
@@ -246,12 +276,16 @@ def DictWrite(Dict, Path, FileName, Attrs=True):
     return(None)
 
 
-def ExpExpInfo(RecFolder, DirList, FileName):
+def ExpExpInfo(RecFolder, RecFolderInd, FileName):
     ExpInfo = {}
     with h5py.File(FileName, 'r') as F:
-        Key = "{0:02d}".format(DirList.index(RecFolder))
+        Key = "{0:02d}".format(RecFolderInd)
+        if Key not in F['ExpInfo'].keys(): Key = str(int(Key))
+        
         ExpInfo['DVCoord'] = F['ExpInfo'][Key].attrs['DVCoord']
         ExpInfo['Hz'] = F['ExpInfo'][Key].attrs['Hz']
+        ExpInfo['StimType'] = F['ExpInfo'][Key].attrs['StimType']
+        ExpInfo['StimType'] = ExpInfo['StimType'].tolist()
     
     return(ExpInfo)
 
@@ -429,52 +463,79 @@ def GPIASWrite(GPIAS, Path, FileName, XValues=[]):
     return(None)
 
 
-def OEKwikLoad(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
-    if AnalogTTLs: RawRO, _, Spks, Files = Kwik.load_all_files(RecFolder)
-    else: RawRO, Events, Spks, Files = Kwik.load_all_files(RecFolder)
-    
-    print('Check if files are ok...')
-    if 'RawRO' not in locals():
-        print('.kwd file is corrupted. Skipping dataset...')
-        return(None)
-    
-    if not AnalogTTLs:
-        if 'Events' not in locals():
-            print('.kwe/.kwik file is corrupted. Skipping dataset...')
-            return(None)
-    
-    print('Data from', RecFolder, 'loaded.')
-    print('Preparing dictionaries... ', end='')
-    Raw = {}
-    for Proc in RawRO.keys():
-        Raw[Proc] = {Key: {} for Key in ['data', 'channel_bit_volts', 'info', 'timestamps']}
-        
-        for Rec in RawRO[Proc]['data'].keys():
-            Raw[Proc]['data'][Rec] = ReturnCopy(RawRO[Proc]['data'][Rec])
-#            Raw[Proc]['channel_bit_volts'][Rec] = ReturnCopy(RawRO[Proc]['channel_bit_volts'][Rec])
-            Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
-#            Raw[Proc]['timestamps'][Rec] = ReturnCopy(RawRO[Proc]['timestamps'][Rec])
-#            Raw[Proc]['data'][Rec] = RawRO[Proc]['data'][Rec][()]
-            Raw[Proc]['channel_bit_volts'][Rec] = RawRO[Proc]['channel_bit_volts'][Rec][:]
-#            Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
-            Raw[Proc]['timestamps'][Rec] = RawRO[Proc]['timestamps'][Rec][()]
-    
-    del(RawRO)
-    
-    if Unit == 'uV': print('Converting to', Unit+'...'); Raw = BitsToVolts(Raw)
-    if ChannelMap:
-        print('Retrieving channels according to ChannelMap...')
-        ChannelMap = [_-1 for _ in ChannelMap]
-        for Proc in Raw.keys():
-            for Rec in Raw[Proc]['data'].keys():
-                if Raw[Proc]['data'][Rec].shape[1] < len(ChannelMap): continue
-                
-                Chs = sorted(ChannelMap)
-                Raw[Proc]['data'][Rec][:, Chs] = Raw[Proc]['data'][Rec][:, ChannelMap]
+def Hdf52Dict(Path, F):
+    Dict = {}; Attrs = {}
+    if type(F[Path]) == h5py._hl.group.Group:
+        if list(F[Path].attrs):
+            for Att in F[Path].attrs.keys(): Attrs[Att] = Hdf52Dict(Att, F[Path].attrs)
             
-    print('Done.')
-    if AnalogTTLs: return(Raw, Spks, Files)
-    else: return(Raw, Events, Spks, Files)
+        for Group in F[Path].keys(): Dict[Group], Attrs[Group] = Hdf52Dict(Path+'/'+Group, F)
+        return(Dict, Attrs)
+    
+    elif type(F[Path]) == h5py._hl.dataset.Dataset:
+        if list(F[Path].attrs):
+            for Att in F[Path].attrs.keys(): Attrs[Att] = Hdf52Dict(Att, F[Path].attrs)
+            
+        return(ReturnCopy(F[Path]), Attrs)
+    
+    elif 'numpy' in str(type(F[Path])):
+        return(F[Path])
+
+
+#def OEKwikLoad(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
+#    if AnalogTTLs: RawRO, _, Spks, Files = Kwik.load_all_files(RecFolder)
+#    else: RawRO, Events, Spks, Files = Kwik.load_all_files(RecFolder)
+#    
+#    print('Check if files are ok...')
+#    if 'RawRO' not in locals():
+#        print('.kwd file is corrupted. Skipping dataset...')
+#        return(None)
+#    
+#    if not AnalogTTLs:
+#        if 'Events' not in locals():
+#            print('.kwe/.kwik file is corrupted. Skipping dataset...')
+#            return(None)
+#    
+#    print('Data from', RecFolder, 'loaded.')
+#    print('Preparing dictionaries... ', end='')
+#    Raw = {}
+#    for Proc in RawRO.keys():
+#        Raw[Proc] = {Key: {} for Key in ['data', 'channel_bit_volts', 'info', 'timestamps']}
+#        
+#        for Rec in RawRO[Proc]['data'].keys():
+#            Raw[Proc]['data'][Rec] = ReturnCopy(RawRO[Proc]['data'][Rec])
+##            Raw[Proc]['channel_bit_volts'][Rec] = ReturnCopy(RawRO[Proc]['channel_bit_volts'][Rec])
+#            Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
+##            Raw[Proc]['timestamps'][Rec] = ReturnCopy(RawRO[Proc]['timestamps'][Rec])
+##            Raw[Proc]['data'][Rec] = RawRO[Proc]['data'][Rec][()]
+#            Raw[Proc]['channel_bit_volts'][Rec] = RawRO[Proc]['channel_bit_volts'][Rec][:]
+##            Raw[Proc]['info'][Rec] = {}; Raw[Proc]['info'][Rec].update(RawRO[Proc]['info'][Rec])
+#            Raw[Proc]['timestamps'][Rec] = RawRO[Proc]['timestamps'][Rec][()]
+#    
+#    del(RawRO)
+#    
+#    if Unit == 'uV': 
+#        print('Converting to', Unit+'... ', end=''); 
+#        RecChs = SettingsXML.GetRecChs(RecFolder+'/settings.xml')[0]
+##        for Rec in RawRO[Proc]['data'].keys():
+##            Raw[Proc]['data'][Rec] = ReturnCopy(RawRO[Proc]['data'][Rec])
+#        
+#        for Proc in Raw.keys():
+#            Raw[Proc]['data'] = BitsToVolts(Raw[Proc]['data'], RecChs[Proc])
+#            
+#    if ChannelMap:
+#        print('Retrieving channels according to ChannelMap... ', end='')
+#        ChannelMap = [_-1 for _ in ChannelMap]
+#        for Proc in Raw.keys():
+#            for Rec in Raw[Proc]['data'].keys():
+#                if Raw[Proc]['data'][Rec].shape[1] < len(ChannelMap): continue
+#                
+#                Chs = sorted(ChannelMap)
+#                Raw[Proc]['data'][Rec][:, Chs] = Raw[Proc]['data'][Rec][:, ChannelMap]
+#            
+#    print('Done.')
+#    if AnalogTTLs: return(Raw, Spks, Files)
+#    else: return(Raw, Events, Spks, Files)
 
 
 def ReturnCopy(Dataset):

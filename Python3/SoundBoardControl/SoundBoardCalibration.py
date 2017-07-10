@@ -66,14 +66,22 @@ SBInAmpF = 1/SBInAmpF
 
 print('SBInAmpF = ', str(SBInAmpF))
 
+#%% NoiseRMS
+import sounddevice as SD
+NoiseRMS = SD.rec(Rate*10, Rate, 1, blocking=True)
+NoiseRMS = (np.mean(NoiseRMS**2))**0.5
+
+
 #%% Save
 with h5py.File(FileName, 'w') as F:
     if SoundSystem not in F.keys(): F.create_group(SoundSystem)
     
     F[SoundSystem]['SBOutAmpF'] = SBOutAmpF
     F[SoundSystem]['SBInAmpF'] = SBInAmpF
+    F[SoundSystem]['NoiseRMS'] = NoiseRMS
 
 with h5py.File(FileName, 'r') as F:
     a = F[SoundSystem]['SBOutAmpF'][()]
     b = F[SoundSystem]['SBInAmpF'][()]
+    c = F[SoundSystem]['NoiseRMS'][()]
 

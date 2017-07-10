@@ -31,7 +31,7 @@ from IO import Arduino, Hdf5, SigGen
 
 #%% Set Parameters
 # Order: [2, 3, 5, 4, 6, 1]
-AnimalName = 'Prevention_B4'
+AnimalName = 'Prevention_A1'
 Rate = 192000
 BaudRate = 115200
 
@@ -152,7 +152,7 @@ for FF in ['8000-10000', '9000-11000']:
 
 ToPrepend.sort(); FKeys = ToPrepend + FKeys
 
-# FreqOrder = ['8000-10000', '14000-16000', '9000-11000', '12000-14000', '10000-12000']
+# FreqOrder = ['12000-14000', '9000-11000', '10000-12000', '8000-10000', '14000-16000']
 Stim.start()
 while True:
     print('Remember to change folder name in OE!')

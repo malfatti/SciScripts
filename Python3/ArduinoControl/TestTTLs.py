@@ -114,9 +114,16 @@ for _ in range(100):
 time.sleep(3)
 
 #%% Test OpenEphys RecControl
+i = 0
+ArduinoObj.write(b'd')
 while True:
-    ArduinoObj.write(b'd')
-    time.sleep(1)
+    i += 1; print(i)
     ArduinoObj.write(b'w')
+    time.sleep(3)
+    ArduinoObj.write(b'd')
     time.sleep(2)
-    
+ArduinoObj.write(b'w')
+
+#RecordEngine timeout
+#JUCE Assertion failure in juce_MessageManager.cpp:194
+#Write buffer overrun, resizing to90112

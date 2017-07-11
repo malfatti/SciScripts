@@ -37,7 +37,7 @@ BaudRate = 115200
 # Sound setup and system used
 CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
 System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
-Setup = 'UnitRec'
+Setup = 'GPIAS'
 
 SoundCh = 3; TTLCh = 1; PiezoCh = [8]
 
@@ -73,11 +73,11 @@ FileName = ''.join([Date, '-', AnimalName, '-GPIAS.hdf5'])
 
 SoundBackgroundAmpF = SigGen.dBToAmpF(BackgroundIntensity, 
                                                  CalibrationFile, 
-                                                 Setup+'/'+System)
+                                                 System+'/'+Setup)
 
 SoundPulseAmpF = SigGen.dBToAmpF(PulseIntensity, 
                                             CalibrationFile, 
-                                            Setup+'/'+System)
+                                            System+'/'+Setup)
 
 
 ## Prepare dict w/ experimental setup

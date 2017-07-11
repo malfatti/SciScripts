@@ -150,7 +150,6 @@ for FKey in SoundRec:
                                                      DataInfo['MicSens_VPa'])
 
 del(SoundRec)
-SoundIntensity
 
 ## Save analyzed data
 print('Saving analyzed data...')

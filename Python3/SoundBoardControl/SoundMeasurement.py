@@ -196,7 +196,7 @@ for FF in ['8000-10000', '9000-11000']:
 
 ToPrepend.sort(); FreqList = ToPrepend + FreqList
 
-plt.figure(figsize=(6, 2))
+plt.figure(figsize=(6, 6))
 for FKey in SoundIntensity:
     FInd = FreqList.index(FKey)
    
@@ -209,7 +209,7 @@ for FKey in SoundIntensity:
                  label=LineLabel, color=Colors[FInd])
 
 plt.ylabel(YLabel); plt.xlabel(XLabel)
-#plt.legend(loc='lower right')
+plt.legend(loc='upper left')
 plt.locator_params(tight=True)
 plt.tick_params(direction='out')
 plt.axes().spines['right'].set_visible(False)

@@ -66,11 +66,7 @@ os.makedirs(Folder, exist_ok=True)
 SoundAmpF = np.hstack((
                 np.flipud(np.logspace(np.log10(1e-4), np.log10(10.0), 299)),
                 np.array(0.0)
-#                np.arange(2.15, 1.05, -0.1), np.arange(1.0, 0.4, -0.05),
-#                np.arange(0.4, 0.15, -0.01), np.arange(0.15, 0.03, -0.005),
-#                np.arange(0.03, 0.01, -0.0005), np.arange(0.01, 0.001, -0.0001),
-#                np.arange(0.001, 0, -0.00002), 
-                ))
+            ))
 SoundAmpF = np.array([round(_,6) for _ in SoundAmpF])
 
 ## Prepare dict w/ experimental setup
@@ -123,7 +119,7 @@ print('Finished recording \O/')
 #DataInfo = Hdf5F.LoadSoundMeasurement(FileName, 'DataInfo')
 SoundRec = Hdf5.SoundMeasurementLoad(FileName, Group, 'SoundRec')
 SBInAmpF = Hdf5.SoundCalibration(SigGen.SBAmpFsFile, SoundSystem, 'SBInAmpF')
-NoiseRMS = Hdf5.SoundCalibration(SigGen.SBAmpFsFile, SoundSystem, 'NoiseRMS')
+# NoiseRMS = Hdf5.SoundCalibration(SigGen.SBAmpFsFile, SoundSystem, 'NoiseRMS')
 
 if 'MicSens_dB' in DataInfo:
     DataInfo['MicSens_VPa'] = 10**(DataInfo['MicSens_dB']/20)
@@ -142,8 +138,8 @@ for FKey in SoundRec:
         SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * SBInAmpF
         FreqBand = [int(_) for _ in FKey.split('-')]
         
-        NoiseAmpF = 1 - (NoiseRMS/((np.mean(SoundRec[FKey][AKey]**2))**0.5))
-        SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * NoiseAmpF
+#         NoiseAmpF = 1 - (NoiseRMS/((np.mean(SoundRec[FKey][AKey]**2))**0.5))
+        SoundRec[FKey][AKey] = SoundRec[FKey][AKey]# * NoiseAmpF
         
         SoundIntensity[FKey][AKey] = SignalIntensity(SoundRec[FKey][AKey], 
                                                      DataInfo['Rate'], FreqBand, 

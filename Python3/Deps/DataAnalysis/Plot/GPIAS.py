@@ -5,13 +5,13 @@ Created on Mon Jun 12 15:06:47 2017
 
 @author: malfatti
 """
-from Plot.Plot import Set
+from DataAnalysis.Plot.Plot import Set as PlotSet
 
 
 ## Level 0
 def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext='svg', 
               Save=True, Visible=False):
-    Params = Set(Params=True)
+    Params = PlotSet(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
     from matplotlib import pyplot as plt
     
@@ -38,11 +38,11 @@ def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext='svg',
         Axes[FInd].set_title(SubTitle)
         Axes[FInd].set_ylabel(YLabel); Axes[FInd].set_xlabel(XLabel)
 
-        Set(AxesObj=Axes[FInd], Axes=True)
+        PlotSet(AxesObj=Axes[FInd], Axes=True)
     
     FigTitle = FigName.split('/')[-1]
     FigName = FigName + '.' + Ext
-    Set(FigObj=Fig, FigTitle=FigTitle, Plot=True)
+    PlotSet(FigObj=Fig, FigTitle=FigTitle, Plot=True)
     
     if Save: Fig.savefig(FigName, format=Ext)
     if Visible: plt.show()

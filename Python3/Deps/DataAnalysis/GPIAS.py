@@ -8,7 +8,7 @@ Created on Mon Jun 12 14:12:37 2017
 import numpy as np
 
 from DataAnalysis.DataAnalysis import FilterSignal, QuantifyTTLsPerRec, SliceData
-from IO import Hdf5F
+from IO import Hdf5
 from scipy import signal
 
 
@@ -169,7 +169,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                                        GPIASData['Index'][Freq], Keys, 
                                        NoOfSamplesBefore, SliceSize)
     
-    Hdf5F.WriteGPIAS(GPIASData, AnalysisKey, AnalysisFile, XValues)
+    Hdf5.GPIASWrite(GPIASData, AnalysisKey, AnalysisFile, XValues)
     
     if Return: return(GPIASData, XValues)
     else: return(None)

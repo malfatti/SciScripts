@@ -99,6 +99,8 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1],
         Freqs = []; Trial = 0
         for F, Folder in enumerate(Exps):
             Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs)
+            if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
+            
             ExpInfo = Hdf5.ExpExpInfo(Folder, F, InfoFile)
             
             ABRs, Info = Calc(Data[Proc], Rate[Proc], ExpInfo, DataInfo, 

@@ -82,17 +82,17 @@ def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
 
 
 ## Level 2
-def DataLoader(Folder, AnalogTTLs=True):
+def DataLoader(Folder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
     FilesExt = [F[-3:] for F in glob(Folder+'/*.*')]
     
     if 'kwd' in FilesExt:
-        if AnalogTTLs:  Data, Rate = KwikLoad(Folder)
+        if AnalogTTLs:  Data, Rate = KwikLoad(Folder, Unit, ChannelMap)
 #        else:  Data, Events, _, Files = Hdf5.OEKwikLoad(Folder, AnalogTTLs)
         
         return(Data, Rate)
     
     elif 'dat' in FilesExt:
-        Data, Rate = DatLoad(Folder)
+        Data, Rate = DatLoad(Folder, Unit, ChannelMap)
         return(Data, Rate)
     
     elif 'ous' in FilesExt:

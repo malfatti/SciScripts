@@ -4,9 +4,13 @@
 GPIAS analysis
 """
 #%% Import
-import DataAnalysis, GPIAZon, Hdf5F
+#import GPIAZon
 import numpy as np
+
+from DataAnalysis import GPIAS
+from DataAnalysis.Plot import GPIAS as PlotGPIAS
 from glob import glob
+from IO import Hdf5, OpenEphys
 from os import makedirs
 
 #%% Group
@@ -40,9 +44,10 @@ GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
 
 
 #%% Batch
-Animal = 'Prevention'
-Exp = 'PreventionA'
-AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
+Group = 'Prevention'
+Exp = '20170521-Prevention_A-GPIAS'
+AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
+AnalysisFile = 'Test.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
@@ -50,8 +55,8 @@ FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
 Filter = 'butter'
 
-Paths = glob(Animal + '/' + Exp + '/2017-*'); Paths.sort()
-Files = glob(Animal + '/' + Exp + '/20170*'); Files.sort()
+Paths = glob(Group + '/' + Exp + '/2017-*'); Paths.sort()
+Files = glob(Group + '/' + Exp + '/20170*'); Files.sort()
 
 # NaCl
 #del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
@@ -62,30 +67,29 @@ del(Paths[:2]); del(Files[:2])
 
 for Ind, DataPath in enumerate(Paths):
     RecFolder = DataPath.split('/')[-1]
-    AnalysisKey = Exp + '/' + RecFolder.split('/')[-1]
-    FigName = '/'.join([Animal, Exp, 'Figs', RecFolder+'-GPIAS'])
+    AnalysisKey = RecFolder.split('/')[-1]
+    FigName = '/'.join([Group, 'Figs', RecFolder+'-GPIAS'])
     FigPath = '/'.join(FigName.split('/')[:-1])
     makedirs(FigPath, exist_ok=True)
     
-    Data = Hdf5F.LoadOEKwik(DataPath, AnalogTTLs=True, Unit='Bits')[0]
-    DataInfo = Hdf5F.LoadDict('/DataInfo', Files[Ind])
-    Proc = Hdf5F.GetProc(Data, 'OE')
-    Rate = Data[Proc]['info']['0']['sample_rate']
+    Data, Rate = OpenEphys.DataLoader(DataPath, AnalogTTLs=True, Unit='uV')
+    DataInfo = Hdf5.DictLoad('/DataInfo', Files[Ind])
+    if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
     
     # Test TTLCh
-#    plt.plot(Data[Proc]['data']['0'][:,TTLCh-1]); plt.show()
+#    plt.plot(Data[Proc]['0'][:,TTLCh-1]); plt.show()
 #    print(DataInfo['TTLCh'])
     
     # Test recs
-#    SOAB = DataAnalysis.GPIAS.CheckGPIASRecs(Data[Proc]['data'], [65000, 100000])
+#    SOAB = GPIAS.CheckGPIASRecs(Data[Proc], [65000, 100000])
 #    if SOAB: 
 #        print(); print(DataPath)
 #        print(); print(SOAB); print()
 #    else: print(); print(DataPath, 'clear.'); print()
     
-    for Rec in Data[Proc]['data'].keys():
-        BitVolts = 10000/(2**16)
-        Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
+#    for Rec in Data[Proc].keys():
+#        BitVolts = 10000/(2**16)
+#        Data[Proc][Rec] = Data[Proc][Rec] * BitVolts
     
 #    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
 #        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[Ind])
@@ -96,16 +100,16 @@ for Ind, DataPath in enumerate(Paths):
     
     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
     
-    GPIAS, XValues = DataAnalysis.GPIAS.Analysis(
-                         Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
+    GPIASRec, XValues = GPIAS.Analysis(
+                         Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
                          AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
                          FilterFreq, FilterOrder, Filter, Return=True)
     
     
-    DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
-                            FigName, Save=True, Visible=True)
+    PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
+                            FigName, Save=False, Visible=True)
     
-    del(GPIAS, XValues)
+    del(GPIASRec, XValues)
 
 
 #%% Batch broken
@@ -176,16 +180,16 @@ for Ind, DataPath in enumerate(Paths):
     for Key in Data[Proc].keys(): 
         for r in ToDelete[Ind][0]: del(Data[Proc][Key][r])
     
-    GPIAS, XValues = DataAnalysis.GPIAS.Analysis(
+    GPIASRec, XValues = GPIAS.Analysis(
                          Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
                          AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
                          FilterFreq, FilterOrder, Return=True)
     
     
-    DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
+    Plot.GPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
                             FigName, Save=True, Visible=True)
     
-    del(GPIAS, XValues)
+    del(GPIASRec, XValues)
 
 
 #%% New
@@ -289,11 +293,11 @@ DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
 for Key in Data[Proc].keys(): del(Data[Proc][Key]['85'])
 
 ## Run Analysis
-GPIAS, XValues = DataAnalysis.GPIAS.Analysis(
+GPIASRec, XValues = GPIAS.Analysis(
                      Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
                      AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
                      FilterFreq, FilterOrder, Filter, Return=True)
 
 
-DataAnalysis.Plot.GPIAS(GPIAS, XValues, DataInfo['SoundLoudPulseDur'], 
+Plot.GPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
                         FigName, Save=True, Visible=True)

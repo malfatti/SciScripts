@@ -18,12 +18,10 @@
 Functions for manipulating specific hdf5 files.
 """
 
-import h5py, Kwik, os, SettingsXML
+import h5py, os
 import numpy as np
 
-from DataAnalysis.DataAnalysis import BitsToVolts
 from datetime import datetime
-from glob import glob
 from numbers import Number
 
 
@@ -175,17 +173,23 @@ def ClustersWrite(Clusters, FileName, Group):
     return(None)
 
 
-def Data2Hdf5(Data, Path, OpenedFile):
+def Data2Hdf5(Data, Path, OpenedFile, Overwrite=False):
     if type(Data) == dict:
-        for K, Key in Data.items(): Data2Hdf5(Key, Path+'/'+K, OpenedFile)
+        for K, Key in Data.items(): Data2Hdf5(Key, Path+'/'+K, OpenedFile, Overwrite)
     elif type(Data) == str:
         if Path not in OpenedFile: OpenedFile.create_group(Path)
         OpenedFile[Path] = np.string_(Data)
     elif type(Data) == list:
         if True in [D == str(D) for D in Data]: OpenedFile[Path] = np.string_(Data)
+        if Overwrite:
+            if Path in OpenedFile: del(OpenedFile[Path])
         else: OpenedFile[Path] = Data
     
-    elif type(Data) in [np.ndarray, tuple]: OpenedFile[Path] = Data
+    elif type(Data) in [np.ndarray, tuple]: 
+        if Overwrite:
+            if Path in OpenedFile: del(OpenedFile[Path])
+        
+        OpenedFile[Path] = Data
     
     else: print('Data type', type(Data), 'at', Path, 'not understood.')
     
@@ -198,8 +202,8 @@ def DataLoad(Path, FileName):
     return(Data, Attrs)
 
 
-def DataWrite(Data, Path, FileName):
-    with h5py.File(FileName) as F: Data2Hdf5(Data, Path, F)
+def DataWrite(Data, Path, FileName, Overwrite=False):
+    with h5py.File(FileName) as F: Data2Hdf5(Data, Path, F, Overwrite)
     
     return(None)
         

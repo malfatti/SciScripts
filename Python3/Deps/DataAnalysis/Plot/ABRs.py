@@ -12,7 +12,7 @@ from DataAnalysis.Plot import Plot
 from glob import glob
 from IO import Hdf5
 
-def Traces(AnalysisPath, AnalysisFile, InfoFile, Ext=['svg'], Save=True, Visible=True):
+def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], Save=True, Visible=True):
     Data = Hdf5.DataLoad(AnalysisPath, AnalysisFile)[0]
     ABRs, XValues = Data['ABRs'], Data['XValues']
     DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
@@ -75,9 +75,9 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, Ext=['svg'], Save=True, Visible
                     Plot.Set(FigObj=Fig, FigTitle=FigTitle, Plot=True)
                     
                     if Save:
-                        os.makedirs('Figs', exist_ok=True)    # Figs folder
-                        FigName = ''.join(['Figs/', InfoFile[:-15], '-ABRs_', Stim, 
-                                           '_', DVCoord, 'DV_', Freq, 'Hz_', Trial])
+                        os.makedirs(FigPath, exist_ok=True)    # Figs folder
+                        FigName = ''.join([FigPath, '/', DataInfo['FileName'][:-15], '-ABRs_', S, 
+                                           '_', DV, 'DV_', F, 'Hz_', T])
                         for E in Ext: Fig.savefig(FigName+'.'+E, format=E)
                         
     

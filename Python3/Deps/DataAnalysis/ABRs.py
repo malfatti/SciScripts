@@ -102,8 +102,8 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1],
             XValuesPath = '/'+Exp+'/XValues'+'/'+Info['Path']+'/Trial'+str(Trial)
             print(Path)
             
-            Hdf5.DataWrite(ABRs, Path, AnalysisFile)
-            Hdf5.DataWrite(Info['XValues'], XValuesPath, AnalysisFile)
+            Hdf5.DataWrite(ABRs, Path, AnalysisFile, Overwrite=True)
+            Hdf5.DataWrite(Info['XValues'], XValuesPath, AnalysisFile, Overwrite=True)
             Freqs.append(Freq)
     
     return(None)

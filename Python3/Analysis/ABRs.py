@@ -10,21 +10,28 @@ from DataAnalysis import ABRs
 from DataAnalysis.Plot import ABRs as ABRPlot
 from glob import glob
 
-Animal = 'Prevention'; Exp = '20170704-Prevention_A1-ABRs'
-#AnalysisFile = Animal+'/'+Animal+'-Analysis.hdf5'
-AnalysisFile = 'Test.hdf5'
+Animal = 'Prevention'; Exp = '20170703-Prevention_A5-ABRs'
+AnalysisFile = Animal+'/'+Animal+'-Analysis.hdf5'
+#AnalysisFile = 'Test.hdf5'
 AnalysisPath = '/'+Exp
-InfoFile = Animal+'/'+Exp+'/20170704102002-Prevention_A1-SoundStim.hdf5'
+InfoFile = glob(Animal+'/'+Exp+'/*.hdf5')[0]
 # Folders = glob(Animal+'/'+Exp+'/KwikFiles/*'); Folders.sort()
 Folders = glob(Animal+'/'+Exp+'/2017-*'); Folders.sort()
-ABRCh=[1]; ABRTTLCh=3
+
+ABRCh=[1]; ABRTTLCh=0
 
 ABRs.Analysis(Exp, Folders, InfoFile, AnalysisFile, ABRCh, ABRTTLCh)
-ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Save=False, Visible=True)
+ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Animal+'/Figs', Save=True, Visible=True)
 
 
 0 = 40
 1 = 50
 2 = 50
 3 = 50
+4 = 50
+
+0 = 40
+1 = 40
+2 = 40
+3 = 40
 4 = 50

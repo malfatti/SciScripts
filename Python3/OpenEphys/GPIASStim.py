@@ -31,7 +31,7 @@ from IO import Arduino, Hdf5, SigGen
 #%% Set parameters of the experiment
 #np.random.permutation(range(1,7))
 #[1, 5, 4, 3, 2, 6]
-AnimalName = 'Prevention_A1'
+AnimalName = 'Prevention_A5'
 Rate = 192000
 BaudRate = 115200
 
@@ -198,5 +198,5 @@ DataInfo['FreqOrder'] = FreqOrder
 DataInfo['FreqSlot'] = FreqSlot
 DataInfo['Freqs'] = Freqs
 
-Hdf5.WriteGPIASInfo(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
+Hdf5.GPIASInfoWrite(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
                      FreqOrder, FreqSlot, FileName)

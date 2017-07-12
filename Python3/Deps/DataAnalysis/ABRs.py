@@ -33,8 +33,11 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
     NoOfSamplesAfter = TimeAfterTTL*int(Rate*10**-3)
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
     
-    Freq = DataInfo['NoiseFrequency'][ExpInfo['Hz']]
-    Info['Frequency'] = '-'.join([str(_) for _ in Freq])
+    if type(ExpInfo['Hz']) == str:
+        Info['Frequency'] = ExpInfo['Hz']
+    else:
+        Freq = DataInfo['NoiseFrequency'][ExpInfo['Hz']]
+        Info['Frequency'] = '-'.join([str(_) for _ in Freq])
     
     Info['XValues'] = (range(-NoOfSamplesBefore, 
                              NoOfSamples-NoOfSamplesBefore)/Rate)*10**3

@@ -29,7 +29,8 @@ from IO import Arduino, Hdf5, SigGen
 
 
 #%% Set parameters of the experiment
-
+#np.random.permutation(range(1,7))
+#[1, 5, 4, 3, 2, 6]
 AnimalName = 'Prevention_A1'
 Rate = 192000
 BaudRate = 115200
@@ -53,7 +54,7 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [60]
+BackgroundIntensity = [50]
 PulseIntensity = [105]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
@@ -64,7 +65,7 @@ NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000],
                   [12000, 14000], [14000, 16000], [8000, 16000]]
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 0.7
+TTLAmpF = 0.4
 #==========#==========#==========#==========#
 
 

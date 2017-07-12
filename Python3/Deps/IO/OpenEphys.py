@@ -51,7 +51,7 @@ def DatLoad(Folder, Unit='uV', ChannelMap=[]):
         
         Data[Proc][Rec] = Data[Proc][Rec].reshape((SamplesPerCh, ChNo))        
         # Still to be parsed. Assuming 30000.
-        Rate[Proc].append(30000)
+        Rate[Proc].append(np.array(30000))
     
     for Proc in Data.keys():
         if Unit.lower() == 'uv': Data[Proc] = DataTouV(Data[Proc], RecChs[Proc])
@@ -71,7 +71,7 @@ def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
         Data = {}; Rate = {}
         Data[Proc], Attrs = Hdf5.DataLoad('/', Kwd)
         Data[Proc] = {R: Rec['data'] for R, Rec in Data[Proc]['recordings'].items()}
-        Rate[Proc] = [Rec['sample_rate'] for Rec in Attrs['recordings'].values()]
+        Rate[Proc] = [np.array(Rec['sample_rate']) for Rec in Attrs['recordings'].values()]
         if len(np.unique(Rate[Proc])) == 1: Rate[Proc] = Rate[Proc][0]
         
         if Unit.lower() == 'uv': Data[Proc] = DataTouV(Data[Proc], RecChs[Proc])

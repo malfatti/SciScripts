@@ -166,8 +166,9 @@ def GetTTLThreshold(TTLCh):
 #        Top = max(TTLCh) + abs(min(TTLCh))
 #        Bot = min(TTLCh) + abs(min(TTLCh))
 #        Threshold = max(TTLCh) - (Top - Bot)/3 + 2*(np.std(TTLCh))
-        Amp = max(TTLCh) - min(TTLCh)
-        Threshold = max(TTLCh) - (Amp/4)
+#         Amp = max(TTLCh) - min(TTLCh)
+#         Threshold = max(TTLCh) - (Amp/4)
+        Threshold = np.mean(TTLCh) + 2*(np.std(TTLCh))
         return(Threshold) 
 
 

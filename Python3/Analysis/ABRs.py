@@ -10,7 +10,7 @@ from DataAnalysis import ABRs
 from DataAnalysis.Plot import ABRs as ABRPlot
 from glob import glob
 
-Animal = 'Prevention'; Exp = '20170703-Prevention_A5-ABRs'
+Animal = 'Prevention'; Exp = '20170703-Prevention_A4-ABRs'
 AnalysisFile = Animal+'/'+Animal+'-Analysis.hdf5'
 #AnalysisFile = 'Test.hdf5'
 AnalysisPath = '/'+Exp
@@ -35,3 +35,6 @@ ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Animal+'/Figs', Save=True, 
 2 = 40
 3 = 40
 4 = 50
+
+50
+

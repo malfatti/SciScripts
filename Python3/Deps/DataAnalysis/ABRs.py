@@ -32,7 +32,7 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
     NoOfSamplesBefore = TimeBeforeTTL*int(Rate*10**-3)
     NoOfSamplesAfter = TimeAfterTTL*int(Rate*10**-3)
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-    
+    print(ExpInfo['Hz'])
     if type(ExpInfo['Hz']) == str:
         Info['Frequency'] = ExpInfo['Hz']
     else:
@@ -42,11 +42,16 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
     Info['XValues'] = (range(-NoOfSamplesBefore, 
                              NoOfSamples-NoOfSamplesBefore)/Rate)*10**3
     
+    if len(Data.keys()) > len(DataInfo['Intensities']):
+        print('There are more recs than Intensities. Skipping...')
+        return({}, {})
+    
+#    Broken = []; Good = []
     for R, Rec in Data.items():
         print('Slicing and filtering ABRs Rec ', R, '...')
         
         if len(Rec) < 50*Rate:
-            print('Rec', R, 'is broken!!!')
+            print('Rec', R, 'is broken!!!')#; Broken.append(R)
             continue
         
         ABR = np.zeros((NoOfSamples, len(ABRCh)))
@@ -66,9 +71,14 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
             ABR[:,C] = FilterSignal(ABR[:,C], Rate, FilterFreq, FilterOrder,  
                                     'butter', 'bandpass')
         
+#        if len(DataInfo['Intensities'])-1 < int(R): R = Broken[0]; del(Broken[0])
+#        if Broken: R = str(len(Good))
+#        print(R)
         dB = str(DataInfo['Intensities'][int(R)]) + 'dB'
         ABRs[dB] = ABR[:]; del(ABR, ABRData)
-    
+#        Good.append(R)
+        
+#    if Broken: print("There were broken recs, intensities may be wrong!")
     Info['Path'] = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
     
     return(ABRs, Info)
@@ -95,6 +105,8 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1],
                               Stim, ABRCh, ABRTTLCh, TimeBeforeTTL, 
                               TimeAfterTTL, AnalogTTLs, FilterFreq, 
                               FilterOrder)
+            
+            if not ABRs: print('Empty ABRs. Skipping...'); continue
             
             Freq = Info['Frequency']
             if Freq in Freqs: Freqs = []; Trial += 1

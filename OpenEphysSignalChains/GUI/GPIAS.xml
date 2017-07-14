@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>12 Jul 2017 9:49:02</DATE>
+    <DATE>12 Jul 2017 17:08:38</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -39,13 +39,13 @@
         <CHANNEL name="ADC8" number="26" gain="0.000152587890625"/>
       </CHANNEL_INFO>
       <CHANNEL name="0" number="0">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="1" number="1">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -60,43 +60,43 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="7" number="7">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="8" number="8">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="9" number="9">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="10" number="10">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="11" number="11">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="12" number="12">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="13" number="13">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="14" number="14">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="15" number="15">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="16" number="16">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="17" number="17">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="18" number="18">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="19" number="19">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="20" number="20">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -108,7 +108,7 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="23" number="23">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="24" number="24">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -135,7 +135,7 @@
       <EVENTCHANNEL name="13" number="13"/>
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.9615616675223594978"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="2.0705324842113927986"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"
@@ -485,7 +485,7 @@
   </SIGNALCHAIN>
   <AUDIO bufferSize="1024"/>
   <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
-                appendText="Prevention_A3" recordEngine="2"/>
+                appendText="Prevention_A5" recordEngine="2"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">

@@ -65,20 +65,6 @@ NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000],
                   [12000, 14000], [14000, 16000]]
 #NoiseFrequency = [[8000, 10000], [12000, 14000]]
 
-### Laser
-## Silence before pulse
-#LaserPrePauseDur = 0
-## Pulse duration
-#LaserPulseDur = 0.01
-## Silence after pulse
-#LaserPostPauseDur = 0.09
-## Amount of pulses per block
-#LaserPulseNo = 200
-## Number of blocks
-#LaserStimBlockNo = 1
-## Duration of pause between blocks
-#LaserPauseBetweenStimBlocksDur = 5
-#==========#==========#==========#==========#
 
 CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
 Date = datetime.datetime.now()
@@ -118,26 +104,6 @@ SD.default.samplerate = Rate
 SD.default.blocksize = 384
 SD.default.channels = 2
 Stim = SD.OutputStream(dtype='float32')
-
-#%% Prepare laser stimulation
-#Laser, LaserPauseBetweenStimBlocks, _ = \
-#    SigGen.LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, 
-#                               CalibrationFile, SoundBoard, LaserPrePauseDur, 
-#                               LaserPostPauseDur, LaserStimBlockNo, 
-#                               LaserPauseBetweenStimBlocksDur)
-
-
-#%% Prepare sound and laser simultaneous stimulation
-#SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
-#    SigGen.SoundLaserStim(Rate, SoundPulseDur, SoundPulseNo, 
-#                                    SoundAmpF, NoiseFrequency, LaserPulseDur, 
-#                                    LaserPulseNo, TTLAmpF, CalibrationFile, 
-#                                    SoundBoard, SoundPrePauseDur, 
-#                                    SoundPostPauseDur, SoundStimBlockNo, 
-#                                    SoundPauseBetweenStimBlocksDur, 
-#                                    LaserPrePauseDur, LaserPostPauseDur, 
-#                                    LaserStimBlockNo, 
-#                                    LaserPauseBetweenStimBlocksDur)
 
 
 #%% Run sound
@@ -191,7 +157,117 @@ while True:
 
 Stim.stop()
 
-#%% Run laser
+#%% Acoustic trauma
+
+AnimalName = 'Prevention_A1_2_6'
+Rate = 192000
+
+# Sound setup and system used
+System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+Setup = 'GPIAS'
+
+## Sound
+SoundPulseDur = 20
+SoundPulseNo = 360
+Intensities = [80]
+PauseBetweenIntensities=0
+NoiseFrequency = [[9000, 11000]]
+
+
+CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
+Date = datetime.datetime.now()
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundStim.hdf5'])
+
+SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
+
+DataInfo = dict((Name, eval(Name)) 
+                for Name in ['AnimalName', 'Rate', 'SoundPulseDur', 
+                             'SoundPulseNo', 'Intensities', 'NoiseFrequency', 
+                             'CalibrationFile', 'FileName'])
+
+Hdf5.DictWrite(DataInfo, '/DataInfo', FileName)
+Hdf5.DictWrite(SoundAmpF, '/DataInfo/SoundAmpF', FileName)
+
+
+Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
+                         0, System, TTLs=False, Map=[2,1])
+
+Pause = np.zeros((PauseBetweenIntensities*Rate,2), dtype='float32')
+
+# Set audio objects
+SD.default.device = 'system'
+SD.default.samplerate = Rate
+SD.default.blocksize = 384
+SD.default.channels = 2
+
+DVCoord = 'Out'
+#Freq = 4
+#Freq = int(Freq)
+
+FKeys = list(Sound.keys()); ToPrepend = []
+for FF in ['8000-10000', '9000-11000']:
+    if FF in FKeys:
+        del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
+
+ToPrepend.sort(); FKeys = ToPrepend + FKeys
+
+while True:
+    print('Remember to change folder name in OE!')
+    print('Choose frequency:')
+    for Ind, K in enumerate(FKeys):
+        print(str(Ind) + ')' , K)
+    
+    print(str(len(FKeys)) + ')', 'Cancel')
+    FKey = input(': ')
+    
+    if FKey == str(len(FKeys)): break
+    
+    try:
+        FKey = FKeys[int(FKey)]
+    except IndexError:
+        print('=== Wrong Freq index. Stopping... ===')
+        print('')
+        break
+    
+    AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
+    for AmpF, AKey in enumerate(AKeys):
+#        SS = Sound[FKey][AKey].T
+#        for Pulse in range(SoundPulseNo-1):
+#            SS = np.concatenate((SS, Sound[FKey][AKey].T))
+        SS = np.concatenate([Sound[FKey][AKey] for _ in range(SoundPulseNo)])
+        
+        print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
+        SD.play(SS, blocking=True)
+        del(SS)
+    
+    Hdf5.ExpInfoWrite('Sound', DVCoord, FKey, FileName)
+    print('Played Freq', FKey, 'at', DVCoord, 'µm DV')
+
+
+
+#%% Laser
+## Silence before pulse
+#LaserPrePauseDur = 0
+## Pulse duration
+#LaserPulseDur = 0.01
+## Silence after pulse
+#LaserPostPauseDur = 0.09
+## Amount of pulses per block
+#LaserPulseNo = 200
+## Number of blocks
+#LaserStimBlockNo = 1
+## Duration of pause between blocks
+#LaserPauseBetweenStimBlocksDur = 5
+
+## Prepare laser stimulation
+#Laser, LaserPauseBetweenStimBlocks, _ = \
+#    SigGen.LaserStim(Rate, LaserPulseDur, LaserPulseNo, TTLAmpF, 
+#                               CalibrationFile, SoundBoard, LaserPrePauseDur, 
+#                               LaserPostPauseDur, LaserStimBlockNo, 
+#                               LaserPauseBetweenStimBlocksDur)
+
+### Run laser
 #DVCoord = input('Choose DVCoord (in µm): '); 
 #DVCoord = 'Out'
 ##
@@ -218,7 +294,20 @@ Stim.stop()
 ##print('Ran laser pulses at ' + str(lHz) + ' at ' + DVCoord + 'µm DV')
 #
 #
-##%% Run sound and laser
+
+#%% Prepare sound and laser simultaneous stimulation
+#SoundAndLaser, SoundAndLaserPauseBetweenStimBlocks, _ = \
+#    SigGen.SoundLaserStim(Rate, SoundPulseDur, SoundPulseNo, 
+#                                    SoundAmpF, NoiseFrequency, LaserPulseDur, 
+#                                    LaserPulseNo, TTLAmpF, CalibrationFile, 
+#                                    SoundBoard, SoundPrePauseDur, 
+#                                    SoundPostPauseDur, SoundStimBlockNo, 
+#                                    SoundPauseBetweenStimBlocksDur, 
+#                                    LaserPrePauseDur, LaserPostPauseDur, 
+#                                    LaserStimBlockNo, 
+#                                    LaserPauseBetweenStimBlocksDur)
+
+## Run sound and laser
 ##Hz = input('Choose Freq index: ')
 ##DVCoord = input('Choose DVCoord (in µm): '); 
 #DVCoord = 'Out'

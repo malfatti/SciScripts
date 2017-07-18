@@ -26,12 +26,12 @@ import datetime, os
 import numpy as np
 import sounddevice as SD
 
-from IO import Arduino, Hdf5, SigGen
+from IO import Arduino, Hdf5, SigGen, Txt
 
 
 #%% Set Parameters
-# Order: [2, 3, 5, 4, 6, 1]
-AnimalName = 'Prevention_A1'
+# Order: [4, 3, 5]
+AnimalName = 'Prevention_A5'
 Rate = 192000
 BaudRate = 115200
 
@@ -40,7 +40,7 @@ System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'UnitRec'
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 0.4
+TTLAmpF = 0.6
 
 ## Fill all durations in SECONDS!
 
@@ -71,7 +71,9 @@ Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundStim.hdf5'])
 
-SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
+#SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
+# Temporary override
+SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
 
 DataInfo = dict((Name, eval(Name)) 
                 for Name in ['AnimalName', 'Rate', 'BaudRate', 
@@ -87,6 +89,9 @@ DataInfo = dict((Name, eval(Name))
 
 Hdf5.DictWrite(DataInfo, '/DataInfo', FileName)
 Hdf5.DictWrite(SoundAmpF, '/DataInfo/SoundAmpF', FileName)
+DataInfo['ExpInfo'] = {}
+DataInfo['SoundAmpF'] = {K: Key.tolist() for K, Key in SoundAmpF.items()}
+Txt.DictWrite(FileName.split('.')[0]+'.dict', DataInfo)
 
 ArduinoObj = Arduino.CreateObj(BaudRate)
 
@@ -104,21 +109,24 @@ SD.default.samplerate = Rate
 SD.default.blocksize = 384
 SD.default.channels = 2
 Stim = SD.OutputStream(dtype='float32')
-
+ArduinoObj.write(b'd')
 
 #%% Run sound
 DVCoord = 'Out'
+StimType = ['Sound', 'CNO']
 #Freq = 4
 #Freq = int(Freq)
 
-FKeys = list(Sound.keys()); ToPrepend = []
-for FF in ['8000-10000', '9000-11000']:
-    if FF in FKeys:
-        del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
+# FKeys = list(Sound.keys()); ToPrepend = []
+# for FF in ['8000-10000', '9000-11000']:
+#     if FF in FKeys:
+#         del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
+# 
+# ToPrepend.sort(); FKeys = ToPrepend + FKeys
+FKeys = list(Sound.keys())
+FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
 
-ToPrepend.sort(); FKeys = ToPrepend + FKeys
-
-# FreqOrder = ['12000-14000', '9000-11000', '10000-12000', '8000-10000', '14000-16000']
+# FreqOrder = ['8000-10000', '9000-11000', '12000-14000', '14000-16000', '10000-12000']
 Stim.start()
 while True:
     print('Remember to change folder name in OE!')
@@ -146,20 +154,25 @@ while True:
         SS = np.concatenate([Sound[FKey][AKey] for _ in range(SoundPulseNo)])
         
         print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
-        ArduinoObj.write(b'd')
-        Stim.write(SS)
         ArduinoObj.write(b'w')
+        Stim.write(SS)
+        ArduinoObj.write(b'd')
         Stim.write(Pause)
         del(SS)
     
     Hdf5.ExpInfoWrite('Sound', DVCoord, FKey, FileName)
+    
+    Rec = "{0:02d}".format(len(DataInfo['ExpInfo']))
+    DataInfo['ExpInfo'][Rec] = {'DVCoord': DVCoord, 'StimType': StimType, 'Hz': FKey}
+    Txt.DictWrite(FileName.split('.')[0]+'.dict', DataInfo)
+    
     print('Played Freq', FKey, 'at', DVCoord, 'µm DV')
 
 Stim.stop()
 
 #%% Acoustic trauma
 
-AnimalName = 'Prevention_A1_2_6'
+AnimalName = 'Prevention_A3_4_5'
 Rate = 192000
 
 # Sound setup and system used

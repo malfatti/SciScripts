@@ -115,13 +115,13 @@ time.sleep(3)
 
 #%% Test OpenEphys RecControl
 i = 0
-# ArduinoObj.write(b'd')
+ArduinoObj.write(b'd')
 while True:
     i += 1; print(i)
+    ArduinoObj.write(b'w')
+    time.sleep(15)
     ArduinoObj.write(b'd')
     time.sleep(3)
-    ArduinoObj.write(b'w')
-    time.sleep(2)
 # ArduinoObj.write(b'w')
 
 # RecordEngine timeout
@@ -130,3 +130,4 @@ while True:
 
 # JackAudioIODevice::errorCallback zombified - calling shutdown handler
 # JackAudioIODevice::shutdown
+# To try: nice -n -18 open-ephys

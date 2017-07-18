@@ -5,6 +5,8 @@ Created on Mon Jun 12 15:39:12 2017
 
 @author: malfatti
 """
+import numpy as np
+
 from ast import literal_eval
 
 
@@ -24,7 +26,7 @@ def DictPrint(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n
         
         return '{%s}' % (','.join(items) + lfchar + htchar * indent)
     
-    elif type(value) is list:
+    elif type(value) is list or type(value) is tuple:
         items = [
             itemchar + DictPrint(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
             for item in value
@@ -44,15 +46,18 @@ def DictPrint(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n
         
         return '[%s]' % (','.join(items))
     
-    elif type(value) is tuple:
+    elif type(value) is np.ndarray:
+        value = value.tolist()
+        
         items = [
             itemchar + DictPrint(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
             for item in value
         ]
         
         if breaklineat == 'auto':
-           bl = (80 - (len(htchar)*(indent + 1)))// \
-                ((sum([len(i)+4 for i in items])-2)//len(items))
+           bl = int((80 - (len(htchar)*(indent + 1)))/
+                (int((sum([len(i)+4 for i in items])-len(itemchar)-1)/len(items))))
+         
         else: bl = breaklineat
         
         if not bl: bl = 1
@@ -61,7 +66,26 @@ def DictPrint(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n
             for i in list(range(bl, len(items), bl)):
                 items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
         
-        return '(%s)' % (','.join(items))
+        return '[%s]' % (','.join(items))
+    
+#     elif type(value) is tuple:
+#         items = [
+#             itemchar + DictPrint(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
+#             for item in value
+#         ]
+#         
+#         if breaklineat == 'auto':
+#            bl = (80 - (len(htchar)*(indent + 1)))// \
+#                 ((sum([len(i)+4 for i in items])-2)//len(items))
+#         else: bl = breaklineat
+#         
+#         if not bl: bl = 1
+#        
+#         if len(items) > bl:
+#             for i in list(range(bl, len(items), bl)):
+#                 items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
+#         
+#         return '(%s)' % (','.join(items))
     
     else:
         return repr(value)
@@ -72,7 +96,7 @@ def DictRead(File):
     return(Dict)
 
 
-def DictWrite(File, Str):
-    with open(File, 'w') as F: F.write(Str)
+def DictWrite(File, Var):
+    with open(File, 'w') as F: F.write(DictPrint(Var))
     return(None)
 

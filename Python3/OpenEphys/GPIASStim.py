@@ -30,7 +30,7 @@ from IO import Arduino, Hdf5, SigGen, Txt
 
 #%% Set parameters of the experiment
 #[5, 3, 4]
-AnimalName = 'Prevention_A5'
+AnimalName = 'Prevention_A4'
 Rate = 192000
 BaudRate = 115200
 
@@ -39,7 +39,7 @@ CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurem
 System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'GPIAS'
 
-SoundCh = 3; TTLCh = 1; PiezoCh = [8]
+SoundCh = 8; TTLCh = 7; PiezoCh = [1]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 9
@@ -53,7 +53,7 @@ SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [50]
+BackgroundIntensity = [60]
 PulseIntensity = [105]
 
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].

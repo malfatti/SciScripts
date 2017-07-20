@@ -20,7 +20,7 @@
 import numpy as np
 
 from DataAnalysis.DataAnalysis import FilterSignal, QuantifyTTLsPerRec, SliceData
-from IO import Hdf5, OpenEphys
+from IO import Hdf5, OpenEphys, Txt
 
 
 ## Level 0
@@ -47,10 +47,14 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
         return({}, {})
     
 #    Broken = []; Good = []
+    Done = []
     for R, Rec in Data.items():
         print('Slicing and filtering ABRs Rec ', R, '...')
+        Start = np.where(Rec[:,0] != 0)[0][0]
+        End = np.where(Rec[:,0] != 0)[0][-1]
+        Rec = Rec[Start:End,:]
         
-        if len(Rec) < 50*Rate:
+        if len(Rec) < 20*Rate:
             print('Rec', R, 'is broken!!!')#; Broken.append(R)
             continue
         
@@ -71,11 +75,27 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
             ABR[:,C] = FilterSignal(ABR[:,C], Rate, FilterFreq, FilterOrder,  
                                     'butter', 'bandpass')
         
+        RealR = len(Done)
+        dB = str(DataInfo['Intensities'][int(RealR)]) + 'dB'
+        
 #        if len(DataInfo['Intensities'])-1 < int(R): R = Broken[0]; del(Broken[0])
 #        if Broken: R = str(len(Good))
 #        print(R)
-        dB = str(DataInfo['Intensities'][int(R)]) + 'dB'
+#         try:
+#             dB = str(DataInfo['Intensities'][int(R)]) + 'dB'
+#         except IndexError:
+#             print('Recs and Intensities indexes do not match.')
+#             print('Intensities are:')
+#             for I, Int in enumerate(DataInfo['Intensities']): print(str(I) + ')' , Int)
+#             print('')
+#             print('Recs are:')
+#             for Ri, Rk in enumerate(sorted(list(Data.keys()))): print(str(Ri) + ')' , Rk)
+#             print('')
+#             print('Current Rec is', R)
+#             R = input('Choose intensity (using above intensity index): ')
+#             dB = str(DataInfo['Intensities'][int(R)]) + 'dB'
         ABRs[dB] = ABR[:]; del(ABR, ABRData)
+        Done.append(R)
 #        Good.append(R)
         
 #    if Broken: print("There were broken recs, intensities may be wrong!")
@@ -89,19 +109,30 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1],
              ABRTTLCh=0, TimeBeforeTTL=3, TimeAfterTTL=12, 
              FilterFreq=[300, 3000], FilterOrder=4, StimType=['Sound'], 
              AnalogTTLs=True, Proc='100'):
-    DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    InfoType = InfoFile[-4:]
+    
+    if InfoType == 'hdf5': DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    else: DataInfo = Txt.DictRead(InfoFile)
+    
     if not AnalysisFile: 
         AnalysisFile = './' + DataInfo['AnimalName'] + '-Analysis.hdf5'
         
     for Stim in StimType:
-        Exps = Hdf5.ExpPerStimLoad(Stim, Folders, InfoFile)
+        if InfoType == 'hdf5': Exps = Hdf5.ExpPerStimLoad(Stim, Folders, InfoFile)
+        else: 
+            Exps = [Folders[int(R)] for R in DataInfo['ExpInfo']
+                    if Stim in DataInfo['ExpInfo'][R]['StimType']]
+            Exps.sort()
         
         Freqs = []; Trial = 0
         for F, Folder in enumerate(Exps):
             Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs)
             if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
             
-            ExpInfo = Hdf5.ExpExpInfo(Folder, F, InfoFile)
+            if InfoType == 'hdf5': ExpInfo = Hdf5.ExpExpInfo(Folder, F, InfoFile)
+            else: 
+                R = "{0:02d}".format(Folders.index(Folder))
+                ExpInfo = DataInfo['ExpInfo'][R]
             
             ABRs, Info = Calc(Data[Proc], Rate[Proc], ExpInfo, DataInfo, 
                               Stim, ABRCh, ABRTTLCh, TimeBeforeTTL, 

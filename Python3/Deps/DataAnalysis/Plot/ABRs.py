@@ -10,12 +10,14 @@ import numpy as np
 
 from DataAnalysis.Plot import Plot
 from glob import glob
-from IO import Hdf5
+from IO import Hdf5, Txt
 
 def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], Save=True, Visible=True):
     Data = Hdf5.DataLoad(AnalysisPath, AnalysisFile)[0]
     ABRs, XValues = Data['ABRs'], Data['XValues']
-    DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    
+    if InfoFile[-4:] == 'hdf5': DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    else: DataInfo = Txt.DictRead(InfoFile)
     
     Params = Plot.Set(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
@@ -41,7 +43,7 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                                              figsize=(8, 1.5*len(Intensities)))
                     
                     for dB, ABR in Trial.items():
-                        FigTitle = ''.join([F, 'Hz, ', DV, 'DV,', T])
+                        FigTitle = ''.join([S, F, 'Hz, ', DV, 'DV,', T])
                         YLabel = 'Voltage [mV]'; XLabel = 'Time [ms]'
                         LineLabel = dB
                         SpanLabel = 'Sound pulse'

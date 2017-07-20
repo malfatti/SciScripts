@@ -131,9 +131,7 @@ Stim.start()
 while True:
     print('Remember to change folder name in OE!')
     print('Choose frequency:')
-    for Ind, K in enumerate(FKeys):
-        print(str(Ind) + ')' , K)
-    
+    for Ind, K in enumerate(FKeys): print(str(Ind) + ')' , K)
     print(str(len(FKeys)) + ')', 'Cancel')
     FKey = input(': ')
     

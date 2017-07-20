@@ -16,10 +16,13 @@ if [ $2 == 'txt' ]; then
 	latex -interaction=nonstopmode "$1" > /dev/null
 	echo "Converting to text and removing formatting..."
 	catdvi --debug=0 "$1".dvi > "$1"1.txt
-	cat "$1"1.txt | echo -n `sed 's/^$/STARTPARA/'`|sed 's/STARTPARA/\n\n/g' > "$1"2.txt
-	tr -d '\014' < "$1"2.txt > "$1".txt
+	cat "$1"1.txt | echo -n `sed 's/^$/STARTPARA/'` | sed 's/STARTPARA/\n\n/g' > "$1".txt
+	#catdvi --debug=0 "$1".dvi > "$1"1.txt
+	#cat "$1"1.txt | echo -n `sed 's/^$/STARTPARA/'` | sed 's/STARTPARA/\n\n/g' > "$1"2.txt
+	#tr -d '\014' < "$1"2.txt > "$1".txt
 	echo "Cleaning..."
-	rm "$1"1.txt "$1"2.txt
+	#rm "$1"1.txt "$1"2.txt
+	rm "$1"1.txt
 	mv "$1".txt 'DocVersion/'
 	echo "Done."
 fi

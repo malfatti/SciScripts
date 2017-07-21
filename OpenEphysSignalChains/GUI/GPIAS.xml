@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>20 Jul 2017 15:06:49</DATE>
+    <DATE>21 Jul 2017 14:14:24</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -135,7 +135,7 @@
       <EVENTCHANNEL name="13" number="13"/>
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="2.1664630414539209902"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="2.2485836294267493862"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"
@@ -247,111 +247,111 @@
     <PROCESSOR name="Filters/Bandpass Filter" insertionPoint="1" NodeId="103">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="1" number="1">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="4" number="4">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="5" number="5">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="6" number="6">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="7" number="7">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="8" number="8">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="9" number="9">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="10" number="10">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="11" number="11">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="12" number="12">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="13" number="13">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="14" number="14">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="15" number="15">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="16" number="16">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="17" number="17">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="18" number="18">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="19" number="19">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="20" number="20">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="21" number="21">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="22" number="22">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="23" number="23">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="24" number="24">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="25" number="25">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="26" number="26">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="8000" lowcut="1" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="3" shouldFilter="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
       <EVENTCHANNEL name="1" number="1"/>
@@ -370,7 +370,7 @@
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
       <EDITOR isCollapsed="0" displayName="Bandpass Filter" Type="FilterEditor">
-        <VALUES HighCut="8000" LowCut="1" ApplyToADC="0"/>
+        <VALUES HighCut="6000" LowCut="3" ApplyToADC="0"/>
       </EDITOR>
     </PROCESSOR>
     <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" NodeId="105">
@@ -477,15 +477,15 @@
       <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
         <TAB Active="1"/>
         <WINDOW Active="0"/>
-        <LFPDISPLAY Range="1000,2000,0.1" Timebase="5.0" Spread="80" colorGrouping="1"
+        <LFPDISPLAY Range="1000,2000,0.1" Timebase="3.0" Spread="80" colorGrouping="1"
                     isInverted="0" drawMethod="1" EventButtonState="255" ChannelDisplayState="101000011111111111110000011"
-                    ScrollX="0" ScrollY="1533"/>
+                    ScrollX="0" ScrollY="1532"/>
       </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>
   <AUDIO bufferSize="1024"/>
   <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
-                appendText="Prevention_A5" recordEngine="2"/>
+                appendText="Prevention_A3" recordEngine="2"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">

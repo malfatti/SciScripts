@@ -45,7 +45,7 @@ GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
 
 #%% Batch
 Group = 'Prevention'
-Exp = '20170720-Prevention-GPIAS'
+Exp = '20170721-Prevention-GPIAS'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -108,7 +108,7 @@ for F, Folder in enumerate(Folders):
     
     
     PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
-                            FigName, Save=True, Visible=False)
+                            FigName, Save=True, Visible=True)
     
     del(GPIASRec, XValues)
 

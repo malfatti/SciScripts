@@ -43,7 +43,7 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                                              figsize=(8, 1.5*len(Intensities)))
                     
                     for dB, ABR in Trial.items():
-                        FigTitle = ''.join([S, F, 'Hz, ', DV, 'DV,', T])
+                        FigTitle = ' '.join([S, F+'Hz,', DV, 'DV, Trial', T])
                         YLabel = 'Voltage [mV]'; XLabel = 'Time [ms]'
                         LineLabel = dB
                         SpanLabel = 'Sound pulse'

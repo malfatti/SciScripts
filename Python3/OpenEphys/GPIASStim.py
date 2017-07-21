@@ -30,7 +30,7 @@ from IO import Arduino, Hdf5, SigGen, Txt
 
 #%% Set parameters of the experiment
 #[5, 3, 4]
-AnimalName = 'Prevention_A4'
+AnimalName = 'Prevention_A3'
 Rate = 192000
 BaudRate = 115200
 
@@ -39,7 +39,7 @@ CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurem
 System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'GPIAS'
 
-SoundCh = 8; TTLCh = 7; PiezoCh = [1]
+SoundCh = 3; TTLCh = 2; PiezoCh = [1]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 9

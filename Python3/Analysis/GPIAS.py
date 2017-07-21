@@ -10,7 +10,7 @@ import numpy as np
 from DataAnalysis import GPIAS
 from DataAnalysis.Plot import GPIAS as PlotGPIAS
 from glob import glob
-from IO import Hdf5, OpenEphys
+from IO import Hdf5, OpenEphys, Txt
 from os import makedirs
 
 #%% Group
@@ -45,9 +45,8 @@ GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
 
 #%% Batch
 Group = 'Prevention'
-Exp = '20170521-Prevention_A-GPIAS'
+Exp = '20170720-Prevention-GPIAS'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
-AnalysisFile = 'Test.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
@@ -55,26 +54,28 @@ FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
 Filter = 'butter'
 
-Paths = glob(Group + '/' + Exp + '/2017-*'); Paths.sort()
-Files = glob(Group + '/' + Exp + '/20170*'); Files.sort()
+Folders = glob(Group + '/' + Exp + '/2017-*'); Folders.sort()
+Files = glob(Group + '/' + Exp + '/20170*dict'); Files.sort()
 
 # NaCl
 #del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
 # SSal
 #del(Paths[-2:], Paths[5], Paths[0]); del(Files[-2:], Files[5], Files[0])
 # PreventionA
-del(Paths[:2]); del(Files[:2])
+# del(Paths[:2]); del(Files[:2])
 
-for Ind, DataPath in enumerate(Paths):
-    RecFolder = DataPath.split('/')[-1]
+for F, Folder in enumerate(Folders):
+    RecFolder = Folder.split('/')[-1]
     AnalysisKey = RecFolder.split('/')[-1]
-    FigName = '/'.join([Group, 'Figs', RecFolder+'-GPIAS'])
-    FigPath = '/'.join(FigName.split('/')[:-1])
-    makedirs(FigPath, exist_ok=True)
+    FigPrefix = Files[F][:-5].split('/')[-1]
+    FigName = '/'.join([Group, 'Figs', FigPrefix+'_Traces'])
+    makedirs('/'.join(FigName.split('/')[:-1]), exist_ok=True)
     
-    Data, Rate = OpenEphys.DataLoader(DataPath, AnalogTTLs=True, Unit='uV')
-    DataInfo = Hdf5.DictLoad('/DataInfo', Files[Ind])
+    Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
     if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
+    
+    if Files[F][-4:] == 'hdf5': DataInfo = Hdf5.DictLoad('/DataInfo', Files[F])
+    else: DataInfo = Txt.DictRead(Files[F])
     
     # Test TTLCh
 #    plt.plot(Data[Proc]['0'][:,TTLCh-1]); plt.show()
@@ -92,13 +93,13 @@ for Ind, DataPath in enumerate(Paths):
 #        Data[Proc][Rec] = Data[Proc][Rec] * BitVolts
     
 #    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-#        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[Ind])
+#        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[F])
 #    
 #    DataInfo['FreqOrder'][-3:][:,1] = -2
 #    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
 #    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
     
-    DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
+#     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
     
     GPIASRec, XValues = GPIAS.Analysis(
                          Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
@@ -107,7 +108,7 @@ for Ind, DataPath in enumerate(Paths):
     
     
     PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
-                            FigName, Save=False, Visible=True)
+                            FigName, Save=True, Visible=False)
     
     del(GPIASRec, XValues)
 

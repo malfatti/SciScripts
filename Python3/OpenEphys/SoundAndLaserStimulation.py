@@ -31,7 +31,7 @@ from IO import Arduino, Hdf5, SigGen, Txt
 
 #%% Set Parameters
 # Order: [4, 3, 5]
-AnimalName = 'Prevention_A5'
+AnimalName = 'Prevention_A3'
 Rate = 192000
 BaudRate = 115200
 

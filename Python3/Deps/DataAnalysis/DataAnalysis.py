@@ -156,7 +156,7 @@ def GetTTLInfo(Events, EventRec, TTLCh):
     return(TTLsPerRec)
 
 
-def GetTTLThreshold(TTLCh):
+def GetTTLThreshold(TTLCh, StdNo=3):
     if np.mean(TTLCh) > 1000: 
         print('Sinusoidal stimulation')
         Threshold = (max(TTLCh) - min(TTLCh)) / 2
@@ -168,7 +168,7 @@ def GetTTLThreshold(TTLCh):
 #        Threshold = max(TTLCh) - (Top - Bot)/3 + 2*(np.std(TTLCh))
 #         Amp = max(TTLCh) - min(TTLCh)
 #         Threshold = max(TTLCh) - (Amp/4)
-        Threshold = np.mean(TTLCh) + 2*(np.std(TTLCh))
+        Threshold = np.mean(TTLCh) + StdNo*(np.std(TTLCh))
         return(Threshold) 
 
 

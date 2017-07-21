@@ -78,10 +78,10 @@ def PreallocateDict(DataInfo, PrePostFreq):
 
 def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore, 
                  NoOfSamplesAfter, NoOfSamples):
-    for Rec in Data.keys():
-        print('Slicing and filtering Rec ', Rec, '...')
-        Freq = DataInfo['FreqOrder'][int(Rec)][0]; 
-        Trial = DataInfo['FreqOrder'][int(Rec)][1];
+    for R, Rec in Data.items():
+        print('Slicing and filtering Rec ', R, '...')
+        Freq = DataInfo['FreqOrder'][int(R)][0]; 
+        Trial = DataInfo['FreqOrder'][int(R)][1];
         
         SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
                          str(DataInfo['NoiseFrequency'][Freq][1])])
@@ -92,15 +92,16 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
         else: STrial = 'Gap'
         
         if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Data[Rec][:,DataInfo['TTLCh']-1])
-#            if len(TTLs) > 1: TTLs = [TTLs[0]]
-            GD = SliceData(Data[Rec][:,DataInfo['PiezoCh'][0]-1], TTLs, 
+            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,DataInfo['TTLCh']-1])
+            if len(TTLs) > 1: TTLs = [np.argmax(Rec[:,DataInfo['TTLCh']-1])]
+            
+            GD = SliceData(Rec[:,DataInfo['PiezoCh'][0]-1], TTLs, 
                            NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
                            AnalogTTLs)
 #        else:
-#            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
+#            RawTime, TTLs = QuantifyTTLsPerRec(Data, R, AnalogTTLs, 
 #                                               TTLsPerRec=TTLsPerRec)
-#            GD = SliceData(Raw, OEProc, Rec, TTLs, GPIASCh, NoOfSamplesBefore, 
+#            GD = SliceData(Raw, OEProc, R, TTLs, GPIASCh, NoOfSamplesBefore, 
 #                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
         
         Dict['Index'][SFreq][STrial].append(GD[0])

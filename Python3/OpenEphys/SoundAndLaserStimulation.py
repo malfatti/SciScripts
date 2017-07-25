@@ -30,8 +30,8 @@ from IO import Arduino, Hdf5, SigGen, Txt
 
 
 #%% Set Parameters
-# Order: [4, 3, 5]
-AnimalName = 'Prevention_A3'
+# Order: [5, 3, 4]
+AnimalName = 'Prevention_A5'
 Rate = 192000
 BaudRate = 115200
 
@@ -126,7 +126,7 @@ StimType = ['Sound', 'CNO']
 FKeys = list(Sound.keys())
 FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
 
-# FreqOrder = ['8000-10000', '9000-11000', '12000-14000', '14000-16000', '10000-12000']
+# FreqOrder = ['12000-14000', '10000-12000', '14000-16000', '9000-11000', '8000-10000']
 Stim.start()
 while True:
     print('Remember to change folder name in OE!')

@@ -119,9 +119,9 @@ ArduinoObj.write(b'd')
 while True:
     i += 1; print(i)
     ArduinoObj.write(b'w')
-    time.sleep(15)
+    time.sleep(30)
     ArduinoObj.write(b'd')
-    time.sleep(3)
+    time.sleep(5)
 # ArduinoObj.write(b'w')
 
 # RecordEngine timeout

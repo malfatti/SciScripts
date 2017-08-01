@@ -25,12 +25,12 @@ import sounddevice as SD
 import random, os
 
 from datetime import datetime
-from IO import Arduino, Hdf5, SigGen, Txt
+from IO import Arduino, SigGen, Txt
 
 
 #%% Set parameters of the experiment
 #[5, 3, 4]
-AnimalName = 'Prevention_A3'
+AnimalName = 'Prevention_A5'
 Rate = 192000
 BaudRate = 115200
 
@@ -197,8 +197,8 @@ DataInfo['FreqOrder'] = FreqOrder
 DataInfo['FreqSlot'] = FreqSlot
 DataInfo['Freqs'] = Freqs
 
-Hdf5.GPIASInfoWrite(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
-                     FreqOrder, FreqSlot, FileName)
+# Hdf5.GPIASInfoWrite(DataInfo, SoundBackgroundAmpF, SoundPulseAmpF, Freqs, 
+#                      FreqOrder, FreqSlot, FileName)
 
 DataInfo['SoundBackgroundAmpF'] = SoundBackgroundAmpF
 DataInfo['SoundPulseAmpF'] = SoundPulseAmpF

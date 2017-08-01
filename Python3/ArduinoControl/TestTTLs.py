@@ -115,13 +115,13 @@ time.sleep(3)
 
 #%% Test OpenEphys RecControl
 i = 0
-ArduinoObj.write(b'd')
+# ArduinoObj.write(b'd')
 while True:
     i += 1; print(i)
-    ArduinoObj.write(b'w')
-    time.sleep(30)
     ArduinoObj.write(b'd')
-    time.sleep(5)
+    time.sleep(60)
+    ArduinoObj.write(b'w')
+    time.sleep(10)
 # ArduinoObj.write(b'w')
 
 # RecordEngine timeout

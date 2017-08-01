@@ -267,10 +267,10 @@ def UniqueStr(List, KeepOrder=False):
 
 
 ## Level 1
-def QuantifyTTLsPerRec(AnalogTTLs, Data=[]):
+def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3):
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:
-        Threshold = GetTTLThreshold(Data)
+        Threshold = GetTTLThreshold(Data, StdNo); print('TTL threshold:', Threshold)
         TTLs = []
         for _ in range(1, len(Data)):
             if Data[_] > Threshold:

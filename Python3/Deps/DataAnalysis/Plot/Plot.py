@@ -68,6 +68,7 @@ def RawCh(Ch, Lines, Cols, XValues=[], Slice=[], Leg=[], FigName='', Colors='',
     from matplotlib import pyplot as plt
     
     PlotNo = len(Ch)
+    plt.figure(figsize=(8, PlotNo))
     Axes = [plt.subplot(Lines, Cols, _+1) for _ in range(PlotNo)]
     
     if XValues == []: XValues = range(len(Ch[0]))
@@ -79,6 +80,11 @@ def RawCh(Ch, Lines, Cols, XValues=[], Slice=[], Leg=[], FigName='', Colors='',
         
         if Colors: Line[0].set_color(Colors[Ind])
         if Leg: Line[0].set_label(Leg[Ind]); Ax.legend(loc='best')
+        Ax.xaxis.set_visible(False)
+        Ax.yaxis.set_visible(False)
+        Ax.set_title(str(Ind+1))
+    
+    plt.tight_layout()
     
     if Save: 
         if not FigName: 

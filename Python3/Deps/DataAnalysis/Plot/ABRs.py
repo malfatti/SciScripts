@@ -78,7 +78,7 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                     
                     if Save:
                         os.makedirs(FigPath, exist_ok=True)    # Figs folder
-                        FigName = ''.join([FigPath, '/', DataInfo['FileName'][:-15], '-ABRs_', S, 
+                        FigName = ''.join([FigPath, '/', DataInfo['FileName'].split('/')[1], '_', S, 
                                            '_', DV, 'DV_', F, 'Hz_', T])
                         for E in Ext: Fig.savefig(FigName+'.'+E, format=E)
                         

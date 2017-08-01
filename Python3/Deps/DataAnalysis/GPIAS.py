@@ -64,10 +64,11 @@ def PreallocateDict(DataInfo, PrePostFreq):
         Dict[Key] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
                      for Freq in DataInfo['NoiseFrequency']}
     
-    Dict['Trace'][PrePostFreq]['Pre'] = []
-    Dict['Trace'][PrePostFreq]['Post'] = []
-    Dict['Index'][PrePostFreq]['Pre'] = []
-    Dict['Index'][PrePostFreq]['Post'] = []
+    if PrePostFreq:
+        Dict['Trace'][PrePostFreq]['Pre'] = []
+        Dict['Trace'][PrePostFreq]['Post'] = []
+        Dict['Index'][PrePostFreq]['Pre'] = []
+        Dict['Index'][PrePostFreq]['Post'] = []
     
     for Freq in Dict['Trace'].keys():
         Dict['Trace'][Freq]['NoGap'] = []; Dict['Trace'][Freq]['Gap'] = []
@@ -80,8 +81,8 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
                  NoOfSamplesAfter, NoOfSamples):
     for R, Rec in Data.items():
         print('Slicing and filtering Rec ', R, '...')
-        Freq = DataInfo['FreqOrder'][int(R)][0]; 
-        Trial = DataInfo['FreqOrder'][int(R)][1];
+        Freq = DataInfo['ExpInfo']['FreqOrder'][int(R)][0]; 
+        Trial = DataInfo['ExpInfo']['FreqOrder'][int(R)][1];
         
         SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
                          str(DataInfo['NoiseFrequency'][Freq][1])])
@@ -92,8 +93,11 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
         else: STrial = 'Gap'
         
         if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,DataInfo['TTLCh']-1])
+            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,DataInfo['TTLCh']-1], StdNo=2)
             if len(TTLs) > 1: TTLs = [np.argmax(Rec[:,DataInfo['TTLCh']-1])]
+            print(TTLs)
+            
+            if not TTLs: print('No TTL detected. Skipping trial...'); continue
             
             GD = SliceData(Rec[:,DataInfo['PiezoCh'][0]-1], TTLs, 
                            NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
@@ -112,8 +116,8 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
 
 ## Level 1    
 def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
-             GPIASTimeBeforeTTL=50, GPIASTimeAfterTTL=150, 
-             FilterFreq=[70, 400], FilterOrder=4, Filter='fir', 
+             GPIASTimeBeforeTTL=100, GPIASTimeAfterTTL=150, 
+             FilterFreq=[70, 400], FilterOrder=4, Filter='butter', 
              SliceSize=100, AnalogTTLs=True, Return=False):
     
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
@@ -123,9 +127,12 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
     XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
                /Rate)*10**3
     
-    PrePostFreq = DataInfo['FreqOrder'][0][0]
+    PrePostFreq = DataInfo['ExpInfo']['FreqOrder'][0][0]
     PrePostFreq = '-'.join([str(DataInfo['NoiseFrequency'][PrePostFreq][0]),
                             str(DataInfo['NoiseFrequency'][PrePostFreq][1])])
+    
+    # Temporary override
+    if AnalysisFile.split('/')[0] == 'Recovery': PrePostFreq = []
     
     GPIASData = PreallocateDict(DataInfo, PrePostFreq)
     GPIASData = OrganizeRecs(GPIASData, Data, DataInfo, AnalogTTLs,
@@ -170,7 +177,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                                        GPIASData['Index'][Freq], Keys, 
                                        NoOfSamplesBefore, SliceSize)
     
-    Hdf5.GPIASWrite(GPIASData, AnalysisKey, AnalysisFile, XValues)
+    Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFile)
     
     if Return: return(GPIASData, XValues)
     else: return(None)

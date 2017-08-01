@@ -185,7 +185,7 @@ def Data2Hdf5(Data, Path, OpenedFile, Overwrite=False):
             if Path in OpenedFile: del(OpenedFile[Path])
         else: OpenedFile[Path] = Data
     
-    elif type(Data) in [np.ndarray, tuple]: 
+    elif type(Data) == tuple or 'numpy' in str(type(Data)):
         if Overwrite:
             if Path in OpenedFile: del(OpenedFile[Path])
         
@@ -482,8 +482,9 @@ def Hdf52Dict(Path, F):
             
         return(ReturnCopy(F[Path]), Attrs)
     
-    elif 'numpy' in str(type(F[Path])):
-        return(F[Path])
+    elif 'numpy' in str(type(F[Path])): return(F[Path])
+    elif type(F[Path]) in [str, list, tuple, dict]: return(F[Path])
+    else: return(None)
 
 
 #def OEKwikLoad(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):

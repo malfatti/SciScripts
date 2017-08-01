@@ -32,6 +32,7 @@ from IO import Arduino, Hdf5, SigGen, Txt
 #%% Set Parameters
 # Order: [5, 3, 4]
 AnimalName = 'Prevention_A5'
+SoundCh = 3; TTLCh = 2; ABRCh = [1]
 Rate = 192000
 BaudRate = 115200
 
@@ -81,6 +82,7 @@ DataInfo = dict((Name, eval(Name))
                              'SoundPostPauseDur', 'SoundPulseNo', 
                              'Intensities', 'NoiseFrequency', 
                              'PauseBetweenIntensities',
+                             'SoundCh', 'TTLCh', 'ABRCh',
 #                             'LaserPrePauseDur', 'LaserPulseDur', 
 #                             'LaserPostPauseDur', 'LaserPulseNo', 
 #                             'LaserStimBlockNo', 

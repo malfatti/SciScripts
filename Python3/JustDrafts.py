@@ -3,62 +3,185 @@
 Just drafts
 """
 #%% Klusta :)
+import numpy as np
+import os
+
+from DataAnalysis import DataAnalysis
+from DataAnalysis.Plot import Plot
+from glob import glob
+from IO import Hdf5, OpenEphys, Txt
 from klusta.kwik import KwikModel
 
-#XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, BinSize)
-#
-#        TTLs = Rec[:, 17-1]
-#        TTLs = DataAnalysis.QuantifyTTLsPerRec(True, TTLs)
-        
+Params = Plot.Set(Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib.gridspec import GridSpec
+from matplotlib import pyplot as plt
 
+
+#%%
+Folders = sorted(glob('**/KlustaFiles', recursive=True))[-2:]
+Show = False; Save = True; Ext = ['svg']
+
+TTLCh, ProbeChSpacing = 17, 50
+TimeBeforeTTL, TimeAfterTTL, BinSize = 0, 300, 1
 SpksToPlot = 500
-Clusters = KwikModel(ExpFolder+'/'+ExpName+'.kwik')
-Good = Clusters.cluster_groups
-Good = [Id for Id,Key in Good.items() if Key == 'good']
 
-for Id in Good.keys():
-    SpksId = np.argwhere(Clusters.spike_clusters == Id)
-    Hist = np.array([])
+XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, BinSize)
+
+for Folder in Folders:
+    UnitRec = {}
+    KwikFile = glob(Folder+'/*.kwik')[0]
+    DataFolder = '/'.join(Folder.split('/')[:-1]) + '/KwikFiles'
+    InfoFile = glob('/'.join(Folder.split('/')[:-1]) + '/*.hdf5')[0]
+    FigPath = Folder.split('/')[0] + '/Figs/' + Folder.split('/')[1]
+    AnalysisFile = Folder.split('/')[0] + '/' + Folder.split('/')[0] + '-Analysis.hdf5'
+#    AnalysisFile = 'Test.hdf5'
     
-    for TTL in TTLs:
-        Firing = Clusters.spike_samples[SpksId] \
-                 - (TTL/(Rate/1000))
-        Firing = Firing[(Firing >= XValues[0]) * 
-                        (Firing < XValues[-1])]
+    if InfoFile[-4:] == 'hdf5':  DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    else: DataInfo = Txt.DictRead(InfoFile)
+    
+    DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    
+    KlustaRecs = []; ExpFolders = sorted(glob(DataFolder+'/*'))
+    for f, F in enumerate(ExpFolders):
+        Data = OpenEphys.DataLoader(F, True, 'Bits')[0]
+        ExpInfo = Hdf5.ExpExpInfo(F, f, InfoFile)
+        Proc = list(Data.keys())[0]
+        Recs = sorted(Data[Proc].keys())
         
-        Hist = np.concatenate((Hist, Firing)); del(Firing)
+        Freq = [str(_) for _ in DataInfo['NoiseFrequency'][ExpInfo['Hz']]]
+        Freq = '-'.join(Freq)
+        StimType = ExpInfo['StimType'][0].decode()
+        DV = str(int(ExpInfo['DVCoord'])+900)
+        
+        for R in Recs: KlustaRecs.append([F, Freq+'Hz', str(DataInfo['Intensities'][int(R)])+'dBSPL', 
+                                          StimType, DV, R])
+        del(Data)
     
-    Waveforms = Clusters.all_waveforms[SpksId]
-    Spks = np.arange(Waveforms.shape[0]); np.random.shuffle(Spks)
-    Spks = Spks[:SpksToPlot]; ChNo = Waveforms.shape[2]
+    Clusters = KwikModel(KwikFile)
+    Rate = np.array(Clusters.sample_rate)
+    Offsets = Clusters.all_traces.offsets
     
-    RMSs = [(np.mean((np.mean(Waveforms[:, :, Ch], axis=0))**2))**0.5
-            for Ch in range(ChNo)]
-    BestCh = RMSs.index(max(RMSs))
+    Good = Clusters.cluster_groups
+    Good = [Id for Id,Key in Good.items() if Key == 'good']
     
-    Fig = plt.figure(figsize=(12, 4))
-    Grid = GridSpec(1, 3, width_ratios=[1, 3, 3]) 
-    Axes = [plt.subplot(G) for G in Grid]
-    Axes[0].plot(RMSs, range(ChNo,0,-1))
-    for Spk in Spks: Axes[1].plot(Waveforms[Spk, :, BestCh], 'r')
-    Axes[1].plot(np.mean(Waveforms[:, :, BestCh], axis=0), 'k')
-    Axes[2].hist(Hist, XValues)
-    plt.show()
-#    UnitsData[Rec][CKey]['PSTH'][Id] = Hist[:]
-#    del(Hist)
+    for Rec in Clusters.recordings:
+        RecFolder = KlustaRecs[Rec][0]
+        Freq = KlustaRecs[Rec][1]
+        dB = KlustaRecs[Rec][2]
+        StimType = KlustaRecs[Rec][3]
+        
+        TTLs = OpenEphys.DataLoader(RecFolder, True, 'Bits')[0]
+        Proc = list(TTLs.keys())[0]
+        TTLs = TTLs[Proc][KlustaRecs[Rec][-1]][:, TTLCh-1]
+        TTLs = DataAnalysis.QuantifyTTLsPerRec(True, TTLs)
+        
+        for Id in Good:
+            DV = KlustaRecs[Rec][4]
+            
+            IdStr = "{0:04d}".format(Id)
+            if IdStr not in UnitRec: UnitRec[IdStr] = {}
+            
+#            SpksId = np.argwhere((Clusters.spike_clusters == Id) & (Clusters.spike_recordings == Rec))
+            SpksId = np.where((Clusters.spike_clusters == Id) & (Clusters.spike_recordings == Rec))[0]
+            
+            Waveforms = Clusters.all_waveforms[SpksId]
+            Spks = np.arange(Waveforms.shape[0]); np.random.shuffle(Spks)
+            Spks = Spks[:SpksToPlot]; ChNo = Waveforms.shape[2]
+            
+            RMSs = [(np.nanmean((np.nanmean(Waveforms[:, :, Ch], axis=0))**2))**0.5
+                    for Ch in range(ChNo)]
+            
+            if RMSs[0] != RMSs[0]: print('Spk contains NaNs. Skipping...'); continue
+            BestCh = RMSs.index(max(RMSs))
+            
+            Hist = np.array([])
+            for TTL in TTLs:
+#                Firing = Clusters.spike_samples[SpksId] - (TTL/(Rate/1000))
+                Firing = ((Clusters.spike_samples[SpksId]-Offsets[Rec])*1000/Rate) - (TTL*1000/Rate)
+                Firing = Firing[(Firing >= XValues[0]) * 
+                                (Firing < XValues[-1])]
+                
+                Hist = np.concatenate((Hist, Firing)); del(Firing)
+            
+            HistY, HistX = np.histogram(Hist, XValues)
+            if max(HistY) == 0: print('No Spks in PSTH. Skipping...'); continue
+            
+            Fig = plt.figure(figsize=(16, 5))
+            Grid = GridSpec(1, 3, width_ratios=[1, 3, 3]) 
+            Axes = [plt.subplot(G) for G in Grid]
+            SpkX = np.arange(Waveforms.shape[1])*1000/Rate
+#            Axes[0].plot(RMSs, range(ChNo,0,-1))
+            for S in range(ChNo, 0, -1):
+                if S == ChNo-BestCh: Color = 'r'
+                else: Color = 'k'
+                
+                Axes[0].plot(SpkX, np.mean(Waveforms[:, :, -S], axis=0)+(S*max(RMSs)), Color)
+            
+            for Spk in Spks:  Axes[1].plot(SpkX, Waveforms[Spk, :, BestCh], 'r')
+            Axes[1].plot(SpkX, np.mean(Waveforms[:, :, BestCh], axis=0), 'k')
+#            Axes[2].hist(Hist, XValues)
+            Axes[2].bar(HistX[:-1], HistY/len(TTLs))
+            
+            Axes[0].set_ylabel('Channels')
+            Axes[1].set_ylabel('Voltage [µv]')
+            Axes[2].set_ylabel('Number of spikes [norm.]')
+            
+            Axes[0].locator_params(nbins=5, axis='x')
+            Step = int(round(max(RMSs)))
+            Axes[0].set_yticks(range(Step, int(round(ChNo*max(RMSs)))+Step, Step))
+#            Axes[0].tick_params(axis='y', length=0)
+#            Axes[0].xaxis.set_major_formatter(ticker.LinearLocator(ChNo))
+            Axes[0].set_yticklabels(range(ChNo, 0, -1))
+            
+            for A in range(3):
+                Plot.Set(AxesObj=Axes[A], Axes=True)
+                Axes[A].set_xlabel('Time [ms]')
+                Axes[A].spines['left'].set_position(('outward', 5))
+                Axes[A].spines['bottom'].set_position(('outward', 5))
+                
+                Max = [max(Axes[A].get_xticks()), max(Axes[A].get_yticks())]
+                Min = [min(Axes[A].get_xticks()), min(Axes[A].get_yticks())]
+                
+                if A == 0: YLim0 = Axes[0].get_ylim() 
+                
+                Axes[A].set_xlim(Min[0], Max[0])
+                Axes[A].set_ylim(Min[1], Max[1])
+                Axes[A].spines['bottom'].set_bounds(Min[0], Max[0])
+                Axes[A].spines['left'].set_bounds(Min[1], Max[1])
+            
+            Axes[0].set_ylim(YLim0)
+            
+            if DV[-2:] != 'DV':
+                DV = int(DV) - ((ChNo-BestCh) * ProbeChSpacing)
+                DV = str(DV) + 'DV'
+            
+            FigTitle = 'Unit'+ IdStr + '_' + '_'.join([StimType, DV, Freq, dB])
+            Plot.Set(FigObj=Fig, FigTitle=FigTitle, Plot=True)
+            
+            if Save:
+                os.makedirs(FigPath, exist_ok=True)    # Figs folder
+                FigName = Folder.split('/')[1] + '-' + FigTitle
+                for E in Ext: Fig.savefig(FigPath + '/' + FigName+'.'+E, format=E)
+            
+            print(FigTitle, '|', len(SpksId), 'Spks,', len(Hist), 'in PSTH, max of', max(HistY))
+            if Show: plt.show()
+            else: plt.close()
+            
+            if DV not in UnitRec[IdStr]: UnitRec[IdStr][DV] = {}
+            if StimType not in UnitRec[IdStr][DV]: UnitRec[IdStr][DV][StimType] = {}
+            if Freq not in UnitRec[IdStr][DV][StimType]: UnitRec[IdStr][DV][StimType][Freq] = {}
+            if dB not in UnitRec[IdStr][DV][StimType][Freq]: UnitRec[IdStr][DV][StimType][Freq][dB] = {}
+            
+            UnitRec[IdStr][DV][StimType][Freq][dB]['PSTH'] = Hist
+            UnitRec[IdStr][DV][StimType][Freq][dB]['Spks'] = Waveforms
+            UnitRec[IdStr][DV][StimType][Freq][dB]['MeanFR'] = sum(HistY)/3
+            
+            del(Hist, Waveforms)
+    
+    Hdf5.DataWrite(UnitRec, '/'+Folder.split('/')[1]+'/Units', AnalysisFile)
 
-#KClusters = {}
-#KClusterInd = np.where(pd.Index(pd.unique(Good)).get_indexer(Clusters.spike_clusters) >= 0)[0]
-#KClusters['Id'] = Clusters.spike_clusters[KClusterInd]
-#KClusters['Timestamps'] = Clusters.spike_samples[KClusterInd]
-#WfsAllCh = Clusters.all_waveforms[KClusterInd]
-#KClusters['Waveforms'] = np.zeros(WfsAllCh.shape[0:2])
-#for Spk in range(WfsAllCh.shape[0]):
-#    RMSs = [(np.mean((WfsAllCh[Spk, :, Ch])**2))**0.5
-#            for Ch in range(ChNo)]
-#    BestCh = RMSs.index(max(RMSs))
-
-
+#55 U, 91 D, 107 D, 161 D, 807 D12-14, 808 D, 813 D, 822 D, 828 D, 896 D, 908DMaybe
 #%% RT plots
 from DataAnalysis.Plot import Plot
 

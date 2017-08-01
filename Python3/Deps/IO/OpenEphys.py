@@ -63,7 +63,8 @@ def DatLoad(Folder, Unit='uV', ChannelMap=[]):
 
 def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
     Kwds = glob(Folder+'/*.kwd')
-    if Unit.lower() == 'uv': RecChs = SettingsXML.GetRecChs(Folder+'/settings.xml')[0]
+    XMLFile = glob(Folder+'/setting*.xml')[0]
+    if Unit.lower() == 'uv': RecChs = SettingsXML.GetRecChs(XMLFile)[0]
     
     for Kwd in Kwds:
         Proc = Kwd[-11:-8]

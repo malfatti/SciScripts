@@ -32,7 +32,7 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
     NoOfSamplesBefore = TimeBeforeTTL*int(Rate*10**-3)
     NoOfSamplesAfter = TimeAfterTTL*int(Rate*10**-3)
     NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
-    print(ExpInfo['Hz'])
+    
     if type(ExpInfo['Hz']) == str:
         Info['Frequency'] = ExpInfo['Hz']
     else:
@@ -61,6 +61,9 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
         ABR = np.zeros((NoOfSamples, len(ABRCh)))
         for C, Ch in enumerate(ABRCh):
             if AnalogTTLs:
+                # Temporary override
+                if 4.5 < np.mean(Rec[:,TTLCh-1]) < 5.5: TTLCh = 21
+                print('TTL mean and max:', np.mean(Rec[:,TTLCh-1]), np.max(Rec[:,TTLCh-1]))
                 TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
                 print(len(TTLs), 'TTLs')
                 ABRData = SliceData(Rec[:, Ch-1], TTLs, NoOfSamplesBefore, 
@@ -105,10 +108,9 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
 
 
 ## Level 1
-def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1], 
-             ABRTTLCh=0, TimeBeforeTTL=3, TimeAfterTTL=12, 
-             FilterFreq=[300, 3000], FilterOrder=4, StimType=['Sound'], 
-             AnalogTTLs=True, Proc='100'):
+def Analysis(Exp, Folders, InfoFile, AnalysisFile='', TimeBeforeTTL=3, 
+             TimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
+             StimType=['Sound'], AnalogTTLs=True, Proc='100'):
     InfoType = InfoFile[-4:]
     
     if InfoType == 'hdf5': DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
@@ -129,13 +131,16 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1],
             Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs)
             if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
             
-            if InfoType == 'hdf5': ExpInfo = Hdf5.ExpExpInfo(Folder, F, InfoFile)
+            if InfoType == 'hdf5': ExpInfo = Hdf5.ExpExpInfo(Folder, F, InfoFile); R = ''
             else: 
                 R = "{0:02d}".format(Folders.index(Folder))
                 ExpInfo = DataInfo['ExpInfo'][R]
             
+            if R: SStim = '_'.join(DataInfo['ExpInfo'][R]['StimType'])
+            else: SStim = Stim
+            
             ABRs, Info = Calc(Data[Proc], Rate[Proc], ExpInfo, DataInfo, 
-                              Stim, ABRCh, ABRTTLCh, TimeBeforeTTL, 
+                              SStim, DataInfo['ABRCh'], DataInfo['TTLCh'], TimeBeforeTTL, 
                               TimeAfterTTL, AnalogTTLs, FilterFreq, 
                               FilterOrder)
             
@@ -143,8 +148,9 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', ABRCh=[1],
             
             Freq = Info['Frequency']
             if Freq in Freqs: Freqs = []; Trial += 1
-            Path = '/'+Exp+'/ABRs'+'/'+Info['Path']+'/Trial'+str(Trial)
-            XValuesPath = '/'+Exp+'/XValues'+'/'+Info['Path']+'/Trial'+str(Trial)
+            AnalysisPath = '-'.join(InfoFile.split('/')[-1].split('-')[:2]) + '-ABRs'
+            Path = '/'+AnalysisPath+'/ABRs'+'/'+Info['Path']+'/Trial'+str(Trial)
+            XValuesPath = '/'+AnalysisPath+'/XValues'+'/'+Info['Path']+'/Trial'+str(Trial)
             print(Path)
             
             Hdf5.DataWrite(ABRs, Path, AnalysisFile, Overwrite=True)

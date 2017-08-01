@@ -6,12 +6,30 @@ GPIAS analysis
 #%% Import
 #import GPIAZon
 import numpy as np
+import os
 
 from DataAnalysis import GPIAS
 from DataAnalysis.Plot import GPIAS as PlotGPIAS
 from glob import glob
 from IO import Hdf5, OpenEphys, Txt
-from os import makedirs
+
+
+#%% Olds
+Animals = ['CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+ExpList = ['Before', 'After1', 'After2', 'After3', 'NaCl', 'CNO']
+
+Group = {Animal: {Exp: {} for Exp in ExpList} for Animal in Animals}
+
+
+
+for Animal in Animals:
+    AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
+    Exps = Hdf5.GetGroupKeys('/', AnalysisFile)
+    Exps = [E for E in Exps if 'GPIAS' in E]
+    
+    for Exp in Exps:
+        pass
+    
 
 #%% Group
 #AnalysisFile = 'GPIAZon/GPIAZon-Analysis.hdf5'
@@ -20,11 +38,24 @@ from os import makedirs
 #Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
 #        'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
 
-AnalysisFile = 'Prevention/Prevention-Analysis.hdf5'
-Groups = ['PreventionA', 'PreventionB']
-ExpList = ['Scr']
-Exps = {'PreventionA': ['Scr'],
-        'PreventionB': ['Scr']}
+Groups = ['Recovery', 'Prevention']
+ExpList = ['Before', 'After1', 'After2', 'After3', 'NaCl', 'CNO']
+Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+
+for Group in Groups:
+    AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
+    Dicts = sorted([E for A in Animals for E in glob(Group+'/2*IAS/*dict') if A in E])
+    
+    Exps = []
+    for Animal in Animals:
+        for Exp in Dicts:
+            DataInfo = Txt.DictRead(Exp)
+            
+            Stim = '_'.join(DataInfo['ExpInfo']['StimType'])
+            
+    
+
+Exps = [E[0]]
 
 Save = False; Invalid = False
 DiffThr = 0.6; InvalidThr = 0.1
@@ -44,8 +75,7 @@ GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
 
 
 #%% Batch
-Group = 'Prevention'
-Exp = '20170721-Prevention-GPIAS'
+Group = 'Recovery'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -53,64 +83,127 @@ GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
 Filter = 'butter'
+Stim = 'Sound'
 
-Folders = glob(Group + '/' + Exp + '/2017-*'); Folders.sort()
-Files = glob(Group + '/' + Exp + '/20170*dict'); Files.sort()
+Exps = sorted(glob(Group+'/2*IAS'))[2:]
 
-# NaCl
-#del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
-# SSal
-#del(Paths[-2:], Paths[5], Paths[0]); del(Files[-2:], Files[5], Files[0])
-# PreventionA
-# del(Paths[:2]); del(Files[:2])
-
-for F, Folder in enumerate(Folders):
-    RecFolder = Folder.split('/')[-1]
-    AnalysisKey = RecFolder.split('/')[-1]
-    FigPrefix = Files[F][:-5].split('/')[-1]
-    FigName = '/'.join([Group, 'Figs', FigPrefix+'_Traces'])
-    makedirs('/'.join(FigName.split('/')[:-1]), exist_ok=True)
+for Exp in Exps:
+#    Exp = Group + '/20170721-Prevention-GPIAS'
+    Folders = sorted(glob(Exp + '/' + Exp.split('/')[-1][:4] + '-*'))
+    Files = sorted(glob(Exp + '/' + Exp.split('/')[-1][:4] + '0*dict'))
     
-    Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
+    # NaCl
+    #del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
+    # SSal
+    #del(Paths[-2:], Paths[5], Paths[0]); del(Files[-2:], Files[5], Files[0])
+#    20170521-Prevention_B-GPIAS
+#    del(Folders[:2]); del(Files[:2])
+    
+    StimExps = []
+    for F, Folder in enumerate(Folders):
+        DataInfo = Txt.DictRead(Files[F])
+        
+        if Stim in DataInfo['ExpInfo']['StimType']: StimExps.append(Folder)
+    
+#    if not StimExps: continue
+    
+    for F, Folder in enumerate(StimExps):
+        RecFolder = Folder.split('/')[-1]
+        
+        Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
+        if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
+        
+        if Files[F][-4:] == 'hdf5': 
+            DataInfo = Hdf5.DictLoad('/DataInfo', Files[F])
+            DataInfo['PiezoCh'] = [1]; DataInfo['TTLCh'] = 0
+            for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+                DataInfo[Path] = Hdf5.DatasetLoad('/DataInfo/'+Path, Files[F])
+            
+        else: DataInfo = Txt.DictRead(Files[F])
+        
+        # Check channels | File = Files[F]
+#        from DataAnalysis.Plot import Plot
+#        Chs = [Data[Proc]['0'][:,Ch] for Ch in range(Data[Proc]['0'].shape[1])]
+#        Plot.RawCh(Chs, Lines=len(Chs), Cols=1, Save=False)
+        
+        # Test recs
+#        SOAB = GPIAS.CheckGPIASRecs(Data[Proc], [65000, 100000])
+#        if SOAB: 
+#            print(); print(Folder)
+#            print(); print(SOAB); print()
+#        else: print(); print(Folder, 'clear.'); print()
+        
+    #    for Rec in Data[Proc].keys():
+    #        BitVolts = 10000/(2**16)
+    #        Data[Proc][Rec] = Data[Proc][Rec] * BitVolts
+        
+    #    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+    #        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[F])
+    #    
+    #    DataInfo['FreqOrder'][-3:][:,1] = -2
+    #    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
+    #    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
+        
+    #     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
+        ExpStim = '_'.join(DataInfo['ExpInfo']['StimType'])
+        AnalysisKey = Files[F][:-5].split('/')[-1] + '/' + ExpStim
+        FigPrefix = AnalysisKey.replace('/', '_')
+        FigName = '/'.join([Group, 'Figs', FigPrefix+'_Traces'])
+        os.makedirs('/'.join(FigName.split('/')[:-1]), exist_ok=True)
+        
+        GPIASRec, XValues = GPIAS.Analysis(
+                             Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
+                             AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+                             FilterFreq, FilterOrder, Filter, Return=True)
+        
+        GPIASData = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+        GPIASRec, XValues = GPIASData['GPIAS'], GPIASData['XValues']
+        
+        PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
+                         FigName, Save=True, Visible=False)
+        
+        del(GPIASRec, XValues)
+
+
+#%% convert hdf5 to dict
+Files = glob('Prevention/*GPIAS/2*.hdf5'); Files.sort()
+
+from DataAnalysis.Plot import Plot
+from IO import OpenEphys
+    
+for File in Files:
+    StimInfo, DataInfo = Hdf5.DataLoad('/DataInfo', File)
+    DataInfo.update(StimInfo)
+    
+    Folder = sorted(glob('/'.join(File.split('/')[:-1])+'/2*'+DataInfo['AnimalName']))[0]
+    Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='Bits')
     if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
     
-    if Files[F][-4:] == 'hdf5': DataInfo = Hdf5.DictLoad('/DataInfo', Files[F])
-    else: DataInfo = Txt.DictRead(Files[F])
+    Chs = [Data[Proc]['0'][:,Ch] for Ch in range(Data[Proc]['0'].shape[1])]
+    Plot.RawCh(Chs, Lines=len(Chs), Cols=1, Save=False)
     
-    # Test TTLCh
-#    plt.plot(Data[Proc]['0'][:,TTLCh-1]); plt.show()
-#    print(DataInfo['TTLCh'])
+    PiezoCh = input('PiezoCh: '); PiezoCh = [int(PiezoCh)]
+    TTLCh = input('TTLCh: '); TTLCh = int(TTLCh)
     
-    # Test recs
-#    SOAB = GPIAS.CheckGPIASRecs(Data[Proc], [65000, 100000])
-#    if SOAB: 
-#        print(); print(DataPath)
-#        print(); print(SOAB); print()
-#    else: print(); print(DataPath, 'clear.'); print()
+#    DataDict = Txt.DictRead(File[:-4]+'dict')
+#    PiezoCh, TTLCh = DataDict['PiezoCh'], DataDict['TTLCh']
     
-#    for Rec in Data[Proc].keys():
-#        BitVolts = 10000/(2**16)
-#        Data[Proc][Rec] = Data[Proc][Rec] * BitVolts
+    DataInfo.update({'PiezoCh': PiezoCh, 'TTLCh': TTLCh, 'FileName': File[:-4]+'dict'})
+    Txt.DictWrite(File[:-4]+'dict', DataInfo)
+
+
+#%% Add StimType info to dicts
+Files = glob('Recovery/*GPIAS/2*.dict'); Files.sort()
+
+for File in Files:
+    DataInfo = Txt.DictRead(File[:-4]+'dict')
     
-#    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-#        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[F])
-#    
-#    DataInfo['FreqOrder'][-3:][:,1] = -2
-#    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
-#    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
+    DataInfo['ExpInfo'] = {'StimType': ['Sound']}
+    for Key in ['FreqOrder', 'FreqSlot', 'Freqs']:
+        DataInfo['ExpInfo'][Key] = DataInfo[Key]
+        del(DataInfo[Key])
     
-#     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
-    
-    GPIASRec, XValues = GPIAS.Analysis(
-                         Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
-                         AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                         FilterFreq, FilterOrder, Filter, Return=True)
-    
-    
-    PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
-                            FigName, Save=True, Visible=True)
-    
-    del(GPIASRec, XValues)
+    Txt.DictWrite(File[:-4]+'dict', DataInfo)
 
 
 #%% Batch broken
@@ -283,15 +376,15 @@ DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
 #for Key in Data[Proc].keys(): 
 #    for r in SOAB: del(Data[Proc][Key][r])
 
-# 20170521102604-Prevention_A1-GPIAS.hdf5
-#for Key in Data[Proc].keys(): 
-#    for r in ['50', '51', '90']: del(Data[Proc][Key][r])
-#DataInfo['FreqOrder'] = np.concatenate((DataInfo['FreqOrder'][:51], 
-#                                        np.array([[-99, -99]]), 
-#                                        DataInfo['FreqOrder'][51:]))
+# 20170521102604-Prevention_B1-GPIAS.hdf5
+#for r in ['50', '51', '90']: del(Data[Proc][r])
+#DataInfo['ExpInfo']['FreqOrder'] = np.concatenate((
+#        DataInfo['ExpInfo']['FreqOrder'][:51], 
+#        np.array([[-99, -99]]), 
+#        DataInfo['ExpInfo']['FreqOrder'][51:] ))
 
-# 20170521111251-Prevention_A2-GPIAS.hdf5
-for Key in Data[Proc].keys(): del(Data[Proc][Key]['85'])
+# 20170521111251-Prevention_B2-GPIAS.hdf5
+#del(Data[Proc]['85'])
 
 ## Run Analysis
 GPIASRec, XValues = GPIAS.Analysis(
@@ -302,3 +395,30 @@ GPIASRec, XValues = GPIAS.Analysis(
 
 Plot.GPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
                         FigName, Save=True, Visible=True)
+
+#%% MatFiles
+from IO import Mat
+
+AnalysisFile = 'Recovery/Recovery-Analysis.hdf5'
+Folders = sorted(glob('Recovery/2*IAS/*00-00-00*'))
+InfoFiles = sorted(glob('Recovery/2*IAS/*.mat'))
+
+GPIASTimeBeforeTTL = 200   # in ms
+GPIASTimeAfterTTL = 200    # in ms
+FilterFreq = [100, 300]     # frequency for filter
+FilterOrder = 3       # butter order
+Filter = 'butter'
+
+Mat.GPIASAnalysis(Folders, InfoFiles, AnalysisFile, GPIASTimeBeforeTTL, 
+                  GPIASTimeAfterTTL, FilterFreq, FilterOrder, Filter)
+
+for F, Folder in enumerate(Folders):
+    AnalysisKey = InfoFiles[F].split('/')[1].split('-')
+    AnalysisKey[0] = AnalysisKey[0]+'000000'
+    AnalysisKey[1] = Folder.split('_')[-1]
+    AnalysisKey = '-'.join(AnalysisKey) + '/Sound'
+    
+    Data = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+    FigName = 'Recovery/Figs/'+AnalysisKey.replace('/', '_')+'_Traces'
+    
+    PlotGPIAS.Traces(Data['GPIAS'], Data['XValues'], 0.05, FigName, Save=True, Visible=True)

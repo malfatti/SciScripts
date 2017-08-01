@@ -3,46 +3,42 @@
 """
 GPIAZon group analysis
 """
-## Import
-import DataAnalysis, Hdf5F
 import numpy as np
-from glob import glob
-from itertools import combinations
-from os import makedirs
+import os
 
-Params = DataAnalysis.Plot.Set(Params=True)
+from DataAnalysis import DataAnalysis
+from DataAnalysis.Plot import Plot
+from glob import glob
+from IO import Hdf5
+from itertools import combinations
+
+Params = Plot.Set(Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
 
-## Analysis
-FigPath = 'GPIAZon/Figs'; makedirs(FigPath, exist_ok=True)
+FigPath = 'GPIAZon/Figs'; os.makedirs(FigPath, exist_ok=True)
 Colors = ['k', 'r', 'b', 'm', 'g', '#ffa500', '#00b2b2']    
 
-def GetIndex(Groups, Exps, AnalysisFile):
-    Index = {}
-    for Group in Groups:
-#        Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
-        Animals = [Group[:-1] + '_' + Group[-1] + str(_) for _ in range(1,6)]
-        Index[Group] = {}
-        
-        for Animal in Animals:
+def GetIndex(Group, Animals, Exps, AnalysisFile):
+    Index = {Group: {}}
+    for A, Animal in enumerate(Animals):
 #            Paths = glob('GPIAZon/' + Group + '/*' + Animal); Paths.sort()
-            Paths = glob('Prevention/' + Group + '/*' + Animal); Paths.sort()
-            Index[Group][Animal] = {}
+        Paths = glob(Group + '/*' + Animal); Paths.sort()
+        Index[Group][Animal] = {}
+        
+        for P,Path in enumerate(Paths):
+            AnalysisKey = Group + '/' + Path.split('/')[-1]
+            GPIAS = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+            Index[Group][Animal][Exps[Group][P]] = {}
+#            Freqs = list(GPIAS['Index'].keys())
+#            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
             
-            for P,Path in enumerate(Paths):
-                AnalysisKey = Group + '/' + Path.split('/')[-1]
-                GPIAS = Hdf5F.LoadGPIAS(AnalysisFile, AnalysisKey)[0]
-                Index[Group][Animal][Exps[Group][P]] = {}
-    #            Freqs = list(GPIAS['Index'].keys())
-    #            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
-                
-                for Freq in GPIAS['Index'].keys(): 
-                    if Freq == '9000-11000': continue
-                    Index[Group][Animal][Exps[Group][P]][Freq] = GPIAS['Index'][Freq]['GPIASIndex']
-                
-                del(GPIAS)
+            for Freq in GPIAS['Index'].keys(): 
+                if Freq == '9000-11000': continue
+                Index[Group][Animal][Exps[Group][P]][Freq] = GPIAS['Index'][Freq]['GPIASIndex']
+            
+            del(GPIAS)
     
     return(Index)
 
@@ -75,7 +71,7 @@ def GetMeansV(Index, Groups, ExpList):
     
     return(MeansV, MeansFull)
 
-def GetValid(Index, Groups, ExpList, DiffThr=0.6, Invalid=False, InvalidThr=0.1):
+def GetValid(Index, Groups, ExpList, Invalid=False, InvalidThr=0.1):
     Valid = {}
     for G, Group in enumerate(Groups):
 #        Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]

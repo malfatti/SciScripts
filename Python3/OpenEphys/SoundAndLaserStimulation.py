@@ -31,8 +31,8 @@ from IO import Arduino, Hdf5, SigGen, Txt
 
 #%% Set Parameters
 # Order: [5, 3, 4]
-AnimalName = 'Prevention_A5'
-SoundCh = 3; TTLCh = 2; ABRCh = [1]
+AnimalName = 'Prevention_A4'
+SoundCh = 18; TTLCh = 19; ABRCh = list(range(1,17))
 Rate = 192000
 BaudRate = 115200
 
@@ -111,11 +111,11 @@ SD.default.samplerate = Rate
 SD.default.blocksize = 384
 SD.default.channels = 2
 Stim = SD.OutputStream(dtype='float32')
-ArduinoObj.write(b'd')
+# ArduinoObj.write(b'd')
 
 #%% Run sound
 DVCoord = 'Out'
-StimType = ['Sound', 'CNO']
+StimType = ['Sound', 'NaCl']
 #Freq = 4
 #Freq = int(Freq)
 
@@ -128,7 +128,7 @@ StimType = ['Sound', 'CNO']
 FKeys = list(Sound.keys())
 FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
 
-# FreqOrder = ['12000-14000', '10000-12000', '14000-16000', '9000-11000', '8000-10000']
+# FreqOrder = ['8000-10000', '10000-12000', '14000-16000', '9000-11000', '12000-14000']
 Stim.start()
 while True:
     print('Remember to change folder name in OE!')
@@ -154,9 +154,9 @@ while True:
         SS = np.concatenate([Sound[FKey][AKey] for _ in range(SoundPulseNo)])
         
         print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
-        ArduinoObj.write(b'w')
-        Stim.write(SS)
         ArduinoObj.write(b'd')
+        Stim.write(SS)
+        ArduinoObj.write(b'w')
         Stim.write(Pause)
         del(SS)
     

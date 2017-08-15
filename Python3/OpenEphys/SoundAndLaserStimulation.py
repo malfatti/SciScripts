@@ -31,8 +31,8 @@ from IO import Arduino, Hdf5, SigGen, Txt
 
 #%% Set Parameters
 # Order: [5, 3, 4]
-AnimalName = 'Prevention_A4'
-SoundCh = 18; TTLCh = 19; ABRCh = list(range(1,17))
+AnimalName = 'Prevention_A5'
+SoundCh = 26; TTLCh = 27; ABRCh = list(range(1,17))
 Rate = 192000
 BaudRate = 115200
 
@@ -41,7 +41,8 @@ System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'UnitRec'
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-TTLAmpF = 0.6
+#TTLAmpF = 0.6 # for analog TTLs only
+TTLAmpF = 6.8 # for analog and digital TTLs
 
 ## Fill all durations in SECONDS!
 
@@ -114,8 +115,8 @@ Stim = SD.OutputStream(dtype='float32')
 # ArduinoObj.write(b'd')
 
 #%% Run sound
-DVCoord = 'Out'
-StimType = ['Sound', 'NaCl']
+DVCoord = '12752'
+StimType = ['Sound', 'CNO']
 #Freq = 4
 #Freq = int(Freq)
 
@@ -128,7 +129,7 @@ StimType = ['Sound', 'NaCl']
 FKeys = list(Sound.keys())
 FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
 
-# FreqOrder = ['8000-10000', '10000-12000', '14000-16000', '9000-11000', '12000-14000']
+# FreqOrder = ['10000-12000', '12000-14000', '9000-11000', '14000-16000', '8000-10000']
 Stim.start()
 while True:
     print('Remember to change folder name in OE!')

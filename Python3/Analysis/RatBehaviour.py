@@ -16,7 +16,6 @@ from DataAnalysis.Plot import Plot
 from IO import Txt
 from glob import glob
 from itertools import combinations
-from PIL import Image
 from scipy import io
 from xml.etree import ElementTree
 
@@ -435,6 +434,15 @@ io.savemat('Analysis/VocsSorted.mat', {'VocsSorted': DictFixKeys(VocsSorted),
             long_field_names=True, oned_as='column')
 
 
+#%% DistanceBetweenAnimals
+from IO import Hdf5
+Setup = 'OF'
+M = Hdf5.DataLoad('/', 'DistanceBetweenAnimals'+Setup+'.mat')[0]
+Pairs = ['MSFS', 'MSFD', 'MDFS', 'MDFD']
+ScatterMean(M['D'].T, '', 'Pairs', 'Mean distance between animals [m]', Pairs, 'G42G7-DistanceBetweenAnimals-'+Setup, Ext=['pdf', 'svg', 'eps'])
+plt.show()
+
+
 #%% Vocs
 #Fields = Vocs['Vocs']._fieldnames
 VocsFile = 'Analysis/G32G7-Vocs.mat'
@@ -484,6 +492,7 @@ Recs = Txt.DictRead('./Data/Recs.txt')
 r = round(r/Px2M)
 
 ## Find speaker coordinate
+#from PIL import Image
 #X, Y = None, None
 #Frame = Image.open('./Data/OFPB.bmp')
 #

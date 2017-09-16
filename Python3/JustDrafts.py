@@ -406,24 +406,28 @@ plt.show()
 
 
 #%% Plot ABRThresholds
-import DataAnalysis, Hdf5F, KwikAnalysis
 import numpy as np
-from glob import glob
-from itertools import permutations
 
+from DataAnalysis import Stats
+from DataAnalysis.DataAnalysis import StrRange
+from DataAnalysis.Plot import Plot
+from glob import glob
+from IO import Hdf5
+from itertools import combinations
+#%%
 Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn07', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 
-Params = {'backend': 'TkAgg'}
+Params = Plot.Set(Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
 from matplotlib import pyplot as plt
 
 ABRThresholds = {Animal: {} for Animal in Animals}
 for Animal in Animals:
-    AnalysisFile = glob(Animal + '/*.hdf5')[0]
-    Exps = Hdf5F.GetGroupKeys('/ABRThresholds', AnalysisFile)
+    AnalysisFile = glob(Animal + '*.hdf5')[0]
+    Exps = Hdf5.GetGroupKeys('/ABRThresholds', AnalysisFile)
     
     for Exp in Exps:
-        ABRThresholds[Animal][Exp] = Hdf5F.LoadDict('/ABRThresholds/'+Exp, 
+        ABRThresholds[Animal][Exp] = Hdf5.DictLoad('/ABRThresholds/'+Exp, 
                                                     AnalysisFile, Attrs=False)
 
 Freqs = [Freq for Freq in ABRThresholds[Animal][Exp]]
@@ -443,8 +447,8 @@ for EInd in range(2,4):
                          for FInd in range(len(Freqs))]
 
 # For t-tests
-Pairs = {}
-for Pair in permutations(''.join(DataAnalysis.StrRange('0', str(len(Exps)))), 2):
+Pairs = {}; Combinations = list(combinations(''.join(StrRange('0', str(len(Exps)))), 2))
+for Pair in Combinations:
     PKey = min(Pair)+max(Pair)
     if PKey in Pairs: continue
     
@@ -455,9 +459,11 @@ for Pair in permutations(''.join(DataAnalysis.StrRange('0', str(len(Exps)))), 2)
 #        DataB = ThresholdsPerFreq[int(Pair[1])][FInd]
         DataA = TPFExpanded[int(Pair[0])][FInd]
         DataB = TPFExpanded[int(Pair[1])][FInd]
-        CL = 1 - (0.05/6)
+        CL = 1 - 0.05
         
-        Pairs[PKey][Freq] = DataAnalysis.Stats.RTTest(DataA, DataB, Confidence=CL)
+        if np.mean(DataA) > np.mean(DataB): DataA, DataB = DataB, DataA
+        Pairs[PKey][Freq] = Stats.RTTest(DataA, DataB, Confidence=CL)
+        Pairs[PKey][Freq]['p.value'] *= len(Combinations)
         print('Pair', str(Pair), 'Freq', Freq + ':', 
               str(Pairs[PKey][Freq]['p.value']))
 
@@ -547,7 +553,7 @@ for Pair in Pairs:
         Text = 'p = ' + str(round(Pairs[Pair][Freq]['p.value'], 4))
 #        DiffLine(XInd, Y, Text, Axes[1])
 #        print(Counter)
-        DataAnalysis.Plot.SignificanceBar(XInd[0], XInd[1], Counter, Text, Axes[1], TicksDir='up')
+        Plot.SignificanceBar(XInd, [Y]*2, Text, Axes[1], TicksDir='up')
         Counter += 1
 
 for Ind in [0,1]:
@@ -566,7 +572,7 @@ Axes[0].legend(loc='best', frameon=False)
 Axes[1].xaxis.set_ticks(Ticks)
 Axes[1].set_xticklabels(When)
 Axes[1].set_xlabel(XLabel)
-Axes[1].set_ylim(-2, 7)
+#Axes[1].set_ylim(-2, 7)
 Axes[1].spines['left'].set_visible(False)
 Axes[1].yaxis.set_ticks_position('none')
 

@@ -38,44 +38,31 @@ for Animal in Animals:
 #Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
 #        'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
 
-Groups = ['Recovery', 'Prevention']
-ExpList = ['Before', 'After1', 'After2', 'After3', 'NaCl', 'CNO']
-Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+Group = 'Prevention'
+ExpList = ['BeforeANT', 'AfterANTNaCl', 'AfterANTCNO']
+#Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+Animals = ['Prevention_A3', 'Prevention_A4', 'Prevention_A5']
 
-for Group in Groups:
-    AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
-    Dicts = sorted([E for A in Animals for E in glob(Group+'/2*IAS/*dict') if A in E])
-    
-    Exps = []
-    for Animal in Animals:
-        for Exp in Dicts:
-            DataInfo = Txt.DictRead(Exp)
-            
-            Stim = '_'.join(DataInfo['ExpInfo']['StimType'])
-            
-    
+Exps = glob(Group + '/*' + Group + '*GPIAS'); Exps.sort()
+#Exps = [Exps[E] for E in [0,1,4,6]]# # Recovery override
+Exps = [Exps[E] for E in [1,3,4]] # Prevention override
 
-Exps = [E[0]]
+AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
+#Dicts = sorted([E for A in Animals for E in glob(Group+'/2*IAS/*dict') if A in E])
 
-Save = False; Invalid = False
+Save = True; Invalid = True
 DiffThr = 0.6; InvalidThr = 0.1
 
-Index = GPIAZon.GetIndex(Groups, Exps, AnalysisFile)
-Diff = GPIAZon.GetDiff(Index, Groups, ExpList, DiffThr, Invalid, InvalidThr)
+IndexPerExp = GetMAF(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
+PVals = GetPValues(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
+Index_Exp_BP(IndexPerExp, ExpList, PVals, Invalid, Save=Save)
 
-MeansV, MeansFull = GPIAZon.GetMeansV(Index, Groups, ExpList)
-NaCl, SSal = GPIAZon.GetIndFreqMean(Index, Diff, Groups)
-
-Pairs, PairsFull = GPIAZon.GetPairs(MeansV, MeansFull, Groups, ExpList)
-Pairs, PairsFull = GPIAZon.ClearPairs(Pairs, PairsFull)
-
-YMax = 0.4
-GPIAZon.Plot.Index_Freq_Exp_BP(MeansFull, PairsFull, ExpList, Save)
-GPIAZon.Plot.Index_Exp_BP(NaCl, SSal, ExpList, YMax, Invalid, Save)
+IndexPerExp = GPIAS.GroupData.GetMAF(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
+GPIAS.GroupData.Index_Exp_BP(IndexPerExp, ExpList)
 
 
 #%% Batch
-Group = 'Recovery'
+Group = 'Prevention'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -85,7 +72,7 @@ FilterOrder = 3       # butter order
 Filter = 'butter'
 Stim = 'Sound'
 
-Exps = sorted(glob(Group+'/2*IAS'))[2:]
+Exps = sorted(glob(Group+'/2*IAS'))#[2:]
 
 for Exp in Exps:
 #    Exp = Group + '/20170721-Prevention-GPIAS'
@@ -103,7 +90,7 @@ for Exp in Exps:
     for F, Folder in enumerate(Folders):
         DataInfo = Txt.DictRead(Files[F])
         
-        if Stim in DataInfo['ExpInfo']['StimType']: StimExps.append(Folder)
+        if Stim in DataInfo['StimType']: StimExps.append(Folder)
     
 #    if not StimExps: continue
     
@@ -145,7 +132,7 @@ for Exp in Exps:
     #    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
         
     #     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
-        ExpStim = '_'.join(DataInfo['ExpInfo']['StimType'])
+        ExpStim = '_'.join(DataInfo['StimType'])
         AnalysisKey = Files[F][:-5].split('/')[-1] + '/' + ExpStim
         FigPrefix = AnalysisKey.replace('/', '_')
         FigName = '/'.join([Group, 'Figs', FigPrefix+'_Traces'])
@@ -160,7 +147,7 @@ for Exp in Exps:
         GPIASRec, XValues = GPIASData['GPIAS'], GPIASData['XValues']
         
         PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
-                         FigName, Save=True, Visible=False)
+                         FigName, Save=True, Visible=True)
         
         del(GPIASRec, XValues)
 

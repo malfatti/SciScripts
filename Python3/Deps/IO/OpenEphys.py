@@ -5,10 +5,10 @@ Created on Sat Jul  8 20:04:14 2017
 
 @author: malfatti
 """
-import SettingsXML
+import OpenEphys, SettingsXML
 import numpy as np
 
-from DataAnalysis.DataAnalysis import BitsToVolts
+from DataAnalysis.DataAnalysis import BitsToVolts, UniqueStr
 from glob import glob
 from IO import Hdf5
 
@@ -80,6 +80,30 @@ def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
     
     print('Done.')
     return(Data, Rate)
+
+
+def OpenEphysLoad(Folder, Unit='uV', ChannelMap=[]):
+    OEs = glob(Folder+'/*continuous')
+    XMLFile = glob(Folder+'/setting*.xml')[0]
+    
+    Chs = [_.split('/')[-1] for _ in OEs]
+    Procs = UniqueStr([_[:3] for _ in Chs])
+    
+    Data = {_: {} for _ in Procs}
+    
+    if UniqueStr([len(_.split('.')[0].split('_')) for _ in Chs])[0] == 2:
+        Recs = ['0']
+    else:
+        Recs = sorted(UniqueStr([_.split('.')[0].split('_')[-1] for _ in Chs]))
+    
+    Chs = {Proc: [_ for _ in Chs if _[:3] == Proc] for Proc in Procs}
+    
+    for Proc in Procs:
+        Chs[Proc].sort(key=lambda x: [int(''.join(x.split('CH')[1:]).split('.')[0])])
+        Data[Proc] = {Rec: [] for Rec in Recs}
+        
+        for Rec in Recs:
+            Data[Proc][Rec] = OpenEphys.loadFolderToArray(Folder, channels=Chs[Proc], source=Proc)
 
 
 ## Level 2

@@ -83,11 +83,11 @@ def RTTest(DataA, DataB, Paired=True, Alt='less', Confidence=0.95):
                      conf_level=RObj.FloatVector([Confidence]), 
                      na_action=RObj.r['na.omit'])
     
-    print('Calculating', Results.rx('method')[0][0] + '... ', end='')
+#    print('Calculating', Results.rx('method')[0][0] + '... ', end='')
     TTestResults = {}; Names = list(Results.names)
     for Name in Names:
         TTestResults[Name] = Results.rx(Name)[0][0]
     
-    print('Done.')
+#    print('Done.')
     return(TTestResults)
 

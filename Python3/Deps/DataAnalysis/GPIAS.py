@@ -81,8 +81,8 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
                  NoOfSamplesAfter, NoOfSamples):
     for R, Rec in Data.items():
         print('Slicing and filtering Rec ', R, '...')
-        Freq = DataInfo['ExpInfo']['FreqOrder'][int(R)][0]; 
-        Trial = DataInfo['ExpInfo']['FreqOrder'][int(R)][1];
+        Freq = DataInfo['FreqOrder'][int(R)][0]; 
+        Trial = DataInfo['FreqOrder'][int(R)][1];
         
         SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
                          str(DataInfo['NoiseFrequency'][Freq][1])])
@@ -127,7 +127,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
     XValues = (range(-NoOfSamplesBefore, NoOfSamples-NoOfSamplesBefore)
                /Rate)*10**3
     
-    PrePostFreq = DataInfo['ExpInfo']['FreqOrder'][0][0]
+    PrePostFreq = DataInfo['FreqOrder'][0][0]
     PrePostFreq = '-'.join([str(DataInfo['NoiseFrequency'][PrePostFreq][0]),
                             str(DataInfo['NoiseFrequency'][PrePostFreq][1])])
     

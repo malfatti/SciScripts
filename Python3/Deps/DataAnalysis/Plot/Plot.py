@@ -159,3 +159,24 @@ def RTTest(Files, Save=True, Return=False):
     if Return: return(Jitter)
     else: return(None)
 
+
+def TTLCh(Ch, Std, Threshold, XValues=[]):
+    Params = Set(Params=True)
+    from matplotlib import rcParams; rcParams.update(Params)
+    from matplotlib import pyplot as plt
+    
+    if not Std: Std = 3
+    
+    plt.figure(figsize=(8, 1))
+    Ax = plt.subplot(111)
+    
+    if not XValues: Ax.plot(Ch)
+    else: Ax.plot(XValues, Ch)
+    
+    ThrX = [min(Ax.get_xticks()), max(Ax.get_xticks())]
+    Ax.plot(ThrX, [Threshold]*2)
+    
+    Ax.xaxis.set_visible(False); Ax.yaxis.set_visible(False)
+    plt.tight_layout(); plt.show()
+    return(None)
+

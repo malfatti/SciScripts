@@ -99,7 +99,7 @@ def FixTTLs(Array, TTLsToFix):
     return(Array)
 
 
-def GenerateTTLVector(TTLs, TTLLen, FullLen):
+def GenTTLVector(TTLs, TTLLen, FullLen):
     TTLVec = np.zeros([FullLen, 1])
     
     for TTL in TTLs:
@@ -107,13 +107,15 @@ def GenerateTTLVector(TTLs, TTLLen, FullLen):
     
     return(TTLVec)
 
-def GenerateFakeTTLsRising(Start, Dur, No, PauseBetween):
-    Dur = Dur + PauseBetween
-    
-    FakeTTLs = []
-    for Block in Start:
-        FakeTTLs = FakeTTLs + list(range(Block, (Dur*No) + Block, Dur))
-    
+
+def GenFakeTTLsRising(Rate, PulseDur, PauseBefore, PauseAfter, SampleStart, PulseNo):
+#    Dur = Dur + PauseBetween
+#    
+#    FakeTTLs = []
+#    for Block in Start:
+#        FakeTTLs = FakeTTLs + list(range(Block, (Dur*No) + Block, Dur))
+    BlockDur = PauseBefore+PulseDur+PauseAfter
+    FakeTTLs = [int(((PauseBefore)+(_*BlockDur))*Rate)+SampleStart for _ in range(PulseNo)]
     return(FakeTTLs)
 
 
@@ -157,6 +159,8 @@ def GetTTLInfo(Events, EventRec, TTLCh):
 
 
 def GetTTLThreshold(TTLCh, StdNo=3):
+    if not StdNo: StdNo = 3
+    
     if np.mean(TTLCh) > 1000: 
         print('Sinusoidal stimulation')
         Threshold = (max(TTLCh) - min(TTLCh)) / 2

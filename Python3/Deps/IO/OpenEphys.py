@@ -11,6 +11,7 @@ import numpy as np
 from DataAnalysis.DataAnalysis import BitsToVolts, UniqueStr
 from glob import glob
 from IO import Hdf5
+from IO.Txt import DictPrint
 
 
 ## Level 0
@@ -24,6 +25,17 @@ def ApplyChannelMap(Data, ChannelMap):
         Data[R][:, Chs] = Data[R][:, ChannelMap]
     
     return(Data)
+
+
+def ChooseProcs(XMLFile, Procs):
+    ProcList = SettingsXML.GetRecChs(XMLFile)[1]
+    ProcList = {Id: Name for Id, Name in ProcList.items() if Id in Procs}
+    
+    print(DictPrint(ProcList))
+    Procs = input('Which Procs should be kept (comma separated) ? ')
+    Procs = [_ for _ in Procs.split(',')]
+    
+    return(Procs)
 
 
 def DataTouV(Data, RecChs):
@@ -89,22 +101,35 @@ def OpenEphysLoad(Folder, Unit='uV', ChannelMap=[]):
     Chs = [_.split('/')[-1] for _ in OEs]
     Procs = UniqueStr([_[:3] for _ in Chs])
     
-    Data = {_: {} for _ in Procs}
+    if len(Procs) > 1: Procs = ChooseProcs(XMLFile, Procs)
     
-    if UniqueStr([len(_.split('.')[0].split('_')) for _ in Chs])[0] == 2:
-        Recs = ['0']
-    else:
-        Recs = sorted(UniqueStr([_.split('.')[0].split('_')[-1] for _ in Chs]))
-    
+    Data = {_: {} for _ in Procs}; Rate = {_: {} for _ in Procs}
     Chs = {Proc: [_ for _ in Chs if _[:3] == Proc] for Proc in Procs}
     
-    for Proc in Procs:
-        Chs[Proc].sort(key=lambda x: [int(''.join(x.split('CH')[1:]).split('.')[0])])
-        Data[Proc] = {Rec: [] for Rec in Recs}
+    for P, Proc in Chs.items():
+        Chs[P] = sorted(Proc, key=lambda x: int(x.split('_CH')[1].split('_')[0].split('.')[0]))
+    
+    for Proc in Data.keys():
+        ACh = Chs[Proc][0].split('.')[0]
+        OEData = OpenEphys.loadFolder(Folder, source=Proc)
+        Rate[Proc] = int(OEData[ACh]['header']['sampleRate'])
         
+        Recs = np.unique(OEData[ACh]['recordingNumber'])
+        BlockSize = int(OEData[ACh]['header']['blockLength'])
         for Rec in Recs:
-            Data[Proc][Rec] = OpenEphys.loadFolderToArray(Folder, channels=Chs[Proc], source=Proc)
-
+            R = str(int(Rec))
+            RecInd = np.where(OEData[ACh]['recordingNumber'].repeat(BlockSize) == Rec)
+            Data[Proc][R] = [OEData[_.split('.')[0]]['data'][RecInd] for _ in Chs[Proc]]
+            Data[Proc][R] = np.array(Data[Proc][R]).T
+    
+        if Unit.lower() == 'uv': 
+            ChsInfo = [OEData[_.split('.')[0]]['header']['bitVolts'] for _ in Chs[Proc]]
+            ChsInfo = {str(Ch): {'gain': BitVolt} for Ch, BitVolt in enumerate(ChsInfo)}
+            Data[Proc] = DataTouV(Data[Proc], ChsInfo)
+        
+        if ChannelMap: Data[Proc] = ApplyChannelMap(Data[Proc], ChannelMap)
+    
+    return(Data, Rate)
 
 ## Level 2
 def DataLoader(Folder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
@@ -121,7 +146,8 @@ def DataLoader(Folder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
         return(Data, Rate)
     
     elif 'ous' in FilesExt:
-        print('To be implemented.'); return(None)
+        Data, Rate = OpenEphysLoad(Folder, Unit, ChannelMap)
+        return(Data, Rate)
     
     else: print('Data format not supported.'); return(None)
 

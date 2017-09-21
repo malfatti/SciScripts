@@ -48,25 +48,26 @@ def DictPrint(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n
     
     elif type(value) is np.ndarray:
         value = value.tolist()
-        
-        items = [
-            itemchar + DictPrint(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
-            for item in value
-        ]
-        
-        if breaklineat == 'auto':
-           bl = int((80 - (len(htchar)*(indent + 1)))/
-                (int((sum([len(i)+4 for i in items])-len(itemchar)-1)/len(items))))
-         
-        else: bl = breaklineat
-        
-        if not bl: bl = 1
-       
-        if len(items) > bl:
-            for i in list(range(bl, len(items), bl)):
-                items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
-        
-        return '[%s]' % (','.join(items))
+        items = DictPrint(value, htchar, itemchar, breaklineat, lfchar, indent)
+        return items
+#        items = [
+#            itemchar + DictPrint(item, htchar, itemchar, breaklineat, lfchar, indent + 1)
+#            for item in value
+#        ]
+#        
+#        if breaklineat == 'auto':
+#           bl = int((80 - (len(htchar)*(indent + 1)))/
+#                (int((sum([len(i)+4 for i in items])-len(itemchar)-1)/len(items))))
+#         
+#        else: bl = breaklineat
+#        
+#        if not bl: bl = 1
+#       
+#        if len(items) > bl:
+#            for i in list(range(bl, len(items), bl)):
+#                items[i] = lfchar + htchar*(indent+1) + '  ' + items[i]
+#        
+#        return '[%s]' % (','.join(items))
     
 #     elif type(value) is tuple:
 #         items = [

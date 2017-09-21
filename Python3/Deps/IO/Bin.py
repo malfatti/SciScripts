@@ -59,7 +59,7 @@ def Write(DataFile, Path, Data, Info={}):
     os.makedirs(Path, exist_ok=True)
     
     # Write text info file
-    DictWrite(Path + '/' + InfoFile, DictPrint(Info))
+    DictWrite(Path + '/' + InfoFile, Info)
     
     # Write interleaved data
     with open(Path + '/' + DataFile, 'wb') as File: File.write(Data.tobytes())

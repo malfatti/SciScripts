@@ -13,7 +13,7 @@ import numpy as np
 
 from DataAnalysis import DataAnalysis, Plot, Units
 from glob import glob
-from IO import Bin, Hdf5, Intan, Klusta
+from IO import Bin, Hdf5, Intan, Klusta, OpenEphys
 from IO.Txt import DictRead
 #from klusta.kwik import KwikModel
 
@@ -24,7 +24,7 @@ from IO.Txt import DictRead
 
 
 #%% Klusta
-Board = 'OE'; Rec='0'
+Board = 'OE'
 TimeBeforeTTL = 0; TimeAfterTTL = 300; BinSize = 3
 
 RodsAdaptor = [13, 12, 14, 11, 15, 10, 16, 9, 5, 4, 6, 3, 7, 2, 8, 1]
@@ -32,74 +32,107 @@ CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
 A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
        'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
 Map = DataAnalysis.RemapChannels(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
-Spacing = 25
+Spacing = 50
 PrbFile = os.environ['SCRIPTSPATH'] + '/Python3/Klusta/A16-'+str(Spacing)+'.prb'
 
-Folders = glob('*UnitRec/**/*.kwd', recursive=True) + glob('*/**/*UnitRec/**/*.kwd', recursive=True)
-Folders = ['/'.join(F.split('/')[:-2]) for F in Folders]
-Folders = DataAnalysis.UniqueStr(Folders)
+#Folders = glob('*UnitRec/**/*.kwd', recursive=True) + glob('*/**/*UnitRec/**/*.kwd', recursive=True)
+#Folders = ['/'.join(F.split('/')[:-2]) for F in Folders]
+#Folders = DataAnalysis.UniqueStr(Folders)
+
+Folders = [
+        #'DreaddsValidation/CaMKIIahM3Dn01-20150903-UnitRec/OpenEphysFiles',
+        #'Prevention/20170803-Prevention_A4-UnitRec/DatFiles',
+        'Prevention/20170815-Prevention_A5-UnitRec/KwikFiles',
+        'DreaddsValidation/CaMKIIahM3Dn02-20150921-UnitRec/OpenEphysFiles',
+        #'DreaddsValidation/CaMKIIahM4Dn04-20151012-UnitRec/OpenEphysFiles',
+        'EarBarTest/EarBarTest_01-20170216-UnitRec/KwikFiles',
+        'EarBarTest/EarBarTest_02-20170217-UnitRec/KwikFiles',
+        'EarBarTest/EarBarTest_03-20170217-UnitRec/KwikFiles',
+        'EarBarTest/EarBarTest_04-20170218-UnitRec/KwikFiles'
+]
 
 Done = []; Errors = []; ErrorsLog = []; Skipped = []
 
 for Folder in Folders:
-    try:
-        if Folder in Done+Errors+Skipped: continue
+#    try:
+    if Folder in Done+Errors+Skipped: continue
+    
+    ExpFolder = '/'.join(Folder.split('/')[:-1]) + '/KlustaFiles'; os.makedirs(ExpFolder, exist_ok=True)
+    ExpName = Folder.split('/')[-2]
+    Exps = glob(Folder+'/*'); Exps.sort()
+    Exps = [_ for _ in Exps if '.dict' not in _
+                            and '.hdf5' not in _
+                            and 'BigOne' not in _] # Temp override
+    ExpGroups = []
+    
+    while Exps:
+        print('-1: Run each separately')
+        print('0: All at once')
+        for E, Exp in enumerate(Exps): print(str(E+1)+':', Exp)
+        print(str(len(Exps)+1)+': Discard remaining experiments')
+        print('\n', 'You can run all folders separately,', 
+              '\n', 'run all as one single experiment or',
+              '\n', 'group folders you want by index, comma separated.')
         
-        ExpFolder = '/'.join(Folder.split('/')[:-1]) + '/KlustaFiles'; os.makedirs(ExpFolder, exist_ok=True)
-        ExpName = Folder.split('/')[-2]
-        Exps = glob(Folder+'/*'); Exps.sort()
-        ExpGroups = []
-        
-        while Exps:
-            print('-1: Run each separately')
-            print('0: All at once')
-            for E, Exp in enumerate(Exps): print(str(E+1)+':', Exp)
-            print('\n', 'You can run all folders separately,', 
-                  '\n', 'run all as one single experiment or',
-                  '\n', 'group folders you want by index, comma separated.')
+        FGroup = input('Choose folders to group: ')
+        FGroup = [int(_) for _ in FGroup.split(',')]
+        if len(FGroup) == 1:
+            if FGroup[0] == -1: 
+                for _ in Exps: ExpGroups.append([_])
+                Exps = []; break
             
-            FGroup = input('Choose folders to group: ')
-            FGroup = [int(_) for _ in FGroup.split(',')]
-            if len(FGroup) == 1:
-                if FGroup[0] == -1: 
-                    for _ in Exps: ExpGroups.append([_])
-                    Exps = []; break
-                elif FGroup[0] == 0:
-                    ExpGroups.append(Exps)
-                    Exps = []; break
+            elif FGroup[0] == 0:
+                ExpGroups.append(Exps)
+                Exps = []; break
+            
+            elif FGroup[0] == len(Exps)+1:
+                Exps = []; break
             
             else: 
-                FGroup = [Exps[F-1] for F in FGroup]
-                ExpGroups.append(FGroup)
-                for F in FGroup: Exps.remove(F)
-            
+                FGroup = [Exps[FGroup[0]-1]]
+                ExpGroups.append(FGroup); Exps.remove(FGroup[0])
         
+        else: 
+            FGroup = [Exps[F-1] for F in FGroup]
+            ExpGroups.append(FGroup)
+            for F in FGroup: Exps.remove(F)
+    
+    #if not ExpGroups: print('No exps to run. Skipping folder...')
+    
+    for Es, Exps in enumerate(ExpGroups):
         for E, Exp in enumerate(Exps):
-            Data = Hdf5.OEKwikLoad(Exp, True, 'Bits', Map)[0]
-            Proc = Hdf5.GetProc(Data, Board)
+            Data, Rate = OpenEphys.DataLoader(Exp, True)
+            if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
+            else: Proc = Hdf5.GetProc(Data, Board)
             
 #            Keys = list(Data[Proc]['data'].keys())
 #            if Data[Proc]['data'][Keys[0]].shape[1] < 16: Skipped.append(Exp); continue
             
-            for R, Rec in Data[Proc]['data'].items():
-                DataInfo = {'Rate': int(Data[Proc]['info'][R]['sample_rate'])}
-                DataFile = ExpName + '_Exp' + "{0:02d}".format(int(E)) + '_Rec' + "{0:02d}".format(int(R))
+            for R, Rec in Data[Proc].items():
+                DataFile = ''.join([ExpName, '_Exp', "{0:02d}".format(int(Es)), 
+                                   '-', "{0:02d}".format(int(E)), '_Rec', 
+                                   "{0:02d}".format(int(R))])
+                DataInfo = {'Rate': Rate[Proc]}
                 Bin.Write(DataFile+'.dat', ExpFolder, Rec, DataInfo)
         
+        FilesPrefix = ExpFolder+'/'+ExpName+'_Exp' + "{0:02d}".format(int(Es))
         DataInfo = DictRead(ExpFolder+'/'+DataFile+'-Info.dict')
-        raw_data_files = glob(os.getcwd()+'/'+ExpFolder+'/'+ExpName+'*.dat')
+        raw_data_files = glob(os.getcwd()+'/'+ FilesPrefix + '*.dat')
         raw_data_files.sort()
         
-        Klusta.PrmWrite(ExpFolder+'/'+ExpName+'.prm', ExpName, PrbFile, raw_data_files, 
-                        DataInfo['Rate'],DataInfo['Shape'][1], DataInfo['DType'])
+        Klusta.PrmWrite(FilesPrefix+'.prm', ExpName+'_Exp' + "{0:02d}".format(int(Es)), 
+                        PrbFile, raw_data_files, DataInfo['Rate'],
+                        DataInfo['Shape'][1], DataInfo['DType'])
         
-        Klusta.Run(ExpName+'.prm', os.getcwd()+'/'+ExpFolder, Overwrite=True)
-        Done.append(Folder)
+        Klusta.Run(ExpName+'_Exp' + "{0:02d}".format(int(Es))+'.prm', 
+                   os.getcwd()+'/'+ExpFolder, Overwrite=True)
     
-    except Exception as e:
-        Errors.append(Folder)
-        ErrorsLog.append(e)
-        print(e)
+    Done.append(Folder)
+    
+#    except Exception as e:
+#        Errors.append(Folder)
+#        ErrorsLog.append(e)
+#        print(e)
 
 
 #%% Batch

@@ -119,6 +119,20 @@ def GenFakeTTLsRising(Rate, PulseDur, PauseBefore, PauseAfter, SampleStart, Puls
     return(FakeTTLs)
 
 
+def GetEventEdges(EventsDict, Ch, Proc, Rec, Edge='rise'):
+    if Edge.lower() == 'rise': Id = 1
+    elif Edge.lower() == 'fall': Id = 0
+    else: print('Edge should be "rise" or "fall"')
+    
+    Events = EventsDict['sampleNum'][(EventsDict['channel'] == Ch) * 
+                                     (EventsDict['recordingNumber'] == Rec) * 
+                                     (EventsDict['nodeId'] == Proc) *
+                                     (EventsDict['eventId'] == Id) * 
+                                     (EventsDict['eventType'] == 3)]
+    
+    return(Events)
+
+
 def GetRecXValues(TTLs, Rate, TimeBeforeTTL, TimeAfterTTL):
 #    StimFreq = 1 / ((TTLs[3] - TTLs[2])/Rate)
 #    
@@ -220,10 +234,10 @@ def RemapChannels(Tip, Head, Connector):
     Example:
         CustomAdaptor = [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4]
         RHAHeadstage = [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8]
-        A16 = {'ProbeTip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
-               'ProbeHead': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+        A16 = {'Tip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+               'Head': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
         
-        ChannelMap = RemapChannels(A16['ProbeTip'], A16['ProbeHead'], CustomAdaptor)
+        ChannelMap = RemapChannels(A16['Tip'], A16['Head'], CustomAdaptor)
     """
     print('Get channel order... ', end='')
     ChNo = len(Tip)
@@ -271,18 +285,20 @@ def UniqueStr(List, KeepOrder=False):
 
 
 ## Level 1
-def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3):
+def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3, EventsDict={}, TTLCh=None, 
+                       Proc=None, Rec=None, Edge='rise'):
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:
         Threshold = GetTTLThreshold(Data, StdNo); print('TTL threshold:', Threshold)
-        TTLs = []
-        for _ in range(1, len(Data)):
-            if Data[_] > Threshold:
-                if Data[_-1] < Threshold: TTLs.append(_)
+        TTLs = [_ for _ in range(1, len(Data)) if Data[_] > Threshold and Data[_-1] < Threshold]
+#        for _ in range(1, len(Data)):
+#            if Data[_] > Threshold:
+#                if Data[_-1] < Threshold: TTLs.append(_)
         
         print('Done.')
         return(TTLs)
     else:
+        TTLs = GetEventEdges(EventsDict, TTLCh, Proc, Rec, Edge='rise')
 #        TTLNo = [0]
 #        for _ in range(1, len(TTLsPerRec)+1):
 #            TTLNo = TTLNo + [len(TTLsPerRec[_-1]) + TTLNo[-1]]
@@ -298,7 +314,7 @@ def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3):
 #        TTLs = TTLsPerRec[Rec]
         
         print('Done.')
-#        return(RawTime, TTLs)
+        return(TTLs)
 
 
 def SignalIntensity(Data, Rate, FreqBand, Ref):

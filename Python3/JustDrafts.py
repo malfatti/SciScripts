@@ -19,14 +19,19 @@ from matplotlib import pyplot as plt
 
 
 #%%
-Folders = sorted(glob('**/KlustaFiles', recursive=True))[-2:]
-Show = False; Save = True; Ext = ['svg']
+# add TTLCh to dict
+# change DVCoord to real DVCoord
 
+Folders = sorted(glob('**/KlustaFiles', recursive=True))
+Folders = [_ for _ in Folders if 'Recovery' in _]
+
+Show = False; Save = True; Ext = ['svg']
+AnalogTTLs = True
 TTLCh, ProbeChSpacing = 17, 50
-TimeBeforeTTL, TimeAfterTTL, BinSize = 0, 300, 1
+TimeBeforeTTL, TimeAfterTTL, BinSize = 80, 80, 1
 SpksToPlot = 500
 
-XValues = np.arange(TimeBeforeTTL, TimeAfterTTL, BinSize)
+XValues = np.arange(-TimeBeforeTTL, TimeAfterTTL, BinSize)
 
 for Folder in Folders:
     UnitRec = {}
@@ -40,7 +45,7 @@ for Folder in Folders:
     if InfoFile[-4:] == 'hdf5':  DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
     else: DataInfo = Txt.DictRead(InfoFile)
     
-    DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+#    DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
     
     KlustaRecs = []; ExpFolders = sorted(glob(DataFolder+'/*'))
     for f, F in enumerate(ExpFolders):
@@ -71,10 +76,15 @@ for Folder in Folders:
         dB = KlustaRecs[Rec][2]
         StimType = KlustaRecs[Rec][3]
         
-        TTLs = OpenEphys.DataLoader(RecFolder, True, 'Bits')[0]
-        Proc = list(TTLs.keys())[0]
-        TTLs = TTLs[Proc][KlustaRecs[Rec][-1]][:, TTLCh-1]
-        TTLs = DataAnalysis.QuantifyTTLsPerRec(True, TTLs)
+        if AnalogTTLs:
+            TTLs = OpenEphys.DataLoader(RecFolder, True, 'Bits')[0]
+            Proc = list(TTLs.keys())[0]
+            TTLs = TTLs[Proc][KlustaRecs[Rec][-1]][:, TTLCh-1]
+            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, TTLs)
+            
+        else:
+            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, 
+                                                   TTLCh=TTLCh, Proc=Proc, Rec=R)
         
         for Id in Good:
             DV = KlustaRecs[Rec][4]
@@ -680,4 +690,35 @@ def WriteABRWave(ABRs, XValues, Rate, Group, Path):
     
     WriteWav(XValues, 1, len(XValues), Rate, FileName)
 
+
+#%% hdf5 info to dict
+Folders = sorted(glob('**/KlustaFiles', recursive=True))
+#Folders = [_ for _ in Folders if 'Prevention' not in _]
+Folders = [_ for _ in Folders if '3D' not in _]
+Folders = [_ for _ in Folders if 'st_02' not in _]
+Folders = [_ for _ in Folders if 'st_03' not in _]
+#Folders = [_ for _ in Folders if '4Dn04' not in _]
+
+for Folder in Folders:
+    DataFolder = '/'.join(Folder.split('/')[:-1]) + '/KwikFiles'
+    InfoFile = glob('/'.join(Folder.split('/')[:-1]) + '/*.dict')[0]
+    
+    if InfoFile[-4:] == 'hdf5':  DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    else: DataInfo = Txt.DictRead(InfoFile)
+    
+    ExpFolder = sorted(glob(DataFolder+'/*'))[0]
+    Data, Rate = OpenEphys.DataLoader(ExpFolder, True, 'Bits')
+    Proc = list(Data.keys())[0]
+    Rec = Data[Proc]['0']; Rate = Rate[Proc]
+    
+    Chs = [Rec[:int(Rate/2),Ch] for Ch in range(Rec.shape[1])]
+    Plot.RawCh(Chs, Lines=len(Chs), Cols=1, Save=False)
+#    a, b = Hdf5.DataLoad('/DataInfo', InfoFile)
+#    DataInfo = {**a, **b}
+#    a, b = Hdf5.DataLoad('/ExpInfo', InfoFile)
+#    DataInfo['ExpInfo'] = {**a, **b}
+##    DataInfo['ExpInfo'] = Hdf5.DictLoad('/ExpInfo', InfoFile)
+##    print(Txt.DictPrint(DataInfo))
+#    print(InfoFile[:-4]+'dict')
+#    Txt.DictWrite(InfoFile[:-4]+'dict', DataInfo)
 

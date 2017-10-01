@@ -7,7 +7,7 @@ Created on Mon Jun 12 14:12:37 2017
 """
 import numpy as np
 
-from DataAnalysis.DataAnalysis import FilterSignal, QuantifyTTLsPerRec, SliceData
+from DataAnalysis import DataAnalysis
 from IO import Hdf5
 from scipy import signal
 
@@ -33,6 +33,7 @@ def CheckGPIASRecs(Data, SizeLimits, Plot=False):
     else:
         print('All recs within expected size.')
         return(None)
+
 
 def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
     Index = {}
@@ -78,7 +79,7 @@ def PreallocateDict(DataInfo, PrePostFreq):
 
 
 def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore, 
-                 NoOfSamplesAfter, NoOfSamples):
+                 NoOfSamplesAfter, NoOfSamples, Proc=None, Events=None):
     for R, Rec in Data.items():
         print('Slicing and filtering Rec ', R, '...')
         Freq = DataInfo['FreqOrder'][int(R)][0]; 
@@ -93,20 +94,19 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
         else: STrial = 'Gap'
         
         if AnalogTTLs:
-            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,DataInfo['TTLCh']-1], StdNo=2)
+            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Rec[:,DataInfo['TTLCh']-1], StdNo=2)
             if len(TTLs) > 1: TTLs = [np.argmax(Rec[:,DataInfo['TTLCh']-1])]
             print(TTLs)
             
             if not TTLs: print('No TTL detected. Skipping trial...'); continue
-            
-            GD = SliceData(Rec[:,DataInfo['PiezoCh'][0]-1], TTLs, 
-                           NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
-                           AnalogTTLs)
-#        else:
-#            RawTime, TTLs = QuantifyTTLsPerRec(Data, R, AnalogTTLs, 
-#                                               TTLsPerRec=TTLsPerRec)
-#            GD = SliceData(Raw, OEProc, R, TTLs, GPIASCh, NoOfSamplesBefore, 
-#                           NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
+        
+        else:
+            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, 
+                                      TTLCh=DataInfo['TTLCh'], Proc=Proc, Rec=R)
+        
+        GD = DataAnalysis.SliceData(Rec[:,DataInfo['PiezoCh'][0]-1], TTLs, 
+                       NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
+                       AnalogTTLs)
         
         Dict['Index'][SFreq][STrial].append(GD[0])
         Dict['Trace'][SFreq][STrial].append(GD[0])
@@ -147,7 +147,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
             GPIASData['Trace'][Freq][Key] = np.mean(GPIASData['Trace'][Freq][Key], axis=0)
             
             # Bandpass filter
-            GPIASData['Trace'][Freq][Key] = FilterSignal(GPIASData['Trace'][Freq][Key], 
+            GPIASData['Trace'][Freq][Key] = DataAnalysis.FilterSignal(GPIASData['Trace'][Freq][Key], 
                                                        Rate, FilterFreq, FilterOrder, 
                                                        Filter, 'bandpass')
             
@@ -156,7 +156,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
 #                    TR = FilterSignal(GPIASData['Trace'][Freq][Key][Tr], Rate, 
 #                                      FilterFreq, FilterOrder, Filter, 'bandpass')
                 
-                AE = FilterSignal(GPIASData['Index'][Freq][Key][Tr], Rate, 
+                AE = DataAnalysis.FilterSignal(GPIASData['Index'][Freq][Key][Tr], Rate, 
                                      FilterFreq, FilterOrder, Filter, 'bandpass')
                 
                 # Amplitude envelope

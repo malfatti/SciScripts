@@ -28,8 +28,7 @@ from datetime import datetime
 from IO import Arduino, SigGen, Txt
 
 
-#%% Set parameters of the experiment
-#[5, 3, 4]
+## Experiment settings
 AnimalName = 'Prevention_A5'
 Rate = 192000
 BaudRate = 115200

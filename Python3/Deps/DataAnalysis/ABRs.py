@@ -20,7 +20,7 @@
 import numpy as np
 import os
 
-from DataAnalysis.DataAnalysis import FilterSignal, GenFakeTTLsRising, GetTTLThreshold, QuantifyTTLsPerRec, SliceData
+from DataAnalysis import DataAnalysis
 from IO import Hdf5, OpenEphys, Txt
 
 NoTTLsFile = os.environ['DATAPATH']+'/NoTTLRecs.dict'
@@ -43,9 +43,131 @@ def _PrintOptions():
     return(None)
 
 
+def FixTTLs(Data, DataCh, TTLCh, Rate, DataInfo, Info, Rec, AnalogTTLs):
+    NoTTLRecs = Txt.DictRead(NoTTLsFile)
+    F = DataInfo['FileName'].split('/')[-1].split('.')[0]
+    
+    WhatToDo = None; IgnoreRestritions = False
+    if F in NoTTLRecs:
+        if Info['Frequency'] in NoTTLRecs[F]:
+            if Rec in NoTTLRecs[F][Info['Frequency']]:
+                WhatToDo = NoTTLRecs[F][Info['Frequency']][Rec]['WhatToDo']
+                Std = NoTTLRecs[F][Info['Frequency']][Rec]['Std']
+                SampleStart = NoTTLRecs[F][Info['Frequency']][Rec]['SampleStart']
+                
+                if NoTTLRecs[F][Info['Frequency']][Rec]['TTLCh']:
+                    TTLCh = NoTTLRecs[F][Info['Frequency']][Rec]['TTLCh']
+                
+    
+    if not WhatToDo:
+        if 'Plot' not in globals():
+            from DataAnalysis.Plot import Plot
+        
+        print('DataCh:', DataCh)
+        print('TTLCh:', TTLCh)
+        print('')
+        _PrintOptions()
+        
+        Chs = [Data[:int(Rate/2),Ch] for Ch in range(Data.shape[1])]
+        
+        if DataInfo['FileName'].split('/')[-1].split('-')[0] in ['20170623145925', '20170623162416']:
+            Chs[-1] = DataAnalysis.FilterSignal(Chs[-1], Rate, [8000, 14000])
+        
+        Plot.RawCh(Chs, Lines=len(Chs), Cols=1, Save=False)
+        WhatToDo = input(': ')
+    
+        if F not in NoTTLRecs: NoTTLRecs[F] = {}
+        if Info['Frequency'] not in NoTTLRecs[F]: NoTTLRecs[F][Info['Frequency']] = {}
+        if Rec not in NoTTLRecs[F][Info['Frequency']]: NoTTLRecs[F][Info['Frequency']][Rec] = {}
+        
+        NoTTLRecs[F][Info['Frequency']][Rec]['WhatToDo'] = WhatToDo
+        for K in ['SampleStart', 'Std', 'TTLCh']:
+            NoTTLRecs[F][Info['Frequency']][Rec][K] = None
+        
+        Std = NoTTLRecs[F][Info['Frequency']][Rec]['Std']
+        SampleStart = NoTTLRecs[F][Info['Frequency']][Rec]['SampleStart']
+    
+    
+    if WhatToDo == '1':
+        if not Std:
+            Std = input('How many std above the mean should the threshold be? ')
+            Std = int(Std)
+        
+        TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Data[:,TTLCh-1], Std)
+        
+        NoTTLRecs[F][Info['Frequency']][Rec]['Std'] = Std
+    
+    elif WhatToDo == '2':
+        if not TTLCh:
+            TTLCh = input('TTL channel: '); TTLCh = int(TTLCh)
+            
+        TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Data[:,TTLCh-1])
+        
+        NoTTLRecs[F][Info['Frequency']][Rec]['TTLCh'] = TTLCh
+    
+    elif WhatToDo == '3':
+        if not Std:
+            Std = input('How many std above the mean should the threshold be? ')
+            Std = float(Std)
+        
+        if not TTLCh:
+            TTLCh = input('TTL channel: '); TTLCh = int(TTLCh)
+            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Data[:,TTLCh-1], Std)
+        
+        NoTTLRecs[F][Info['Frequency']][Rec]['Std'] = Std
+        NoTTLRecs[F][Info['Frequency']][Rec]['TTLCh'] = TTLCh
+    
+    elif WhatToDo == '4':
+        if not SampleStart:
+            SampleStart = input('Sample of the rising edge of the 1st pulse: ')
+            SampleStart = int(SampleStart)
+        
+        TTLs = DataAnalysis.GenFakeTTLsRising(Rate, DataInfo['SoundPulseDur'], 
+                                 DataInfo['SoundPrePauseDur'], 
+                                 DataInfo['SoundPostPauseDur'], SampleStart, 
+                                 DataInfo['SoundPulseNo'])
+        
+        NoTTLRecs[F][Info['Frequency']][Rec]['SampleStart'] = SampleStart
+        
+    elif WhatToDo == '5':
+        Threshold = DataAnalysis.GetTTLThreshold(Data[:int(Rate/2),TTLCh-1], Std)
+        Plot.TTLCh(Data[:,TTLCh-1], Std, Threshold)
+    
+    elif WhatToDo == '6':
+        NewABRCh = input('ABR channels (comma separated): ')
+        NewABRCh = [int(_) for _ in NewABRCh.split(',')]
+        
+        TTLCh = input('TTL channel: '); TTLCh = int(TTLCh)
+        TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Data[:,TTLCh-1])
+        
+        NoTTLRecs[F][Info['Frequency']][Rec]['DataCh'] = DataCh
+        NoTTLRecs[F][Info['Frequency']][Rec]['TTLCh'] = TTLCh
+        
+        Info = {'Calc': None, 'DataCh': DataCh, 'TTLCh': TTLCh}
+        
+        print('ABR Channels changed. Restarting calculations...')
+        print('')
+        return(None, Info)
+    
+    elif WhatToDo == '7':
+        TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Data[:,TTLCh-1])
+        IgnoreRestritions = True
+    
+    else:
+        print('Aborted.')
+        raise(SystemExit)
+    
+    if not IgnoreRestritions:
+        if len(TTLs) > DataInfo['SoundPulseNo']+4 or len(TTLs) < 100:
+            TTLs = []
+    
+    if TTLs: Txt.DictWrite(NoTTLsFile, NoTTLRecs)
+    print(len(TTLs), 'TTLs')
+
+
 def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
          TimeBeforeTTL=3, TimeAfterTTL=12, AnalogTTLs=True, 
-         FilterFreq=[300, 3000], FilterOrder=5, TTLsPerRec=[]):
+         FilterFreq=[300, 3000], FilterOrder=5, Proc=None, Events=None):
     
     ABRs = {}; Info = {}
     
@@ -87,145 +209,23 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
                     TTLCh = 0
                 
                 print('TTL mean and max:', np.mean(Rec[:,TTLCh-1]), np.max(Rec[:,TTLCh-1]))
-                TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
+                TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
                 if len(TTLs) > DataInfo['SoundPulseNo']+4 or len(TTLs) < 100:
                     TTLs = []
                 
                 print(len(TTLs), 'TTLs')
-                OrigTTLCh = TTLCh
-                while not TTLs:
-                    NoTTLRecs = Txt.DictRead(NoTTLsFile)
-                    
-                    F = DataInfo['FileName'].split('/')[-1].split('.')[0]
-                    
-                    WhatToDo = None; IgnoreRestritions = False
-                    TTLCh = OrigTTLCh
-                    if F in NoTTLRecs:
-                        if Info['Frequency'] in NoTTLRecs[F]:
-                            if R in NoTTLRecs[F][Info['Frequency']]:
-                                WhatToDo = NoTTLRecs[F][Info['Frequency']][R]['WhatToDo']
-                                Std = NoTTLRecs[F][Info['Frequency']][R]['Std']
-                                SampleStart = NoTTLRecs[F][Info['Frequency']][R]['SampleStart']
-                                
-                                if NoTTLRecs[F][Info['Frequency']][R]['TTLCh']:
-                                    TTLCh = NoTTLRecs[F][Info['Frequency']][R]['TTLCh']
-                                
-                    
-                    if not WhatToDo:
-                        if 'Plot' not in globals():
-                            from DataAnalysis.Plot import Plot
-                        
-                        print('ABRCh:', ABRCh)
-                        print('TTLCh:', TTLCh)
-                        print('')
-                        _PrintOptions()
-                        
-                        Chs = [Rec[:int(Rate/2),Ch] for Ch in range(Rec.shape[1])]
-                        
-                        if DataInfo['FileName'].split('/')[-1].split('-')[0] in ['20170623145925', '20170623162416']:
-                            Chs[-1] = FilterSignal(Chs[-1], Rate, [8000, 14000])
-                        
-                        Plot.RawCh(Chs, Lines=len(Chs), Cols=1, Save=False)
-                        WhatToDo = input(': ')
-                    
-                        if F not in NoTTLRecs: NoTTLRecs[F] = {}
-                        if Info['Frequency'] not in NoTTLRecs[F]: NoTTLRecs[F][Info['Frequency']] = {}
-                        if R not in NoTTLRecs[F][Info['Frequency']]: NoTTLRecs[F][Info['Frequency']][R] = {}
-                        
-                        NoTTLRecs[F][Info['Frequency']][R]['WhatToDo'] = WhatToDo
-                        for K in ['SampleStart', 'Std', 'TTLCh']:
-                            NoTTLRecs[F][Info['Frequency']][R][K] = None
-                        
-                        Std = NoTTLRecs[F][Info['Frequency']][R]['Std']
-                        SampleStart = NoTTLRecs[F][Info['Frequency']][R]['SampleStart']
-                    
-                    
-                    if WhatToDo == '1':
-                        if not Std:
-                            Std = input('How many std above the mean should the threshold be? ')
-                            Std = int(Std)
-                        
-                        TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1], Std)
-                        
-                        NoTTLRecs[F][Info['Frequency']][R]['Std'] = Std
-                    
-                    elif WhatToDo == '2':
-                        if not TTLCh:
-                            TTLCh = input('TTL channel: '); TTLCh = int(TTLCh)
-                            
-                        TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
-                        
-                        NoTTLRecs[F][Info['Frequency']][R]['TTLCh'] = TTLCh
-                    
-                    elif WhatToDo == '3':
-                        if not Std:
-                            Std = input('How many std above the mean should the threshold be? ')
-                            Std = float(Std)
-                        
-                        if not TTLCh:
-                            TTLCh = input('TTL channel: '); TTLCh = int(TTLCh)
-                            TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1], Std)
-                        
-                        NoTTLRecs[F][Info['Frequency']][R]['Std'] = Std
-                        NoTTLRecs[F][Info['Frequency']][R]['TTLCh'] = TTLCh
-                    
-                    elif WhatToDo == '4':
-                        if not SampleStart:
-                            SampleStart = input('Sample of the rising edge of the 1st pulse: ')
-                            SampleStart = int(SampleStart)
-                        
-                        TTLs = GenFakeTTLsRising(Rate, DataInfo['SoundPulseDur'], 
-                                                 DataInfo['SoundPrePauseDur'], 
-                                                 DataInfo['SoundPostPauseDur'], SampleStart, 
-                                                 DataInfo['SoundPulseNo'])
-                        
-                        NoTTLRecs[F][Info['Frequency']][R]['SampleStart'] = SampleStart
-                        
-                    elif WhatToDo == '5':
-                        Threshold = GetTTLThreshold(Rec[:int(Rate/2),TTLCh-1], Std)
-                        Plot.TTLCh(Rec[:,TTLCh-1], Std, Threshold)
-                    
-                    elif WhatToDo == '6':
-                        NewABRCh = input('ABR channels (comma separated): ')
-                        NewABRCh = [int(_) for _ in NewABRCh.split(',')]
-                        
-                        TTLCh = input('TTL channel: '); TTLCh = int(TTLCh)
-                        TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
-                        
-                        NoTTLRecs[F][Info['Frequency']][R]['ABRCh'] = ABRCh
-                        NoTTLRecs[F][Info['Frequency']][R]['TTLCh'] = TTLCh
-                        
-                        Info = {'Calc': None, 'ABRCh': ABRCh, 'TTLCh': TTLCh}
-                        
-                        print('ABR Channels changed. Restarting calculations...')
-                        print('')
-                        return(None, Info)
-                    
-                    elif WhatToDo == '7':
-                        TTLs = QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
-                        IgnoreRestritions = True
-                    
-                    else:
-                        print('Aborted.')
-                        raise(SystemExit)
-                    
-                    if not IgnoreRestritions:
-                        if len(TTLs) > DataInfo['SoundPulseNo']+4 or len(TTLs) < 100:
-                            TTLs = []
-                    
-                    if TTLs: Txt.DictWrite(NoTTLsFile, NoTTLRecs)
-                    print(len(TTLs), 'TTLs')
-                    
-                ABRData = SliceData(Rec[:, Ch-1], TTLs, NoOfSamplesBefore, 
-                                NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
-    #        else:
-    #            RawTime, TTLs = QuantifyTTLsPerRec(Data, Rec, AnalogTTLs, 
-    #                                               TTLsPerRec=TTLsPerRec)
-    #            ABRData = SliceData(Data[Rec][:,Ch-1], TTLs,NoOfSamplesBefore, 
-    #                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime)
+                while not TTLs: 
+                    TTLs = FixTTLs(Rec, ABRCh, TTLCh, Rate, DataInfo, Info, R, AnalogTTLs)
+            
+            else:
+                TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, TTLCh=TTLCh, 
+                                          Proc=Proc, Rec=R)
+            
+            ABRData = DataAnalysis.SliceData(Rec[:, Ch-1], TTLs, NoOfSamplesBefore, 
+                            NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
             
             ABR[:,C] = np.mean(ABRData, axis=0)
-            ABR[:,C] = FilterSignal(ABR[:,C], Rate, FilterFreq, FilterOrder,  
+            ABR[:,C] = DataAnalysis.FilterSignal(ABR[:,C], Rate, FilterFreq, FilterOrder,  
                                     'butter', 'bandpass')
         
         RealR = len(Done)
@@ -296,7 +296,7 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', TimeBeforeTTL=3,
                     'TTLCh': DataInfo['TTLCh']}
             
             while 'Calc' in Info:
-                ABRs, Info = Calc(Data[Proc], Rate[Proc], ExpInfo, DataInfo, 
+                ABRs, Info = Calc(Data[Proc], Rate[Proc], Proc, ExpInfo, DataInfo, 
                                   SStim, Info['ABRCh'], Info['TTLCh'], TimeBeforeTTL, 
                                   TimeAfterTTL, AnalogTTLs, FilterFreq, 
                                   FilterOrder)

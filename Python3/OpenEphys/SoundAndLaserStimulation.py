@@ -17,7 +17,7 @@
 
 This is a script to generate pulses and send to the soundboard, and then to a 
 sound amplifier and an Arduino board. Basically it generates sound pulses, 
-sound square pulses (TTLs), and laser square pulses. The square pulses will be 
+sound square waves (TTLs), and laser square waves. The square waves will be 
 sent to the left channel and the sound pulses will be sent to the right 
 channel. 
 """
@@ -29,53 +29,45 @@ import sounddevice as SD
 from IO import Arduino, Hdf5, SigGen, Txt
 
 
-#%% Set Parameters
-# Order: [5, 3, 4]
+## Set Parameters
+
+## Experiment settings
 AnimalName = 'Prevention_A5'
-SoundCh = 26; TTLCh = 27; ABRCh = list(range(1,17))
+
+ABRCh = list(range(1,17))
+SoundCh = 26
+TTLCh = 27
+AnalogTTLs = True
+
+# Fill all durations in SECONDS!
+SoundPauseBeforePulseDur = 0.004
+SoundPulseDur = 0.003
+SoundPauseAfterPulseDur = 0.093
+SoundPulseNo = 529
+Intensities = [80, 70, 60, 50, 40]
+PauseBetweenIntensities = 10
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
+                  [12000, 14000], [14000, 16000]]
+
+
+## Hardware settings
+System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+Setup = 'UnitRec'
 Rate = 192000
 BaudRate = 115200
 
-# Sound setup and system used
-System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
-Setup = 'UnitRec'
-
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
-#TTLAmpF = 0.6 # for analog TTLs only
-TTLAmpF = 6.8 # for analog and digital TTLs
-
-## Fill all durations in SECONDS!
-
-## Sound
-# Silence before pulse
-SoundPrePauseDur = 0.004
-# Pulse duration
-SoundPulseDur = 0.003
-# Silence after pulse
-SoundPostPauseDur = 0.093
-# Amount of pulses per block
-SoundPulseNo = 529
-# Intensities tested, in order, in dB. Supports floats :)
-#Intensities = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35]
-Intensities = [80, 70, 60, 50, 40]
-#Intensities = [80]
-PauseBetweenIntensities = 10
-# Noise frequency. If using one freq., keep the list in a list, [[like this]].
-# USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
-# just run the cell once and then list(SoundIntensity).
-NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
-                  [12000, 14000], [14000, 16000]]
-#NoiseFrequency = [[8000, 10000], [12000, 14000]]
-
+TTLAmpF = 0.6 # for analog TTLs only
+#TTLAmpF = 6.8 # for analog and digital TTLs
 
 CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
 Date = datetime.datetime.now()
 FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
                     '-SoundStim.hdf5'])
 
-#SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
+SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
 # Temporary override
-SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
+#SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
 
 DataInfo = dict((Name, eval(Name)) 
                 for Name in ['AnimalName', 'Rate', 'BaudRate', 
@@ -83,7 +75,7 @@ DataInfo = dict((Name, eval(Name))
                              'SoundPostPauseDur', 'SoundPulseNo', 
                              'Intensities', 'NoiseFrequency', 
                              'PauseBetweenIntensities',
-                             'SoundCh', 'TTLCh', 'ABRCh',
+                             'SoundCh', 'TTLCh', 'ABRCh', 'AnalogTTLs'
 #                             'LaserPrePauseDur', 'LaserPulseDur', 
 #                             'LaserPostPauseDur', 'LaserPulseNo', 
 #                             'LaserStimBlockNo', 
@@ -99,10 +91,10 @@ Txt.DictWrite(FileName.split('.')[0]+'.dict', DataInfo)
 ArduinoObj = Arduino.CreateObj(BaudRate)
 
 
-#%% Prepare sound stimulation
+##% Prepare sound stimulation
 Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
-                         TTLAmpF, System, SoundPrePauseDur, 
-                         SoundPostPauseDur)
+                         TTLAmpF, System, SoundPauseBeforePulseDur, 
+                         SoundPauseAfterPulseDur)
 
 Pause = np.zeros((PauseBetweenIntensities*Rate,2), dtype='float32')
 
@@ -117,6 +109,7 @@ Stim = SD.OutputStream(dtype='float32')
 #%% Run sound
 DVCoord = '12752'
 StimType = ['Sound', 'CNO']
+
 #Freq = 4
 #Freq = int(Freq)
 
@@ -134,11 +127,13 @@ Stim.start()
 while True:
     print('Remember to change folder name in OE!')
     print('Choose frequency:')
+    print('-1)', 'Baseline (No stimulus)')
     for Ind, K in enumerate(FKeys): print(str(Ind) + ')' , K)
     print(str(len(FKeys)) + ')', 'Cancel')
     FKey = input(': ')
     
     if FKey == str(len(FKeys)): break
+    if FKey == str(-1): continue
     
     try:
         FKey = FKeys[int(FKey)]

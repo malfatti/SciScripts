@@ -8,7 +8,7 @@ Created on Sat Jul  8 20:04:14 2017
 import OpenEphys, SettingsXML
 import numpy as np
 
-from DataAnalysis.DataAnalysis import BitsToVolts, UniqueStr
+from DataAnalysis import DataAnalysis
 from glob import glob
 from IO import Hdf5
 from IO.Txt import DictPrint
@@ -41,9 +41,19 @@ def ChooseProcs(XMLFile, Procs):
 def DataTouV(Data, RecChs):
     print('Converting to uV... ', end='')
     Data = {R: Rec.astype('float32') for R, Rec in Data.items()}
-    Data = BitsToVolts(Data, RecChs)
+    Data = DataAnalysis.BitsToVolts(Data, RecChs)
     
     return(Data)
+
+
+def EventsLoad(Folder):
+    Files = glob(Folder+'/*.events'); Files.sort()
+    if len(Files) > 1: print('Multiple sessions not supported yet.'); return(None)
+#    for File in Files:
+#        Session = File.split('.')[0].split('_')[-1]
+        
+    EventsDict = OpenEphys.loadEvents(Folder+'/'+Files[0])
+    return(EventsDict)
 
 
 ## Level 1
@@ -99,7 +109,7 @@ def OpenEphysLoad(Folder, Unit='uV', ChannelMap=[]):
     XMLFile = glob(Folder+'/setting*.xml')[0]
     
     Chs = [_.split('/')[-1] for _ in OEs]
-    Procs = UniqueStr([_[:3] for _ in Chs])
+    Procs = DataAnalysis.UniqueStr([_[:3] for _ in Chs])
     
     if len(Procs) > 1: Procs = ChooseProcs(XMLFile, Procs)
     
@@ -131,24 +141,22 @@ def OpenEphysLoad(Folder, Unit='uV', ChannelMap=[]):
     
     return(Data, Rate)
 
+
 ## Level 2
-def DataLoader(Folder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):
+def DataLoader(Folder, Unit='uV', ChannelMap=[], AnalogTTLs=True):
     FilesExt = [F[-3:] for F in glob(Folder+'/*.*')]
     
-    if 'kwd' in FilesExt:
-        if AnalogTTLs:  Data, Rate = KwikLoad(Folder, Unit, ChannelMap)
-#        else:  Data, Events, _, Files = Hdf5.OEKwikLoad(Folder, AnalogTTLs)
-        
-        return(Data, Rate)
-    
-    elif 'dat' in FilesExt:
-        Data, Rate = DatLoad(Folder, Unit, ChannelMap)
-        return(Data, Rate)
-    
-    elif 'ous' in FilesExt:
-        Data, Rate = OpenEphysLoad(Folder, Unit, ChannelMap)
-        return(Data, Rate)
-    
+    if 'kwd' in FilesExt: Data, Rate = KwikLoad(Folder, Unit, ChannelMap)
+    elif 'dat' in FilesExt: Data, Rate = DatLoad(Folder, Unit, ChannelMap)
+    elif 'ous' in FilesExt: Data, Rate = OpenEphysLoad(Folder, Unit, ChannelMap)
     else: print('Data format not supported.'); return(None)
-
+    
+    if not AnalogTTLs:
+        if 'kwd' in FilesExt: 
+            Kwds = glob(Folder+'/*.events')
+            if len(Kwds) > 1: print('Multiple sessions not supported yet.'); return(None)
+            
+            EventsDict = 
+        EventsDict = EventsLoad(Folder)
+        
 

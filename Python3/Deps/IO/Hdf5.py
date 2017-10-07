@@ -174,15 +174,24 @@ def ClustersWrite(Clusters, FileName, Group):
 
 
 def Data2Hdf5(Data, Path, OpenedFile, Overwrite=False):
+#    print(Path)
+    
     if type(Data) == dict:
         for K, Key in Data.items(): Data2Hdf5(Key, Path+'/'+K, OpenedFile, Overwrite)
-    elif type(Data) == str:
-        if Path not in OpenedFile: OpenedFile.create_group(Path)
-        OpenedFile[Path] = np.string_(Data)
+    
     elif type(Data) == list:
-        if True in [D == str(D) for D in Data]: OpenedFile[Path] = np.string_(Data)
+        Skip = False
+        for d, D in enumerate(Data):
+            if type(D) in [list, tuple] or 'numpy' in str(type(D)):
+                Skip = True
+                Data2Hdf5(D, Path+'/'+'ToMerge'+'_'+str(d), OpenedFile, Overwrite)
+        
+        if Skip: return(None)
+        
+        if True in [D == str(D) for D in Data]: Data = np.string_(Data)
         if Overwrite:
             if Path in OpenedFile: del(OpenedFile[Path])
+        
         else: OpenedFile[Path] = Data
     
     elif type(Data) == tuple or 'numpy' in str(type(Data)):
@@ -191,13 +200,17 @@ def Data2Hdf5(Data, Path, OpenedFile, Overwrite=False):
         
         OpenedFile[Path] = Data
     
+    elif type(Data) == str:
+        if Path not in OpenedFile: OpenedFile.create_group(Path)
+        OpenedFile[Path] = np.string_(Data)
+    
     else: print('Data type', type(Data), 'at', Path, 'not understood.')
     
     return(None)
 
 
 def DataLoad(Path, FileName):
-    with h5py.File(FileName) as F: Data, Attrs = Hdf52Dict(Path, F)
+    with h5py.File(FileName, 'r') as F: Data, Attrs = Hdf52Dict(Path, F)
     
     return(Data, Attrs)
 
@@ -468,10 +481,25 @@ def GPIASWrite(GPIAS, Path, FileName, XValues=[]):
 
 
 def Hdf52Dict(Path, F):
+#    print(Path)
     Dict = {}; Attrs = {}
     if type(F[Path]) == h5py._hl.group.Group:
         if list(F[Path].attrs):
             for Att in F[Path].attrs.keys(): Attrs[Att] = Hdf52Dict(Att, F[Path].attrs)
+        
+        Keys = sorted(F[Path].keys())
+        MergeKeys = [_ for _ in Keys if 'ToMerge' in _]
+        
+        if MergeKeys:
+            MaxInd = max([int(_.split('_')[1]) for _ in MergeKeys])+1
+            ToMerge = [[] for _ in range(MaxInd)]
+            A = [[] for _ in range(MaxInd)]
+            
+            for Group in MergeKeys: 
+                Ind = int(Group.split('_')[1])
+                ToMerge[Ind], A[Ind] = Hdf52Dict(Path+'/'+Group, F)
+                
+            return(ToMerge, A)
             
         for Group in F[Path].keys(): Dict[Group], Attrs[Group] = Hdf52Dict(Path+'/'+Group, F)
         return(Dict, Attrs)

@@ -11,38 +11,77 @@ from datetime import datetime
 
 
 ## Level 0
-def Set(Backend='TkAgg', AxesObj=(), FigObj=(), FigTitle='', Params=False, 
-            Plot=False, Axes=False):
+def Set(Backend='TkAgg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False, 
+        Plot=False, Axes=False, HideControls=False):
     if Params:
-#            print('Set plot parameters...')
-        Params = {'backend': Backend,
-#                  'text.usetex': True, 'text.latex.unicode': True,
-#                  'text.latex.preamble': '\\usepackage{siunitx}',
-#                  'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
-                  'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
-                  'xtick.labelsize': 'small', 'xtick.direction': 'out',
-                  'ytick.labelsize': 'small', 'ytick.direction': 'out',
-                  'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
-                  'figure.titlesize': 'large', 'figure.titleweight': 'normal',
-                  
-                  'image.cmap': 'cubehelix', 'savefig.transparent': True,
-                  'svg.fonttype': 'none'}
+        Params = {
+            'backend': Backend,
+            'image.cmap': 'cubehelix',
+            
+#            'text.usetex': True, 'text.latex.unicode': True,
+#            'text.latex.preamble': '\\usepackage{siunitx}',
+#            'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
+            
+#            'keymap.fullscreen': 'f',
+#            'keymap.home': 'g',
+#            'keymap.back': 'h',
+#            'keymap.forward': 'l',
+#            'keymap.pan': 'p',
+#            'keymap.zoom': 'z',
+#            'keymap.save': 's',
+#            'keymap.quit': 'q',
+#            'keymap.grid': 'm',
+#            'keymap.yscale': 'y',
+#            'keymap.xscale': 'x',
+#            'keymap.all_axes': 'a',
+            
+            'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
+            'xtick.labelsize': 'small', 'xtick.direction': 'out',
+            'ytick.labelsize': 'small', 'ytick.direction': 'out',
+            'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
+            'figure.titlesize': 'large', 'figure.titleweight': 'normal',
+            
+            'pdf.fonttype': 42, 'svg.fonttype': 'none',
+            
+            'savefig.transparent': True,
+            'savefig.dpi': 300, 'savefig.format': 'svg'
+        }
         return(Params)
     
-    elif Plot:
-#            print('Set plot figure...')
-        FigObj.suptitle(FigTitle); FigObj.tight_layout(); 
-        FigObj.subplots_adjust(top=0.925)
+    if Ax:
+        XLim = Ax.get_xlim()
+        YLim = Ax.get_ylim()
+        
+        if 'title' in AxArgs: Ax.set_title(AxArgs['title'])
+        if 'xlabel' in AxArgs: Ax.set_xlabel(AxArgs['xlabel'])
+        if 'ylabel' in AxArgs: Ax.set_ylabel(AxArgs['ylabel'])
+        if 'xlim' in AxArgs: XLim = AxArgs['xlim']
+        if 'ylim' in AxArgs: YLim = AxArgs['ylim']
+        
+        Ax.set_xlim(XLim[0], XLim[1])
+        Ax.set_ylim(YLim[0], YLim[1])
+        
+        Ax.spines['bottom'].set_bounds(Ax.get_xlim()[0], Ax.get_xlim()[-1])
+        Ax.spines['left'].set_bounds(Ax.get_ylim()[0], Ax.get_ylim()[-1])
+        Ax.spines['bottom'].set_position(('outward', 5))
+        Ax.spines['left'].set_position(('outward', 5))
+        
+        Ax.tick_params(top='off', right='off')
+        Ax.spines['right'].set_visible(False)
+        Ax.spines['top'].set_visible(False)
+        
+#        Ax.locator_params(tight=True)
     
-    elif Axes:
-#            print('Set plot axes...')
-        AxesObj.spines['right'].set_visible(False)
-        AxesObj.spines['top'].set_visible(False)
-        AxesObj.yaxis.set_ticks_position('left')
-        AxesObj.xaxis.set_ticks_position('bottom')
-        AxesObj.locator_params(tight=True)
-    
-    else: print("'Params', 'Plot' or 'Axes' must be True.")
+    if Fig:
+        if FigTitle:
+            Fig.suptitle(FigTitle)
+            Fig.subplots_adjust(top=0.925)
+        
+        if HideControls:
+            if Backend[:2].lower() == 'tk': Fig.canvas.toolbar.pack_forget()
+            if Backend[:2].lower() == 'qt': Fig.canvas.toolbar.setVisible(False)
+        
+        Fig.tight_layout(pad=0)
     
     return(None)
 

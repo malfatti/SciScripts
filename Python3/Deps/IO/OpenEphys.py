@@ -156,7 +156,12 @@ def DataLoader(Folder, Unit='uV', ChannelMap=[], AnalogTTLs=True):
             Kwds = glob(Folder+'/*.events')
             if len(Kwds) > 1: print('Multiple sessions not supported yet.'); return(None)
             
-            EventsDict = 
-        EventsDict = EventsLoad(Folder)
+            EventsDict = 'ToBeContinued'
+        else:
+            EventsDict = EventsLoad(Folder)
+        
+        return(Data, Rate, EventsDict)
+    else:
+        return(Data, Rate)
         
 

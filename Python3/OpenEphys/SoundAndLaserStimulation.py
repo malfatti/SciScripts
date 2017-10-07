@@ -21,17 +21,14 @@ sound square waves (TTLs), and laser square waves. The square waves will be
 sent to the left channel and the sound pulses will be sent to the right 
 channel. 
 """
-#%% Import
+#%% Settings
 import datetime, os
 import numpy as np
 import sounddevice as SD
 
 from IO import Arduino, Hdf5, SigGen, Txt
 
-
-## Set Parameters
-
-## Experiment settings
+## Experiment parameters
 AnimalName = 'Prevention_A5'
 
 ABRCh = list(range(1,17))
@@ -50,7 +47,7 @@ NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000],
                   [12000, 14000], [14000, 16000]]
 
 
-## Hardware settings
+## Hardware parameters
 System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'UnitRec'
 Rate = 192000
@@ -61,13 +58,33 @@ TTLAmpF = 0.6 # for analog TTLs only
 #TTLAmpF = 6.8 # for analog and digital TTLs
 
 CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
-Date = datetime.datetime.now()
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                    '-SoundStim.hdf5'])
 
+# Set sound stimulation
 SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
 # Temporary override
 #SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
+Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
+                         TTLAmpF, System, SoundPauseBeforePulseDur, 
+                         SoundPauseAfterPulseDur)
+
+Pause = np.zeros((PauseBetweenIntensities*Rate,2), dtype='float32')
+
+# Set audio objects
+SD.default.device = 'system'
+SD.default.samplerate = Rate
+SD.default.blocksize = 384
+SD.default.channels = 2
+Stim = SD.OutputStream(dtype='float32')
+
+# Set arduino object
+ArduinoObj = Arduino.CreateObj(BaudRate)
+# ArduinoObj.write(b'd')
+
+
+## Write info
+Date = datetime.datetime.now()
+FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
+                    '-SoundStim.hdf5'])
 
 DataInfo = dict((Name, eval(Name)) 
                 for Name in ['AnimalName', 'Rate', 'BaudRate', 
@@ -88,41 +105,20 @@ DataInfo['ExpInfo'] = {}
 DataInfo['SoundAmpF'] = {K: Key.tolist() for K, Key in SoundAmpF.items()}
 Txt.DictWrite(FileName.split('.')[0]+'.dict', DataInfo)
 
-ArduinoObj = Arduino.CreateObj(BaudRate)
-
-
-##% Prepare sound stimulation
-Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
-                         TTLAmpF, System, SoundPauseBeforePulseDur, 
-                         SoundPauseAfterPulseDur)
-
-Pause = np.zeros((PauseBetweenIntensities*Rate,2), dtype='float32')
-
-# Set audio objects
-SD.default.device = 'system'
-SD.default.samplerate = Rate
-SD.default.blocksize = 384
-SD.default.channels = 2
-Stim = SD.OutputStream(dtype='float32')
-# ArduinoObj.write(b'd')
-
 #%% Run sound
+
+## Trial info
 DVCoord = '12752'
 StimType = ['Sound', 'CNO']
 
+
+## Trial run
 #Freq = 4
 #Freq = int(Freq)
 
-# FKeys = list(Sound.keys()); ToPrepend = []
-# for FF in ['8000-10000', '9000-11000']:
-#     if FF in FKeys:
-#         del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
-# 
-# ToPrepend.sort(); FKeys = ToPrepend + FKeys
 FKeys = list(Sound.keys())
 FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
 
-# FreqOrder = ['10000-12000', '12000-14000', '9000-11000', '14000-16000', '8000-10000']
 Stim.start()
 while True:
     print('Remember to change folder name in OE!')
@@ -133,7 +129,12 @@ while True:
     FKey = input(': ')
     
     if FKey == str(len(FKeys)): break
-    if FKey == str(-1): continue
+    if FKey == str(-1):
+        Hdf5.ExpInfoWrite('Sound', DVCoord, FKey, FileName)
+        Rec = "{0:02d}".format(len(DataInfo['ExpInfo']))
+        DataInfo['ExpInfo'][Rec] = {'DVCoord': DVCoord, 'StimType': StimType, 'Hz': 'Baseline'}
+        Txt.DictWrite(FileName.split('.')[0]+'.dict', DataInfo)
+        continue
     
     try:
         FKey = FKeys[int(FKey)]
@@ -144,9 +145,6 @@ while True:
     
     AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
     for AmpF, AKey in enumerate(AKeys):
-#        SS = Sound[FKey][AKey].T
-#        for Pulse in range(SoundPulseNo-1):
-#            SS = np.concatenate((SS, Sound[FKey][AKey].T))
         SS = np.concatenate([Sound[FKey][AKey] for _ in range(SoundPulseNo)])
         
         print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
@@ -165,94 +163,6 @@ while True:
     print('Played Freq', FKey, 'at', DVCoord, 'µm DV')
 
 Stim.stop()
-
-#%% Acoustic trauma
-
-AnimalName = 'Prevention_A3_4_5'
-Rate = 192000
-
-# Sound setup and system used
-System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
-Setup = 'GPIAS'
-
-## Sound
-SoundPulseDur = 20
-SoundPulseNo = 360
-Intensities = [80]
-PauseBetweenIntensities=0
-NoiseFrequency = [[9000, 11000]]
-
-
-CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
-Date = datetime.datetime.now()
-FileName = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                    '-SoundStim.hdf5'])
-
-SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
-
-DataInfo = dict((Name, eval(Name)) 
-                for Name in ['AnimalName', 'Rate', 'SoundPulseDur', 
-                             'SoundPulseNo', 'Intensities', 'NoiseFrequency', 
-                             'CalibrationFile', 'FileName'])
-
-Hdf5.DictWrite(DataInfo, '/DataInfo', FileName)
-Hdf5.DictWrite(SoundAmpF, '/DataInfo/SoundAmpF', FileName)
-
-
-Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
-                         0, System, TTLs=False, Map=[2,1])
-
-Pause = np.zeros((PauseBetweenIntensities*Rate,2), dtype='float32')
-
-# Set audio objects
-SD.default.device = 'system'
-SD.default.samplerate = Rate
-SD.default.blocksize = 384
-SD.default.channels = 2
-
-DVCoord = 'Out'
-#Freq = 4
-#Freq = int(Freq)
-
-FKeys = list(Sound.keys()); ToPrepend = []
-for FF in ['8000-10000', '9000-11000']:
-    if FF in FKeys:
-        del(FKeys[FKeys.index(FF)]); ToPrepend.append(FF)
-
-ToPrepend.sort(); FKeys = ToPrepend + FKeys
-
-while True:
-    print('Remember to change folder name in OE!')
-    print('Choose frequency:')
-    for Ind, K in enumerate(FKeys):
-        print(str(Ind) + ')' , K)
-    
-    print(str(len(FKeys)) + ')', 'Cancel')
-    FKey = input(': ')
-    
-    if FKey == str(len(FKeys)): break
-    
-    try:
-        FKey = FKeys[int(FKey)]
-    except IndexError:
-        print('=== Wrong Freq index. Stopping... ===')
-        print('')
-        break
-    
-    AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
-    for AmpF, AKey in enumerate(AKeys):
-#        SS = Sound[FKey][AKey].T
-#        for Pulse in range(SoundPulseNo-1):
-#            SS = np.concatenate((SS, Sound[FKey][AKey].T))
-        SS = np.concatenate([Sound[FKey][AKey] for _ in range(SoundPulseNo)])
-        
-        print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
-        SD.play(SS, blocking=True)
-        del(SS)
-    
-    Hdf5.ExpInfoWrite('Sound', DVCoord, FKey, FileName)
-    print('Played Freq', FKey, 'at', DVCoord, 'µm DV')
-
 
 
 #%% Laser

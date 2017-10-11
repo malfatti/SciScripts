@@ -13,7 +13,7 @@ from DataAnalysis.DataAnalysis import FilterSignal
 
 
 # Use one that was used in SoundBoardCalibration.py
-SBAmpFsFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
+CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
 
 ## Level 0
@@ -120,7 +120,7 @@ def LaserStim(Rate, LaserPulseDur, TTLAmpF, SoundBoard, LaserPrePauseDur=0, Lase
         https://en.wikipedia.org/wiki/Diode
         """
     
-    SBOutAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard,
+    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard,
                                                'SBOutAmpF')
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
@@ -239,7 +239,7 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
+    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard, 'SBOutAmpF')
     
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
@@ -285,7 +285,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBOutAmpF')
+    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard, 'SBOutAmpF')
     
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')

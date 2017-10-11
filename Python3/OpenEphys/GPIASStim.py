@@ -19,7 +19,7 @@ This is a script to generate and control sound stimulation for gap-prepulse
 inhibition of acoustic startle reflex (GPIAS).
 """
 
-#%% Import
+#%% Settings
 import numpy as np
 import sounddevice as SD
 import random, os
@@ -28,69 +28,49 @@ from datetime import datetime
 from IO import Arduino, SigGen, Txt
 
 
-## Experiment settings
+## Experiment parameters
 AnimalName = 'Prevention_A5'
-Rate = 192000
-BaudRate = 115200
-
-# Sound setup and system used
-CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
-System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
-Setup = 'GPIAS'
-
-SoundCh = 3; TTLCh = 2; PiezoCh = [1]
+SoundCh = 3
+TTLCh = 2
+PiezoCh = [1]
 
 # Number of trials per freq. tested (1 trial = 1 stim w/ gap + 1 stim w/o gap)
 NoOfTrials = 9
 
-## Sound durations IN SECONDS
+# Fill all durations in SECONDS!
 SoundBackgroundDur = 2.3
 SoundGapDur = 0.04
 SoundBackgroundPrePulseDur = 0.1
 SoundLoudPulseDur = 0.05
 SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
+                  [12000, 14000], [14000, 16000], [8000, 16000]]
 
 # Background and pulse intensities in dB. Supports float :)
 BackgroundIntensity = [60]
 PulseIntensity = [105]
 
-# Noise frequency. If using one freq., keep the list in a list, [[like this]].
-# USE ONLY FREQUENCY BANDS THAT WERE CALIBRATED. To check the calibrated freqs, 
-# just run the cell once and then list(SoundIntensity).
-#NoiseFrequency = [[8000, 16000]]
-NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
-                  [12000, 14000], [14000, 16000], [8000, 16000]]
+
+## Hardware parameters
+System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+Setup = 'GPIAS'
+Rate = 192000
+BaudRate = 115200
 
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0.4
-#==========#==========#==========#==========#
-
 
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
 FileName = ''.join([Date, '-', AnimalName, '-GPIAS.hdf5'])
 
-SoundBackgroundAmpF = SigGen.dBToAmpF(BackgroundIntensity, 
-                                                 CalibrationFile, 
+SoundBackgroundAmpF = SigGen.dBToAmpF(BackgroundIntensity, SigGen.CalibrationFile, 
                                                  System+'/'+Setup)
 
 SoundPulseAmpF = SigGen.dBToAmpF(PulseIntensity, 
-                                            CalibrationFile, 
+                                            SigGen.CalibrationFile, 
                                             System+'/'+Setup)
 
-
-## Prepare dict w/ experimental setup
-DataInfo = dict((Name, eval(Name)) for Name in ['AnimalName', 'CalibrationFile', 
-                                       'Setup', 'System', 'Rate', 'BaudRate',
-                                       'Date', 'SoundCh', 'TTLCh', 'PiezoCh', 
-                                       'BackgroundIntensity', 'PulseIntensity',
-                                       'SoundBackgroundDur', 'SoundGapDur', 
-                                       'SoundBackgroundPrePulseDur', 
-                                       'SoundLoudPulseDur', 
-                                       'SoundBackgroundAfterPulseDur', 
-                                       'SoundBetweenStimDur',  
-                                       'NoiseFrequency', 'NoOfTrials', 
-                                       'TTLAmpF', 'FileName'])
 
 SoundBackground, SoundGap, SoundBackgroundPrePulse, SoundLoudPulse, \
 SoundBackgroundAfterPulse, SoundBetweenStim = SigGen.GPIASStim(
@@ -106,6 +86,19 @@ SD.default.samplerate = Rate
 SD.default.blocksize = 384
 SD.default.channels = 2
 Stim = SD.OutputStream(dtype='float32')
+
+## Write info
+DataInfo = dict((Name, eval(Name)) 
+                for Name in ['AnimalName', 'SigGen.CalibrationFile', 'Setup', 
+                             'System', 'Rate', 'BaudRate', 'Date', 'SoundCh', 
+                             'TTLCh', 'PiezoCh', 'BackgroundIntensity', 
+                             'PulseIntensity', 'SoundBackgroundDur', 
+                             'SoundGapDur', 'SoundBackgroundPrePulseDur', 
+                             'SoundLoudPulseDur', 
+                             'SoundBackgroundAfterPulseDur', 
+                             'SoundBetweenStimDur',  'NoiseFrequency', 
+                             'NoOfTrials', 'TTLAmpF', 'FileName'])
+
 
 
 #%% Run!!

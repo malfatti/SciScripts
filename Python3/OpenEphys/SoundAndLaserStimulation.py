@@ -57,12 +57,10 @@ BaudRate = 115200
 TTLAmpF = 0.6 # for analog TTLs only
 #TTLAmpF = 6.8 # for analog and digital TTLs
 
-CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
-
 # Set sound stimulation
-SoundAmpF = SigGen.dBToAmpF(Intensities, CalibrationFile, System+'/'+Setup)
+#SoundAmpF = SigGen.dBToAmpF(Intensities, SigGen.CalibrationFile, System+'/'+Setup)
 # Temporary override
-#SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
+SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
 Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
                          TTLAmpF, System, SoundPauseBeforePulseDur, 
                          SoundPauseAfterPulseDur)
@@ -97,7 +95,7 @@ DataInfo = dict((Name, eval(Name))
 #                             'LaserPostPauseDur', 'LaserPulseNo', 
 #                             'LaserStimBlockNo', 
 #                             'LaserPauseBetweenStimBlocksDur', 
-                             'CalibrationFile', 'FileName'])
+                             'SigGen.CalibrationFile', 'FileName'])
 
 Hdf5.DictWrite(DataInfo, '/DataInfo', FileName)
 Hdf5.DictWrite(SoundAmpF, '/DataInfo/SoundAmpF', FileName)

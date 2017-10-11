@@ -118,10 +118,10 @@ i = 0
 # ArduinoObj.write(b'd')
 while True:
     i += 1; print(i)
-    ArduinoObj.write(b'd')
-    time.sleep(60)
-    ArduinoObj.write(b'w')
-    time.sleep(10)
+    ArduinoObj.write(b'D')
+    time.sleep(2)
+    ArduinoObj.write(b'D')
+    time.sleep(1)
 # ArduinoObj.write(b'w')
 
 # RecordEngine timeout

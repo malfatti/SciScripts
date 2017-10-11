@@ -31,15 +31,16 @@ from matplotlib import pyplot as plt
 # change DVCoord to real DVCoord
 # Add function to load data procs and recs only
 
-def HistCalc(TTLs, Spks, Rate, Start, End, Offset=0):
+def HistCalc(TTLs, Spks, Rate, XValues, Offset=0):
     Hist = np.array([])
     for TTL in TTLs:
         Firing = ((Spks-Offset)*1000/Rate) - (TTL*1000/Rate)
-        Firing = Firing[(Firing >= Start) * (Firing < End)]
+        Firing = Firing[(Firing >= XValues[0]) * (Firing < XValues[-1])]
         
         Hist = np.concatenate((Hist, Firing)); del(Firing)
     
     HistY, HistX = np.histogram(Hist, XValues)
+    HistX = HistX[:-1]
     return(HistX, HistY)
 
 
@@ -47,8 +48,8 @@ def UnitResp(HistX, HistY):
     HistXSurr = np.random.permutation(HistX)
     HistYSurr = np.random.permutation(HistY)
     
-    RI = HistY[(HistX[:-1] > 0) * (HistX[:-1] <= 30)].mean() / \
-         HistY[(HistX[:-1] >=-30) * (HistX[:-1] < 0)].mean()
+    RI = HistY[(HistX > 0) * (HistX <= 30)].mean() / \
+         HistY[(HistX >=-30) * (HistX < 0)].mean()
     
     RISurr = HistYSurr[(HistXSurr[:-1] > 0) * (HistXSurr[:-1] <= 30)].mean() / \
              HistYSurr[(HistXSurr[:-1] >=-30) * (HistXSurr[:-1] < 0)].mean()
@@ -72,7 +73,7 @@ def WF_PSTH(Spks, Waveforms, HistX, HistY, ChNo, BestCh, RMSs, StimNo, IdStr, St
     
     for Spk in Spks:  Axes[1].plot(SpkX, Waveforms[Spk, :, BestCh], 'r')
     Axes[1].plot(SpkX, np.mean(Waveforms[:, :, BestCh], axis=0), 'k')
-    Axes[2].bar(HistX[:-1], HistY/StimNo)
+    Axes[2].bar(HistX, HistY/StimNo)
     
     Axes[0].locator_params(nbins=5, axis='x')
     Step = int(round(max(RMSs)))
@@ -207,15 +208,22 @@ for Folder in Folders:
     Clusters = KwikModel(KwikFile)
     Rate = np.array(Clusters.sample_rate)
     Offsets = Clusters.all_traces.offsets
+    RecLen = 50
     
     Good = Clusters.cluster_groups
     Good = [Id for Id,Key in Good.items() if Key == 'good']
     
+    ChNo = len(Clusters.channels)
+    SpkLen = Clusters.n_samples_waveforms
+    
+    
     UnitRec = {}
-    for K in ['UnitId', 'DV']: UnitRec[K] = np.zeros((len(Good)*len(Clusters.recordings)), dtype=int)
-    for K in ['dB', 'RI', 'RISurr']: UnitRec[K] = np.zeros((len(Good)*len(Clusters.recordings)), dtype=float)
+    for K in ['UnitId', 'DV']: UnitRec[K] = np.zeros((len(Good)*len(Clusters.recordings)), dtype=np.int16)
+    for K in ['dB', 'RI', 'RISurr']: UnitRec[K] = np.zeros((len(Good)*len(Clusters.recordings)), dtype=np.float32)
     for K in ['Freq', 'StimType']: UnitRec[K] = ['0' for _ in range(len(Good)*len(Clusters.recordings))]
-    for K in ['PSTHX', 'PSTHY', 'Spks', 'FiringRate']: UnitRec[K] = [np.array([0]) for _ in range(len(Good)*len(Clusters.recordings))]
+    for K in ['PSTHX', 'PSTHY']: UnitRec[K] = np.zeros((len(XValues),len(Good)*len(Clusters.recordings)), dtype=np.float32)
+    for K in ['FiringRate']: UnitRec[K] = np.zeros((RecLen,len(Good)*len(Clusters.recordings)), dtype=np.float32)
+    for K in ['Spks']: UnitRec[K] = np.zeros((SpkLen, ChNo, len(Good)*len(Clusters.recordings)), dtype=np.float32)
     
     for rec, Rec in enumerate(Clusters.recordings):
         RecFolder = KlustaRecs[Rec][0]
@@ -254,20 +262,20 @@ for Folder in Folders:
             DV = str(int(DV) - ((ChNo-BestCh) * ProbeChSpacing))
             
             HistX, HistY = HistCalc(TTLs, Clusters.spike_samples[SpksId], Rate, 
-                                    XValues[0], XValues[-1], Offsets[Rec])
+                                    XValues, Offsets[Rec])
             
             if max(HistY) == 0: print('No Spks in PSTH. Skipping...'); continue
             
             RI, RISurr = UnitResp(HistX, HistY)
             
-            UnitRec['DV'][Ind] = DV
+            UnitRec['DV'][Ind] = int(DV)
             UnitRec['Freq'][Ind] = Freq[:-2]
-            UnitRec['dB'][Ind] = dB[:-5]
+            UnitRec['dB'][Ind] = float(dB[:-5])
             UnitRec['StimType'][Ind] = StimType
             UnitRec['UnitId'][Ind] = Id
             
-            UnitRec['PSTHX'][Ind] = HistX
-            UnitRec['PSTHY'][Ind] = HistY
+            UnitRec['PSTHX'][:,Ind] = HistX
+            UnitRec['PSTHY'][:,Ind] = HistY
             UnitRec['Spks'][Ind] = Waveforms
             UnitRec['RI'][Ind] = RI
             UnitRec['RISurr'][Ind] = RISurr
@@ -291,11 +299,6 @@ for Folder in Folders:
                Offsets[Rec], DataInfo['SoundPulseDur'], TTLs, FigPath, Ext, 
                Save, Show)
         
-        FullPulseDur = DataInfo['SoundPulseDur'] + \
-                       DataInfo['SoundPostPauseDur'] + \
-                       DataInfo['SoundPrePauseDur']
-        RecLen = (TTLs[-1]/Rate) + FullPulseDur; RecLen = int(RecLen)+1
-        
         FR = FiringRate(Clusters.spike_clusters, Good, Clusters.spike_recordings, 
                         Clusters.spike_samples, Rate, StimType, Freq, dB, RecLen, 
                         Offsets[Rec], FigPath, Ext, Save, Show, ReturnFR=True)
@@ -308,7 +311,7 @@ for Folder in Folders:
     
     Hdf5.DataWrite(UnitRec, '/'+Folder.split('/')[1]+'/Units', AnalysisFile, Overwrite=True)
     Path = '/'+Folder.split('/')[1]+'/Units'
-    Asdf.Write(Path, AnalysisFile)
+    Asdf.Write(UnitRec, Path, AnalysisFile)
 
 #55 U, 91 D, 107 D, 161 D, 807 D12-14, 808 D, 813 D, 822 D, 828 D, 896 D, 908DMaybe
 #%% RT plots

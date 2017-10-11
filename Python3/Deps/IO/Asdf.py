@@ -33,11 +33,11 @@ def FitData(Data, Path, File):
         if not os.path.isfile(File):
             return(Data)
         else:
-            Tmp = Load('/', File)
+            Tmp = Load(Path, File)
 
 
 def Write(Data, Path, File):
-    Data = FitData(Data)
+#    Data = FitData(Data)
     
     F = AsdfFile(Data)
     F.write_to(File)
@@ -71,14 +71,19 @@ def ItemPop(I):
 
 ## Level 1
 def Load(Path, File):
-    Dict = {}; F = AsdfFile.open(File, mode='r')
+#    Dict = {}; F = AsdfFile.open(File, mode='r')
     
-    while F.tree.keys():
-        p = F.tree.popitem()
-        if 'asdf' in p[0]: continue
+    with AsdfFile.open(File, mode='r') as F:
+        Dict = {Key: ItemPop(F.tree.get(Key)) 
+                for Key in F.tree.keys() if 'asdf' not in Key}
         
-        V = ItemPop(p[1])
-        Dict[p[0]] = V
-    
+#        while F.tree.keys():
+#            p = F.tree.popitem()
+#            if 'asdf' in p[0]: continue
+#            
+#            V = ItemPop(p[1])
+#            Dict[p[0]] = V
+        
+    F.close()
     return(Dict)
 

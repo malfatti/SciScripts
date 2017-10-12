@@ -46,7 +46,7 @@ SoundPulseDur = 2
 # Noise frequency. If using one freq., keep the list in a list, [[like this]].
 # NoiseFrequency = [[8000, 16000], [12000, 14000]]
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-                  [14000, 16000], [8000, 16000]]
+                  [14000, 16000], [16000, 18000], [8000, 18000]]
 # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa or in V/Pa
@@ -56,17 +56,17 @@ MicSens_dB = -47.46
 #==========#==========#==========#==========#
 
 Folder = os.environ['DATAPATH']+'/Tests/SoundMeasurements'
-FileName = Folder + '/' + 'SoundMeasurements.hdf5'
-# FileName = 'Test.hdf5'
+#FileName = Folder + '/' + 'SoundMeasurements.hdf5'
+FileName = 'Test.hdf5'
 Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-# SoundAmpF = [10.0, 1.0, 0.0]
-SoundAmpF = np.hstack((
-                np.flipud(np.logspace(np.log10(1e-4), np.log10(10.0), 299)),
-                np.array(0.0)
-            ))
+SoundAmpF = [3.6, 1.0, 0.0]
+#SoundAmpF = np.hstack((
+#                np.flipud(np.logspace(np.log10(1e-4), np.log10(10.0), 299)),
+#                np.array(0.0)
+#            ))
 SoundAmpF = np.array([round(_,6) for _ in SoundAmpF])
 
 ## Prepare dict w/ experimental setup
@@ -118,8 +118,8 @@ print('Finished recording \O/')
 #%% Analysis
 #DataInfo = Hdf5F.LoadSoundMeasurement(FileName, 'DataInfo')
 SoundRec = Hdf5.SoundMeasurementLoad(FileName, Group, 'SoundRec')
-SBInAmpF = Hdf5.SoundCalibration(SigGen.SBAmpFsFile, SoundSystem, 'SBInAmpF')
-# NoiseRMS = Hdf5.SoundCalibration(SigGen.SBAmpFsFile, SoundSystem, 'NoiseRMS')
+SBInAmpF = Hdf5.SoundCalibration(SigGen.CalibrationFile, SoundSystem, 'SBInAmpF')
+# NoiseRMS = Hdf5.SoundCalibration(SigGen.CalibrationFile, SoundSystem, 'NoiseRMS')
 
 if 'MicSens_dB' in DataInfo:
     DataInfo['MicSens_VPa'] = 10**(DataInfo['MicSens_dB']/20)

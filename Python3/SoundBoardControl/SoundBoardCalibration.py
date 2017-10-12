@@ -46,7 +46,7 @@ FileName = Folder + '/' + 'SoundMeasurements.hdf5'
 
 #%% Output
 
-SoundCard.SoundCalOut(Rate, Freq, WaveDur)
+SoundCard.SoundCalOut(Rate, Freq, WaveDur, Ch=1)
 # SBOutAmpF is the generated signal divided by the measured signal
 SBOutAmpF = 1/10
 
@@ -55,7 +55,7 @@ Repetitions = 4
 
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
-    Rec = SoundCard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF)
+    Rec = SoundCard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF, Ch=1)
     SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
     print(SBInAmpF[aa])
 
@@ -69,7 +69,7 @@ print('SBInAmpF = ', str(SBInAmpF))
 #%% NoiseRMS
 import sounddevice as SD
 NoiseRMS = SD.rec(Rate*10, Rate, 1, blocking=True)
-NoiseRMS = (np.mean(NoiseRMS**2))**0.5
+NoiseRMS = ((np.mean(NoiseRMS**2))**0.5) * SBInAmpF
 
 
 #%% Save

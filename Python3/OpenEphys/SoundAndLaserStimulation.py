@@ -22,7 +22,7 @@ sent to the left channel and the sound pulses will be sent to the right
 channel. 
 """
 #%% Settings
-import datetime, os
+import datetime
 import numpy as np
 import sounddevice as SD
 

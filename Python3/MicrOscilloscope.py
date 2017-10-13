@@ -6,16 +6,16 @@ Created on Thu Oct 13 08:50:31 2016
 @author: malfatti
 """
 #%%
-import Hdf5F
+from IO import Hdf5
 import sounddevice as SD
 from queue import Queue, Empty
 import numpy as np
 from scipy import signal
-import math
+import math, os
 
-SBAmpFsFile = '/home/malfatti/Documents/PhD/Tests/20160712135926-SBAmpFs.hdf5'
+SBAmpFsFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
 
-SoundBoard = 'Intel_oAnalog-iAnalog'
+SoundBoard = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Device = 'default'
 Rate = 192000
 Window = 200
@@ -25,17 +25,22 @@ FreqBand = [20, 20000]
 MicSens_dB = -47.46
 MicSens_VPa = 10**(MicSens_dB/20)
 
+SD.default.device = 'system'
+SD.default.samplerate = Rate
+SD.default.channels = 1
+SD.default.blocksize = 384  
+
 def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim, 
                      FreqBand):
     """ Read data from sound board input and plot it until the windows is 
         closed. """
     
-    Params = {'backend': 'Qt5Agg'}
+    Params = {'backend': 'TKAgg'}
     from matplotlib import rcParams; rcParams.update(Params)
     from matplotlib.animation import FuncAnimation
     from matplotlib import pyplot as plt
     
-    SBInAmpF = Hdf5F.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
+    SBInAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
     SoundQueue = Queue()
     DataLength = int(Window * Rate / (1000))
     DataPlot = np.zeros((DataLength, 1))
@@ -99,7 +104,7 @@ def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim,
     Ax.set_ylim(YLim)
     Fig.tight_layout(pad=0)
     
-    Stream = SD.Stream(device=Device, channels=1, blocksize=0, samplerate=Rate, callback=audio_callback, never_drop_input=True)
+    Stream = SD.Stream(samplerate=Rate,callback=audio_callback)#, never_drop_input=True)
     Anim = FuncAnimation(Fig, PltUp, interval=Interval, blit=True)
     
     with Stream:

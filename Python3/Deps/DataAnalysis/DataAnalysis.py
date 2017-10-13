@@ -215,7 +215,8 @@ def Pairwise(iterable):
 
 
 def PSD(Data, Rate, Scaling='density'):
-    Window = signal.hanning(round(len(Data)/(Rate/10000)), sym=False)
+#    Window = signal.hanning(round(len(Data)/(Rate/10000)), sym=False)
+    Window = signal.hanning(4096, sym=False)
     F, PxxSp = signal.welch(Data, Rate, Window, nperseg=len(Window), 
                             noverlap=0, scaling=Scaling)
     
@@ -317,18 +318,18 @@ def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3, EventsDict={}, TTLCh=None,
         return(TTLs)
 
 
-def SignalIntensity(Data, Rate, FreqBand, Ref):
+def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None):
     Intensity = {}
     
     if Data.shape[-1] == 2: F, PxxSp = PSD(Data[:,0], Rate)
     else: F, PxxSp = PSD(Data, Rate)
     
     Range = (F > FreqBand[0])*(F < FreqBand[1])
-#    BinSize = F[1] - F[0]
-    BinSize = Rate/len(Data)
-#    RMS = (sum(PxxSp) * BinSize)**0.5
+    BinSize = F[1] - F[0]
+    
     RMS = (sum(PxxSp[Range]) * BinSize)**0.5
-#    RMS = (sum(PxxSp[Range]))**0.5
+    if NoiseRMS: RMS = RMS - NoiseRMS
+    
     dB = 20*(np.log10((RMS/Ref)/0.00002))
     
     Intensity['PSD'] = [F, PxxSp]

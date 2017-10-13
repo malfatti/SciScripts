@@ -48,7 +48,7 @@ FileName = Folder + '/' + 'SoundMeasurements.hdf5'
 
 SoundCard.SoundCalOut(Rate, Freq, WaveDur, Ch=1)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1/10
+SBOutAmpF = 1/20
 
 #%% Input
 Repetitions = 4
@@ -59,17 +59,18 @@ for aa in range(Repetitions):
     SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
     print(SBInAmpF[aa])
 
-# Mean
-SBInAmpF = sum(SBInAmpF)/len(SBInAmpF)
 # SBInAmpF is the real amplitude divided by the measured amplitude
-SBInAmpF = 1/SBInAmpF
+SBInAmpF = 1/SBInAmpF.mean()
 
 print('SBInAmpF = ', str(SBInAmpF))
 
 #%% NoiseRMS
 import sounddevice as SD
-NoiseRMS = SD.rec(Rate*10, Rate, 1, blocking=True)
-NoiseRMS = ((np.mean(NoiseRMS**2))**0.5) * SBInAmpF
+SD.default.device = 'system'
+SD.default.samplerate = Rate
+SD.default.channels = 1
+SD.default.blocksize = 384
+MicNoise = SD.rec(Rate*10, Rate, 1, blocking=True)
 
 
 #%% Save
@@ -78,10 +79,10 @@ with h5py.File(FileName, 'w') as F:
     
     F[SoundSystem]['SBOutAmpF'] = SBOutAmpF
     F[SoundSystem]['SBInAmpF'] = SBInAmpF
-    F[SoundSystem]['NoiseRMS'] = NoiseRMS
+    F[SoundSystem]['MicNoise'] = MicNoise
 
 with h5py.File(FileName, 'r') as F:
     a = F[SoundSystem]['SBOutAmpF'][()]
     b = F[SoundSystem]['SBInAmpF'][()]
-    c = F[SoundSystem]['NoiseRMS'][()]
+    c = F[SoundSystem]['MicNoise'][()]
 

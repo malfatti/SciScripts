@@ -36,9 +36,11 @@ from matplotlib import rcParams; rcParams.update(Params)
 import matplotlib.pyplot as plt
 
 
-#%% Set parameters of the experiment
+## Set parameters of the experiment
 SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'GPIAS'
+SBOutAmpF = Hdf5.SoundCalibration(SigGen.CalibrationFile, SoundSystem, 'SBOutAmpF')
+OutMax = 1/SBOutAmpF
 
 ## Sound (Durations in sec)
 Rate = 192000
@@ -56,17 +58,17 @@ MicSens_dB = -47.46
 #==========#==========#==========#==========#
 
 Folder = os.environ['DATAPATH']+'/Tests/SoundMeasurements'
-#FileName = Folder + '/' + 'SoundMeasurements.hdf5'
-FileName = 'Test.hdf5'
+FileName = Folder + '/' + 'SoundMeasurements.hdf5'
+#FileName = 'Test.hdf5'
 Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-SoundAmpF = [3.6, 1.0, 0.0]
-#SoundAmpF = np.hstack((
-#                np.flipud(np.logspace(np.log10(1e-4), np.log10(10.0), 299)),
-#                np.array(0.0)
-#            ))
+#SoundAmpF = [OutMax, 1.0, 0.0]
+SoundAmpF = np.hstack((
+                np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
+                np.array(0.0)
+            ))
 SoundAmpF = np.array([round(_,6) for _ in SoundAmpF])
 
 ## Prepare dict w/ experimental setup
@@ -82,6 +84,7 @@ SoundAmpF = {Freq: SoundAmpF for Freq in Freqs}
 # Prepare audio objects
 SD.default.device = 'system'
 SD.default.samplerate = Rate
+SD.default.blocksize = 384
 SD.default.channels = 2
 
 # Warn user
@@ -90,6 +93,7 @@ FullTime = str(round(FullTime, 2))
 print('')
 print('Full test will take', FullTime, 'min to run.')
 print('Current time: ', datetime.now().strftime("%H:%M:%S"))
+input('Press any key to start... ')
 print('This can be loud - cover your ears!!')
 print('')
 for i in range(5, 0, -1): print(i, end=' '); sleep(1)
@@ -116,10 +120,10 @@ print('Finished recording \O/')
 
 
 #%% Analysis
-#DataInfo = Hdf5F.LoadSoundMeasurement(FileName, 'DataInfo')
-SoundRec = Hdf5.SoundMeasurementLoad(FileName, Group, 'SoundRec')
-SBInAmpF = Hdf5.SoundCalibration(SigGen.CalibrationFile, SoundSystem, 'SBInAmpF')
-# NoiseRMS = Hdf5.SoundCalibration(SigGen.CalibrationFile, SoundSystem, 'NoiseRMS')
+SoundRec = Hdf5.DataLoad('/'+ Group + '/SoundRec', FileName)[0]
+SBInAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBInAmpF', SigGen.CalibrationFile)[0]
+Noise = Hdf5.DataLoad('/'+SoundSystem+'/MicNoise', SigGen.CalibrationFile)[0]
+#Noise *= SBInAmpF
 
 if 'MicSens_dB' in DataInfo:
     DataInfo['MicSens_VPa'] = 10**(DataInfo['MicSens_dB']/20)
@@ -133,17 +137,17 @@ SoundIntensity = {}
 
 for FKey in SoundRec:
     SoundIntensity[FKey] = {}
+    FreqBand = [int(_) for _ in FKey.split('-')]
+    
+    NoiseRMS = SignalIntensity(Noise, DataInfo['Rate'], FreqBand, DataInfo['MicSens_VPa'])
+    NoiseRMS = NoiseRMS['RMS']
     
     for AKey in SoundRec[FKey]:
         SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * SBInAmpF
-        FreqBand = [int(_) for _ in FKey.split('-')]
-        
-#         NoiseAmpF = 1 - (NoiseRMS/((np.mean(SoundRec[FKey][AKey]**2))**0.5))
-        SoundRec[FKey][AKey] = SoundRec[FKey][AKey]# * NoiseAmpF
-        
         SoundIntensity[FKey][AKey] = SignalIntensity(SoundRec[FKey][AKey], 
                                                      DataInfo['Rate'], FreqBand, 
-                                                     DataInfo['MicSens_VPa'])
+                                                     DataInfo['MicSens_VPa'],
+                                                     NoiseRMS)
 
 del(SoundRec)
 

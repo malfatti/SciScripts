@@ -45,17 +45,13 @@ OutMax = 1/SBOutAmpF
 ## Sound (Durations in sec)
 Rate = 192000
 SoundPulseDur = 2
-# Noise frequency. If using one freq., keep the list in a list, [[like this]].
-# NoiseFrequency = [[8000, 16000], [12000, 14000]]
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
                   [14000, 16000], [16000, 18000], [8000, 18000]]
-# TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
+
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa or in V/Pa
 MicSens_dB = -47.46
 #MicSens_VPa = 0.0042364
-
-#==========#==========#==========#==========#
 
 Folder = os.environ['DATAPATH']+'/Tests/SoundMeasurements'
 FileName = Folder + '/' + 'SoundMeasurements.hdf5'

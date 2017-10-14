@@ -65,7 +65,7 @@ def BandpassFilterSound(SoundPulse, Rate, NoiseFrequency):
     return(SoundPulseFiltered)
 
 
-def dBToAmpF(Intensities, CalibrationFile, Path):
+def dBToAmpF(Intensities, Path):
     print('Converting dB to AmpF...')
     SoundIntensity = Hdf5.SoundMeasurementLoad(CalibrationFile, Path, 
                                                 'SoundIntensity')
@@ -108,32 +108,6 @@ def InterleaveChannels(Right, Left, SoundAmpF, NoiseFrequency):
                     List[Freq][AmpF][_ *2+1] = Left[_]
     
     return(List)
-
-
-def LaserStim(Rate, LaserPulseDur, TTLAmpF, SoundBoard, LaserPrePauseDur=0, LaserPostPauseDur=0, TTLs=True, Ch=1):
-    """ Generate square waves in one channel that works as TTLs for laser.
-        
-        WARNING: The signal generated is composed of square WAVES, not pulses,
-        meaning that it reaches positive AND NEGATIVE values. If your device 
-        handles only positive voltage, use a diode on the input of your device.
-        
-        https://en.wikipedia.org/wiki/Diode
-        """
-    
-    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard,
-                                               'SBOutAmpF')
-    if TTLAmpF > 1/SBOutAmpF:
-        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
-        TTLAmpF = 1/SBOutAmpF
-    
-    LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
-    
-    Laser = np.zeros((LaserUnit.shape[0], 2))
-    Laser[:,Ch-1] = LaserUnit.T
-    Laser = np.ascontiguousarray(Laser)
-    
-    print('Done generating laser stimulus.')
-    return(Laser)
 
 
 #def ListToByteArray(List, SoundAmpF, NoiseFrequency):
@@ -226,6 +200,58 @@ def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PrePauseDur=0,
 
 
 ## Level 1
+def LaserSinStim(Rate, Dur, Freq, SoundBoard, Ch=1):
+    """ Generate square waves in one channel that works as TTLs for laser.
+        
+        WARNING: The signal generated is composed of square WAVES, not pulses,
+        meaning that it reaches positive AND NEGATIVE values. If your device 
+        handles only positive voltage, use a diode on the input of your device.
+        
+        https://en.wikipedia.org/wiki/Diode
+        """
+    
+    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard,
+                                               'SBOutAmpF')
+    if TTLAmpF > 1/SBOutAmpF:
+        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
+        TTLAmpF = 1/SBOutAmpF
+    
+    LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
+    
+    Laser = np.zeros((LaserUnit.shape[0], 2))
+    Laser[:,Ch-1] = LaserUnit.T
+    Laser = np.ascontiguousarray(Laser)
+    
+    print('Done generating laser stimulus.')
+    return(Laser)
+
+
+def LaserSqStim(Rate, LaserPulseDur, TTLAmpF, SoundBoard, LaserPrePauseDur=0, LaserPostPauseDur=0, Ch=1):
+    """ Generate square waves in one channel that works as TTLs for laser.
+        
+        WARNING: The signal generated is composed of square WAVES, not pulses,
+        meaning that it reaches positive AND NEGATIVE values. If your device 
+        handles only positive voltage, use a diode on the input of your device.
+        
+        https://en.wikipedia.org/wiki/Diode
+        """
+    
+    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard,
+                                               'SBOutAmpF')
+    if TTLAmpF > 1/SBOutAmpF:
+        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
+        TTLAmpF = 1/SBOutAmpF
+    
+    LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
+    
+    Laser = np.zeros((LaserUnit.shape[0], 2))
+    Laser[:,Ch-1] = LaserUnit.T
+    Laser = np.ascontiguousarray(Laser)
+    
+    print('Done generating laser stimulus.')
+    return(Laser)
+
+
 def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur, TTLAmpF, SoundBoard, SoundPrePauseDur=0,
                    SoundPostPauseDur=0, LaserPrePauseDur=0, LaserPostPauseDur=0, Map=[1,2]):
     """ Generate sound pulses in one channel and a mix of square waves that 
@@ -253,6 +279,10 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
                                NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
                                SoundPostPauseDur)
     
+    SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
+                          SBOutAmpF, SoundPrePauseDur, 
+                          SoundPostPauseDur)
+    
     LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
                        LaserPrePauseDur, LaserPostPauseDur)
     
@@ -262,10 +292,10 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
         
         for AKey in SoundUnit[FKey]:
             if Map[0] == 2:
-                SoundLaser[FKey][AKey] = np.vstack((SoundUnit[FKey][AKey], LaserUnit)).T
+                SoundLaser[FKey][AKey] = np.vstack((SoundUnit[FKey][AKey], SoundTTLUnit+LaserUnit)).T
                 SoundLaser[FKey][AKey] = np.ascontiguousarray(SoundLaser[FKey][AKey])
             else:
-                SoundLaser[FKey][AKey] = np.vstack((LaserUnit, SoundUnit[FKey][AKey])).T
+                SoundLaser[FKey][AKey] = np.vstack((SoundTTLUnit+LaserUnit, SoundUnit[FKey][AKey])).T
                 SoundLaser[FKey][AKey] = np.ascontiguousarray(SoundLaser[FKey][AKey])
     
     print('Done generating sound and laser stimulus.')

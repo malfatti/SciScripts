@@ -22,7 +22,7 @@ inhibition of acoustic startle reflex (GPIAS).
 #%% Settings
 import numpy as np
 import sounddevice as SD
-import random, os
+import random
 
 from datetime import datetime
 from IO import Arduino, SigGen, Txt
@@ -45,11 +45,11 @@ SoundLoudPulseDur = 0.05
 SoundBackgroundAfterPulseDur = 0.51
 SoundBetweenStimDur = [10, 20]
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], 
-                  [12000, 14000], [14000, 16000], [8000, 16000]]
+                  [12000, 14000], [14000, 16000], [16000, 18000], [8000, 18000]]
 
 # Background and pulse intensities in dB. Supports float :)
 BackgroundIntensity = [60]
-PulseIntensity = [105]
+PulseIntensity = [60]
 
 
 ## Hardware parameters
@@ -64,12 +64,8 @@ TTLAmpF = 0.4
 Date = datetime.now().strftime("%Y%m%d%H%M%S")
 FileName = ''.join([Date, '-', AnimalName, '-GPIAS.hdf5'])
 
-SoundBackgroundAmpF = SigGen.dBToAmpF(BackgroundIntensity, SigGen.CalibrationFile, 
-                                                 System+'/'+Setup)
-
-SoundPulseAmpF = SigGen.dBToAmpF(PulseIntensity, 
-                                            SigGen.CalibrationFile, 
-                                            System+'/'+Setup)
+SoundBackgroundAmpF = SigGen.dBToAmpF(BackgroundIntensity, System+'/'+Setup)
+SoundPulseAmpF = SigGen.dBToAmpF(PulseIntensity, System+'/'+Setup)
 
 
 SoundBackground, SoundGap, SoundBackgroundPrePulse, SoundLoudPulse, \

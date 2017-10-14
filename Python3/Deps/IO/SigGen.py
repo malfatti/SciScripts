@@ -200,7 +200,7 @@ def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PrePauseDur=0,
 
 
 ## Level 1
-def LaserSinStim(Rate, Dur, Freq, SoundBoard, Ch=1):
+def LaserSinStim(Rate, Dur, Freq, SoundSystem, Ch=1):
     """ Generate square waves in one channel that works as TTLs for laser.
         
         WARNING: The signal generated is composed of square WAVES, not pulses,
@@ -210,8 +210,8 @@ def LaserSinStim(Rate, Dur, Freq, SoundBoard, Ch=1):
         https://en.wikipedia.org/wiki/Diode
         """
     
-    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard,
-                                               'SBOutAmpF')
+    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
+    
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
         TTLAmpF = 1/SBOutAmpF
@@ -226,7 +226,7 @@ def LaserSinStim(Rate, Dur, Freq, SoundBoard, Ch=1):
     return(Laser)
 
 
-def LaserSqStim(Rate, LaserPulseDur, TTLAmpF, SoundBoard, LaserPrePauseDur=0, LaserPostPauseDur=0, Ch=1):
+def LaserSqStim(Rate, LaserPulseDur, TTLAmpF, SoundSystem, LaserPrePauseDur=0, LaserPostPauseDur=0, Ch=1):
     """ Generate square waves in one channel that works as TTLs for laser.
         
         WARNING: The signal generated is composed of square WAVES, not pulses,
@@ -236,8 +236,8 @@ def LaserSqStim(Rate, LaserPulseDur, TTLAmpF, SoundBoard, LaserPrePauseDur=0, La
         https://en.wikipedia.org/wiki/Diode
         """
     
-    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard,
-                                               'SBOutAmpF')
+    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
+    
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
         TTLAmpF = 1/SBOutAmpF
@@ -252,7 +252,7 @@ def LaserSqStim(Rate, LaserPulseDur, TTLAmpF, SoundBoard, LaserPrePauseDur=0, La
     return(Laser)
 
 
-def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur, TTLAmpF, SoundBoard, SoundPrePauseDur=0,
+def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur, TTLAmpF, SoundSystem, SoundPrePauseDur=0,
                    SoundPostPauseDur=0, LaserPrePauseDur=0, LaserPostPauseDur=0, Map=[1,2]):
     """ Generate sound pulses in one channel and a mix of square waves that 
         works as TTLs for both sound and laser in the other channel.
@@ -265,7 +265,7 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard, 'SBOutAmpF')
+    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
     
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
@@ -303,7 +303,7 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
 
 
 def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 
-              SoundBoard, SoundPrePauseDur=0, SoundPostPauseDur=0, TTLs=True,
+              SoundSystem, SoundPrePauseDur=0, SoundPostPauseDur=0, TTLs=True,
               Map=[1,2]):
     """ Generate sound pulses in one channel and TTLs in the other channel.
         
@@ -315,7 +315,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5.SoundCalibration(CalibrationFile, SoundBoard, 'SBOutAmpF')
+    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
     
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')

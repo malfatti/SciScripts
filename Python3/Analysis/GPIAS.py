@@ -62,7 +62,7 @@ GPIAS.GroupData.Index_Exp_BP(IndexPerExp, ExpList)
 
 
 #%% Batch
-Group = 'Prevention'
+Group = 'PreventionControl'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -143,8 +143,8 @@ for Exp in Exps:
                              AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
                              FilterFreq, FilterOrder, Filter, Return=True)
         
-        GPIASData = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
-        GPIASRec, XValues = GPIASData['GPIAS'], GPIASData['XValues']
+#        GPIASData = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+#        GPIASRec, XValues = GPIASData['GPIAS'], GPIASData['XValues']
         
         PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
                          FigName, Save=True, Visible=True)

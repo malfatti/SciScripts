@@ -41,6 +41,11 @@ def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
         BGStart = 0; BGEnd = SliceSize
         PulseStart = PulseSampleStart; PulseEnd = PulseSampleStart + SliceSize
         
+        if type(Data[Key[0]]) == list:
+            if not Data[Key[0]]:
+                print('Key', Key[0], 'is empty. Skipping...')
+                continue
+        
         ResRMSBG = (np.mean(Data[Key[0]][BGStart:BGEnd]**2))**0.5
         ResRMSPulse = (np.mean(Data[Key[0]][PulseStart:PulseEnd]**2))**0.5
 #            ResRMS = ResRMSPulse
@@ -133,18 +138,20 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
     
     # Temporary override
     if AnalysisFile.split('/')[0] == 'Recovery': PrePostFreq = []
+    SliceSize = int(SliceSize * (Rate/1000))
     
     GPIASData = PreallocateDict(DataInfo, PrePostFreq)
     GPIASData = OrganizeRecs(GPIASData, Data, DataInfo, AnalogTTLs,
                                    NoOfSamplesBefore, NoOfSamplesAfter, 
                                    NoOfSamples)
     
-    SliceSize = int(SliceSize * (Rate/1000))
-    
     for Freq in GPIASData['Index'].keys():
         for Key in GPIASData['Index'][Freq].keys():
             # Average trials for traces
             GPIASData['Trace'][Freq][Key] = np.mean(GPIASData['Trace'][Freq][Key], axis=0)
+            if GPIASData['Trace'][Freq][Key].shape == ():
+                print('Freq', Freq, 'trial', Key, 'is empty. Skipping...')
+                continue
             
             # Bandpass filter
             GPIASData['Trace'][Freq][Key] = DataAnalysis.FilterSignal(GPIASData['Trace'][Freq][Key], 
@@ -167,7 +174,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
             
 #                GPIASData['Trace'][Freq][Key] = np.mean(GPIASData['Trace'][Freq][Key], axis=0)
             GPIASData['Index'][Freq][Key] = np.mean(GPIASData['Index'][Freq][Key], axis=0)
-            
+        
         # RMS
         if Freq == PrePostFreq: Keys = [['Gap', 'NoGap', 'GPIASIndex'], 
                                         ['Post', 'Pre', 'PrePost']]

@@ -29,7 +29,8 @@ from IO import Arduino, SigGen, Txt
 
 
 ## Experiment parameters
-AnimalName = 'Prevention_A5'
+AnimalName = 'PreventionControl_04'
+StimType = ['Sound']
 SoundCh = 3
 TTLCh = 2
 PiezoCh = [1]
@@ -48,8 +49,8 @@ NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000],
                   [12000, 14000], [14000, 16000], [16000, 18000], [8000, 18000]]
 
 # Background and pulse intensities in dB. Supports float :)
-BackgroundIntensity = [60]
-PulseIntensity = [70]
+BackgroundIntensity = [65]
+PulseIntensity = [105]
 
 
 ## Hardware parameters
@@ -85,12 +86,12 @@ Stim = SD.OutputStream(dtype='float32')
 
 ## Write info
 DataInfo = dict((Name, eval(Name)) 
-                for Name in ['AnimalName', 'SigGen.CalibrationFile', 'Setup', 
-                             'System', 'Rate', 'BaudRate', 'Date', 'SoundCh', 
-                             'TTLCh', 'PiezoCh', 'BackgroundIntensity', 
-                             'PulseIntensity', 'SoundBackgroundDur', 
-                             'SoundGapDur', 'SoundBackgroundPrePulseDur', 
-                             'SoundLoudPulseDur', 
+                for Name in ['AnimalName', 'StimType', 'SigGen.CalibrationFile', 
+                             'Setup', 'System', 'Rate', 'BaudRate', 'Date', 
+                             'SoundCh', 'TTLCh', 'PiezoCh', 
+                             'BackgroundIntensity', 'PulseIntensity', 
+                             'SoundBackgroundDur', 'SoundGapDur', 
+                             'SoundBackgroundPrePulseDur', 'SoundLoudPulseDur', 
                              'SoundBackgroundAfterPulseDur', 
                              'SoundBetweenStimDur',  'NoiseFrequency', 
                              'NoOfTrials', 'TTLAmpF', 'FileName'])

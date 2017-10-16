@@ -49,7 +49,7 @@ NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000],
 
 # Background and pulse intensities in dB. Supports float :)
 BackgroundIntensity = [60]
-PulseIntensity = [60]
+PulseIntensity = [70]
 
 
 ## Hardware parameters

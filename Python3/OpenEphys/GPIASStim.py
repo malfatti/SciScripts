@@ -29,7 +29,7 @@ from IO import Arduino, SigGen, Txt
 
 
 ## Experiment parameters
-AnimalName = 'PreventionControl_04'
+AnimalName = 'RecoveryControl_02'
 StimType = ['Sound']
 SoundCh = 3
 TTLCh = 2

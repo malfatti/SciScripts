@@ -27,9 +27,11 @@ import random
 from datetime import datetime
 from IO import Arduino, SigGen, Txt
 
+#array([3, 4, 1, 2])
+#array([1, 4, 2, 3, 5])
 
 ## Experiment parameters
-AnimalName = 'RecoveryControl_02'
+AnimalName = 'PreventionControl_02'
 StimType = ['Sound']
 SoundCh = 3
 TTLCh = 2

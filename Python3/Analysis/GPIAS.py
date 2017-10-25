@@ -38,7 +38,7 @@ for Animal in Animals:
 #Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
 #        'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
 
-Group = 'Prevention'
+Group = 'PreventionControl'
 ExpList = ['BeforeANT', 'AfterANTNaCl', 'AfterANTCNO']
 #Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 Animals = ['Prevention_A3', 'Prevention_A4', 'Prevention_A5']
@@ -62,7 +62,7 @@ GPIAS.GroupData.Index_Exp_BP(IndexPerExp, ExpList)
 
 
 #%% Batch
-Group = 'PreventionControl'
+Group = 'RecoveryControl'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -77,7 +77,7 @@ Exps = sorted(glob(Group+'/2*IAS'))#[2:]
 for Exp in Exps:
 #    Exp = Group + '/20170721-Prevention-GPIAS'
     Folders = sorted(glob(Exp + '/' + Exp.split('/')[-1][:4] + '-*'))
-    Files = sorted(glob(Exp + '/' + Exp.split('/')[-1][:4] + '0*dict'))
+    Files = sorted(glob(Exp + '/' + Exp.split('/')[-1][:4] + '*dict'))
     
     # NaCl
     #del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
@@ -141,7 +141,7 @@ for Exp in Exps:
         GPIASRec, XValues = GPIAS.Analysis(
                              Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
                              AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                             FilterFreq, FilterOrder, Filter, Return=True)
+                             FilterFreq, FilterOrder, Filter, Return=True, Overwrite=True)
         
 #        GPIASData = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
 #        GPIASRec, XValues = GPIASData['GPIAS'], GPIASData['XValues']

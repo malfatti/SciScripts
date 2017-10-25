@@ -123,7 +123,7 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
 def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
              GPIASTimeBeforeTTL=100, GPIASTimeAfterTTL=150, 
              FilterFreq=[70, 400], FilterOrder=4, Filter='butter', 
-             SliceSize=100, AnalogTTLs=True, Return=False):
+             SliceSize=100, AnalogTTLs=True, Return=False, Overwrite=False):
     
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
     NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
@@ -184,7 +184,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                                        GPIASData['Index'][Freq], Keys, 
                                        NoOfSamplesBefore, SliceSize)
     
-    Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFile)
+    Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFile, Overwrite)
     
     if Return: return(GPIASData, XValues)
     else: return(None)

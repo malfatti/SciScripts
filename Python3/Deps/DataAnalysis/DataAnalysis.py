@@ -205,6 +205,42 @@ def MultiProcess(Function, Args, Procs=8):
     return(None)
 
 
+def NestedClean(Nest):
+    if 'numpy' in str(type(Nest)):
+        if not Nest.size: return(None)
+        else: return(Nest)
+    else:
+        if len(Nest) == 0: return(None)
+    
+    ToDel = []
+    if type(Nest) == dict:
+        for K, Key in Nest.items(): 
+            Nest[K] = NestedClean(Key)
+            
+            if type(Nest[K]) == np.ndarray: 
+                if not Nest[K].size: ToDel.append(K)
+            else:
+                if not Nest[K]: ToDel.append(K)
+        
+        for K in ToDel: del(Nest[K])
+        return(Nest)
+    
+    elif type(Nest) in [list, tuple]:
+        for E, El in enumerate(Nest): 
+            Nest[E] = NestedClean(El)
+            
+            if type(Nest[E]) == np.ndarray: 
+                if not Nest[E].size: ToDel.append(E)
+            else:
+                if not Nest[E]: ToDel.append(E)
+        
+        for E in ToDel: del(Nest[E])
+        return(Nest)
+    
+    else:
+        return(Nest)
+
+
 def Pairwise(iterable):
     """ from https://docs.python.org/3.6/library/itertools.html#itertools-recipes
     s -> (s0,s1), (s1,s2), (s2, s3), ..."""

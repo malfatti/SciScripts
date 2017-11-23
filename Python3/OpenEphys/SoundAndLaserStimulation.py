@@ -49,7 +49,7 @@ NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000],
 
 ## Hardware parameters
 System = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
-Setup = 'UnitRec'
+Setup = 'GPIAS'
 Rate = 192000
 BaudRate = 115200
 
@@ -58,9 +58,9 @@ TTLAmpF = 0.6 # for analog TTLs only
 #TTLAmpF = 6.8 # for analog and digital TTLs
 
 # Set sound stimulation
-#SoundAmpF = SigGen.dBToAmpF(Intensities, SigGen.CalibrationFile, System+'/'+Setup)
+SoundAmpF = SigGen.dBToAmpF(Intensities, System+'/'+Setup)
 # Temporary override
-SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
+#SoundAmpF = Hdf5.DataLoad('/DataInfo/SoundAmpF', 'Prevention/20170704-Prevention_A1-ABRs/20170704102002-Prevention_A1-SoundStim.hdf5')[1]
 Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
                          TTLAmpF, System, SoundPauseBeforePulseDur, 
                          SoundPauseAfterPulseDur)

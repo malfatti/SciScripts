@@ -327,10 +327,9 @@ def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3, EventsDict={}, TTLCh=None,
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:
         Threshold = GetTTLThreshold(Data, StdNo); print('TTL threshold:', Threshold)
-        TTLs = [_ for _ in range(1, len(Data)) if Data[_] > Threshold and Data[_-1] < Threshold]
-#        for _ in range(1, len(Data)):
-#            if Data[_] > Threshold:
-#                if Data[_-1] < Threshold: TTLs.append(_)
+        TTLs = np.where((Data[:-1] < Threshold)*(Data[1:] > Threshold))[0]
+        # TTLs = [_ for _ in range(1, len(Data)) if Data[_] > Threshold and Data[_-1] < Threshold]
+        # TTLs = np.array(TTLs, dtype='int')
         
         print('Done.')
         return(TTLs)

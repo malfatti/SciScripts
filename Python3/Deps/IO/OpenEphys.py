@@ -92,9 +92,9 @@ def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
         Proc = Kwd[-11:-8]
         
         Data = {}; Rate = {}
-        Data[Proc], Attrs = Hdf5.DataLoad('/', Kwd)
-        Data[Proc] = {R: Rec['data'] for R, Rec in Data[Proc]['recordings'].items()}
-        Rate[Proc] = [np.array(Rec['sample_rate']) for Rec in Attrs['recordings'].values()]
+        Data[Proc], Attrs = Hdf5.DataLoad('/recordings', Kwd)
+        Data[Proc] = {R: Rec['data'] for R, Rec in Data[Proc].items()}
+        Rate[Proc] = [np.array(Rec['sample_rate']) for Rec in Attrs.values()]
         if len(np.unique(Rate[Proc])) == 1: Rate[Proc] = Rate[Proc][0]
         
         if Unit.lower() == 'uv': Data[Proc] = DataTouV(Data[Proc], RecChs[Proc])
@@ -143,6 +143,44 @@ def OpenEphysLoad(Folder, Unit='uV', ChannelMap=[]):
 
 
 ## Level 2
+def GetRecs(Folder):
+    FilesExt = [F[-3:] for F in glob(Folder+'/*.*')]
+    
+    if 'kwd' in FilesExt:
+        Kwds = glob(Folder+'/*.kwd')
+        
+        for Kwd in Kwds:
+            Proc = Kwd[-11:-8]
+            
+            Recs = {}
+            Recs[Proc] = Hdf5.DataLoad('/recordings', Kwd)[0]
+            Recs[Proc] = [R for R in Recs[Proc].keys()]
+        
+    elif 'dat' in FilesExt:
+        Files = glob(Folder+'/*.dat'); Files.sort()
+        RecChs = SettingsXML.GetRecChs(Folder+'/settings.xml')[0]
+        
+        Recs = {Proc: [] for Proc in RecChs.keys()}
+        
+        for File in Files:
+            _, Proc, Rec = File.split('/')[-1][10:-4].split('_')
+            Recs[Proc].append(Rec)
+        
+    elif 'ous' in FilesExt:
+        OEs = glob(Folder+'/*continuous')
+        Chs = [_.split('/')[-1] for _ in OEs]
+        Procs = DataAnalysis.UniqueStr([_[:3] for _ in Chs])
+        Recs = {}
+        
+        for Proc in Procs:
+            ACh = Chs[Proc][0].split('.')[0]
+            OEData = OpenEphys.loadFolder(Folder, source=Proc)
+            R = np.unique(OEData[ACh]['recordingNumber'])
+            Recs[Proc] = str(int(R))
+    
+    return(Recs)
+
+
 def DataLoader(Folder, Unit='uV', ChannelMap=[], AnalogTTLs=True):
     FilesExt = [F[-3:] for F in glob(Folder+'/*.*')]
     

@@ -39,9 +39,7 @@ def FitData(Data, Path, File):
 def Write(Data, Path, File):
 #    Data = FitData(Data)
     
-    F = AsdfFile(Data)
-    F.write_to(File)
-    F.close()
+    with AsdfFile(Data) as F: F.write_to(File)
     
     return(None)
 

@@ -28,10 +28,10 @@ def AudioSet(Rate, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, Sys
 
 
 def InfoWrite(AnimalName, StimType, Rate, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, SoundAmpF, InfoFile):
-    DataInfo = dict((Name, eval(Name)) 
-                    for Name in ['AnimalName', 'Rate', 'SoundPulseDur', 
+    DataInfo = {K: locals()[K]
+                    for K in ['AnimalName', 'Rate', 'SoundPulseDur', 
                                  'SoundPulseNo', 'Intensities', 'NoiseFrequency', 
-                                 'SigGen.CalibrationFile', 'StimType', 'InfoFile'])
+                                 'SigGen.CalibrationFile', 'StimType', 'InfoFile']}
     
 #    Hdf5.DictWrite(DataInfo, '/DataInfo', InfoFile)
 #    Hdf5.DictWrite(SoundAmpF, '/DataInfo/SoundAmpF', InfoFile)

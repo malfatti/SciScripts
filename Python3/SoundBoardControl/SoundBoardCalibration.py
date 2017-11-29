@@ -35,7 +35,7 @@ frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 192000; Freq = 10000; WaveDur = 10
-SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+SoundSystem = 'Jack-Speaker-Mic'
 
 from IO import SoundCard
 import os, h5py

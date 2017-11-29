@@ -39,7 +39,7 @@ import matplotlib.pyplot as plt
 ## Set parameters of the experiment
 SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
 Setup = 'GPIAS'
-SBOutAmpF = Hdf5.SoundCalibration(SigGen.CalibrationFile, SoundSystem, 'SBOutAmpF')
+SBOutAmpF = Hdf5.DataLoad(SoundSystem+'/SBOutAmpF', SigGen.CalibrationFile)[0]
 OutMax = 1/SBOutAmpF
 
 ## Sound (Durations in sec)
@@ -60,7 +60,7 @@ Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-#SoundAmpF = [OutMax, 1.0, 0.0]
+# SoundAmpF = [OutMax, 1.0, 0.0]
 SoundAmpF = np.hstack((
                 np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
                 np.array(0.0)
@@ -116,9 +116,9 @@ print('Finished recording \O/')
 
 
 #%% Analysis
-SoundRec = Hdf5.DataLoad('/'+ Group + '/SoundRec', FileName)[0]
-SBInAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBInAmpF', SigGen.CalibrationFile)[0]
-Noise = Hdf5.DataLoad('/'+SoundSystem+'/MicNoise', SigGen.CalibrationFile)[0]
+SoundRec = Hdf5.DataLoad(Group + '/SoundRec', FileName)[0]
+SBInAmpF = Hdf5.DataLoad(SoundSystem+'/SBInAmpF', SigGen.CalibrationFile)[0]
+Noise = Hdf5.DataLoad(SoundSystem+'/MicNoise', SigGen.CalibrationFile)[0]
 #Noise *= SBInAmpF
 
 if 'MicSens_dB' in DataInfo:
@@ -235,7 +235,7 @@ for FKey in FreqList:
     XLabel = 'Frequency [Hz]'
     
     Intensities = [80, 70, 60, 50, 40, 30, 20, 0]
-    AmpFList = SigGen.dBToAmpF(Intensities, FileName, Group)
+    AmpFList = SigGen.dBToAmpF(Intensities, Group)
     for AFKey in AmpFList:
         AmpFList[AFKey] = [str(_) for _ in AmpFList[AFKey]]
     

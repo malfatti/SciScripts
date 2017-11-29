@@ -12,7 +12,7 @@ from IO import SigGen, Txt
 
 
 ## Level 0
-def AudioSet(Rate, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, System, SoundAmpF):
+def AudioSet(Rate, BlockSize, Channels, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, System, SoundAmpF):
     # Set sound stimulation
     Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, 
                              0, System, TTLs=False, Map=[2,1])
@@ -20,65 +20,62 @@ def AudioSet(Rate, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, Sys
     # Set audio objects
     SD.default.device = 'system'
     SD.default.samplerate = Rate
-    SD.default.blocksize = 384
-    SD.default.channels = 2
+    SD.default.blocksize = BlockSize
+    SD.default.channels = Channels
     Stim = SD.OutputStream(dtype='float32')
     
     return(Sound, Stim)
 
 
-def InfoWrite(AnimalName, StimType, Rate, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, SoundAmpF, InfoFile):
-    DataInfo = {K: locals()[K]
-                    for K in ['AnimalName', 'Rate', 'SoundPulseDur', 
-                                 'SoundPulseNo', 'Intensities', 'NoiseFrequency', 
-                                 'SigGen.CalibrationFile', 'StimType', 'InfoFile']}
+def InfoWrite(AnimalName, StimType, Rate, BlockSize, Channels, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, SoundAmpF, System, Setup, InfoFile):
+    CalibrationFile = SigGen.CalibrationFile
     
-#    Hdf5.DictWrite(DataInfo, '/DataInfo', InfoFile)
-#    Hdf5.DictWrite(SoundAmpF, '/DataInfo/SoundAmpF', InfoFile)
+    DataInfo = {'InfoFile': InfoFile}
+    DataInfo['Animal'] = {K: locals()[K] for K in ['AnimalName', 'StimType']}
+    DataInfo['Audio'] = {K: locals()[K]
+                             for K in ['Rate', 'BlockSize', 'Channels', 
+                                       'Intensities', 'NoiseFrequency',
+                                       'SoundPulseDur', 'SoundPulseNo', 
+                                       'CalibrationFile', 'System', 'Setup']}
+    
     DataInfo['ExpInfo'] = {}
-    DataInfo['SoundAmpF'] = {K: Key.tolist() for K, Key in SoundAmpF.items()}
-    Txt.DictWrite(InfoFile.split('.')[0]+'.dict', DataInfo)
+    DataInfo['Audio']['SoundAmpF'] = {K: Key.tolist() 
+                                          for K, Key in SoundAmpF.items()}
+    
+    Txt.DictWrite(InfoFile, DataInfo)
     
     return(DataInfo)
 
 
-def Play(Sound, Stim, Intensities, SoundPulseDur, SoundPulseNo, StimType, DataInfo):
+def Play(Sound, Stim, Intensities, SoundPulseNo, DataInfo):
     FKey = list(Sound.keys())[0]
-    AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
+    AKey = list(Sound[FKey].keys())[0]
     
     Stim.start()
-    for AmpF, AKey in enumerate(AKeys):
-    #        SS = Sound[FKey][AKey].T
-    #        for Pulse in range(SoundPulseNo-1):
-    #            SS = np.concatenate((SS, Sound[FKey][AKey].T))
-    #    SS = np.concatenate([Sound[FKey][AKey] for _ in range(SoundPulseNo)])
-        
-        print('Playing', FKey, 'at', str(Intensities[AmpF]), 'dB')
-        for Pulse in range(SoundPulseNo): Stim.write(Sound[FKey][AKey])
-    #    del(SS)
+    print('Playing', FKey, 'at', str(Intensities[0]), 'dB')
+    for Pulse in range(SoundPulseNo): Stim.write(Sound[FKey][AKey])
     Stim.stop()
     
-#    Hdf5.ExpInfoWrite('Sound', None, FKey, InfoFile)
-    DataInfo['ExpInfo']['0'] = {'DVCoord': None, 'StimType': StimType, 'Hz': FKey}
-    Txt.DictWrite(DataInfo['InfoFile'].split('.')[0]+'.dict', DataInfo)
+    DataInfo['ExpInfo']['0'] = {'DVCoord': None, 
+                                'StimType': DataInfo['StimType'], 'Hz': FKey}
+    
+    Txt.DictWrite(DataInfo['InfoFile'], DataInfo)
     
     return(None)
 
 
 ## Level 1
-def Run(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseDur, System, Setup):
+def Run(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseDur, System, Setup, Rate=192000, BlockSize=384, Channels=2):
     SoundPulseNo = round((SoundPulseDur*60)/20)
     SoundPulseDur = 20
-    Rate = 192000
     
-    Date = datetime.datetime.now()
-    InfoFile = ''.join([Date.strftime("%Y%m%d%H%M%S"), '-', AnimalName, 
-                        '-SoundStim.dict'])
+    Date = datetime.now().strftime("%Y%m%d%H%M%S")
+    InfoFile = '-'.join([Date, AnimalName, 'AcousticNoiseTrauma.dict'])
     
     SoundAmpF = SigGen.dBToAmpF(Intensities, System+'/'+Setup)
-    Sound, Stim = AudioSet(Rate, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, System, SoundAmpF)
-    DataInfo = InfoWrite(AnimalName, StimType, Rate, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, SoundAmpF, InfoFile)
-    Play(Sound, Stim, Intensities, SoundPulseDur, SoundPulseNo, StimType, DataInfo)
+    DataInfo = InfoWrite(AnimalName, StimType, Rate, BlockSize, Channels, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, SoundAmpF, InfoFile)
+    Sound, Stim = AudioSet(**DataInfo['Audio'])
+    Play(Sound, Stim, Intensities, SoundPulseNo, DataInfo)
     
     print('Animal', DataInfo['AnimalName'], 'successfully traumatized :)')
 

@@ -352,47 +352,49 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
 
 
 ## Level 2
-def GPIASStim(Rate, SoundBackgroundDur, SoundGapDur, SoundBackgroundPrePulseDur, 
-              SoundLoudPulseDur, SoundBackgroundAfterPulseDur, 
-              SoundBetweenStimDur, SoundBackgroundAmpF, SoundPulseAmpF, TTLAmpF, 
-              NoiseFrequency, SoundBoard, Map=[2,1]):
-    print('Creating SoundBackground...')
-    SoundBackground = SoundStim(Rate, SoundBackgroundDur, SoundBackgroundAmpF, 
-                                NoiseFrequency, TTLAmpF, SoundBoard, TTLs=False, 
-                                Map=Map)
+def GPIAS(Rate, SoundBGDur, SoundGapDur, SoundBGPrePulseDur, 
+          SoundLoudPulseDur, SoundBGAfterPulseDur, 
+          SoundBetweenStimDur, SoundBGAmpF, SoundPulseAmpF, TTLAmpF, 
+          NoiseFrequency, SoundSystem, Map=[2,1], **Kws):
+    
+    Sound = {}
+    print('Creating SoundBG...')
+    Sound['BG'] = SoundStim(Rate, SoundBGDur, SoundBGAmpF, NoiseFrequency, 
+                            TTLAmpF, SoundSystem, TTLs=False, Map=Map)
     
     print('Creating SoundGap...')
-    SoundGap = {}
-    SoundGap['NoGap'] = SoundStim(Rate, SoundGapDur, SoundBackgroundAmpF, 
-                                  NoiseFrequency, TTLAmpF, SoundBoard, 
-                                  TTLs=False, Map=Map)
+    Sound['Gap'] = {}
+    Sound['Gap']['NoGap'] = SoundStim(Rate, SoundGapDur, SoundBGAmpF, 
+                                      NoiseFrequency, TTLAmpF, SoundSystem, 
+                                      TTLs=False, Map=Map)
+    Sound['Gap']['Gap'] = {
+        FKey: {
+            AKey: np.zeros(Sound['Gap']['NoGap'][FKey][AKey].shape, dtype='float32')
+            for AKey in Sound['Gap']['NoGap'][FKey]
+        }
+        for FKey in Sound['Gap']['NoGap']
+    }
     
-    SoundGap['Gap'] = {FKey: {AKey: np.zeros(SoundGap['NoGap'][FKey][AKey].shape, 
-                                             dtype='float32')
-                              for AKey in SoundGap['NoGap'][FKey]} 
-                       for FKey in SoundGap['NoGap']}
-    
-    print('Creating SoundBackgroundPrePulse...')
-    SoundBackgroundPrePulse = SoundStim(Rate, SoundBackgroundPrePulseDur, 
-                                        SoundBackgroundAmpF, NoiseFrequency, 
-                                        TTLAmpF, SoundBoard, TTLs=False, Map=Map)
+    print('Creating SoundBGPrePulse...')
+    Sound['BGPrePulse'] = SoundStim(Rate, SoundBGPrePulseDur, SoundBGAmpF, 
+                                    NoiseFrequency, TTLAmpF, SoundSystem, 
+                                    TTLs=False, Map=Map)
     
     print('Creating SoundLoudPulse...')
-    SoundLoudPulse = SoundStim(Rate, SoundLoudPulseDur, SoundPulseAmpF, 
-                               NoiseFrequency, TTLAmpF, SoundBoard, Map=Map)
+    Sound['LoudPulse'] = SoundStim(Rate, SoundLoudPulseDur, SoundPulseAmpF, 
+                                   NoiseFrequency, TTLAmpF, SoundSystem, Map=Map)
     
-    print('Creating SoundBackgroundAfterPulse...')
-    SoundBackgroundAfterPulse = SoundStim(Rate, SoundBackgroundAfterPulseDur, 
-                                          SoundBackgroundAmpF, NoiseFrequency, 
-                                          TTLAmpF, SoundBoard, TTLs=False, Map=Map)
+    print('Creating SoundBGAfterPulse...')
+    Sound['BGAfterPulse'] = SoundStim(Rate, SoundBGAfterPulseDur, SoundBGAmpF, 
+                                      NoiseFrequency, TTLAmpF, SoundSystem, 
+                                      TTLs=False, Map=Map)
     
     print('Creating SoundBetweenStim...')
-    SoundBetweenStim = SoundStim(Rate, max(SoundBetweenStimDur), 
-                                 SoundBackgroundAmpF, NoiseFrequency, TTLAmpF, 
-                                 SoundBoard, TTLs=False, Map=Map)
+    Sound['BetweenStim'] = SoundStim(Rate, max(SoundBetweenStimDur), 
+                                     SoundBGAmpF, NoiseFrequency, TTLAmpF, 
+                                     SoundSystem, TTLs=False, Map=Map)
     
-    return(SoundBackground, SoundGap, SoundBackgroundPrePulse, SoundLoudPulse, 
-           SoundBackgroundAfterPulse, SoundBetweenStim)
+    return(Sound)
 
 
 #def GPIAS(FileList, CalibrationFile, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, FilterLow, 

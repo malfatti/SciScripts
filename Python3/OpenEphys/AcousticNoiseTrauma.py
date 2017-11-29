@@ -10,16 +10,17 @@ Created on Wed Oct  4 11:43:58 2017
 from Exps import AcousticNoiseTrauma
 
 ## Experiment parameters
-Parameters = {
-    'AnimalName': 'Prevention_A3_4_5',
-    'StimType':           ['Sound'],
+Parameters = dict(
+    AnimalName =        'Prevention_A3_4_5',
+    StimType =          ['Sound'],
     
-    'Intensities':        [95],
-    'NoiseFrequency':     [[8000, 12000]],
-    'SoundPulseDur':      90,                 # in MINUTES!
+    Intensities =       [95],
+    NoiseFrequency =    [[8000, 12000]],
+    SoundPulseDur =     90,                 # in MINUTES!
     
-    'System': 'Jack-IntelOut-MackieIn-MackieOut-IntelIn',
-    'Setup': 'GPIAS',
-}
+    System =            'Jack-IntelOut-MackieIn-MackieOut-IntelIn',
+    Setup =             'GPIAS',
+)
 
 AcousticNoiseTrauma.Run(**Parameters)
+

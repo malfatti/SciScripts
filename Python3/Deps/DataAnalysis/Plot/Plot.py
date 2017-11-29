@@ -15,37 +15,31 @@ def Set(Backend='TkAgg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         HideControls=False):
     if Params:
         Params = {
-            'backend': Backend,
-            'image.cmap': 'cubehelix',
-            
-#            'text.usetex': True, 'text.latex.unicode': True,
-#            'text.latex.preamble': '\\usepackage{siunitx}',
-#            'font.family': 'serif', 'font.serif': 'Computer Modern Roman',
-            
-#            'keymap.fullscreen': 'f',
-#            'keymap.home': 'g',
-#            'keymap.back': 'h',
-#            'keymap.forward': 'l',
-#            'keymap.pan': 'p',
-#            'keymap.zoom': 'z',
-#            'keymap.save': 's',
-#            'keymap.quit': 'q',
-#            'keymap.grid': 'm',
-#            'keymap.yscale': 'y',
-#            'keymap.xscale': 'x',
-#            'keymap.all_axes': 'a',
-            
-            'axes.titlesize': 'medium', 'axes.labelsize': 'medium',
-            'xtick.labelsize': 'small', 'xtick.direction': 'out',
-            'ytick.labelsize': 'small', 'ytick.direction': 'out',
-            'legend.fontsize': 'small', 'legend.labelspacing': 0.4,
-            'figure.titlesize': 'large', 'figure.titleweight': 'normal',
-            
-            'pdf.fonttype': 42, 'svg.fonttype': 'none',
-            
-            'savefig.transparent': True,
-            'savefig.dpi': 300, 'savefig.format': 'svg'
+          'backend'             : 'TkAgg',
+          'image.cmap'          : 'cubehelix',
+          'savefig.dpi'         : 300,
+          'savefig.format'      : 'svg',
+          'savefig.transparent' : True,
+          
+          'xtick.direction'     : 'out',
+          'ytick.direction'     : 'out',
+          
+          'figure.figsize'      : (4, 3),
+          'figure.dpi'          : 250,
+          
+          'svg.fonttype'        : 'none',
+          'pdf.fonttype'        : 42,
+          'font.family'         : 'sans-serif',
+          'font.serif'          : ['DejaVu Serif'],
+          'font.sans-serif'     : ['DejaVu Sans'],
+          'font.cursive'        : ['Zapf Chancery'],
+          'font.monospace'      : ['DejaVu Sans Mono'],
+          'font.size'           : 10,
+          # 'text.usetex'         : True, 
+          # 'text.latex.unicode'  : True,
+          # 'text.latex.preamble' : '\\usepackage{siunitx}',
         }
+        
         return(Params)
     
     if Ax:
@@ -69,19 +63,21 @@ def Set(Backend='TkAgg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         Ax.tick_params(top='off', right='off')
         Ax.spines['right'].set_visible(False)
         Ax.spines['top'].set_visible(False)
-        
+        Ax.patch.set_visible(False)
 #        Ax.locator_params(tight=True)
     
     if Fig:
-        if FigTitle:
-            Fig.suptitle(FigTitle)
-            Fig.subplots_adjust(top=0.925)
+        if FigTitle: Fig.suptitle(FigTitle)
         
         if HideControls:
             if Backend[:2].lower() == 'tk': Fig.canvas.toolbar.pack_forget()
             if Backend[:2].lower() == 'qt': Fig.canvas.toolbar.setVisible(False)
         
         Fig.tight_layout(pad=0)
+        Fig.subplots_adjust(top=0.9)
+        
+        for Obj in Fig.findobj(): Obj.set_clip_on(False)
+        Fig.patch.set_visible(False)
     
     return(None)
 

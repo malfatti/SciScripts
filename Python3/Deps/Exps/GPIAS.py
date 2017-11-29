@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 23 11:36:25 2017
-
-@author: malfatti
+@author: T. Malfatti
+@date: 2017-11-23
+@licence: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
-
 
 import numpy as np
 import sounddevice as SD
@@ -29,14 +29,14 @@ def InfoWrite(AnimalName, StimType, BGIntensity, PulseIntensity,
               NoiseFrequency, SoundBGDur, SoundGapDur, SoundBGPrePulseDur, 
               SoundLoudPulseDur, SoundBGAfterPulseDur, SoundBetweenStimDur, 
               NoOfTrials, SoundSystem, Setup, SoundBGAmpF, SoundPulseAmpF, SoundCh, 
-              TTLCh, PiezoCh, Rate, BlockSize, Channels, BaudRate, InfoFile):
+              TTLCh, PiezoCh, AnalogTTLs, Rate, BlockSize, Channels, BaudRate, InfoFile):
     
     CalibrationFile = SigGen.CalibrationFile
     
     DataInfo = {'InfoFile': InfoFile, 'Animal': {}, 'DAqs': {}, 'Audio': {}}
     for K in ['AnimalName', 'StimType']: DataInfo['Animal'][K] = locals()[K]
     
-    for K in ['SoundCh', 'TTLCh', 'PiezoCh', 'BaudRate']: 
+    for K in ['SoundCh', 'TTLCh', 'PiezoCh', 'BaudRate', 'AnalogTTLs']: 
         DataInfo['DAqs'][K] = locals()[K]
     
     for K in ['BGIntensity', 'PulseIntensity', 'NoiseFrequency', 'SoundBGDur', 
@@ -57,7 +57,7 @@ def InfoWrite(AnimalName, StimType, BGIntensity, PulseIntensity,
     return(DataInfo)
 
 
-def Play(Sound, Stim, ArduinoObj, NoiseFrequency, SoundBetweenStimDur, NoOfTrials, SoundBGAmpF, SoundPulseAmpF, Rate, DataInfo):
+def Play(Sound, Stim, ArduinoObj, NoiseFrequency, SoundBetweenStimDur, NoOfTrials, SoundBGAmpF, SoundPulseAmpF, Rate, DataInfo, **Kws):
     print('Preallocating memory and pseudo-randomizing the experiment...')
     FreqsStr = ['-'.join([str(a) for a in b]) for b in NoiseFrequency]
     TrialsStr = ['NoGap', 'Gap']
@@ -153,8 +153,8 @@ def Run(AnimalName, StimType, BGIntensity, PulseIntensity,
         NoiseFrequency, SoundBGDur, SoundGapDur, 
         SoundBGPrePulseDur, SoundLoudPulseDur, 
         SoundBGAfterPulseDur, SoundBetweenStimDur, NoOfTrials, 
-        SoundSystem, Setup, SoundCh, TTLCh, PiezoCh, Rate=192000, BlockSize=384, 
-        Channels=2, BaudRate=115200):
+        SoundSystem, Setup, SoundCh, TTLCh, PiezoCh, AnalogTTLs = True, 
+        Rate=192000, BlockSize=384, Channels=2, BaudRate=115200):
     
     SoundBGAmpF = SigGen.dBToAmpF(BGIntensity, SoundSystem+'/'+Setup)
     SoundPulseAmpF = SigGen.dBToAmpF(PulseIntensity, SoundSystem+'/'+Setup)
@@ -167,7 +167,7 @@ def Run(AnimalName, StimType, BGIntensity, PulseIntensity,
                          SoundBGPrePulseDur, SoundLoudPulseDur, 
                          SoundBGAfterPulseDur, SoundBetweenStimDur, NoOfTrials, 
                          SoundSystem, Setup, SoundBGAmpF, SoundPulseAmpF, 
-                         SoundCh, TTLCh, PiezoCh, Rate, BlockSize, Channels, 
+                         SoundCh, TTLCh, PiezoCh, AnalogTTLs, Rate, BlockSize, Channels, 
                          BaudRate, InfoFile)
     
     # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.

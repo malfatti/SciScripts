@@ -23,4 +23,3 @@ Parameters = dict(
 )
 
 AcousticNoiseTrauma.Run(**Parameters)
-

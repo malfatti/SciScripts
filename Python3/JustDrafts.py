@@ -6,17 +6,18 @@ Just drafts
 import numpy as np
 import os
 
-from DataAnalysis import DataAnalysis
+from DataAnalysis import DataAnalysis, Stats
 from DataAnalysis.Plot import Plot
 from glob import glob
 from IO import Asdf, Hdf5, OpenEphys, Txt
+from itertools import combinations
 from klusta.kwik import KwikModel
 
-Params = Plot.Set(Params=True)
-from matplotlib import rcParams; rcParams.update(Params)
+PltParams = Plot.Set(Params=True)
+from matplotlib import rcParams; rcParams.update(PltParams)
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
-
 
 #Ind = UnitRec['RI']/UnitRec['RISurr'] > 0
 #Ind = (UnitRec['UnitId'] == 822) * (UnitRec['Freq'] == '8000-10000')
@@ -28,6 +29,17 @@ from matplotlib import pyplot as plt
 
 #%%
 # change DVCoord to real DVCoord
+def FiringRateCalc(SpkClusters, SpkIds, SpkRecs, SpkSamples, Rate, RecLen, Rec, Offset=0):
+    FR = ['0' for _ in range(len(SpkIds))]
+    
+    for I, Id in enumerate(SpkIds):
+        SpksId = np.where((SpkClusters == Id) & (SpkRecs == Rec))[0]
+        Spks = (SpkSamples[SpksId]-Offset)/Rate
+        FR[I] = np.array([len(Spks[(Spks >= Sec) * (Spks < Sec+1)]) for Sec in range(RecLen)], dtype=int)
+    
+    return(FR)
+
+
 def HistCalc(Spks, TTLs, Rate, HistX, Offset=0):
     Hist = np.array([])
     for TTL in TTLs:
@@ -50,14 +62,14 @@ def LineHistCalc(Spks, TTLs, Rate, HistX, Offset=0, Output='all'):
         
         Hist[:,T] = np.histogram(Firing, HistX)[0]; del(Firing)
     
+    BinSize = HistX[1] - HistX[0]
     if Output.lower() == 'all': return(Hist)
     elif Output.lower() == 'mean': return(Hist.mean(axis=1))
     elif Output.lower() == 'norm': return(Hist.sum(axis=1)/(len(TTLs)*BinSize))
     else: print('Output should be "all", "mean" or "norm".'); return(None)
 
 
-def RasterCalc(Spks, TTLs, Rate, Offset=0):
-    RasterX = np.arange(-TimeBeforeTTL, TimeAfterTTL, 1000/Rate)
+def RasterCalc(Spks, TTLs, Rate, RasterX, Offset=0):
     Raster = np.zeros((len(RasterX)-1, len(TTLs)), dtype='float32')
     
     for T, TTL in enumerate(TTLs):
@@ -77,11 +89,46 @@ def UnitResp(HistX, HistY, TimeWindow=20):
          HistY[(HistX >=-TimeWindow) * (HistX < 0)].mean()
     
     if RI != RI: RI = 0
+    RI = (RI - 1) * 100
     
     return(RI)
 
 
 ## Plots
+def BarAutolabel(Ax, Bars, Color='k', Position='bottom'):
+    """
+    Modified from http://matplotlib.org/examples/api/barchart_demo.html
+    
+    Attach a text label above each bar displaying its height.
+    """
+    # if Position == 'bottom': Space = 1.05
+    # elif Position == 'top': Space = 0.95
+    
+    for Bar in Bars:
+        Height = Bar.get_height()
+        Ax.text(Bar.get_x() + Bar.get_width()/2.,
+                Height,# * Space,
+                str(Height),
+                color=Color,
+                ha='center',
+                va=Position)
+    
+    return(Ax)
+
+
+def AllFiringRate(FR, Ax=None, Return=False, Save=True, Show=True):
+    if not Ax: Ax = plt.axes()
+    
+    for F, Fr in enumerate(FR): Ax.plot(np.array(Fr), lw=2)
+    
+    if Return: return(Ax)
+    
+    if Save: pass
+    
+    if Show: plt.show()
+    else: plt.close()
+    return(None)
+
 
 def LinePSTH(Hist, HistX, StD=False, Ax=None, Return=False, Save=True, Show=True):
     if not Ax: Ax = plt.axes()
@@ -99,7 +146,7 @@ def LinePSTH(Hist, HistX, StD=False, Ax=None, Return=False, Save=True, Show=True
     
     Ax.fill_between(HistX, Mean+SEM, Mins, color='r', alpha=0.3, label='SEM')
     # Ax.axhspan(BLMins, BLMean+BLSEM, color='k', alpha=0.2, lw=0)
-    Ax.plot([HistX[0], HistX[-1]], [BLMean]*2, 'k--')
+    Ax.plot([HistX[0], HistX[-1]], [BLMean]*2, 'b--')
     if StD: Ax.plot([HistX[0], HistX[-1]], [BLStD]*2)
     Ax.plot(HistX, Mean, 'k', lw=2)
     
@@ -112,10 +159,10 @@ def LinePSTH(Hist, HistX, StD=False, Ax=None, Return=False, Save=True, Show=True
     return(None)
 
 
-def RasterPlot(Raster, Symbol='|', Ax=None, Return=False, Save=True, Show=True):
+def RasterPlot(Raster, RasterX, Marker='|', Ax=None, Return=False, Save=True, Show=True):
     if not Ax: Ax = plt.axes()
     
-    for R in range(Raster.shape[1]): Ax.plot(Raster[:,R]*(R+1), 'k'+Symbol)
+    for R in range(Raster.shape[1]): Ax.scatter(RasterX[:-1], Raster[:,R]*(R+1), c='k', marker=Marker, s=5)
     
     if Return: return(Ax)
     if Save: pass
@@ -125,8 +172,96 @@ def RasterPlot(Raster, Symbol='|', Ax=None, Return=False, Save=True, Show=True):
     return(None)
 
 
-def WF_MeanAllChs(Waveforms, SpkX, ChNo, BestCh, RMSs, Ax=None, Return=False, Save=True, Show=True):
+def RI_NaClVsCNO(RIArray, AxArgs={}, Ax=None, Return=False, FigFile='RI_StimType', Ext=['svg'], Save=True, Show=True):
+    Fig = plt.figure(figsize=(4, 3), dpi=250)
     if not Ax: Ax = plt.axes()
+    
+    Ax.scatter(RIArray, range(len(RIArray)), c='k')
+    
+    if Return: return(Ax)
+    
+    if Save:
+        Plot.Set(Ax=Ax, AxArgs=AxArgs)
+        FigTitle = FigFile.split('/')[-1]
+        Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True)
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        for E in Ext: Fig.savefig(FigFile+'.'+E, format=E, dpi=300)
+    
+    if Show: plt.show()
+    else: plt.close()
+    return(None)
+
+
+def RI_StimType(RIArray, StimTypeArray, AxArgs={}, Ax=None, Return=False, FigFile='RI_StimType', Ext=['svg'], Save=True, Show=True):
+    Fig = plt.figure(figsize=(4, 3), dpi=250)
+    if not Ax: Ax = plt.axes()
+    
+    Colors = ['r', 'k']
+    Stims = np.unique(StimTypeArray)
+    
+    for S, Stim in enumerate(Stims):
+        Ax.scatter(RIArray[StimTypeArray == Stim], 
+                   range(len(RIArray[StimTypeArray == Stim])), 
+                   c=Colors[S])
+    
+    if Return: return(Ax)
+    
+    if Save:
+        Plot.Set(Ax=Ax, AxArgs=AxArgs)
+        FigTitle = FigFile.split('/')[-1]
+        Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True)
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        for E in Ext: Fig.savefig(FigFile+'.'+E, format=E, dpi=300)
+    
+    if Show: plt.show()
+    else: plt.close()
+    return(None)
+
+
+def RI_StimType_Freq(RIArray, StimTypeArray, FreqArray, AxArgs={}, Ax=None, Return=False, FigFile='RI_StimType_Freq', Ext=['svg'], Save=True, Show=True):
+    Fig = plt.figure(figsize=(5, 5), dpi=250)
+    if not Ax: Ax = Axes3D(Fig)
+    
+    Colors = ['r', 'k']
+    Stims = np.unique(StimTypeArray)
+    
+    for S, Stim in enumerate(Stims):
+        Ind = StimTypeArray == Stim
+        Ax.scatter(range(len(RIArray[Ind])), 
+                   RIArray[Ind], 
+                   FreqArray[Ind], c=Colors[S])
+    
+    Ax.set_xlabel('Units')
+    Ax.set_ylabel('FR Change')
+    Ax.set_zlabel('MaxFreq')
+    if Return: return(Ax)
+    
+    if Save:
+        Plot.Set(Ax=Ax, AxArgs=AxArgs)
+        Ax.autoscale(enable=True, axis='both', tight=True)
+        # Ax.autoscale_view(tight=True, scalex=True, scaley=True, scalez=True)
+        FigTitle = FigFile.split('/')[-1]
+        
+        Fig.suptitle(FigTitle)
+        Fig.canvas.toolbar.pack_forget()
+        for Obj in Fig.findobj(): Obj.set_clip_on(False)
+        Fig.patch.set_visible(False)
+        
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        for E in Ext: Fig.savefig(FigFile+'.'+E, format=E, dpi=300)
+    
+    if Show: plt.show()
+    else: plt.close()
+    return(None)
+
+
+def WF_MeanAllChs(Waveforms, SpkX, RMSs, Ax=None, Return=False, Save=True, Show=True):
+    if not Ax: Ax = plt.axes()
+    ChNo = Waveforms.shape[2]
+    BestCh = RMSs.index(max(RMSs))
     
     for S in range(ChNo, 0, -1):
         if S == ChNo-BestCh: Color = 'r'
@@ -134,9 +269,11 @@ def WF_MeanAllChs(Waveforms, SpkX, ChNo, BestCh, RMSs, Ax=None, Return=False, Sa
         
         Ax.plot(SpkX, np.mean(Waveforms[:, :, -S], axis=0)+(S*max(RMSs)), Color)
     
-    Ax.locator_params(nbins=5, axis='x')
     Step = int(round(max(RMSs)))
     Ax.set_yticks(range(Step, int(round(ChNo*max(RMSs))), Step))
+    if len(Ax.get_yticks()) < ChNo:
+        Diff = ChNo - len(Ax.get_yticks())
+        Ax.set_yticks(range(Step, int(round((ChNo+Diff)*max(RMSs))), Step))
     Ax.set_yticklabels(range(ChNo, 0, -1))
     
     if Return: return(Ax)
@@ -148,8 +285,12 @@ def WF_MeanAllChs(Waveforms, SpkX, ChNo, BestCh, RMSs, Ax=None, Return=False, Sa
     return(None)
 
 
-def WF_BestCh(Spks, Waveforms, SpkX, BestCh, Ax=None, Return=False, Save=True, Show=True):
+def WF_BestCh(Waveforms, SpkX, RMSs, SpksToPlot=100, Ax=None, Return=False, Save=True, Show=True):
     if not Ax: Ax = plt.axes()
+    
+    BestCh = RMSs.index(max(RMSs))
+    Spks = np.arange(Waveforms.shape[0]); np.random.shuffle(Spks)
+    Spks = Spks[:SpksToPlot]
     
     for Spk in Spks:  Ax.plot(SpkX, Waveforms[Spk, :, BestCh], 'r')
     Ax.plot(SpkX, np.mean(Waveforms[:, :, BestCh], axis=0), 'k')
@@ -163,39 +304,45 @@ def WF_BestCh(Spks, Waveforms, SpkX, BestCh, Ax=None, Return=False, Save=True, S
     return(None)
 
 
-def WF_Raster_PSTH(Spks, Waveforms, Raster, Hist, HistX, ChNo, BestCh, RMSs, FigTitle='WF_Raster_PSTH', FigPath='.', Ext=['svg'], Save=True, Show=True):
-    Fig = plt.figure(figsize=(16, 5))
+def WF_Raster_PSTH(Waveforms, Raster, RasterX, Hist, HistX, RMSs, SpksToPlot, Rate, FigFile='WF_Raster_PSTH', Ext=['svg'], Save=True, Show=True):
+    Fig = plt.figure(figsize=(7, 2.7), dpi=250)
     Grid = GridSpec(1, 3, width_ratios=[1, 3, 3])
     SubGrid = GridSpecFromSubplotSpec(2, 1, subplot_spec=Grid[-1])
     Axes = [plt.subplot(G) for G in [Grid[0], Grid[1], SubGrid[0], SubGrid[1]]]
     
     SpkX = np.arange(Waveforms.shape[1])*1000/Rate
     
-    Axes[0] = WF_MeanAllChs(Waveforms, SpkX, ChNo, BestCh, RMSs, Axes[0], Return=True)
-    Axes[1] = WF_BestCh(Spks, Waveforms, SpkX, BestCh, Ax=Axes[1], Return=True)
-    Axes[2] = RasterPlot(Raster, Symbol='.', Ax=Axes[2], Return=True)
+    Axes[0] = WF_MeanAllChs(Waveforms, SpkX, RMSs, Axes[0], Return=True)
+    Axes[1] = WF_BestCh(Waveforms, SpkX, RMSs, SpksToPlot, Ax=Axes[1], Return=True)
+    Axes[2] = RasterPlot(Raster, RasterX, Marker='.', Ax=Axes[2], Return=True)
     Axes[3] = LinePSTH(Hist, HistX, StD=False, Ax=Axes[3], Return=True)
-    # Axes[3].bar(HistX[:-1], Hist, width=(HistX[1]-HistX[0])*0.8)
-    Axes[3].set_xlim(HistX[0], HistX[-1])
-    Axes[3].spines['bottom'].set_bounds(HistX[0], HistX[-1])
     
-    YLabel = ['Channels', 'Voltage [µv]', 'Trials', 'Number of spikes/Number of stimuli']
+    YLabel = ['Channels', 'Voltage [µv]', 'Trials', 'Mean number of spikes']
     for A in range(len(Axes)):
         AxArgs = {'xlabel': 'Time [ms]', 'ylabel': YLabel[A]}
         Plot.Set(Ax=Axes[A], AxArgs=AxArgs)
     
+    
+    Axes[0].set_xticks(np.linspace(round(SpkX[0],1), round(SpkX[-1],1), 3))
+    Axes[0].autoscale(enable=True, axis='y', tight=True)
     Axes[0].spines['left'].set_bounds(Axes[0].get_yticks()[0], Axes[0].get_yticks()[-1])
-    # Axes[2].tick_params(bottom='off', labelbottom='off')
+    
+    Axes[1].locator_params(axis='x', nbins=4)
+    
     Axes[2].spines['bottom'].set_visible(False)
     Axes[2].get_xaxis().set_visible(False)
+    Axes[2].locator_params(axis='y', nbins=4)
     
+    Axes[3].set_yticks(np.linspace(Axes[3].get_yticks()[0], Axes[3].get_yticks()[-1], 4))
     
+    FigTitle = FigFile.split('/')[-1]
     Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True)
     
     if Save:
-        os.makedirs(FigPath, exist_ok=True)    # Figs folder
-        FigName = Folder.split('/')[1] + '-' + FigTitle
-        for E in Ext: Fig.savefig(FigPath + '/' + FigName+'.'+E, format=E)
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        FigName = FigFile.split(' ')[0]
+        for E in Ext: Fig.savefig(FigName+'.'+E, format=E, dpi=300)
     
     print(FigTitle, '|', Hist.sum(), 'Spks in PSTH, max of', Hist.sum(axis=1).max())
     if Show: plt.show()
@@ -204,32 +351,26 @@ def WF_Raster_PSTH(Spks, Waveforms, Raster, Hist, HistX, ChNo, BestCh, RMSs, Fig
     return(None)
 
 
-def Raster_Full(SpkClusters, SpkIds, SpkRecs, SpkSamples, Rate, StimType, Freq, dB, Offset=0, PulseDur=None, TTLs=[], FigPath='.', Ext=['svg'], Save=True, Show=True):
-    Fig, Ax = plt.subplots(figsize=(18, 12))
+def Raster_Full(SpkClusters, UnitsId, SpkRecs, SpkSamples, Rate, Rec, Offset=0, PulseDur=None, TTLs=[], Ax=None, Return=False, FigFile='RasterFull', Ext=['svg'], Save=True, Show=True):
+    if not Ax: Ax = plt.axes()
     
     if PulseDur and TTLs.size:
         for TTL in TTLs: 
             Ax.axvspan(TTL/Rate, (TTL/Rate)+PulseDur, 
                        color='k', alpha=0.3, lw=0)
     
-    for I, Id in enumerate(SpkIds):
+    for I, Id in enumerate(UnitsId):
         Ids = np.where((SpkClusters == Id) & (SpkRecs == Rec))[0]
         Spks = (SpkSamples[Ids]-Offset)/Rate
         Ax.plot(Spks, np.ones(len(Spks))+I, 'ko')
     
-    FigTitle = 'RasterPlot' + '_' + '_'.join([StimType, Freq, dB])
-    AxArgs = {
-        'title': FigTitle,
-        'xlabel': 'Time [s]',
-        'ylabel': 'Units',
-    }
-    
-    Plot.Set(Fig=Fig, Ax=Ax, AxArgs=AxArgs, HideControls=True)
-    
     if Save:
-        os.makedirs(FigPath, exist_ok=True)    # Figs folder
-        FigName = Folder.split('/')[1] + '-' + FigTitle
-        for E in Ext: Fig.savefig(FigPath + '/' + FigName+'.'+E, format=E)
+        FigTitle = FigFile.split('/')[-1]
+        Plot.Set(Fig=plt.figure(), FigTitle=FigTitle, HideControls=True)
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        FigName = FigFile.split(' ')[0]
+        for E in Ext: plt.savefig(FigName+'.'+E, format=E, dpi=300)
     
     if Show: plt.show()
     else: plt.close()
@@ -237,61 +378,176 @@ def Raster_Full(SpkClusters, SpkIds, SpkRecs, SpkSamples, Rate, StimType, Freq, 
     return(None)
 
 
-def FiringRate(SpkClusters, SpkIds, SpkRecs, SpkSamples, Rate, StimType, Freq, dB, RecLen, Offset=0, FigPath='.', Ext=['svg'], Save=True, Show=True, ReturnFR=False):
-    Fig, Ax = plt.subplots()
-    FR = ['0' for _ in range(len(SpkIds))]#np.empty((len(SpkIds)), dtype=object)
-    for I, Id in enumerate(SpkIds):
-        SpksId = np.where((SpkClusters == Id) & (SpkRecs == Rec))[0]
-        Spks = (SpkSamples[SpksId]-Offset)/Rate
-        FR[I] = np.array([len(Spks[(Spks >= Sec) * (Spks < Sec+1)]) for Sec in range(RecLen)], dtype=int)
-        Ax.plot(np.array(FR[I]))
+def BoxPlots(Data, Names, LinesAmpF=2, AxArgs={}, Ax=None, Return=None, FigFile='Boxplot', Ext=['svg'], Save=True, Show=True):
+    Fig = plt.figure(figsize=(4, 3), dpi=250)
+    if not Ax: Ax = plt.axes()
+    if type(Data) is not type(np.array([])): Data = np.array(Data).T
     
-    FigTitle = 'FiringRate' + '_' + '_'.join([StimType, Freq, dB])
-    AxArgs = {
-        'title': FigTitle,
-        'xlabel': 'Time [s]',
-        'ylabel': 'Spikes per second [Hz]',
-    }
+    BoxPlot = Ax.boxplot(Data, showmeans=True)
     
-    Plot.Set(Fig=Fig, Ax=Ax, AxArgs=AxArgs, HideControls=True)
+    for K in ['boxes', 'whiskers', 'caps', 'medians', 'fliers']:
+        for I in range(Data.shape[1]): 
+            BoxPlot[K][I].set(color='k')
+    
+    LineY = np.amax(Data) + ((np.amax(Data)-np.amin(Data))*0.1)
+    
+    TPairs = list(combinations(range(Data.shape[1]), 2))
+    
+    for TP in TPairs:
+        SS = Data[:, TP[0]]; DD = Data[:, TP[1]]
+        if np.mean(SS) > np.mean(DD): SS, DD = DD, SS
+        
+        p = Stats.RTTest(SS, DD, Alt='two.sided')
+        p = round(p['p.value']*len(TPairs), 4)
+        
+        if p < 0.05: 
+            LineY = LineY+(TP[1]*LinesAmpF)
+            Plot.SignificanceBar([TP[0]+1, TP[1]+1], [LineY, LineY], str(p), Ax)
+    
+    Ax.set_xticks(list(range(1,Data.shape[1]+1))); Ax.set_xticklabels(Names)
+    
+    if Return: return(Ax)
     
     if Save:
-        os.makedirs(FigPath, exist_ok=True)    # Figs folder
-        FigName = Folder.split('/')[1] + '-' + FigTitle
-        for E in Ext: Fig.savefig(FigPath + '/' + FigName+'.'+E, format=E)
+        Plot.Set(Ax=Ax, AxArgs=AxArgs)
+        FigTitle = FigFile.split('/')[-1]
+        Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True)
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        for E in Ext: Fig.savefig(FigFile+'.'+E, format=E, dpi=300)
+    
+    if Show: plt.show()
+    else: plt.close()
+    return(None)
+
+
+def PercBars(CellChanges, FigFile='./PercBars', Ext=['svg'], Save=True, Show=True):
+    PercDec = CellChanges['Sound_CNOVsSound_NaCl-PercDec']
+    PercDecdB = CellChanges['Sound_CNOVsSound_NaCl-PercDecdB']
+    PercDecFreq = CellChanges['Sound_CNOVsSound_NaCl-PercDecFreq']
+    PercDecInc = CellChanges['Sound_CNOVsSound_NaCl-PercDecInc']
+    PercDecDec = CellChanges['Sound_CNOVsSound_NaCl-PercDecDec']
+    
+    PercInc = CellChanges['Sound_CNOVsSound_NaCl-PercInc']
+    PercIncdB = CellChanges['Sound_CNOVsSound_NaCl-PercIncdB']
+    PercIncFreq = CellChanges['Sound_CNOVsSound_NaCl-PercIncFreq']
+    PercIncInc = CellChanges['Sound_CNOVsSound_NaCl-PercIncInc']
+    PercIncDec = CellChanges['Sound_CNOVsSound_NaCl-PercIncDec']
+    
+    Fig, Ax = plt.subplots(1, 1, figsize=(7, 3), dpi=250)#, gridspec_kw={'width_ratios':[1, 3]})
+    
+    Bars = [[], [], []]
+    Bars[0] = Ax.bar([0.6, 3.6, 7.6], [PercDec, PercDecInc, PercIncInc], color='gray', label='Decreased')
+    Bars[1] = Ax.bar([0.6, 3.6, 7.6], [PercInc, PercDecDec, PercIncDec], bottom=[PercDec, PercDecInc, PercIncInc], label='Increased')
+    
+    Bars[2] = Ax.bar([1.6, 2.6, 5.6, 6.6], [PercDecdB, PercDecFreq, PercIncdB, PercIncFreq])
+    
+    for B, Bar in enumerate(Bars): Ax = BarAutolabel(Ax, Bar, 'w', 'top')
+    
+    # Ax.xticks(np.arange(8)+0.6, ('G1', 'G2', 'G3', 'G4', 'G5'))
+    Ax.legend()
+    Plot.Set(Ax=Ax, AxArgs={})
+    FigTitle = FigFile.split('/')[-1]
+    Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True)
+    
+    if Save:
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        FigName = FigFile.split(' ')[0]
+        for E in Ext: Fig.savefig(FigName+'.'+E, format=E, dpi=300)
     
     if Show: plt.show()
     else: plt.close()
     
-    if ReturnFR: return(FR)
-    else: return(None)
+    return(None)
 
-#%%
-Folders = sorted(glob('**/KlustaFiles', recursive=True))
-Folders = [_ for _ in Folders if 'Recovery' in _]
 
-Show = False; Save = True; Ext = ['svg']
-# Show = True; Save = False; Ext = ['svg']
-AnalogTTLs = True
-TTLCh, ProbeChSpacing = 17, 50
-TimeBeforeTTL, TimeAfterTTL, BinSize = 50, 50, 2
-SpksToPlot = 500
 
-HistX = np.arange(-TimeBeforeTTL, TimeAfterTTL, BinSize)
+def ScatterMean(Data, Names, LinesAmpF=2, Spread=0.2, LogY=False, FigFile='./ScatterDecInc', Ext=['svg'], Save=True, Show=True):
+    # if type(Data) is not np.ndarray: Data = np.array(Data).T
+    
+    Fig, Ax = plt.subplots(1,1)
+    
+    if type(Data) == np.ndarray: BoxNo = Data.shape[1]
+    else: BoxNo = len(Data)
+    
+    for P in range(BoxNo):
+        if type(Data) == np.ndarray: Box = Data[:,P]
+        else: Box = Data[P]
+                          
+        X = np.random.uniform(P+1-Spread, P+1+Spread, len(Box))
+        Error = [0, np.std(Box)/len(Box)**0.5, 0]
+        
+        if LogY: Ax.semilogy(X, Box, 'ko')
+        else: Ax.plot(X, Box, 'ko')
+        
+        Ax.errorbar([P+1-Spread, P+1, P+1+Spread], [np.mean(Box)]*3, Error, lw=3, elinewidth=1, capsize=10, color='k')
+    
+    if type(Data) == np.ndarray: 
+        Margin = ((np.amax(Data)-np.amin(Data))*0.1)
+        LineY = np.amax(Data) + Margin
+    else:
+        Margin = (max([max(m) for m in Data]) - min([min(m) for m in Data]))*0.1
+        LineY = max([max(m) for m in Data]) + Margin
+    
+    TPairs = list(combinations(range(BoxNo), 2))
+    
+    for TP in TPairs:
+        if type(Data) == np.ndarray: SS, DD = Data[:,TP[0]], Data[:,TP[1]]
+        else: SS, DD = Data[TP[0]], Data[TP[1]]
+        
+        if np.mean(SS) > np.mean(DD): SS, DD = DD, SS
+        if len(SS) != len(DD):
+            Diff = abs(len(SS) - len(DD))
+            Diff = np.full([Diff], np.nan)
+            
+            if len(SS) > len(DD): DD = np.hstack((DD, Diff))
+            else: SS = np.hstack((SS, Diff))
+            
+            
+        p = Stats.RTTest(SS, DD, Alt='two.sided')
+        p = round(p['p.value']*len(TPairs), 4)
+        
+        if p < 0.05: 
+            LineY = LineY+(TP[1]*LinesAmpF)
+            Plot.SignificanceBar([TP[0]+1, TP[1]+1], [LineY, LineY], str(p), Ax)
+        
+        # if p < 0.05: 
+        #     if p < 0.001: p = 'p < 0.001'
+        #     else: p = 'p = ' + str(round(p, 3))
+            
+        #     LineY = LineY+(TP[1]*LinesAmpF)
+        #     Plot.SignificanceBar([TP[0]+1, TP[1]+1], [LineY, LineY], p, Ax)
+    
+    AxArgs = {'ylim': [-Margin, LineY + LineY*0.05], 
+              'xlim': [0, BoxNo+1],
+              'ylabel': 'Firing rate change'}
+    Plot.Set(Ax=Ax, AxArgs=AxArgs)
+    Ax.set_xticks(list(range(1,BoxNo+1))); Ax.set_xticklabels(Names)
+    
+    FigTitle = FigFile.split('/')[-1]
+    Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True)
+    
+    if Save:
+        FigPath = '/'.join(FigFile.split('/')[:-1])
+        os.makedirs(FigPath, exist_ok=True)
+        FigName = FigFile.split(' ')[0]
+        for E in Ext: Fig.savefig(FigName+'.'+E, format=E, dpi=300)
+    
+    if Show: plt.show()
+    else: plt.close()
+    
+    return(None)
 
-for Folder in Folders:
+
+## Level 1-2
+def GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs=True, AnalysisPath='.', SpksToPlot=100, Ext=['svg'], Save=True, Show=False):
     UnitRec = {}
-    KwikFile = glob(Folder+'/*.kwik')[0]
     DataFolder = '/'.join(Folder.split('/')[:-1]) + '/KwikFiles'
     InfoFile = glob('/'.join(Folder.split('/')[:-1]) + '/*.dict')[0]
     FigPath = Folder.split('/')[0] + '/Figs/' + Folder.split('/')[1]
-    AnalysisFile = Folder.split('/')[0] + '/' + Folder.split('/')[0] + '-Analysis.hdf5'
-#    AnalysisFile = 'Test.hdf5'
     
-    if InfoFile[-4:] == 'hdf5':  DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
-    else: DataInfo = Txt.DictRead(InfoFile)
-    
-#    DataInfo = Hdf5.DictLoad('/DataInfo', InfoFile)
+    DataInfo = Txt.DictRead(InfoFile)
     
     KlustaRecs = []; ExpFolders = sorted(glob(DataFolder+'/*'))
     for f, F in enumerate(ExpFolders):
@@ -310,7 +566,6 @@ for Folder in Folders:
                                           StimType, DV, R])
         # del(Data)
     
-    Clusters = KwikModel(KwikFile)
     Rate = np.array(Clusters.sample_rate)
     Offsets = Clusters.all_traces.offsets
     RecLen = 50
@@ -319,19 +574,25 @@ for Folder in Folders:
     Good = [Id for Id,Key in Good.items() if Key == 'good']
     
     ChNo = len(Clusters.channels)
-    SpkLen = Clusters.n_samples_waveforms
-    
+    # SpkLen = Clusters.n_samples_waveforms
+    RasterX = np.arange(HistX[0], HistX[-1], 1000/Rate)
     
     UnitRec = {}
     for K in ['UnitId', 'DV']: UnitRec[K] = np.zeros((len(Good)*len(Clusters.recordings)), dtype=np.int16)
-    for K in ['dB', 'RI', 'RISurr']: UnitRec[K] = np.zeros((len(Good)*len(Clusters.recordings)), dtype=np.float32)
+    for K in ['dB', 'RI']: UnitRec[K] = np.zeros((len(Good)*len(Clusters.recordings)), dtype=np.float32)
     for K in ['Freq', 'StimType']: UnitRec[K] = ['0' for _ in range(len(Good)*len(Clusters.recordings))]
+    
+    UnitRec['RMSs'] = np.zeros((ChNo, len(Good)*len(Clusters.recordings)), dtype=np.float32)
+    
     UnitRec['PSTHX'] = np.zeros((len(HistX),len(Good)*len(Clusters.recordings)), dtype=np.float32)
-    UnitRec['PSTHY'] = np.zeros((len(HistX)-1,len(Good)*len(Clusters.recordings)), dtype=np.float32)
+    UnitRec['PSTH'] = np.zeros((1,1,1))
+    
     UnitRec['FiringRate'] = np.zeros((RecLen,len(Good)*len(Clusters.recordings)), dtype=np.float32)
     UnitRec['Spks'] = [0 for _ in range(len(Good)*len(Clusters.recordings))]
     
     for rec, Rec in enumerate(Clusters.recordings):
+        print('')
+        print('Running folder', Folder, 'Rec', rec, 'of', len(Clusters.recordings))
         RecFolder = KlustaRecs[Rec][0]
         Freq = KlustaRecs[Rec][1]
         dB = KlustaRecs[Rec][2]
@@ -348,16 +609,20 @@ for Folder in Folders:
             TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict='Events', 
                                                    TTLCh=TTLCh, Proc=Proc, Rec=R)
         
+        if not UnitRec['PSTH'].max():
+            UnitRec['PSTH'] = np.zeros((len(HistX)-1, 
+                                         len(TTLs), 
+                                         len(Good)*len(Clusters.recordings)), 
+                                        dtype=np.float32)
+        
         for I, Id in enumerate(Good):
             Ind = I + (len(Good)*rec)
             DV = KlustaRecs[Rec][4]
-            IdStr = "{0:04d}".format(Id)
-            SpksId = np.where((Clusters.spike_clusters == Id) & 
-                              (Clusters.spike_recordings == Rec))[0]
+            SpksId = (Clusters.spike_clusters == Id) & \
+                     (Clusters.spike_recordings == Rec)
             
             Waveforms = Clusters.all_waveforms[SpksId]
-            Spks = np.arange(Waveforms.shape[0]); np.random.shuffle(Spks)
-            Spks = Spks[:SpksToPlot]; ChNo = Waveforms.shape[2]
+            ChNo = Waveforms.shape[2]
             
             RMSs = [(np.nanmean((np.nanmean(Waveforms[:, :, Ch], axis=0))**2))**0.5
                     for Ch in range(ChNo)]
@@ -367,68 +632,354 @@ for Folder in Folders:
             BestCh = RMSs.index(max(RMSs))
             DV = str(int(DV) - ((ChNo-BestCh) * ProbeChSpacing))
             
-            HistX, HistY = HistCalc(Clusters.spike_samples[SpksId], TTLs, Rate, 
-                                    HistX, Offsets[Rec])
+            Hist = LineHistCalc(Clusters.spike_samples[SpksId], TTLs, Rate, HistX, Offsets[Rec])
+            Raster = RasterCalc(Clusters.spike_samples[SpksId], TTLs, Rate, RasterX, Offsets[Rec])
             
-            if max(HistY) == 0: print('No Spks in PSTH. Skipping...'); continue
+            if Hist.max() == 0: print('No Spks in PSTH. Skipping...'); continue
             
-            RI = UnitResp(HistX, HistY)
+            RI = UnitResp(HistX, Hist)
             
-            UnitRec['DV'][Ind] = int(DV)
+            UnitRec['UnitId'][Ind] = Id
+            UnitRec['StimType'][Ind] = StimType
             UnitRec['Freq'][Ind] = Freq[:-2]
             UnitRec['dB'][Ind] = float(dB[:-5])
-            UnitRec['StimType'][Ind] = StimType
-            UnitRec['UnitId'][Ind] = Id
-            
-            UnitRec['PSTHX'][:,Ind] = HistX
-            UnitRec['PSTHY'][:,Ind] = HistY
-            UnitRec['Spks'][Ind] = Waveforms
+            UnitRec['DV'][Ind] = int(DV)
             UnitRec['RI'][Ind] = RI
+            UnitRec['Spks'][Ind] = Waveforms
             
-            print('Id:', Id)
-            Hist = LineHistCalc(Clusters.spike_samples[SpksId], TTLs, Rate, HistX, Offsets[Rec])
+            UnitRec['RMSs'][:, Ind] = RMSs
+            UnitRec['PSTHX'][:,Ind] = HistX
+            UnitRec['PSTH'][:,:len(TTLs),Ind] = Hist
             
-            Raster = RasterCalc(Clusters.spike_samples[SpksId], TTLs, Rate, Offsets[Rec])
-            FigTitle = 'Unit'+ IdStr + '_' + '_'.join([StimType, DV+'DV', Freq, dB])
+            UnitInfo = '_'.join([
+                           'Unit'+"{0:04d}".format(Id), 
+                           StimType, 
+                           str(DV)+'DV', 
+                           Freq, 
+                           dB
+                        ]) + ' RI:' + str(round(RI,4))
             
-            WF_Raster_PSTH(Spks, Waveforms, Raster, Hist, HistX, ChNo, BestCh, 
-                           RMSs, FigTitle, FigPath, Ext, Save, Show)
-            
-            # plt.plot(Hist.mean(axis=1))
-            # SpkNo = len(Clusters.spike_samples[SpksId])*BinSize
-            # plt.plot(Hist.sum(axis=1)/(len(TTLs)*BinSize))
-            # plt.show()
-#            if IdStr not in UnitRec: UnitRec[IdStr] = {}
-#            if DV not in UnitRec[IdStr]: UnitRec[IdStr][DV] = {}
-#            if StimType not in UnitRec[IdStr][DV]: UnitRec[IdStr][DV][StimType] = {}
-#            if Freq not in UnitRec[IdStr][DV][StimType]: UnitRec[IdStr][DV][StimType][Freq] = {}
-#            if dB not in UnitRec[IdStr][DV][StimType][Freq]: UnitRec[IdStr][DV][StimType][Freq][dB] = {}
-#            
-#            UnitRec[IdStr][DV][StimType][Freq][dB]['PSTH'] = [HistX, HistY]
-#            UnitRec[IdStr][DV][StimType][Freq][dB]['Spks'] = Waveforms
+            FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+            WF_Raster_PSTH(Waveforms, Raster, RasterX, Hist, HistX, RMSs, SpksToPlot, Rate, FigFile, Ext, Save, Show)
         
-        Raster_Full(Clusters.spike_clusters, Good, Clusters.spike_recordings, 
-               Clusters.spike_samples, Rate, StimType, Freq, dB, 
-               Offsets[Rec], DataInfo['SoundPulseDur'], TTLs, FigPath, Ext, 
-               Save, Show)
         
-        FR = FiringRate(Clusters.spike_clusters, Good, Clusters.spike_recordings, 
-                        Clusters.spike_samples, Rate, StimType, Freq, dB, RecLen, 
-                        Offsets[Rec], FigPath, Ext, Save, Show, ReturnFR=True)
-        
+        FR = FiringRateCalc(Clusters.spike_clusters, Good, Clusters.spike_recordings, Clusters.spike_samples, Rate, RecLen, Rec, Offsets[Rec])
         for F, Fr in enumerate(FR):
             Ind = F + (len(Good)*rec)
             UnitRec['FiringRate'][:,Ind] = Fr
         
         del(FR)
     
+    # Cleaning
     for K in ['Freq', 'StimType']: UnitRec[K] = np.array(UnitRec[K])
+    
+    Keys = ['UnitId', 'DV', 'dB', 'RI', 'Freq', 'StimType']
+    ValidIds = UnitRec['UnitId'] != 0
+    
+    for Key in Keys: UnitRec[Key] = UnitRec[Key][ValidIds]
+    for Key in ['RMSs', 'PSTHX', 'FiringRate']: UnitRec[Key] = UnitRec[Key][:,ValidIds]
+    UnitRec['PSTH'] = UnitRec['PSTH'][:, :, ValidIds]
+    UnitRec['Spks'] = [UnitSpks for S, UnitSpks in enumerate(UnitRec['Spks']) 
+                                if ValidIds[S]]
+    
     # Hdf5.DataWrite(UnitRec, '/'+Folder.split('/')[1]+'/Units', AnalysisFile, Overwrite=True)
-    Path = '/'+Folder.split('/')[1]+'/Units'
-    Path = Path[1:].split('/')[0] + '_'
-    Asdf.Write(UnitRec, Path, Path+Folder.split('/')[0]+'_Units.asdf')
+    Asdf.Write(UnitRec, AnalysisPath, AnalysisPath + '_' +Folder.split('/')[0]+'_AllUnits.asdf')
+    return(UnitRec)
 
-#55 U, 91 D, 107 D, 161 D, 807 D12-14, 808 D, 813 D, 822 D, 828 D, 896 D, 908DMaybe
+
+def GetCellChanges(Cells, Stims, StimRef):
+    CellChanges = {}
+    
+    for Stim in Stims:
+        Ind = (Cells['StimType'] == Stim)
+        CellChanges[Stim] = Cells['MaxRI'][Ind]
+        CellChanges[Stim+'-Freqs'] = Cells['MaxFreq'][Ind]
+        CellChanges[Stim+'-dBs'] = Cells['MaxdB'][Ind]
+        CellChanges[Stim+'-Dec'] = CellChanges[Stim] < 0
+    
+    StimPairs = list(combinations(Stims,2))
+    
+    for Pair in StimPairs:
+        if StimRef not in Pair: continue
+        if Pair[-1] != StimRef: Pair = (Pair[1], Pair[0])
+        
+        Key = 'Vs'.join(Pair)
+        
+        CellChanges[Key] = ((CellChanges[Pair[0]]/100)+1)/((CellChanges[Pair[1]]/100)+1)
+        CellChanges[Key] =  (CellChanges[Key]-1)*100
+        
+        Dec = CellChanges[Key] < 0
+        
+        CellChanges[Key+'-PercInc'] = round(len(~Dec[~Dec == True])*100/len(CellChanges[Key]), 2)
+        CellChanges[Key+'-PercDec'] = round(len(Dec[Dec == True])*100/len(CellChanges[Key]), 2)
+        
+        ChangedFreq = CellChanges[Pair[0]+'-Freqs'] != CellChanges[Pair[1]+'-Freqs']
+        ChangeddB = CellChanges[Pair[0]+'-dBs'] != CellChanges[Pair[1]+'-dBs']
+        
+        CellChanges[Key+'-PercIncFreq'] = round(len(CellChanges[Key][~Dec * ChangedFreq])*100/len(CellChanges[Key][~Dec]), 2)
+        CellChanges[Key+'-PercIncdB'] = round(len(CellChanges[Key][~Dec * ChangeddB])*100/len(CellChanges[Key][~Dec]), 2)
+        CellChanges[Key+'-PercIncInc'] = round(len(~Dec[~Dec * ~CellChanges[StimRef+'-Dec']])*100/len(~Dec[~Dec]), 2)
+        CellChanges[Key+'-PercIncDec'] = round(len(~Dec[~Dec * CellChanges[StimRef+'-Dec']])*100/len(~Dec[~Dec]), 2)
+        
+        CellChanges[Key+'-PercDecFreq'] = round(len(CellChanges[Key][Dec * ChangedFreq])*100/len(CellChanges[Key][Dec]), 2)
+        CellChanges[Key+'-PercDecdB'] = round(len(CellChanges[Key][Dec * (ChangeddB)])*100/len(CellChanges[Key][Dec]), 2)
+        CellChanges[Key+'-PercDecInc'] = round(len(Dec[Dec * ~CellChanges[StimRef+'-Dec']])*100/len(Dec[Dec]), 2)
+        CellChanges[Key+'-PercDecDec'] = round(len(Dec[Dec * CellChanges[StimRef+'-Dec']])*100/len(Dec[Dec]), 2)
+        
+        CellChanges[Key+'-Dec'] = Dec
+    
+    return(CellChanges)
+    
+
+
+def GetUnitsParameters(Folder, UnitRec, UnitsId, Stims, Freqs, Intensities, AnalysisPath):
+    Cells = {}
+    Cells['UnitId'] = np.zeros((Stims.size * UnitsId.size), dtype=UnitRec['UnitId'].dtype)
+    Cells['StimType'] = np.zeros((Stims.size * UnitsId.size), dtype=UnitRec['StimType'].dtype)
+    Cells['MaxRI'] = np.zeros((Stims.size * UnitsId.size), dtype=UnitRec['RI'].dtype)
+    Cells['MaxFreq'] = np.zeros((Stims.size * UnitsId.size), dtype=UnitRec['Freq'].dtype)
+    Cells['MaxdB'] = np.zeros((Stims.size * UnitsId.size), dtype=UnitRec['dB'].dtype)
+    Cells['dBCurve'] = np.zeros((Intensities.size, Freqs.size, Stims.size * UnitsId.size), dtype=UnitRec['dB'].dtype)
+    
+    InfUnits = UnitRec['RI'] == np.inf
+    Invalid = []
+    
+    for I, Id in enumerate(UnitsId):
+        UnitId = UnitRec['UnitId'] == Id
+        
+        for S, Stim in enumerate(Stims):
+            Ind = S + (len(Stims)*I)
+            
+            UnitStim = UnitRec['StimType'] == Stim
+            ThisUnit = UnitId * UnitStim * ~InfUnits
+            
+            if not True in ThisUnit:# or np.unique(UnitRec['RI'][ThisUnit])[0] == -100:
+                Invalid.append(Id)
+                print("No responses found for unit", Id, 'under', Stim, 'stimulation.')
+                # for Key in ['MaxFreq', 'MaxdB']:
+                #     Cells[Key][Ind] = np.nan
+                
+                # Cells['MaxRI'][Ind] = np.nan
+                # Cells['dBCurve'][:, :, Ind] = np.nan
+                break
+            
+            MaxRI = max(UnitRec['RI'][ThisUnit])
+            # MaxRI = max(UnitRec['RI'][ThisUnit * (-100 < UnitRec['RI']) * (UnitRec['RI'] < RIStd)])
+            # MinRI = min(UnitRec['RI'][ThisUnit * (-RIStd < UnitRec['RI']) * (UnitRec['RI'] < RIStd)])
+            # if abs(MinRI) > abs(MaxRI): MaxRI = MinRI
+            MaxRI = np.where(ThisUnit * (UnitRec['RI'] == MaxRI))
+            # MinRI = min(UnitRec['RI'][ThisUnit])
+            # MinRI = np.where(ThisUnit * (UnitRec['RI'] == MinRI))
+            
+            for F, Freq in enumerate(Freqs):
+                for d, dB in enumerate(Intensities):
+                    ThisDV = np.unique(UnitRec['DV'][
+                                (UnitRec['Freq'] == Freq) * 
+                                (UnitRec['dB'] == dB) * 
+                                ThisUnit
+                             ])
+                    
+                    if not ThisDV.size: continue
+                    
+                    ThisDV = ThisDV[(np.abs(ThisDV - UnitRec['DV'][MaxRI][0])).argmin()]
+                    
+                    Cells['dBCurve'][d, F, Ind] = UnitRec['RI'][
+                            ThisUnit * 
+                            (UnitRec['Freq'] == Freq) * 
+                            (UnitRec['dB'] == dB) * 
+                            (UnitRec['DV'] == ThisDV)]
+            
+            dBFMax = Cells['dBCurve'][:, :, Ind].max()
+            # dBFMin = Cells['dBCurve'][:, :, Ind].min()
+            # if abs(dBFMin) > abs(dBFMax): dBFMax = dBFMin
+            d, F = np.where(Cells['dBCurve'][:, :, Ind] == dBFMax)
+            
+            Cells['UnitId'][Ind] = Id
+            Cells['StimType'][Ind] = Stim
+            Cells['MaxRI'][Ind] = UnitRec['RI'][MaxRI][0]
+            Cells['MaxFreq'][Ind] = Freqs[F][0]
+            Cells['MaxdB'][Ind] = Intensities[d][0]
+            # Cells['MaxFreq'][Ind] = UnitRec['Freq'][MaxRI][0]
+            # Cells['MaxdB'][Ind] = UnitRec['dB'][MaxRI][0]
+    
+    
+    ## Cleaning
+    Keys = ['UnitId', 'StimType', 'MaxRI', 'MaxFreq', 'MaxdB']
+    
+    if Invalid: 
+        Invalid = [Cells['UnitId'] == I for I in Invalid]
+        Invalid = np.sum(Invalid, axis=0, dtype=bool)
+        ValidIds = (Cells['UnitId'] != 0) * ~Invalid
+    else:
+        ValidIds = (Cells['UnitId'] != 0)
+    
+    for Key in Keys: Cells[Key] = Cells[Key][ValidIds]
+    Cells['dBCurve'] = Cells['dBCurve'][:, :, ValidIds]
+    
+    Asdf.Write(Cells, AnalysisPath, AnalysisPath + '_' +Folder.split('/')[0]+'_Cells.asdf')
+    return(Cells)
+
+
+def Units(Group, TimeBeforeTTL, TimeAfterTTL, BinSize, TTLCh, ProbeChSpacing, AnalogTTLs=True, SpksToPlot=100, Ext=['svg'], Save=True, Show=False):
+    HistX = np.arange(-TimeBeforeTTL, TimeAfterTTL, BinSize)
+    
+    Folders = sorted(glob('**/KlustaFiles', recursive=True))
+    Folders = [_ for _ in Folders if Group in _]
+    
+    for Folder in Folders:
+        AnalysisPath = '/'+Folder.split('/')[1]+'/Units'
+        AnalysisPath = AnalysisPath[1:].split('/')[0]
+        FigPath = Folder.split('/')[0] + '/Figs/' + Folder.split('/')[1]
+        KwikFile = glob(Folder+'/*.kwik')[0]
+        
+        Clusters = KwikModel(KwikFile)
+        UnitRec = GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs, AnalysisPath,  SpksToPlot, Ext, Save, Show)
+        # UnitRec = Asdf.Load('/', AnalysisPath+ '_' +Folder.split('/')[0]+'_AllUnits.asdf')
+        UnitsId = np.unique(UnitRec['UnitId'])
+        Stims = np.unique(UnitRec['StimType'])
+        Freqs = np.unique(UnitRec['Freq'])
+        Intensities = np.unique(UnitRec['dB'])
+        Cells = GetUnitsParameters(Folder, UnitRec, UnitsId, Stims, Freqs, Intensities, AnalysisPath)
+        
+        IntFreq = np.zeros(Cells['MaxFreq'].shape, dtype=np.int16)
+        for F, Freq in enumerate(Cells['MaxFreq']):
+            IntFreq[F] = sum([float(_) for _ in Cells['MaxFreq'][F].split('-')])/2
+        
+        CellChanges = GetCellChanges(Cells, Stims, Stims[1])
+        
+        FreqsNaCl = IntFreq[Cells['StimType'] == [Stims[1]]]
+        FreqsCNO = IntFreq[Cells['StimType'] == [Stims[0]]]
+        ChangeInFreq = ((FreqsCNO/FreqsNaCl)-1)*100
+        Dec = CellChanges['Vs'.join(Stims)+'-Dec']
+        
+        ## Plots
+        UnitInfo = 'PercBars-'+'-'.join(Stims)
+        FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+        PercBars(CellChanges, FigFile, Ext, Save, Show)
+        
+        DecInc = CellChanges['Sound_CNOVsSound_NaCl']
+        UnitInfo = 'ScatterDecInc-'+'-'.join(Stims)
+        FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+        ScatterMean([(DecInc[DecInc<0]/100)+1, (DecInc[DecInc>0]/100)+1], 
+                    ('Decreased', 'Increased'), 
+                    FigFile=FigFile, Ext=['svg'], Save=Save, Show=Show)
+        
+        UnitInfo = 'ScatterChangedFreq-'+'-'.join(Stims)
+        FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+        ScatterMean([ChangeInFreq[Dec], ChangeInFreq[~Dec]], 
+                    ('Decreased', 'Increased'), 
+                    FigFile=FigFile, Ext=['svg'], Save=Save, Show=Show)
+        
+        UnitInfo = 'RI-'+'-'.join(Stims)
+        FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+        RI_StimType(Cells['MaxRI'], Cells['StimType'], FigFile=FigFile, Ext=Ext, Save=Save, Show=Show)
+        RI_StimType_Freq(Cells['MaxRI'], Cells['StimType'], IntFreq, FigFile=FigFile, Ext=Ext, Save=Save, Show=Show)
+        
+        UnitInfo = 'Boxplot-'+'-'.join(Stims)
+        FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+        AxArgs = {'xlabel': '', 'ylabel': 'Evoked firing rate change'}
+        BoxPlots(np.vstack((CellChanges[Stims[1]], CellChanges[Stims[0]])).T, ['NaCl', 'CNO'], AxArgs=AxArgs, FigFile=FigFile, Ext=Ext, Save=Save, Show=Show)
+        
+        UnitInfo = 'NaClVsCNO-'+'-'.join(Stims)
+        FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+        
+        RI_NaClVsCNO(CellChanges[Stims[0]+'Vs'+Stims[1]], FigFile=FigFile, Ext=Ext, Save=Save, Show=Show)
+        
+        # Raster_Full(Clusters.spike_clusters, Good, Clusters.spike_recordings, 
+        #             Clusters.spike_samples, Rate, StimType, Freq, dB, 
+        #             Offsets[Rec], DataInfo['SoundPulseDur'], TTLs, FigPath, Ext, 
+        #             Save, Show)
+    
+        # AllFiringRate(FR, Save=Save, Show=Show)
+        
+    
+    AllCells = [Asdf.Load('/', Folder.split('/')[-2] + '_' + Folder.split('/')[0] + '_Cells.asdf')
+                for Folder in Folders]
+    
+    TotalU = [np.unique(C['UnitId']) for C in AllCells]
+    
+    for C, Cell in enumerate(AllCells):
+        
+        if C == 0: NewUnitsId = np.arange(len(TotalU[C]))
+        else: NewUnitsId = np.arange(len(TotalU[C])) + AllCells[C-1]['UnitId'][-1]+1
+        
+        for I, Id in enumerate(Cell['UnitId']):
+            Ind = np.where(TotalU[C] == Id)[0][0]
+            AllCells[C]['UnitId'][I] = NewUnitsId[Ind]
+    
+    Merge = {}
+    for Key in AllCells[0].keys():
+        Merge[Key] = np.concatenate([Cell[Key] for Cell in AllCells], axis=-1)
+    
+    Stims = np.unique(Merge['StimType'])
+    CellChangesMerge = GetCellChanges(Merge, Stims, Stims[-1])
+    
+    UnitInfo = 'PercBarsAll-'+'-'.join(Stims)
+    FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+    PercBars(CellChangesMerge, FigFile, Ext, Save, Show)
+    
+    DecInc = CellChanges['Sound_CNOVsSound_NaCl']
+    UnitInfo = 'ScatterDecIncAll-'+'-'.join(Stims)
+    FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+    ScatterMean([(DecInc[DecInc<0]/100)+1, (DecInc[DecInc>0]/100)+1], 
+                ('Decreased', 'Increased'), 
+                FigFile=FigFile, Ext=['svg'], Save=Save, Show=Show)
+    
+    UnitInfo = 'ScatterChangedFreqAll-'+'-'.join(Stims)
+    FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+    ScatterMean([ChangeInFreq[Dec], ChangeInFreq[~Dec]], 
+                ('Decreased', 'Increased'), 
+                FigFile=FigFile, Ext=['svg'], Save=Save, Show=Show)
+    
+    UnitInfo = 'BoxplotAll-'+'-'.join(Stims)
+    FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+    AxArgs = {'xlabel': '', 'ylabel': 'Evoked firing rate change'}
+    BoxPlots(np.vstack((CellChangesMerge[Stims[1]], CellChangesMerge[Stims[0]])).T, ['NaCl', 'CNO'], AxArgs=AxArgs, FigFile=FigFile, Ext=Ext, Save=Save, Show=Show)
+    
+    UnitInfo = 'NaClVsCNOAll-'+'-'.join(Stims)
+    FigFile = FigPath+'/'+FigPath.split('/')[-1]+'-'+UnitInfo
+    RI_NaClVsCNO(CellChangesMerge[Stims[0]+'Vs'+Stims[1]], FigFile=FigFile, Ext=Ext, Save=Save, Show=Show)
+        
+        
+
+#%%
+Parameters = dict(
+    Group = 'Recovery',
+    
+    TimeBeforeTTL = 50, 
+    TimeAfterTTL = 50, 
+    BinSize = 2,
+    
+    TTLCh = 17,
+    AnalogTTLs = True,
+    ProbeChSpacing = 50,
+    SpksToPlot = 500,
+    
+    Show = False,
+    Save = True,
+    Ext = ['svg'],
+)
+
+Units(**Parameters)
+
+
+Group = 'Recovery'
+TimeBeforeTTL = 50
+TimeAfterTTL = 50
+BinSize = 2
+
+TTLCh = 17
+AnalogTTLs = True
+ProbeChSpacing = 50
+SpksToPlot = 500
+
+Show = False
+Save = True
+Ext = ['svg']
+
+
+
+
 #%% RT plots
 from DataAnalysis.Plot import Plot
 

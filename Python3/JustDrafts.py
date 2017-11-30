@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Just drafts
+Just drafts :)
+@author: T. Malfatti
+@year: 2017
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 #%% Klusta :)
 import numpy as np

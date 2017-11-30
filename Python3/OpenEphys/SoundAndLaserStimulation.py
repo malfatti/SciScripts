@@ -3,17 +3,17 @@
 """
 @author: T. Malfatti
 @year: 2015
-@licence: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
 """
-#%% Settings
+#%% Sound and Laser stimulation
 from Exps import SoundAndLaserStimulation
 
 ## === Experiment parameters === ##
 Parameters = dict(
     AnimalName =        'Prevention_A5',
     StimType =          ['Sound'],
-    # StimType =          ['Sound', 'Laser'],
+    # StimType =          ['Sound', 'Laser', 'SoundLaser'],
     
     
     ## === Sound === ##
@@ -33,10 +33,19 @@ Parameters = dict(
     
     
     ## === Laser === ##
+    # 'Sq' for square pulses, 'Sin' for sin wave
+    LaserType =                         'Sq',
+    
+    # if LaserType == 'Sq'
     LaserPauseBeforePulseDur =          0,
     LaserPulseDur =                     0.01,
     LaserPauseAfterPulseDur =           0.09,
     LaserPulseNo =                      529,
+    
+    # if LaserType == 'Sin'
+    LaserDur =                          0.1*529,
+    LaserFreq =                         10,      # in Hz
+    
     LaserStimBlockNo =                  5,
     LaserPauseBetweenStimBlocksDur =    10,
     
@@ -52,4 +61,7 @@ Parameters = dict(
 )
 
 
-SoundAndLaserStimulation.Run(**Parameters)
+Stimulation = SoundAndLaserStimulation.Prepare(**Parameters)
+
+#%%
+SoundAndLaserStimulation.Play(Stimulation, ['Sound'], DV='4330')

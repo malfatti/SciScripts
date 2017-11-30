@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct  4 11:43:58 2017
-
-@author: malfatti
+@author: T. Malfatti
+@date: 2017-10-04
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 
 #%% Acoustic trauma

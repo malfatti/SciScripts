@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 12 16:02:43 2017
-
-@author: malfatti
+@author: T. Malfatti
+@date: 2017-06-12
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 import os
 import numpy as np
@@ -200,15 +201,25 @@ def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PrePauseDur=0,
 
 
 ## Level 1
-def LaserSinStim(Rate, Dur, Freq, SoundSystem, Ch=1):
-    """ Generate square waves in one channel that works as TTLs for laser.
+def LaserStim(Rate, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, SoundSystem, LaserPauseBeforePulseDur=0, LaserPauseAfterPulseDur=0, Ch=1):
+    """ if LaserType == 'Sq':
+            Generate square waves in one channel that works as TTLs for laser.
+            
+            WARNING: The signal generated is composed of square WAVES, not pulses,
+            meaning that it reaches positive AND NEGATIVE values. If your device 
+            handles only positive voltage, use a diode on the input of your device.
+            
+            https://en.wikipedia.org/wiki/Diode
         
-        WARNING: The signal generated is composed of square WAVES, not pulses,
-        meaning that it reaches positive AND NEGATIVE values. If your device 
-        handles only positive voltage, use a diode on the input of your device.
-        
-        https://en.wikipedia.org/wiki/Diode
-        """
+        elif LaserType == 'Sin':
+            Generate sine waves in one channel.
+            
+            WARNING: The signal generated is a sine wave that reaches positive 
+            AND NEGATIVE values. If your device handles only positive voltage, 
+            use a DC offset circuit to shift the wave to the positive range.
+            
+            https://en.wikipedia.org/wiki/Voltage_divider
+    """
     
     SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
     
@@ -216,7 +227,12 @@ def LaserSinStim(Rate, Dur, Freq, SoundSystem, Ch=1):
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
         TTLAmpF = 1/SBOutAmpF
     
-    LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
+    if LaserType == 'Sq':
+        LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
+                       LaserPauseBeforePulseDur, LaserPauseAfterPulseDur)
+    
+    elif LaserType == 'Sin':
+        LaserUnit = SineWave(Rate, LaserFreq, TTLAmpF*LaserTTLVal, LaserDur)
     
     Laser = np.zeros((LaserUnit.shape[0], 2))
     Laser[:,Ch-1] = LaserUnit.T
@@ -226,34 +242,8 @@ def LaserSinStim(Rate, Dur, Freq, SoundSystem, Ch=1):
     return(Laser)
 
 
-def LaserSqStim(Rate, LaserPulseDur, TTLAmpF, SoundSystem, LaserPrePauseDur=0, LaserPostPauseDur=0, Ch=1):
-    """ Generate square waves in one channel that works as TTLs for laser.
-        
-        WARNING: The signal generated is composed of square WAVES, not pulses,
-        meaning that it reaches positive AND NEGATIVE values. If your device 
-        handles only positive voltage, use a diode on the input of your device.
-        
-        https://en.wikipedia.org/wiki/Diode
-        """
-    
-    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
-    
-    if TTLAmpF > 1/SBOutAmpF:
-        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
-        TTLAmpF = 1/SBOutAmpF
-    
-    LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, LaserPrePauseDur, LaserPostPauseDur)
-    
-    Laser = np.zeros((LaserUnit.shape[0], 2))
-    Laser[:,Ch-1] = LaserUnit.T
-    Laser = np.ascontiguousarray(Laser)
-    
-    print('Done generating laser stimulus.')
-    return(Laser)
-
-
-def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur, TTLAmpF, SoundSystem, SoundPrePauseDur=0,
-                   SoundPostPauseDur=0, LaserPrePauseDur=0, LaserPostPauseDur=0, Map=[1,2]):
+def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, SoundSystem, SoundPauseBeforePulseDur=0,
+                   SoundPauseAfterPulseDur=0, LaserPauseBeforePulseDur=0, LaserPauseAfterPulseDur=0, Map=[1,2]):
     """ Generate sound pulses in one channel and a mix of square waves that 
         works as TTLs for both sound and laser in the other channel.
         
@@ -276,15 +266,19 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
     SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
     print('   ', end='')
     SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                               NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
-                               SoundPostPauseDur)
+                               NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
+                               SoundPauseAfterPulseDur)
     
     SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
-                          SBOutAmpF, SoundPrePauseDur, 
-                          SoundPostPauseDur)
+                          SBOutAmpF, SoundPauseBeforePulseDur, 
+                          SoundPauseAfterPulseDur)
     
-    LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
-                       LaserPrePauseDur, LaserPostPauseDur)
+    if LaserType == 'Sq':
+        LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
+                       LaserPauseBeforePulseDur, LaserPauseAfterPulseDur)
+    
+    elif LaserType == 'Sin':
+        LaserUnit = SineWave(Rate, LaserFreq, TTLAmpF*LaserTTLVal, LaserDur)
     
     SoundLaser = {}
     for FKey in SoundUnit:

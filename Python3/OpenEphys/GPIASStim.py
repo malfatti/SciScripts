@@ -2,11 +2,11 @@
 """
 @author: T. Malfatti
 @year: 2015
-@licence: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
 """
 
-#%% Settings
+#%% GPIAS
 from Exps import GPIAS
 
 Parameters = dict(

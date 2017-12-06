@@ -12,7 +12,7 @@ from datetime import datetime
 
 ## Level 0
 def Set(Backend='TkAgg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False, 
-        HideControls=False):
+        HideControls=False, Tight=True):
     if Params:
         Params = {
           'backend'             : 'TkAgg',
@@ -47,9 +47,15 @@ def Set(Backend='TkAgg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         YLim = Ax.get_ylim()
         
         if 'title' in AxArgs: Ax.set_title(AxArgs['title'])
+        
         if 'xlabel' in AxArgs: Ax.set_xlabel(AxArgs['xlabel'])
-        if 'ylabel' in AxArgs: Ax.set_ylabel(AxArgs['ylabel'])
+        if 'xticks' in AxArgs: Ax.set_xticks(AxArgs['xticks'])
+        if 'xticklabels' in AxArgs: Ax.set_xticklabels(AxArgs['xticklabels'])
         if 'xlim' in AxArgs: XLim = AxArgs['xlim']
+        
+        if 'ylabel' in AxArgs: Ax.set_ylabel(AxArgs['ylabel'])
+        if 'yticks' in AxArgs: Ax.set_yticks(AxArgs['yticks'])
+        if 'yticklabels' in AxArgs: Ax.set_yticklabels(AxArgs['yticklabels'])
         if 'ylim' in AxArgs: YLim = AxArgs['ylim']
         
         Ax.set_xlim(XLim[0], XLim[1])
@@ -73,8 +79,9 @@ def Set(Backend='TkAgg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
             if Backend[:2].lower() == 'tk': Fig.canvas.toolbar.pack_forget()
             if Backend[:2].lower() == 'qt': Fig.canvas.toolbar.setVisible(False)
         
-        Fig.tight_layout(pad=0)
-        Fig.subplots_adjust(top=0.9)
+        if Tight:
+            Fig.tight_layout(pad=0)
+            Fig.subplots_adjust(top=0.9)
         
         for Obj in Fig.findobj(): Obj.set_clip_on(False)
         Fig.patch.set_visible(False)

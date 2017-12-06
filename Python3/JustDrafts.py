@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Just drafts :)
+
 @author: T. Malfatti
 @year: 2017
 @license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
@@ -466,6 +467,56 @@ def PercBars(CellChanges, FigFile='./PercBars', Ext=['svg'], Save=True, Show=Tru
     return(None)
 
 
+def FreqAnddBCurve(AllCells, FigPath='./FreqAnddBCurve', Ext=['svg'], Save=True, Show=True):
+    for m, M in enumerate(AllCells):
+        IntFreq = np.zeros(M['Freqs'].shape, dtype=np.int16)
+        for F, Freq in enumerate(M['Freqs']):
+            IntFreq[F] = sum([float(_) for _ in M['Freqs'][F].split('-')])/2
+        
+        for U in range(len(M['UnitId'])):
+            plt.rc('font',size=8)
+            Fig, Axes = plt.subplots(2,1)
+            
+            for d in range(M['dBCurve'].shape[0]):
+                F = [3,4,0,1,2]
+                Axes[0].plot(M['dBCurve'][d,F,U], label=M['Intensities'][d], lw=2)
+            
+            for f in [3,4,0,1,2]:    
+                Axes[1].plot(M['dBCurve'][:,f,U], label=IntFreq[f], lw=2)
+            
+            AxArgs = {'xticks': range(len(IntFreq)),
+                      'xticklabels': IntFreq[F]}
+            Plot.Set(Ax=Axes[0], AxArgs=AxArgs)
+            
+            AxArgs = {'xticks': range(len(M['Intensities'])),
+                      'xticklabels': M['Intensities']}
+            Plot.Set(Ax=Axes[1], AxArgs=AxArgs)
+            
+            for Ax in Axes:
+                # Box = Ax.get_position()
+                # Ax.set_position([Box.x0, Box.y0, Box.width * 0.9, Box.height])
+                Ax.legend(loc='center left', bbox_to_anchor=(1.05, 0.5),
+                          prop={'size':6})
+            
+            FigTitle = ''.join(['Unit',
+                                "{0:02d}".format(m), 
+                                'x', "{0:04d}".format(M['UnitId'][U]),
+                                '-', M['StimType'][U]])
+            
+            FigFile = '/'.join([FigPath, FigTitle])
+            print(FigTitle)
+            
+            if Save:
+                Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True, Tight=False)
+                Fig.subplots_adjust(hspace=0.5, right=0.8)
+                os.makedirs(FigPath, exist_ok=True)
+                for E in Ext: Fig.savefig(FigFile+'.'+E, format=E, dpi=300)
+            
+            if Show: plt.show()
+            else: plt.close()
+    
+    return(None)
+
 
 def ScatterMean(Data, Names, LinesAmpF=2, Spread=0.2, LogY=False, FigFile='./ScatterDecInc', Ext=['svg'], Save=True, Show=True):
     # if type(Data) is not np.ndarray: Data = np.array(Data).T
@@ -744,6 +795,9 @@ def GetUnitsParameters(Folder, UnitRec, UnitsId, Stims, Freqs, Intensities, Anal
     Cells['MaxFreq'] = np.zeros((Stims.size * UnitsId.size), dtype=UnitRec['Freq'].dtype)
     Cells['MaxdB'] = np.zeros((Stims.size * UnitsId.size), dtype=UnitRec['dB'].dtype)
     Cells['dBCurve'] = np.zeros((Intensities.size, Freqs.size, Stims.size * UnitsId.size), dtype=UnitRec['dB'].dtype)
+    Cells['HzCurve'] = np.zeros((Freqs.size, Intensities.size, Stims.size * UnitsId.size), dtype=UnitRec['dB'].dtype)
+    Cells['Intensities'] = Intensities
+    Cells['Freqs'] = Freqs
     
     InfUnits = UnitRec['RI'] == np.inf
     Invalid = []
@@ -787,11 +841,12 @@ def GetUnitsParameters(Folder, UnitRec, UnitsId, Stims, Freqs, Intensities, Anal
                     
                     ThisDV = ThisDV[(np.abs(ThisDV - UnitRec['DV'][MaxRI][0])).argmin()]
                     
-                    Cells['dBCurve'][d, F, Ind] = UnitRec['RI'][
-                            ThisUnit * 
-                            (UnitRec['Freq'] == Freq) * 
-                            (UnitRec['dB'] == dB) * 
-                            (UnitRec['DV'] == ThisDV)]
+                    FinalInd = ThisUnit * \
+                               (UnitRec['Freq'] == Freq) * \
+                               (UnitRec['dB'] == dB) * \
+                               (UnitRec['DV'] == ThisDV)
+                    
+                    Cells['dBCurve'][d, F, Ind] = UnitRec['RI'][FinalInd]
             
             dBFMax = Cells['dBCurve'][:, :, Ind].max()
             # dBFMin = Cells['dBCurve'][:, :, Ind].min()
@@ -837,8 +892,8 @@ def Units(Group, TimeBeforeTTL, TimeAfterTTL, BinSize, TTLCh, ProbeChSpacing, An
         KwikFile = glob(Folder+'/*.kwik')[0]
         
         Clusters = KwikModel(KwikFile)
-        UnitRec = GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs, AnalysisPath,  SpksToPlot, Ext, Save, Show)
-        # UnitRec = Asdf.Load('/', AnalysisPath+ '_' +Folder.split('/')[0]+'_AllUnits.asdf')
+        # UnitRec = GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs, AnalysisPath,  SpksToPlot, Ext, Save, Show)
+        UnitRec = Asdf.Load('/', AnalysisPath+ '_' +Folder.split('/')[0]+'_AllUnits.asdf')
         UnitsId = np.unique(UnitRec['UnitId'])
         Stims = np.unique(UnitRec['StimType'])
         Freqs = np.unique(UnitRec['Freq'])
@@ -900,6 +955,8 @@ def Units(Group, TimeBeforeTTL, TimeAfterTTL, BinSize, TTLCh, ProbeChSpacing, An
     AllCells = [Asdf.Load('/', Folder.split('/')[-2] + '_' + Folder.split('/')[0] + '_Cells.asdf')
                 for Folder in Folders]
     
+    FreqAnddBCurve(AllCells, Ext=Ext, Save=Save, Show=Show)
+    
     TotalU = [np.unique(C['UnitId']) for C in AllCells]
     
     for C, Cell in enumerate(AllCells):
@@ -913,7 +970,8 @@ def Units(Group, TimeBeforeTTL, TimeAfterTTL, BinSize, TTLCh, ProbeChSpacing, An
     
     Merge = {}
     for Key in AllCells[0].keys():
-        Merge[Key] = np.concatenate([Cell[Key] for Cell in AllCells], axis=-1)
+        if Key not in ['Intensities', 'Freqs']:
+            Merge[Key] = np.concatenate([Cell[Key] for Cell in AllCells], axis=-1)
     
     Stims = np.unique(Merge['StimType'])
     CellChangesMerge = GetCellChanges(Merge, Stims, Stims[-1])

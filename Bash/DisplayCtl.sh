@@ -16,6 +16,13 @@ case "$Display" in
                 sleep 1
                 feh --bg-scale --randomize ~/Images/Others/Wallpapers/*
                 ;; 
+	"HdmiPres") 
+		xrandr --output HDMI1 --auto
+		xrandr --output HDMI1 --right-of eDP1
+        xrandr --output HDMI1 --mode 1024x768
+		sleep 1
+		feh --bg-scale --randomize ~/Images/Others/Wallpapers/*
+		;;
 	"HdmiOff")
 		xrandr --output HDMI1 --off
                 sleep 1                                                         

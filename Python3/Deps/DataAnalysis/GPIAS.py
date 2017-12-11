@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 12 14:12:37 2017
-
-@author: malfatti
+@author: T. Malfatti <malfatti@disroot.org>
+@date: 2017-06-12
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 import numpy as np
 
 from DataAnalysis import DataAnalysis
-from IO import Hdf5
+from IO import Asdf, Hdf5
 from scipy import signal
 
 
@@ -35,7 +36,7 @@ def CheckGPIASRecs(Data, SizeLimits, Plot=False):
         return(None)
 
 
-def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
+def IndexCalcOld(Data, Keys, PulseSampleStart, SliceSize):
     Index = {}
     for Key in Keys:
         BGStart = 0; BGEnd = SliceSize
@@ -60,6 +61,30 @@ def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
         
         # GPIAS index (How much Res is different from Ref)
         Index[Key[2]] = (RefRMS-ResRMS)/RefRMS
+    
+    return(Index)
+
+
+def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
+    Index = {}
+    for Key in Keys:
+        BGStart = 0; BGEnd = SliceSize
+        PulseStart = PulseSampleStart; PulseEnd = PulseSampleStart + SliceSize
+        
+        if type(Data[Key[0]]) == list:
+            if not Data[Key[0]]:
+                print('Key', Key[0], 'is empty. Skipping...')
+                continue
+        
+        ResRMSBG = (np.mean(Data[Key[0]][BGStart:BGEnd]**2))**0.5
+        ResRMSPulse = (np.mean(Data[Key[0]][PulseStart:PulseEnd]**2))**0.5
+        ResRMS = ResRMSPulse/ResRMSBG
+        
+        RefRMSBG = (np.mean(Data[Key[1]][BGStart:BGEnd]**2))**0.5
+        RefRMSPulse = (np.mean(Data[Key[1]][PulseStart:PulseEnd]**2))**0.5
+        RefRMS = RefRMSPulse/RefRMSBG
+        
+        Index[Key[2]] = ((ResRMS/RefRMS)-1)*100
     
     return(Index)
 
@@ -117,8 +142,8 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
         Dict['Trace'][SFreq][STrial].append(GD[0])
     
     return(Dict)
-    
 
+    
 ## Level 1    
 def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
              GPIASTimeBeforeTTL=100, GPIASTimeAfterTTL=150, 
@@ -184,7 +209,8 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                                        GPIASData['Index'][Freq], Keys, 
                                        NoOfSamplesBefore, SliceSize)
     
-    Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFile, Overwrite)
+    # Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFile, Overwrite)
+    Asdf.Write({'GPIAS': GPIASData, 'XValues': XValues}, '/', AnalysisKey+'.asdf')
     
     if Return: return(GPIASData, XValues)
     else: return(None)

@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GPIAZon group analysis
+@author: T. Malfatti <malfatti@disroot.org>
+@year: 2017
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
+
 import numpy as np
-import os
+
+from glob import glob
+from IO import Asdf
+from itertools import combinations
 
 from DataAnalysis import Stats
 from DataAnalysis.Plot import Plot
-from IO import Hdf5
-from itertools import combinations
 
 Params = Plot.Set(Params=True)
 from matplotlib import rcParams; rcParams.update(Params)
@@ -36,38 +41,34 @@ def ClearPairs(Pairs):
     return(Pairs)
 
 
-def GetIndex(Group, Animals, Exps, ExpList, AnalysisFile):
+def GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder):
     Index = {}
     for A, Animal in enumerate(Animals):
         Index[Animal] = {}
         
         Done = []
         for Exp in Exps:
-            AnalysisKey = [AK for AK in Hdf5.GetGroupKeys('/', AnalysisFile) 
+            AnalysisKey = [AK for AK in glob(AnalysisFolder+'/*') 
                            if Animal in AK 
                            and Exp.split('/')[-1][:8] in AK]
             
             if AnalysisKey: AnalysisKey = AnalysisKey[0]
-            else: continue
+            else: print('Skip', Exp, Animal); continue
             
 #            print(Animal, Exp)
             Ei = len(Done); Done.append(Exp)
-            GPIAS = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+            GPIAS = Asdf.Load('/', AnalysisKey)
             Index[Animal][ExpList[Ei]] = {}
 #            Freqs = list(GPIAS['Index'].keys())
 #            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
             
-            for F, Freq in GPIAS[list(GPIAS.keys())[0]]['GPIAS']['Index'].items(): 
+            for F, Freq in GPIAS[list(GPIAS.keys())[0]]['Index'].items(): 
                 if F == '9000-11000': continue
-                Index[Animal][ExpList[Ei]][F] = abs(Freq['GPIASIndex'])
-                if Index[Animal][ExpList[Ei]][F] > 1:
-                    Index[Animal][ExpList[Ei]][F] = 1
-            
+                Index[Animal][ExpList[Ei]][F] = Freq['GPIASIndex']
+                
             del(GPIAS)
     
     return(Index)
-
-
 #STD = []
 #for G, Group in enumerate(Groups):
 #    Animals = [Group.split('_')[-1] + 'n0' + str(_) for _ in range(1,6)]
@@ -92,8 +93,8 @@ def GetIndex(Group, Animals, Exps, ExpList, AnalysisFile):
 
 
 ## Level 1
-def GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFile):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFile)
+def GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder):
+    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
     
     FreqPerExp = {}
     for A, Animal in Index.items():
@@ -103,7 +104,7 @@ def GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFile):
             for F, Freq in Exp.items():
                 if F not in FreqPerExp[E]: FreqPerExp[E][F] = []
                 
-                FreqPerExp[E][F].append(abs(Freq))
+                FreqPerExp[E][F].append(Freq)
     
 #    for E, Exp in FreqPerExp.items():
 #        for F, Freq in Exp.items():
@@ -115,8 +116,8 @@ def GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFile):
     return(FreqPerExp)
 
 
-def GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFile, Invalid=False, InvalidThr=0.3):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFile)
+def GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid=False, InvalidThr=10):
+    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
     FreqPerAnimal = {}
     
     for A, Animal in Index.items():
@@ -129,24 +130,24 @@ def GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFile, Invalid=False,
             Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
 #            Freqs = [Freqs[0]] + Freqs[2:]# + [Freqs[1]]
             
-            Y = [abs(Animal[Exp][Freq]) for Freq in Freqs]
+            Y = [Animal[Exp][Freq] for Freq in Freqs]
             FreqPerAnimal[A].append(np.array(Y))
         
         if not Invalid: 
             for F, Freq in enumerate(FreqPerAnimal[A]):
-                inv = np.where((Freq < InvalidThr)+
-                               (1 < Freq))[0]
+                inv = np.where((Freq < InvalidThr)*
+                               (Freq > -InvalidThr))
     #            Diff[A][0] = np.delete(Diff[A][0], inv)
     #            Diff[A][1] = np.delete(Diff[A][1], inv)
-                FreqPerAnimal[A][F][inv] = -1
+                FreqPerAnimal[A][F][inv] = 1
     
     return(FreqPerAnimal)
 
 
 ## Level 2
-def GetValid(Group, Animals, Exps, ExpList, AnalysisFile, Invalid=True, InvalidThr=0.3):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFile)
-    Valid = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFile, Invalid, InvalidThr)
+def GetValid(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid=True, InvalidThr=10):
+    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
+    Valid = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid, InvalidThr)
     
     for A, Animal in Index.items():
         for E, Exp in enumerate(ExpList):
@@ -156,9 +157,10 @@ def GetValid(Group, Animals, Exps, ExpList, AnalysisFile, Invalid=True, InvalidT
             Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
 #            Freqs = [Freqs[0]] + Freqs[2:] + [Freqs[1]]
             
-            if max(Valid[A][E]) < InvalidThr: del(Valid[A][E])
+            if max(Valid[A][E]) < InvalidThr and min(Valid[A][E]) > -InvalidThr: 
+                del(Valid[A][E])
             else:
-                F = np.where((Valid[A][E] > InvalidThr)*(1 > Valid[A][E]))[0]
+                F = np.where((Valid[A][E] > InvalidThr)*(Valid[A][E] > -InvalidThr))[0]
                 freqs = [Freqs[f] for f in F]
                 Valid[A][E] = [freqs, Valid[A][E][F]]
                 
@@ -167,8 +169,8 @@ def GetValid(Group, Animals, Exps, ExpList, AnalysisFile, Invalid=True, InvalidT
     return(Valid)
 
 
-def GetMeans(Group, Animals, Exps, ExpList, AnalysisFile):
-    FreqPerExp = GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFile)
+def GetMeans(Group, Animals, Exps, ExpList, AnalysisFolder):
+    FreqPerExp = GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder)
     
     SEMs = {}; Means = {}
     for E, Exp in FreqPerExp.items():
@@ -178,10 +180,10 @@ def GetMeans(Group, Animals, Exps, ExpList, AnalysisFile):
     return(Means, SEMs)
 
 
-def GetDiff(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr=0.6, Invalid=False, InvalidThr=0.3):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFile)
-    FreqPerAnimal = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFile, Invalid, InvalidThr)
-    FreqPerExp = GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFile)
+def GetDiff(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr=60, Invalid=True, InvalidThr=10):
+    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
+    FreqPerAnimal = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid, InvalidThr)
+    FreqPerExp = GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder)
     
     PairList = list(combinations(FreqPerExp.keys(), 2))
     Diff = {}
@@ -202,9 +204,9 @@ def GetDiff(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr=0.6, Invalid=Fa
             
             if len(FreqPerAnimal[A][E0]) == 0: continue
             
-            Ratio = FreqPerAnimal[A][E1]/FreqPerAnimal[A][E0]
-            Ratio[Ratio>1] = 1 - (1/Ratio[Ratio>1])
-            Ratio[Ratio<=1] = 1 - Ratio[Ratio<=1]
+            Ratio = abs(((FreqPerAnimal[A][E1]/FreqPerAnimal[A][E0])-1)*100)
+#            Ratio[Ratio>1] = 1 - (1/Ratio[Ratio>1])
+#            Ratio[Ratio<=1] = 1 - Ratio[Ratio<=1]
             
             if max(Ratio) > DiffThr:
                 F = np.where(Ratio > DiffThr)[0]
@@ -212,11 +214,11 @@ def GetDiff(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr=0.6, Invalid=Fa
                 
                 Diff[A][PKey] = [freqs, Ratio[F]]
                 
-                inv = np.where(Ratio[F] > 1)
-                Diff[A][PKey][0] = np.delete(Diff[A][PKey][0], inv).tolist()
-                Diff[A][PKey][1] = np.delete(Diff[A][PKey][1], inv)
+#                inv = np.where(Ratio[F] > 1)
+#                Diff[A][PKey][0] = np.delete(Diff[A][PKey][0], inv).tolist()
+#                Diff[A][PKey][1] = np.delete(Diff[A][PKey][1], inv)
                 
-                if len(Diff[A][PKey][0]) == 0: del(Diff[A][PKey])
+                if len(Diff[A][PKey][0]) == 0: print(A, PKey, Ratio); del(Diff[A][PKey])
             del(Ratio)
         
         if len(Diff[A]) == 0: del(Diff[A])
@@ -224,10 +226,10 @@ def GetDiff(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr=0.6, Invalid=Fa
     return(Diff)
 
 
-def GetMAF(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr=0.5, Invalid=True, InvalidThr=0.1):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFile)
-    Diff = GetDiff(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
-    FreqPerAnimal = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFile, Invalid, InvalidThr)
+def GetMAF(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr=50, Invalid=True, InvalidThr=10):
+    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
+    Diff = GetDiff(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr, Invalid, InvalidThr)
+    FreqPerAnimal = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid, InvalidThr)
     #MAF = np.zeros((len(Animals), len(ExpList)))
     MAF = [[] for _ in ExpList]
     
@@ -247,8 +249,8 @@ def GetMAF(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr=0.5, Invalid=Tru
     return(MAF)
 
 
-def GetPValues(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr=0.5, Invalid=True, InvalidThr=0.1):
-    IndexPerExp = GetMAF(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
+def GetPValues(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr=50, Invalid=True, InvalidThr=10):
+    IndexPerExp = GetMAF(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr, Invalid, InvalidThr)
     PVals = {}; PairList = list(combinations(ExpList, 2))
     
     for Pair in PairList:
@@ -278,7 +280,7 @@ def Index_Exp_BP(Data, ExpList, PVals, Invalid=False, Show=True, Save=False, Fig
     for K in ['boxes', 'whiskers', 'caps', 'medians', 'fliers']:
         for I in range(len(Data)): BoxPlot[K][I].set(color=Colors[I])
     
-    Plot.Set(AxesObj=Ax, Axes=True)
+    Plot.Set(Ax=Ax)
     
 #    Ax.legend(loc='best')
     Ax.set_ylabel('GPIASIndex')

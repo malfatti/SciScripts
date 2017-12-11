@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GPIAS analysis
+@author: T. Malfatti <malfatti@disroot.org>
+@year: 2016
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 #%% Import
 #import GPIAZon
@@ -38,31 +41,32 @@ for Animal in Animals:
 #Exps = {'GPIAZon_NaCl': ['NaCl', 'SSal', 'Atr'],
 #        'GPIAZon_SSal': ['SSal', 'Atr', 'NaCl']}
 
-Group = 'PreventionControl'
+Group = 'Recovery'
 ExpList = ['BeforeANT', 'AfterANTNaCl', 'AfterANTCNO']
-#Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
-Animals = ['Prevention_A3', 'Prevention_A4', 'Prevention_A5']
+Animals = ['CaMKIIahM4Dn06', 'CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
+#Animals = ['Prevention_A3', 'Prevention_A4', 'Prevention_A5']
 
 Exps = glob(Group + '/*' + Group + '*GPIAS'); Exps.sort()
-#Exps = [Exps[E] for E in [0,1,4,6]]# # Recovery override
-Exps = [Exps[E] for E in [1,3,4]] # Prevention override
+Exps = [Exps[E] for E in [0,1,4,6]]# # Recovery override
+#Exps = [Exps[E] for E in [1,3,4]] # Prevention override
 
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
+AnalysisFolder = Group + '/Analysis'
 #Dicts = sorted([E for A in Animals for E in glob(Group+'/2*IAS/*dict') if A in E])
 
-Save = True; Invalid = True
-DiffThr = 0.6; InvalidThr = 0.1
+Save = False; Invalid = False
+DiffThr = 60; InvalidThr = 20
 
-IndexPerExp = GetMAF(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
-PVals = GetPValues(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
+IndexPerExp = GetMAF(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr, Invalid, InvalidThr)
+PVals = GetPValues(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr, Invalid, InvalidThr)
 Index_Exp_BP(IndexPerExp, ExpList, PVals, Invalid, Save=Save)
 
-IndexPerExp = GPIAS.GroupData.GetMAF(Group, Animals, Exps, ExpList, AnalysisFile, DiffThr, Invalid, InvalidThr)
+IndexPerExp = GPIAS.GroupData.GetMAF(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr, Invalid, InvalidThr)
 GPIAS.GroupData.Index_Exp_BP(IndexPerExp, ExpList)
 
 
 #%% Batch
-Group = 'RecoveryControl'
+Group = 'Recovery'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -72,7 +76,9 @@ FilterOrder = 3       # butter order
 Filter = 'butter'
 Stim = 'Sound'
 
-Exps = sorted(glob(Group+'/2*IAS'))#[2:]
+Ext=['svg']; Save = True; Show = False
+
+Exps = sorted(glob(Group+'/2*IAS'))[2:]
 
 for Exp in Exps:
 #    Exp = Group + '/20170721-Prevention-GPIAS'
@@ -95,6 +101,7 @@ for Exp in Exps:
 #    if not StimExps: continue
     
     for F, Folder in enumerate(StimExps):
+        if Folder == 'Recovery/20160702-Recovery-GPIAS/2016-07-02_13-05-52_CaMKIIahM4Dn09': continue
         RecFolder = Folder.split('/')[-1]
         
         Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
@@ -133,7 +140,7 @@ for Exp in Exps:
         
     #     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
         ExpStim = '_'.join(DataInfo['StimType'])
-        AnalysisKey = Files[F][:-5].split('/')[-1] + '/' + ExpStim
+        AnalysisKey = Files[F][:-5].split('/')[-1] + '-' + ExpStim + '-' + Group + '_' + 'GPIAS'
         FigPrefix = AnalysisKey.replace('/', '_')
         FigName = '/'.join([Group, 'Figs', FigPrefix+'_Traces'])
         os.makedirs('/'.join(FigName.split('/')[:-1]), exist_ok=True)
@@ -147,7 +154,7 @@ for Exp in Exps:
 #        GPIASRec, XValues = GPIASData['GPIAS'], GPIASData['XValues']
         
         PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
-                         FigName, Save=True, Visible=True)
+                         FigName, Ext, Save, Show)
         
         del(GPIASRec, XValues)
 
@@ -384,9 +391,9 @@ Plot.GPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'],
                         FigName, Save=True, Visible=True)
 
 #%% MatFiles
-from IO import Mat
+from IO import Asdf, Mat
 
-AnalysisFile = 'Recovery/Recovery-Analysis.hdf5'
+AnalysisFolder = 'Recovery/Analysis'
 Folders = sorted(glob('Recovery/2*IAS/*00-00-00*'))
 InfoFiles = sorted(glob('Recovery/2*IAS/*.mat'))
 
@@ -396,16 +403,17 @@ FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
 Filter = 'butter'
 
-Mat.GPIASAnalysis(Folders, InfoFiles, AnalysisFile, GPIASTimeBeforeTTL, 
+Mat.GPIASAnalysis(Folders, InfoFiles, AnalysisFolder, GPIASTimeBeforeTTL, 
                   GPIASTimeAfterTTL, FilterFreq, FilterOrder, Filter)
 
 for F, Folder in enumerate(Folders):
     AnalysisKey = InfoFiles[F].split('/')[1].split('-')
     AnalysisKey[0] = AnalysisKey[0]+'000000'
     AnalysisKey[1] = Folder.split('_')[-1]
-    AnalysisKey = '-'.join(AnalysisKey) + '/Sound'
+    AnalysisKey = '-'.join(AnalysisKey) + '-Sound-Recovery_' + 'GPIAS'
     
-    Data = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+#    Data = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+    Data = Asdf.Load('/', AnalysisFolder+'/'+AnalysisKey+'.asdf')
     FigName = 'Recovery/Figs/'+AnalysisKey.replace('/', '_')+'_Traces'
     
-    PlotGPIAS.Traces(Data['GPIAS'], Data['XValues'], 0.05, FigName, Save=True, Visible=True)
+    PlotGPIAS.Traces(Data['GPIAS'], Data['XValues'], 0.05, FigName, Save=True, Show=False)

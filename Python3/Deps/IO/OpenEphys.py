@@ -117,7 +117,9 @@ def OpenEphysLoad(Folder, Unit='uV', ChannelMap=[]):
     Chs = {Proc: [_ for _ in Chs if _[:3] == Proc] for Proc in Procs}
     
     for P, Proc in Chs.items():
-        Chs[P] = sorted(Proc, key=lambda x: int(x.split('_CH')[1].split('_')[0].split('.')[0]))
+        Type = Chs[P][0].split('_')[-1].split('.')[0][:-1]
+        print(Type)
+        Chs[P] = sorted(Proc, key=lambda x: int(x.split('_'+Type)[1].split('_')[0].split('.')[0]))
     
     for Proc in Data.keys():
         ACh = Chs[Proc][0].split('.')[0]

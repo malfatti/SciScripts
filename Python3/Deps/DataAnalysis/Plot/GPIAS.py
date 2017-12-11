@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 12 15:06:47 2017
-
-@author: malfatti
+@author: T. Malfatti <malfatti@disroot.org>
+@year: 2017-06-12
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 from DataAnalysis.Plot import Plot
 
 
 ## Level 0
-def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext='svg', 
-              Save=True, Visible=False):
+def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext=['svg'], 
+              Save=True, Show=True):
     Params = Plot.Set(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
     from matplotlib import pyplot as plt
@@ -20,10 +21,10 @@ def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext='svg',
     Ind2 = list(XValues).index(int(SoundPulseDur*1000))
     
     PlotNo = len(GPIASData['Trace'].keys())
-    Fig, Axes = plt.subplots(PlotNo, 1, figsize=(8, 3*PlotNo), sharex=True)
+    Fig, Axes = plt.subplots(PlotNo, 1, figsize=(7, 12), sharex=True)
 #        
     for FInd, Freq in enumerate(GPIASData['Trace'].keys()):
-        SubTitle = Freq + ' Hz' + ' Index = ' + str(GPIASData['Index'][Freq]['GPIASIndex'])
+        SubTitle = Freq + ' Hz' + ' Index = ' + str(round(GPIASData['Index'][Freq]['GPIASIndex'], 4))
         LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
         SpanLabel = 'Sound Pulse'
         XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
@@ -34,17 +35,19 @@ def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext='svg',
                  color='r', label=LineNoGapLabel, lw=2)
         Axes[FInd].plot(XValues, GPIASData['Trace'][Freq]['Gap'], 
                  color='b', label=LineGapLabel, lw=2)
-        Axes[FInd].legend(loc='best')
         
         AxArgs = {'title': SubTitle, 'ylabel': YLabel, 'xlabel': XLabel}
         Plot.Set(Ax=Axes[FInd], AxArgs=AxArgs)
+        Axes[FInd].legend(loc='center left', bbox_to_anchor=(1.05, 0.5),
+                          prop={'size':6})
     
     FigTitle = FigName.split('/')[-1]
-    FigName = FigName + '.' + Ext
     Plot.Set(Fig=Fig, FigTitle=FigTitle)
+    Fig.subplots_adjust(right=0.8)
     
-    if Save: Fig.savefig(FigName, format=Ext)
-    if Visible: plt.show()
+    if Save: 
+        for E in Ext: Fig.savefig(FigName+'.'+E, format=E)
+    if Show: plt.show()
     else: plt.close()
     
     print('Done.')

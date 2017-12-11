@@ -1,19 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-    Copyright (C) 2015  T. Malfatti
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@author: T. Malfatti <malfatti@disroot.org>
+@year: 2015
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 
 Functions for manipulating specific .mat files.
 """
@@ -21,11 +11,12 @@ import numpy as np
 import os
 
 from DataAnalysis.DataAnalysis import FilterSignal
-from IO import Hdf5
+from DataAnalysis import GPIAS
+from IO import Asdf, Hdf5
 from glob import glob
-from scipy import io, signal
+from scipy import io#, signal
 
-def GPIASAnalysis(Folders, InfoFiles, AnalysisFile, GPIASTimeBeforeTTL=100, GPIASTimeAfterTTL=100, 
+def GPIASAnalysis(Folders, InfoFiles, AnalysisFolder, GPIASTimeBeforeTTL=100, GPIASTimeAfterTTL=100, 
                      FilterFreq=[70, 400], FilterOrder=3, Filter = 'butter', SliceSize=100):
     
     SliceSizeMS = [SliceSize][0]
@@ -35,7 +26,7 @@ def GPIASAnalysis(Folders, InfoFiles, AnalysisFile, GPIASTimeBeforeTTL=100, GPIA
         
         Rate = np.array(int(DataInfo['Rate'])); TTL = DataInfo['PulseStart']
         Freqs = glob(Folder + '/*.mat')
-        GPIAS = {'Trace': {}, 'Index':{}}
+        GPIASRec = {'Trace': {}, 'Index':{}}
         
         SliceSize = int(SliceSizeMS * (Rate/1000))
         
@@ -46,8 +37,8 @@ def GPIASAnalysis(Folders, InfoFiles, AnalysisFile, GPIASTimeBeforeTTL=100, GPIA
             except ValueError:
                 SFreq = str(int(SFreq[0][1:])*1000) + '-' + str(int(SFreq[1])*1000)
             
-            for Key in GPIAS.keys():
-                if SFreq not in GPIAS[Key].keys(): GPIAS[Key][SFreq] = {}
+            for Key in GPIASRec.keys():
+                if SFreq not in GPIASRec[Key].keys(): GPIASRec[Key][SFreq] = {}
             
             NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
             NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
@@ -72,37 +63,24 @@ def GPIASAnalysis(Folders, InfoFiles, AnalysisFile, GPIASTimeBeforeTTL=100, GPIA
                                                       FilterOrder, Filter,
                                                       'bandpass')
             
-             # Amplitude envelope
-            GapAE = abs(signal.hilbert(Data['Gap']))
-            NoGapAE = abs(signal.hilbert(Data['NoGap']))
+            GPIASRec['Trace'][SFreq]['Gap'] = Data['Gap'][:]
+            GPIASRec['Trace'][SFreq]['NoGap'] = Data['NoGap'][:]
+            GPIASRec['Index'][SFreq]['Gap'] = Data['Gap'][:]
+            GPIASRec['Index'][SFreq]['NoGap'] = Data['NoGap'][:]
             
-            # RMS
-            BGStart = 0; BGEnd = SliceSize
-            PulseStart = int(GPIASTimeBeforeTTL*(Rate/1000)); PulseEnd = PulseStart + SliceSize
+            Keys = [['Gap', 'NoGap', 'GPIASIndex']]
+            GPIASRec['Index'][SFreq] = GPIAS.IndexCalc(
+                                       GPIASRec['Index'][SFreq], Keys, 
+                                       NoOfSamplesBefore, SliceSize)
             
-            GapRMSBG = (np.mean(GapAE[BGStart:BGEnd]**2))**0.5
-            GapRMSPulse = (np.mean(GapAE[PulseStart:PulseEnd]**2))**0.5
-            if GapRMSPulse < GapRMSBG: GapRMS = GapRMSPulse
-            else: GapRMS = GapRMSPulse - GapRMSBG
-            
-            NoGapRMSBG = (np.mean(NoGapAE[BGStart:BGEnd]**2))**0.5
-            NoGapRMSPulse = (np.mean(NoGapAE[PulseStart:PulseEnd]**2))**0.5
-            if NoGapRMSPulse < NoGapRMSBG: NoGapRMS = NoGapRMSPulse
-            else: NoGapRMS = NoGapRMSPulse - NoGapRMSBG
-            
-            # GPIAS index (How much Gap is different from NoGap)
-            Data['GPIASIndex'] = (NoGapRMS-GapRMS)/NoGapRMS
-            
-            GPIAS['Trace'][SFreq]['Gap'] = Data['Gap'][:]
-            GPIAS['Trace'][SFreq]['NoGap'] = Data['NoGap'][:]
-            GPIAS['Index'][SFreq]['GPIASIndex']= Data['GPIASIndex']
             del(Data)
         
         AnalysisKey = InfoFiles[F].split('/')[1].split('-')
         AnalysisKey[0] = AnalysisKey[0]+'000000'
         AnalysisKey[1] = DataInfo['AnimalName']
-        AnalysisKey = '-'.join(AnalysisKey) + '/Sound'
-        Hdf5.DataWrite({'GPIAS': GPIAS, 'XValues': XValues}, AnalysisKey, AnalysisFile)
+        AnalysisKey = '-'.join(AnalysisKey) + '-Sound-Recovery_' + 'GPIAS'
+#        Hdf5.DataWrite({'GPIAS': GPIASRec, 'XValues': XValues}, AnalysisKey, AnalysisFile)
+        Asdf.Write({'GPIAS': GPIASRec, 'XValues': XValues}, '/', AnalysisFolder + '/' + AnalysisKey+'.asdf')
 
 
 def WriteDataToMMSS(FileName, StimType=['Sound'], Override={}):

@@ -2,7 +2,7 @@
 """
 Just drafts :)
 
-@author: T. Malfatti
+@author: T. Malfatti <malfatti@disroot.org>
 @year: 2017
 @license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
@@ -892,8 +892,8 @@ def Units(Group, TimeBeforeTTL, TimeAfterTTL, BinSize, TTLCh, ProbeChSpacing, An
         KwikFile = glob(Folder+'/*.kwik')[0]
         
         Clusters = KwikModel(KwikFile)
-        # UnitRec = GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs, AnalysisPath,  SpksToPlot, Ext, Save, Show)
-        UnitRec = Asdf.Load('/', AnalysisPath+ '_' +Folder.split('/')[0]+'_AllUnits.asdf')
+        UnitRec = GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs, AnalysisPath,  SpksToPlot, Ext, Save, Show)
+#        UnitRec = Asdf.Load('/', AnalysisPath+ '_' +Folder.split('/')[0]+'_AllUnits.asdf')
         UnitsId = np.unique(UnitRec['UnitId'])
         Stims = np.unique(UnitRec['StimType'])
         Freqs = np.unique(UnitRec['Freq'])

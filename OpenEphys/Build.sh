@@ -2,18 +2,19 @@
 
 Branch=${1,,}; Branch=${Branch^}
 Branches="Development Testing Master"
-OEPath=~/Software/Git/Malfatti/OpenEphys
+OEPath=~/Software/Git/OpenEphys
 OEInstallPath="$OEPath"${Branch:0:1}
 CPUs=$(cat /proc/cpuinfo | grep processor | wc -l)
 
 cd $OEPath
 echo "Fetching upstream..."
-git fetch upstream
+git pull
+#git fetch upstream
 
 if [[ " $Branches " =~ " $Branch " ]]; then
     echo "Merging upstream..." 
     git checkout ${Branch,,}
-    git merge upstream/${Branch,,}
+    #git merge upstream/${Branch,,}
     
     echo ""
     echo "Compiling GUI..." 

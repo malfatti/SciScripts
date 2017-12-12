@@ -10,8 +10,14 @@
 from Exps import SoundAndLaserStimulation
 
 ## === Experiment parameters === ##
+# 3, 2, 4, 5, 1
+# array([[ 8000, 10000],
+#        [ 9000, 11000],
+#        [14000, 16000],
+#        [12000, 14000],
+#        [10000, 12000]])
 Parameters = dict(
-    AnimalName          = 'RecoveryControl_',
+    AnimalName          = 'RecoveryControl_02',
     StimType            = ['Sound'],
     # StimType            = ['Sound', 'Laser', 'SoundLaser'],
     
@@ -51,7 +57,7 @@ Parameters = dict(
     
     
     ## === Hardware === ##
-    ABRCh           = [1,2],
+    ABRCh           = [1],
     SoundCh         = 26,
     TTLCh           = 27,
     AnalogTTLs      = True,

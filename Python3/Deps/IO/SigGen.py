@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: T. Malfatti
+@author: T. Malfatti <malfatti@disroot.org>
 @date: 2017-06-12
 @license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
@@ -19,11 +19,11 @@ SoundTTLVal = 0.6; LaserTTLVal = 0.3
 
 ## Level 0
 def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency, 
-                   SBOutAmpF, SoundPrePauseDur=0, SoundPostPauseDur=0):
+                   SBOutAmpF, SoundPauseBeforePulseDur=0, SoundPauseAfterPulseDur=0):
     print('Applying amplification factors...')
     # Preallocating memory
-    SoundPrePause = np.zeros(round(Rate * SoundPrePauseDur), dtype=np.float32)
-    SoundPostPause = np.zeros(round(Rate * SoundPostPauseDur), dtype=np.float32)
+    SoundPrePause = np.zeros(round(Rate * SoundPauseBeforePulseDur), dtype=np.float32)
+    SoundPostPause = np.zeros(round(Rate * SoundPauseAfterPulseDur), dtype=np.float32)
     SoundUnit = {}
     
     for FKey in SoundPulseFiltered:
@@ -201,7 +201,7 @@ def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PrePauseDur=0,
 
 
 ## Level 1
-def LaserStim(Rate, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, SoundSystem, LaserPauseBeforePulseDur=0, LaserPauseAfterPulseDur=0, Ch=1):
+def LaserStim(Rate, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, System, LaserPauseBeforePulseDur=0, LaserPauseAfterPulseDur=0, Ch=1):
     """ if LaserType == 'Sq':
             Generate square waves in one channel that works as TTLs for laser.
             
@@ -221,7 +221,7 @@ def LaserStim(Rate, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, Soun
             https://en.wikipedia.org/wiki/Voltage_divider
     """
     
-    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
+    SBOutAmpF = Hdf5.DataLoad('/'+System+'/SBOutAmpF', CalibrationFile)[0]
     
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
@@ -242,7 +242,7 @@ def LaserStim(Rate, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, Soun
     return(Laser)
 
 
-def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, SoundSystem, SoundPauseBeforePulseDur=0,
+def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, System, SoundPauseBeforePulseDur=0,
                    SoundPauseAfterPulseDur=0, LaserPauseBeforePulseDur=0, LaserPauseAfterPulseDur=0, Map=[1,2]):
     """ Generate sound pulses in one channel and a mix of square waves that 
         works as TTLs for both sound and laser in the other channel.
@@ -255,7 +255,7 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
+    SBOutAmpF = Hdf5.DataLoad('/'+System+'/SBOutAmpF', CalibrationFile)[0]
     
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
@@ -297,8 +297,8 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
 
 
 def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 
-              SoundSystem, SoundPrePauseDur=0, SoundPostPauseDur=0, TTLs=True,
-              Map=[1,2]):
+              System, SoundPauseBeforePulseDur=0, SoundPauseAfterPulseDur=0, TTLs=True,
+              Map=[1,2], **Kws):
     """ Generate sound pulses in one channel and TTLs in the other channel.
         
         WARNING: The signal generated in the TTLs channel is composed of square 
@@ -309,7 +309,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         https://en.wikipedia.org/wiki/Diode
     """
     
-    SBOutAmpF = Hdf5.DataLoad('/'+SoundSystem+'/SBOutAmpF', CalibrationFile)[0]
+    SBOutAmpF = Hdf5.DataLoad('/'+System+'/SBOutAmpF', CalibrationFile)[0]
     
     if TTLAmpF > 1/SBOutAmpF:
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
@@ -320,12 +320,12 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
     SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
     print('   ', end='')
     SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                               NoiseFrequency, SBOutAmpF, SoundPrePauseDur, 
-                               SoundPostPauseDur)
+                               NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
+                               SoundPauseAfterPulseDur)
     if TTLs:
         SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
-                              SBOutAmpF, SoundPrePauseDur, 
-                              SoundPostPauseDur)
+                              SBOutAmpF, SoundPauseBeforePulseDur, 
+                              SoundPauseAfterPulseDur)
     else:
         SoundTTLUnit = np.zeros((SoundPulse.size), dtype='float32')
     
@@ -349,17 +349,17 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
 def GPIAS(Rate, SoundBGDur, SoundGapDur, SoundBGPrePulseDur, 
           SoundLoudPulseDur, SoundBGAfterPulseDur, 
           SoundBetweenStimDur, SoundBGAmpF, SoundPulseAmpF, TTLAmpF, 
-          NoiseFrequency, SoundSystem, Map=[2,1], **Kws):
+          NoiseFrequency, System, Map=[2,1], **Kws):
     
     Sound = {}
     print('Creating SoundBG...')
     Sound['BG'] = SoundStim(Rate, SoundBGDur, SoundBGAmpF, NoiseFrequency, 
-                            TTLAmpF, SoundSystem, TTLs=False, Map=Map)
+                            TTLAmpF, System, TTLs=False, Map=Map)
     
     print('Creating SoundGap...')
     Sound['Gap'] = {}
     Sound['Gap']['NoGap'] = SoundStim(Rate, SoundGapDur, SoundBGAmpF, 
-                                      NoiseFrequency, TTLAmpF, SoundSystem, 
+                                      NoiseFrequency, TTLAmpF, System, 
                                       TTLs=False, Map=Map)
     Sound['Gap']['Gap'] = {
         FKey: {
@@ -371,22 +371,22 @@ def GPIAS(Rate, SoundBGDur, SoundGapDur, SoundBGPrePulseDur,
     
     print('Creating SoundBGPrePulse...')
     Sound['BGPrePulse'] = SoundStim(Rate, SoundBGPrePulseDur, SoundBGAmpF, 
-                                    NoiseFrequency, TTLAmpF, SoundSystem, 
+                                    NoiseFrequency, TTLAmpF, System, 
                                     TTLs=False, Map=Map)
     
     print('Creating SoundLoudPulse...')
     Sound['LoudPulse'] = SoundStim(Rate, SoundLoudPulseDur, SoundPulseAmpF, 
-                                   NoiseFrequency, TTLAmpF, SoundSystem, Map=Map)
+                                   NoiseFrequency, TTLAmpF, System, Map=Map)
     
     print('Creating SoundBGAfterPulse...')
     Sound['BGAfterPulse'] = SoundStim(Rate, SoundBGAfterPulseDur, SoundBGAmpF, 
-                                      NoiseFrequency, TTLAmpF, SoundSystem, 
+                                      NoiseFrequency, TTLAmpF, System, 
                                       TTLs=False, Map=Map)
     
     print('Creating SoundBetweenStim...')
     Sound['BetweenStim'] = SoundStim(Rate, max(SoundBetweenStimDur), 
                                      SoundBGAmpF, NoiseFrequency, TTLAmpF, 
-                                     SoundSystem, TTLs=False, Map=Map)
+                                     System, TTLs=False, Map=Map)
     
     return(Sound)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: T. Malfatti
+@author: T. Malfatti <malfatti@disroot.org>
 @date: 2017-11-23
 @license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
@@ -57,7 +57,7 @@ def InfoWrite(AnimalName, StimType, BGIntensity, PulseIntensity,
     return(DataInfo)
 
 
-def Play(Sound, Stim, ArduinoObj, NoiseFrequency, SoundBetweenStimDur, NoOfTrials, SoundBGAmpF, SoundPulseAmpF, Rate, DataInfo, **Kws):
+def Play(Sound, Stim, ArduinoObj, NoiseFrequency, SoundBetweenStimDur, NoOfTrials, SoundBGAmpF, SoundPulseAmpF, Rate, DataInfo):
     print('Preallocating memory and pseudo-randomizing the experiment...')
     FreqsStr = ['-'.join([str(a) for a in b]) for b in NoiseFrequency]
     TrialsStr = ['NoGap', 'Gap']

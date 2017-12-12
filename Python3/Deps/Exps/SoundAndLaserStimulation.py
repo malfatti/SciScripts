@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: T. Malfatti
+@author: T. Malfatti <malfatti@disroot.org>
 @year: 2015
 @license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
@@ -31,7 +31,7 @@ def AudioSet(Rate, BlockSize, Channels):
     
 def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, SoundPulseNo, 
               SoundPauseBeforePulseDur, SoundPulseDur, SoundPauseAfterPulseDur, 
-              PauseBetweenIntensities, SoundSystem, Setup, SoundCh, TTLCh, 
+              PauseBetweenIntensities, System, Setup, SoundCh, TTLCh, 
               LaserStimBlockNo, LaserPulseNo, LaserPauseBeforePulseDur, 
               LaserPulseDur, LaserPauseAfterPulseDur, LaserPauseBetweenStimBlocksDur,
               LaserType, LaserDur, LaserFreq, ABRCh, AnalogTTLs, Rate, BlockSize, 
@@ -39,16 +39,18 @@ def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, Soun
     
     CalibrationFile = SigGen.CalibrationFile
     
-    DataInfo = {'InfoFile': InfoFile, 'Animal': {}, 'DAqs': {}, 'Audio': {}}
+    DataInfo = {'InfoFile': InfoFile}
+    for K in ['Animal', 'DAqs', 'Audio', 'Laser', 'ExpInfo']: DataInfo[K] = {}
+    
     for K in ['AnimalName', 'StimType']: DataInfo['Animal'][K] = locals()[K]
     
     for K in ['SoundCh', 'TTLCh', 'ABRCh', 'BaudRate', 'AnalogTTLs']: 
         DataInfo['DAqs'][K] = locals()[K]
     
-    for K in ['Rate', 'BaudRate', 'Intensities', 'NoiseFrequency', 
+    for K in ['Rate', 'Intensities', 'NoiseFrequency', 
               'SoundPulseNo', 'SoundPauseBeforePulseDur', 'SoundPulseDur', 
               'SoundPauseAfterPulseDur', 'PauseBetweenIntensities', 
-              'SoundSystem', 'Setup', 'CalibrationFile']:
+              'System', 'Setup', 'CalibrationFile']:
         DataInfo['Audio'][K] = locals()[K]
     
     for K in ['LaserStimBlockNo', 'LaserPulseNo', 'LaserPauseBeforePulseDur', 
@@ -57,7 +59,6 @@ def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, Soun
               'LaserFreq']:
         DataInfo['Laser'][K] = locals()[K]
     
-    DataInfo['ExpInfo'] = {}
     DataInfo['Audio']['SoundAmpF'] = SoundAmpF
     
     Txt.DictWrite(InfoFile, DataInfo)
@@ -67,14 +68,14 @@ def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, Soun
 
 def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo, 
             SoundPauseBeforePulseDur, SoundPulseDur, SoundPauseAfterPulseDur, 
-            PauseBetweenIntensities, SoundSystem, Setup, SoundCh, TTLCh, 
+            PauseBetweenIntensities, System, Setup, SoundCh, TTLCh, 
             LaserStimBlockNo, LaserPulseNo, LaserPauseBeforePulseDur, 
             LaserPulseDur, LaserPauseAfterPulseDur, 
             LaserPauseBetweenStimBlocksDur, LaserType, LaserDur, LaserFreq, 
             ABRCh=[], AnalogTTLs=True, Rate=192000, BlockSize=384, Channels=2, 
-            BaudRate=115200, **Kws):
-    
-    SoundAmpF = SigGen.dBToAmpF(Intensities, SoundSystem+'/'+Setup)
+            BaudRate=115200):
+    Kws = {**locals()}
+    SoundAmpF = SigGen.dBToAmpF(Intensities, System+'/'+Setup)
     
     Date = datetime.now().strftime("%Y%m%d%H%M%S")
     InfoFile = '-'.join([Date, AnimalName, '_'.join(StimType)+'.dict'])
@@ -84,7 +85,7 @@ def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo,
     #                      NoiseFrequency, SoundBGDur, SoundGapDur, 
     #                      SoundBGPrePulseDur, SoundLoudPulseDur, 
     #                      SoundBGAfterPulseDur, SoundBetweenStimDur, NoOfTrials, 
-    #                      SoundSystem, Setup, SoundBGAmpF, SoundPulseAmpF, 
+    #                      System, Setup, SoundBGAmpF, SoundPulseAmpF, 
     #                      SoundCh, TTLCh, PiezoCh, Rate, BlockSize, Channels, 
     #                      BaudRate, InfoFile)
     
@@ -101,9 +102,7 @@ def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo,
     Stimulation['ArduinoObj'] = Arduino.CreateObj(BaudRate)
     
     if 'Sound' in StimType:
-        Stimulation['Sound'] = SigGen.SoundStim(
-                TTLAmpF=DataInfo['Audio']['TTLAmpF'], 
-                **DataInfo['Audio'])
+        Stimulation['Sound'] = SigGen.SoundStim(**DataInfo['Audio'])
         
         Stimulation['SoundPause'] = np.zeros(
                 (PauseBetweenIntensities*Rate,2), dtype='float32')
@@ -112,7 +111,7 @@ def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo,
         Stimulation['Laser'] = SigGen.LaserStim(
                 Rate=Rate, 
                 TTLAmpF=DataInfo['Audio']['TTLAmpF'], 
-                SoundSystem=SoundSystem, 
+                System=System, 
                 **DataInfo['Laser'])
         
         Stimulation['LaserPause'] = np.zeros(
@@ -128,7 +127,7 @@ def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo,
         Stimulation['SoundLaserPause'] = np.zeros(
                 (PauseBetweenIntensities*Rate,2), dtype='float32')
     
-    return(Stimulation)
+    return(Stimulation, InfoFile)
 
 
 def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='Out'):

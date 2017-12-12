@@ -121,7 +121,7 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
         'n_excerpts': 50,
         'excerpt_size_seconds': 1.,
         'use_single_threshold': True,
-        'threshold_strong_std_factor': 4.5,
+        'threshold_strong_std_factor': 3.,
         'threshold_weak_std_factor': 2.,
         'detect_spikes': 'negative',
     
@@ -134,7 +134,7 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
         'weight_power': 2,
     
         # Features.
-        'n_features_per_channel': 5,
+        'n_features_per_channel': 3,
         'pca_n_waveforms_max': 10000,
     
     }
@@ -162,7 +162,7 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
          'subset_break_fraction': 0.01,
          'break_fraction': 0.0,
          'fast_split': False,
-         'max_split_iterations': None,
+#         'max_split_iterations': None,
          'consider_cluster_deletion': True,
          'num_cpus': 8,
     }
@@ -214,10 +214,12 @@ def RunProcess(Cmd, LogFile=''):
     return(ReturnCode)
 
 
-def Run(PrmFile, Path, Overwrite=False):
+def Run(PrmFile, Path, Overwrite=False, KlustaPath=''):
     Here = os.getcwd(); os.chdir(Path)
-    Klusta = os.environ['HOME']+'/Software/Miniconda3/envs/klusta/bin/klusta'
     # Klusta = KLUSTAPATH
+    if not KlustaPath:
+        Klusta = os.environ['HOME']+'/Software/Miniconda3/envs/klusta/bin/klusta'
+    
     Cmd = [Klusta, PrmFile]
     if Overwrite: Cmd.append('--overwrite')
     
@@ -230,6 +232,8 @@ def Run(PrmFile, Path, Overwrite=False):
     else: print('Done clustering.')
     return(None)
 
+
+#%% 
 
 SpkTSRaw = np.fromfile(SpkTSFile, dtype='>i4')
 SpkTS = abs(np.diff(SpkTSRaw))
@@ -251,7 +255,8 @@ SpkWF = [SpkWF[S:S+SpkChNo] for S in range(0, TrialNo*SpkChNo, SpkChNo)]
 SpkWF = [[np.split(Ch[:-(len(Ch)%SpkWFLen)], (len(Ch)-len(Ch)%SpkWFLen)/SpkWFLen) for Ch in Trial] for Trial in SpkWF]
 
 DataLen = [max(Trial)+(2*SpkWFLen) for Trial in SpkTS]
-SpkWFArrays = [np.random.randint(-3, 4, size=(DataLen[T],SpkChNo)).astype(np.int16) for T in range(TrialNo)]
+#SpkWFArrays = [np.random.randint(-3, 4, size=(DataLen[T],SpkChNo)).astype(np.int16) for T in range(TrialNo)]
+SpkWFArrays = [np.zeros((DataLen[T],SpkChNo), dtype=np.int16) for T in range(TrialNo)]
 for T, Trial in enumerate(SpkTimestamps):
     for C, Ch in enumerate(Trial):
         for S, Spk in enumerate(Ch):
@@ -275,8 +280,14 @@ PrmWrite(FilesPrefix+'.prm', ExpName,  FilesPrefix+'.prb', raw_data_files,
 
 Run(ExpName+'.prm', KlustaFolder, Overwrite=True)
 
-File = FilesPrefix+'.prm'
-with open(File, 'r') as F: Prb = F.read()
+#%%
+
+
+
+
+
+#File = FilesPrefix+'.prm'
+#with open(File, 'r') as F: Prb = F.read()
 
 
 # SpkNo = 0

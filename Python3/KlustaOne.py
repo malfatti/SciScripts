@@ -282,6 +282,13 @@ Run(ExpName+'.prm', KlustaFolder, Overwrite=True)
 
 #%%
 
+Clusters = KwikModel(ExpName+'.kwik')
+Offsets = Clusters.all_traces.offsets
+
+Good = Clusters.cluster_groups
+Good = [Id for Id in Good.keys()]
+
+
 
 
 

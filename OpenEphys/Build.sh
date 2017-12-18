@@ -2,23 +2,24 @@
 
 Branch=${1,,}; Branch=${Branch^}
 Branches="Development Testing Master"
-OEPath=~/Software/Git/OpenEphys
+Here=$(pwd)
+OEPath=~/Software/Git/Malfatti/OpenEphys
 OEInstallPath="$OEPath"${Branch:0:1}
 CPUs=$(cat /proc/cpuinfo | grep processor | wc -l)
 
 cd $OEPath
 echo "Fetching upstream..."
-git pull
-#git fetch upstream
+git fetch upstream
 
 if [[ " $Branches " =~ " $Branch " ]]; then
     echo "Merging upstream..." 
     git checkout ${Branch,,}
-    #git merge upstream/${Branch,,}
+    git merge upstream/${Branch,,}
     
     echo ""
     echo "Compiling GUI..." 
     cd Builds/Linux
+    make clean
     make -j$CPUs
     if [ $? -eq 0 ]; then
         echo "GUI compiled."
@@ -29,6 +30,7 @@ if [[ " $Branches " =~ " $Branch " ]]; then
     
     echo ""
     echo "Compiling plugins..." 
+    make -f Makefile.plugins clean
     make -j$CPUs -f Makefile.plugins
     if [ $? -eq 0 ]; then
         echo "Plugins compiled."
@@ -44,6 +46,8 @@ if [[ " $Branches " =~ " $Branch " ]]; then
     echo ""
     echo "GUI installed at $OEInstallPath"
     echo ""
+
+    cd $Here
     
 else
     echo ""

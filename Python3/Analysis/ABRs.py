@@ -12,19 +12,20 @@ from copy import deepcopy
 from glob import glob
 from IO import Hdf5, Txt
 
-
+# cd '/home/cerebro/Malfatti/Data'
 #%% 
-Group = 'Prevention'
+Group = 'RecoveryControl'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
+
 Exps = sorted(glob(Group+'/2*ABRs'))
-del(Exps[5], Exps[3], Exps[2], Exps[1]) # Temp override
+# del(Exps[5], Exps[3], Exps[2], Exps[1]) # Temp override
 
 StimType = ['Sound']
 
 for Exp in Exps:
-    Folders = glob(Exp + '/' + Exp.split('/')[-1][:4] + '-*'); Folders.sort()
-    InfoFile = glob(Exp + '/' + Exp.split('/')[-1][:4] + '0*dict')[0]
+    Folders = glob(Exp + '/*' + Exp.split('/')[-1][:4] + '-*'); Folders.sort()
+    InfoFile = glob(Exp + '/' + Exp.split('/')[-1][:4] + '*dict')[0]
     
     AnalysisPath = '-'.join(InfoFile.split('/')[-1].split('-')[:2]) + '-ABRs'
     

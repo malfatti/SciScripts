@@ -22,8 +22,8 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
                    SBOutAmpF, SoundPauseBeforePulseDur=0, SoundPauseAfterPulseDur=0):
     print('Applying amplification factors...')
     # Preallocating memory
-    SoundPrePause = np.zeros(round(Rate * SoundPauseBeforePulseDur), dtype=np.float32)
-    SoundPostPause = np.zeros(round(Rate * SoundPauseAfterPulseDur), dtype=np.float32)
+    SoundPauseBeforePulse = np.zeros(round(Rate * SoundPauseBeforePulseDur), dtype=np.float32)
+    SoundPauseAfterPulse = np.zeros(round(Rate * SoundPauseAfterPulseDur), dtype=np.float32)
     SoundUnit = {}
     
     for FKey in SoundPulseFiltered:
@@ -37,9 +37,9 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
                 SoundAmpF[FKey][AmpF] = 1/SBOutAmpF
             
             AKey = str(SoundAmpF[FKey][AmpF])
-            SoundUnit[FKey][AKey] = np.concatenate([SoundPrePause, 
+            SoundUnit[FKey][AKey] = np.concatenate([SoundPauseBeforePulse, 
                                                     SoundPulseFiltered[FKey],
-                                                    SoundPostPause])
+                                                    SoundPauseAfterPulse])
             SoundUnit[FKey][AKey] = (SoundUnit[FKey][AKey]
                                      * SoundAmpF[FKey][AmpF]) * SBOutAmpF
     return(SoundUnit)
@@ -151,21 +151,21 @@ def SineWave(Rate, Freq, AmpF, SoundPulseDur):
     return(Pulse)
 
 
-def SqPulse(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PrePauseDur=0, 
-           PostPauseDur=0):
+def SqPulse(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PauseBeforePulseDur=0, 
+           PauseAfterPulseDur=0):
     Pulse = np.concatenate([
-                np.zeros(PrePauseDur*Rate, dtype=np.float32),
+                np.zeros(PauseBeforePulseDur*Rate, dtype=np.float32),
                 np.ones(PulseDur*Rate, dtype=np.float32),
-                np.zeros(PostPauseDur*Rate, dtype=np.float32)])
+                np.zeros(PauseAfterPulseDur*Rate, dtype=np.float32)])
     
     return(Pulse)
 
 
-def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PrePauseDur=0, 
-           PostPauseDur=0):
+def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PauseBeforePulseDur=0, 
+           PauseAfterPulseDur=0):
     
     print('Generating Sound TTL...')
-    TTLSpace = PulseDur + PostPauseDur
+    TTLSpace = PulseDur + PauseAfterPulseDur
     if TTLSpace < 2*PulseDur:
         TTLPulse = np.concatenate([
                   np.array([TTLVal] * round(Rate*PulseDur/2), dtype=np.float32),
@@ -179,21 +179,21 @@ def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PrePauseDur=0,
     
     TTLPulse[-1] = 0
     
-    if PrePauseDur == 0:
-        if PostPauseDur == 0:
+    if PauseBeforePulseDur == 0:
+        if PauseAfterPulseDur == 0:
             TTLUnit = TTLPulse
         else:
-            TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
+            TTLPauseAfterPulse = np.zeros(round((PauseAfterPulseDur-PulseDur) * Rate), 
                             dtype=np.float32)
-            TTLUnit = np.concatenate([TTLPulse, TTLPostPause])
+            TTLUnit = np.concatenate([TTLPulse, TTLPauseAfterPulse])
     else:
-        TTLPrePause = np.zeros(round(PrePauseDur * Rate), dtype=np.float32)
-        if PostPauseDur == 0:
-            TTLUnit = np.concatenate([TTLPrePause, TTLPulse])
+        TTLPauseBeforePulse = np.zeros(round(PauseBeforePulseDur * Rate), dtype=np.float32)
+        if PauseAfterPulseDur == 0:
+            TTLUnit = np.concatenate([TTLPauseBeforePulse, TTLPulse])
         else:
-            TTLPostPause = np.zeros(round((PostPauseDur-PulseDur) * Rate), 
+            TTLPauseAfterPulse = np.zeros(round((PauseAfterPulseDur-PulseDur) * Rate), 
                             dtype=np.float32)
-            TTLUnit = np.concatenate([TTLPrePause, TTLPulse, TTLPostPause])
+            TTLUnit = np.concatenate([TTLPauseBeforePulse, TTLPulse, TTLPauseAfterPulse])
     
     TTLUnit = (TTLUnit * TTLAmpF) * SBOutAmpF
     

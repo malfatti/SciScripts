@@ -16,37 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-#CalibrationFile = '/home/cerebro/Malfatti/Data/Test/' + \
-#                  '20160419093139-SoundMeasurement/' + \
-#                  '20160419093139-SoundMeasurement.hdf5'
-
-#SoundBoard = 'USBPre2_oAux-iAux'
-
 from IO import Arduino
-#import pyaudio
 import time
-
-#Sound = ControlSoundBoard.GenSound(128000, 0.003, 1, {'8000-10000': [0.04]}, 
-#                                   [[8000, 10000]], 1, CalibrationFile, 
-#                                   SoundBoard, SoundPostPauseDur=0.097)[0]
-#
-#Laser = ControlSoundBoard.GenLaser(128000, 0.01, 1, 1, CalibrationFile, 
-#                                   SoundBoard, LaserPostPauseDur=0.09)[0]
-#                                   
-#SoundLaser = ControlSoundBoard.GenSoundLaser(128000, 0.003, 1, 
-#                                             {'8000-10000': [0.04]}, 
-#                                             [[8000, 10000]], 0.01, 1, 1, 
-#                                             CalibrationFile, SoundBoard,
-#                                             SoundPrePauseDur=0.004, 
-#                                             SoundPostPauseDur=0.093,
-#                                             LaserPostPauseDur=0.09,)[0]
-
-#p = pyaudio.PyAudio()
-#Stimulation = p.open(format=pyaudio.paFloat32,
-#                     channels=2,
-#                     rate=128000,
-#                     input=False,
-#                     output=True)
 
 ArduinoObj = Arduino.CreateObj(115200)
 

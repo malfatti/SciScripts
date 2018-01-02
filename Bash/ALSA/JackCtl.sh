@@ -31,16 +31,21 @@ while [[ $# -gt 1 ]]; do
             PeriodSize="$2"
             shift
         ;;
+        --bridge)
+            if [ "${2,,}" == true ]; then
+                Bridge="True"
+            else
+                Bridge="False"
+            fi
+            
+            shift
+        ;;
 #        *)
 #            echo "Usage: JackCtl --rt [ r | R ] --rate <rate> --periods <amount> --periodsize <period size>"
 #        ;;
     esac
     shift
 done
-
-Catch=30000
-ResamplingRate=48000
-ResamplingQuality=1
 
 echo "Jack path: "$Path"" > ~/.log/JackSession.log &
 echo "Jack options: jackd -"$RT" -P"$Prio" -dalsa -dhw:"$Card" -r"$Rate" -p"$PeriodSize" -n"$Periods"" >> ~/.log/JackSession.log &
@@ -50,28 +55,34 @@ echo "" >> ~/.log/JackSession.log &
 
 sleep 2
 
-echo "Building output bridge..." >> ~/.log/JackSession.log &
-echo "alsa_out options:  -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
-echo "" >> ~/.log/JackSession.log &
+if [ $Bridge == True ]; then
+    Catch=30000
+    ResamplingRate=48000
+    ResamplingQuality=1
 
-"$Path"alsa_out -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
-#"$Path"alsa_out -j ALSAInput -dALSAOutput1 &>> ~/.log/JackSession.log &
+    echo "Building output bridge..." >> ~/.log/JackSession.log &
+    echo "alsa_out options:  -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
+    echo "" >> ~/.log/JackSession.log &
 
-echo "Building input bridge..." >> ~/.log/JackSession.log &
-echo "alsa_in options: -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
-echo "" >> ~/.log/JackSession.log &
+    "$Path"alsa_out -j ALSAInput -dALSAOutput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+    #"$Path"alsa_out -j ALSAInput -dALSAOutput1 &>> ~/.log/JackSession.log &
 
-"$Path"alsa_in -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
-#"$Path"alsa_in -j ALSAOutput -dALSAInput1 &>> ~/.log/JackSession.log &
+    echo "Building input bridge..." >> ~/.log/JackSession.log &
+    echo "alsa_in options: -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods"" &>> ~/.log/JackSession.log &
+    echo "" >> ~/.log/JackSession.log &
 
-sleep 2
+    "$Path"alsa_in -j ALSAOutput -dALSAInput1 -f "$Catch" -q "$ResamplingQuality" -r "$ResamplingRate" -p "$PeriodSize" -n "$Periods" &>> ~/.log/JackSession.log &
+    #"$Path"alsa_in -j ALSAOutput -dALSAInput1 &>> ~/.log/JackSession.log &
 
-echo "Connecting bridge to output..." >> ~/.log/JackSession.log &
-"$Path"jack_connect ALSAOutput:capture_1 system:playback_1
-"$Path"jack_connect ALSAOutput:capture_2 system:playback_2
+    sleep 2
 
-echo "Connecting bridge to input..." >> ~/.log/JackSession.log &
-"$Path"jack_connect system:capture_1 ALSAInput:playback_1
-"$Path"jack_connect system:capture_2 ALSAInput:playback_2
+    echo "Connecting bridge to output..." >> ~/.log/JackSession.log &
+    "$Path"jack_connect ALSAOutput:capture_1 system:playback_1
+    "$Path"jack_connect ALSAOutput:capture_2 system:playback_2
+
+    echo "Connecting bridge to input..." >> ~/.log/JackSession.log &
+    "$Path"jack_connect system:capture_1 ALSAInput:playback_1
+    "$Path"jack_connect system:capture_2 ALSAInput:playback_2
+fi
 
 echo "" >> ~/.log/JackSession.log &

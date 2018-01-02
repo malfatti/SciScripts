@@ -478,7 +478,7 @@ def SliceData(Data, TTLs, NoOfSamplesBefore,
 #        dB = str(DataInfo['Intensities'][int(Rec)]) + 'dB'
 #        ABRs[dB] = ABR[:]; del(ABR)
 #    
-#    Info['Path'] = Stim+'/'+ExpInfo['DVCoord']+'/'+Info['Frequency']
+#    Info['Path'] = Stim+'/'+ExpInfo['DV']+'/'+Info['Frequency']
 #    
 #    return(ABRs, Info)
 

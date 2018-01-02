@@ -47,6 +47,7 @@ Rate = 192000
 SoundPulseDur = 2
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
                   [14000, 16000], [16000, 18000], [8000, 18000]]
+# NoiseFrequency = [[8000, 10000], [9000, 11000]]
 
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa or in V/Pa
@@ -55,7 +56,7 @@ MicSens_dB = -47.46
 
 Folder = os.environ['DATAPATH']+'/Tests/SoundMeasurements'
 FileName = Folder + '/' + 'SoundMeasurements.hdf5'
-#FileName = 'Test.hdf5'
+# FileName = 'Test.hdf5'
 Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
@@ -92,7 +93,7 @@ print('Current time: ', datetime.now().strftime("%H:%M:%S"))
 input('Press any key to start... ')
 print('This can be loud - cover your ears!!')
 print('')
-for i in range(5, 0, -1): print(i, end=' '); sleep(1)
+for i in range(10, 0, -1): print(i, end=' '); sleep(1)
 print('')
 
 print('Sound measurement running...')
@@ -234,21 +235,22 @@ for FKey in FreqList:
     YLabel = 'PSD [V²/Hz]'
     XLabel = 'Frequency [Hz]'
     
-    Intensities = [80, 70, 60, 50, 40, 30, 20, 0]
+    Intensities = [80, 70, 60, 50, 40, 30, 0]
     AmpFList = SigGen.dBToAmpF(Intensities, Group)
     for AFKey in AmpFList:
         AmpFList[AFKey] = [str(_) for _ in AmpFList[AFKey]]
     
+    # AmpFList = {FKey: sorted(list(SoundIntensity[FKey].keys()), reverse=True)} ## Override to delete
     for AKey in AmpFList[FKey]:
         AmpF = AmpFList[FKey].index(AKey)
         
         Colors = [Colormaps[Freq](255-(AmpF*255//len(AmpFList)))]
-        
-        try:
-            LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
-        except KeyError:
-            AKey = '0'
-            LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
+        LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
+        # try:
+        #     LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
+        # except KeyError:
+        #     AKey = '0.0'
+        #     LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
         
         for IAmpF in SoundIntensity[FKey]:
             IdB = SoundIntensity[FKey][IAmpF]['dB']

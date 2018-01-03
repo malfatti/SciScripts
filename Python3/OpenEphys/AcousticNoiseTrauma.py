@@ -12,10 +12,10 @@ from Exps import AcousticNoiseTrauma
 
 ## === Experiment parameters === ##
 Parameters = dict(
-    AnimalName      = 'Prevention_A3_4_5',
+    AnimalName      = 'RecoveryControl_02_03_04',
     StimType        = ['Sound'],
     
-    Intensities     = [95],
+    Intensities     = [90],
     NoiseFrequency  = [[9000, 11000]],
     SoundPulseDur   = 60,                 # in MINUTES!
     

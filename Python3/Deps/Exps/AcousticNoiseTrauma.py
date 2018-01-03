@@ -31,7 +31,8 @@ def AudioSet(Rate, BlockSize, Channels, Intensities, NoiseFrequency, SoundPulseD
 def InfoWrite(AnimalName, StimType, Rate, BlockSize, Channels, Intensities, NoiseFrequency, SoundPulseDur, SoundPulseNo, SoundAmpF, System, Setup, InfoFile):
     CalibrationFile = SigGen.CalibrationFile
     
-    DataInfo = {'InfoFile': InfoFile, 'Animal': {}, 'Audio': {}}
+    DataInfo = {}
+    for K in ['InfoFile', 'Animal', 'Audio', 'ExpInfo']: DataInfo[K] = {}
     for K in ['AnimalName', 'StimType']: DataInfo['Animal'][K] = locals()[K]
     
     for K in [
@@ -56,7 +57,7 @@ def Play(Sound, Stim, Intensities, SoundPulseNo, DataInfo):
     Stim.stop()
     
     DataInfo['ExpInfo']['0'] = {'DVCoord': None, 
-                                'StimType': DataInfo['StimType'], 'Hz': FKey}
+                                'StimType': DataInfo['Animal']['StimType'], 'Hz': FKey}
     
     Txt.DictWrite(DataInfo['InfoFile'], DataInfo)
     

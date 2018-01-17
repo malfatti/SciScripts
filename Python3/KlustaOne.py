@@ -11,6 +11,7 @@ import numpy as np
 from glob import glob
 from imp import load_source
 from itertools import tee
+from klusta.kwik import KwikModel
 
 
 DataFolder = '/home/malfatti/NotSynced/Tmp/SergioData/juj006d03'
@@ -281,31 +282,57 @@ PrmWrite(FilesPrefix+'.prm', ExpName,  FilesPrefix+'.prb', raw_data_files,
 Run(ExpName+'.prm', KlustaFolder, Overwrite=True)
 
 #%%
-
-Clusters = KwikModel(ExpName+'.kwik')
+KwikFile = os.sep.join([DataFolder, 'KlustaFiles', ExpName + '.kwik'])
+Clusters = KwikModel(KwikFile)
 Offsets = Clusters.all_traces.offsets
 
-Good = Clusters.cluster_groups
-Good = [Id for Id in Good.keys()]
+Good = [Id for Id in Clusters.cluster_groups]
+SpkClass = [[[[] for S in C] for C in R] for R in SpkWF]
 
+for rec, Rec in enumerate(Clusters.recordings):
+    for I, Id in enumerate(Good):
+        SpksId = (Clusters.spike_clusters == Id) & \
+                 (Clusters.spike_recordings == Rec)
+        
+        if not True in SpksId: continue
+        
+        Waveforms = Clusters.all_waveforms[SpksId]
+        ChNo = Waveforms.shape[2]
+        
+        print('Rec', str(Rec)+', Cluster', str(Id)+',', Waveforms.shape[0], 'spikes.')
+        
+        RMSs = [(np.nanmean((np.nanmean(Waveforms[:, :, Ch], axis=0))**2))**0.5
+                for Ch in range(ChNo)]
+        
+        if RMSs[0] != RMSs[0]: continue
+        
+        BestCh = RMSs.index(max(RMSs))
+        
+        for Spk in range(Waveforms.shape[0]):
+            XCorr = [np.corrcoef(Waveforms[0,:,BestCh], S)[0,1] for S in SpkWF[Rec][BestCh]]
+            BestMatch = XCorr.index(max(XCorr))
+            
+            SpkClass[Rec][BestCh][BestMatch] = int(Id)
 
+SpkClassRaw = np.array([], dtype='>i4')
+for R in range(40):
+    for C in range(3):
+        SpkClassRaw = np.concatenate((SpkClassRaw, [len(SpkClass[R][C])], SpkClass[R][C]))
 
-
-
+SpkClassRaw.tofile(DataFolder+'.KlustaOne')
 
 #File = FilesPrefix+'.prm'
 #with open(File, 'r') as F: Prb = F.read()
 
 
 # SpkNo = 0
-# for Trial in SpkTimestamps:
-#     for Ch in Trial:
-#         SpkNo += len(Ch)
-
+# for R in range(len(SpkWF)):
+#     for C in range(len(SpkWF[R])):
+#         SpkNo += len(SpkWF[R][C])
     
-# Params = {'backend': 'TkAgg'}
-# from matplotlib import rcParams; rcParams.update(Params)
-# from matplotlib import pyplot as plt
+#Params = {'backend': 'TkAgg'}
+#from matplotlib import rcParams; rcParams.update(Params)
+#from matplotlib import pyplot as plt
 
 ## Template - remove completely when finished {
 # from IO import Hdf5, Txt

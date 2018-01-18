@@ -18,7 +18,7 @@ Group = 'RecoveryControl'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 
-Exps = sorted(glob(Group+'/2*ABRs'))
+Exps = sorted(glob(Group+'/*2018*ABRs'))
 # del(Exps[5], Exps[3], Exps[2], Exps[1]) # Temp override
 
 StimType = ['Sound']

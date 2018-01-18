@@ -42,9 +42,12 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                     Fig, Axes = plt.subplots(len(Intensities), sharex=True, 
                                              figsize=(8, 1.5*len(Intensities)))
                     
+                    AxArgs = {'ylabel': 'Voltage [mV]', 
+                              'xlabel': 'Time [ms]',
+                              'ylim': (min(YLim), max(YLim))}
+                        
                     for dB, ABR in Trial.items():
                         FigTitle = ' '.join([S, F+'Hz,', DV, 'DV, Trial', T])
-                        YLabel = 'Voltage [mV]'; XLabel = 'Time [ms]'
                         LineLabel = dB
                         SpanLabel = 'Sound pulse'
                         
@@ -54,7 +57,7 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                         
                         Ind1 = list(TXValues).index(0)
                         Ind2 = list(TXValues).index(
-                                           int(DataInfo['SoundPulseDur']*1000))
+                                           int(DataInfo['Audio']['SoundPulseDur']*1000))
                         
                         Axes[dBInd].axvspan(TXValues[Ind1], TXValues[Ind2], 
                                            color='k', alpha=0.3, lw=0, 
@@ -63,23 +66,24 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                         Axes[dBInd].plot(TXValues, ABR, color=Colors[0], 
                                          label=LineLabel)
                         
-                        Plot.Set(AxesObj=Axes[dBInd], Axes=True)
+                        Plot.Set(Ax=Axes[dBInd], AxArgs=AxArgs)
                         Axes[dBInd].legend(loc='lower right', frameon=False)
-                        Axes[dBInd].spines['bottom'].set_visible(False)
-                        Axes[dBInd].spines['left'].set_bounds(round(0), round(1))
-                        Axes[dBInd].xaxis.set_ticks_position('none')
-                        Axes[dBInd].set_ylabel(YLabel)
-                        Axes[dBInd].set_ylim(min(YLim), max(YLim))
+                        # Axes[dBInd].spines['bottom'].set_visible(False)
+                        # Axes[dBInd].spines['left'].set_bounds(round(0), round(1))
+                        # Axes[dBInd].xaxis.set_ticks_position('none')
+                        # Axes[dBInd].set_ylabel(YLabel)
+                        # Axes[dBInd].set_ylim(min(YLim), max(YLim))
                         
                     Axes[-1].spines['bottom'].set_visible(True)
-                    Axes[-1].set_xlabel(XLabel)
+                    Axes[-1].set_xlabel(AxArgs['xlabel'])
                     Axes[-1].spines['bottom'].set_bounds(round(0), round(1))
-                    Plot.Set(FigObj=Fig, FigTitle=FigTitle, Plot=True)
+                    Plot.Set(Fig=Fig, FigTitle=FigTitle, HideControls=True, Tight=False)
                     
                     if Save:
                         os.makedirs(FigPath, exist_ok=True)    # Figs folder
-                        FigName = ''.join([FigPath, '/', DataInfo['FileName'].split('/')[1], '_', S, 
-                                           '_', DV, 'DV_', F, 'Hz_', T])
+                        FigName = ''.join([FigPath, '/', 
+                                           '-'.join(DataInfo['InfoFile'].split('-')[:-1]), 
+                                           '-', S,  '_', DV, 'DV_', F, 'Hz_', T])
                         for E in Ext: Fig.savefig(FigName+'.'+E, format=E)
                         
     

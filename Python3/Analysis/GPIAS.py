@@ -66,7 +66,7 @@ GPIAS.GroupData.Index_Exp_BP(IndexPerExp, ExpList)
 
 
 #%% Batch
-Group = 'Recovery'
+Group = 'RecoveryControl'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 
 GPIASTimeBeforeTTL = 200   # in ms
@@ -78,7 +78,7 @@ Stim = 'Sound'
 
 Ext=['svg']; Save = True; Show = False
 
-Exps = sorted(glob(Group+'/2*IAS'))[2:]
+Exps = sorted(glob(Group+'/2*IAS'))#[2:]
 
 for Exp in Exps:
 #    Exp = Group + '/20170721-Prevention-GPIAS'

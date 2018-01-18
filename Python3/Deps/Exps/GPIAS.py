@@ -51,13 +51,14 @@ def InfoWrite(AnimalName, StimType, BGIntensity, PulseIntensity,
     # DataInfo['Audio']['SoundPulseAmpF'] = {K: Key.tolist() for K, Key in SoundPulseAmpF.items()}
     DataInfo['Audio']['SoundBGAmpF'] = SoundBGAmpF
     DataInfo['Audio']['SoundPulseAmpF'] = SoundPulseAmpF
+    DataInfo['Audio']['System'] = DataInfo['Audio']['SoundSystem']
     
     Txt.DictWrite(InfoFile, DataInfo)
     
     return(DataInfo)
 
 
-def Play(Sound, Stim, ArduinoObj, NoiseFrequency, SoundBetweenStimDur, NoOfTrials, SoundBGAmpF, SoundPulseAmpF, Rate, DataInfo):
+def Play(Sound, Stim, ArduinoObj, NoiseFrequency, SoundBetweenStimDur, NoOfTrials, SoundBGAmpF, SoundPulseAmpF, Rate, DataInfo, **kwargs):
     print('Preallocating memory and pseudo-randomizing the experiment...')
     FreqsStr = ['-'.join([str(a) for a in b]) for b in NoiseFrequency]
     TrialsStr = ['NoGap', 'Gap']

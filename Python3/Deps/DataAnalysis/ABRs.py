@@ -57,7 +57,7 @@ def ABRPerCh(Rec, R, Rate, ABRCh, TTLCh, Info, DataInfo, NoOfSamples, NoOfSample
             while len(TTLs) == 0:
                 TTLs = FixTTLs(Rec, ABRCh, TTLCh, Rate, DataInfo, Info, R, AnalogTTLs)
             
-            # if type(TTLs) == dict: return(TTLs)
+            if type(TTLs) == dict: return(TTLs)
         
         else:
             TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, TTLCh=TTLCh, 
@@ -120,6 +120,7 @@ def FixTTLs(Data, DataCh, TTLCh, Rate, DataInfo, Info, Rec, AnalogTTLs):
         
         Std = NoTTLRecs[F][Info['Frequency']][Rec]['Std']
         SampleStart = NoTTLRecs[F][Info['Frequency']][Rec]['SampleStart']
+        ChangedDataCh = False
     
     
     if WhatToDo == '1':
@@ -166,6 +167,7 @@ def FixTTLs(Data, DataCh, TTLCh, Rate, DataInfo, Info, Rec, AnalogTTLs):
     elif WhatToDo == '5':
         Threshold = DataAnalysis.GetTTLThreshold(Data[:int(Rate/2),TTLCh-1], Std)
         Plot.TTLCh(Data[:,TTLCh-1], Std, Threshold)
+        TTLs = []
     
     elif WhatToDo == '6':
         if not ChangedDataCh:

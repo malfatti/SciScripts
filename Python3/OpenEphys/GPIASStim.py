@@ -11,8 +11,8 @@ from Exps import GPIAS
 
 Parameters = dict(
     # array([4, 1, 3, 2, 5])
-    AnimalName  = 'RecoveryControl_05',
-    StimType    = ['Sound'],
+    AnimalName  = 'RecoveryControl_03',
+    StimType    = ['Sound', 'CNO'],
     
     # Number of trials per freq. tested 
     # 1 trial is composed by 1 stim w/ gap and 1 stim w/o gap

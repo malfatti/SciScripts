@@ -11,7 +11,7 @@ from Exps import GPIAS
 
 Parameters = dict(
     # array([4, 1, 3, 2, 5])
-    AnimalName  = 'RecoveryControl_03',
+    AnimalName  = 'RecoveryControl_05',
     StimType    = ['Sound', 'CNO'],
     
     # Number of trials per freq. tested 

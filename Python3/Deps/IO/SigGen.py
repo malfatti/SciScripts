@@ -319,6 +319,9 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         print('   ', end='')
         SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
         print('   ', end='')
+        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
+                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
+                                   SoundPauseAfterPulseDur)
     else:
         print('Generating tones... ', end='')
         SoundPulseFiltered = {}
@@ -327,9 +330,11 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
             SoundPulseFiltered[FKey] = SineWave(Rate, Freq, 1, SoundPulseDur)
         print('Done.')
         
-    SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                               NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
-                               SoundPauseAfterPulseDur)
+        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
+                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
+                                   SoundPauseAfterPulseDur)
+        
+        
     if TTLs:
         SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
                               SBOutAmpF, SoundPauseBeforePulseDur, 

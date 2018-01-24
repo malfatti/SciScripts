@@ -12,30 +12,29 @@ from Exps import ToneVsThunder
 ## === Experiment parameters === ##
 Parameters = dict(
     AnimalName      = 'RecoveryControl_02',
-    StimType        = ['Tone'],
-    # StimType        = ['Tone', 'Thunder'],
+    StimType        = ['Tone', 'Thunder'],
     
     ## === Tone === ##
-    ToneIntensities         = [80, 70, 60, 50, 40],
-    ToneFrequency      = [[9000], [10000], [11000], [13000], [15000]],
+    ToneIntensities         = [90, 60],
+    ToneFrequency           = [20000],
     
     # Fill all durations in SECONDS!
-    TonePauseBeforePulseDur    = 0.004,
-    TonePulseDur               = 0.003,
-    TonePauseAfterPulseDur     = 0.093,
-    TonePulseNo                = 529,
+    TonePauseBeforePulseDur    = 0,
+    TonePulseDur               = 0.05,
+    TonePauseAfterPulseDur     = 4.95,
+    TonePulseNo                = 30,
     TonePauseBetweenIntensities     = 10,
     
     
     ## === Thunder === ##
-    ThunderIntensities         = [80, 70, 60, 50, 40],
-    ThunderFrequency      = [[4000, 22000]],
+    ThunderIntensities         = [90, 60],
+    ThunderFrequency      = [[8000, 18000]],
     
     # Fill all durations in SECONDS!
-    ThunderPauseBeforePulseDur    = 0.004,
-    ThunderPulseDur               = 0.050,
-    ThunderPauseAfterPulseDur     = 0.046,
-    ThunderPulseNo                = 529,
+    ThunderPauseBeforePulseDur    = 0,
+    ThunderPulseDur               = 0.05,
+    ThunderPauseAfterPulseDur     = 4.95,
+    ThunderPulseNo                = 30,
     ThunderPauseBetweenIntensities     = 10,
     
     
@@ -52,4 +51,4 @@ Parameters = dict(
 Stimulation, InfoFile = ToneVsThunder.Prepare(**Parameters)
 
 #%%
-ToneVsThunder.Play(Stimulation, InfoFile, ['Sound'], DV='4330')
+ToneVsThunder.Play(Stimulation, InfoFile, ['Thunder'], DV='4330', Ramp=False)

@@ -59,11 +59,21 @@ def Prepare(AnimalName, StimType, ToneIntensities, ToneFrequency, TonePulseNo,
             TonePauseBetweenIntensities, ThunderIntensities, ThunderFrequency, 
             ThunderPulseNo, ThunderPauseBeforePulseDur, ThunderPulseDur,
             ThunderPauseAfterPulseDur, ThunderPauseBetweenIntensities, 
-            AnalogTTLs=True, System, Setup, SoundCh, TTLCh, Rate=192000, 
+            System, Setup, SoundCh, TTLCh, AnalogTTLs=True, Rate=192000, 
             BlockSize=384, Channels=2, BaudRate=115200):
     Kws = {**locals()}
     ToneAmpF = SigGen.dBToAmpF(ToneIntensities, System+'/'+Setup)
     ThunderAmpF = SigGen.dBToAmpF(ThunderIntensities, System+'/'+Setup)
+    
+    for F in ToneFrequency: 
+        if str(F) not in ToneAmpF: ToneAmpF[str(F)] = ToneAmpF['8000-18000']
+    
+    for F in ThunderFrequency: 
+        FKey = '-'.join([str(_) for _ in F])
+        ThunderAmpF[FKey] = ThunderAmpF['8000-18000']
+        # if FKey not in ThunderAmpF: 
+        #     ThunderAmpF[FKey] = ThunderAmpF['8000-18000']
+    
     
     Date = datetime.now().strftime("%Y%m%d%H%M%S")
     InfoFile = '-'.join([Date, AnimalName, '_'.join(StimType)+'.dict'])
@@ -78,32 +88,40 @@ def Prepare(AnimalName, StimType, ToneIntensities, ToneFrequency, TonePulseNo,
     Stimulation['Stim'] = AudioSet(Rate, BlockSize, Channels)
     Stimulation['ArduinoObj'] = Arduino.CreateObj(BaudRate)
     
-    if 'Tone' in StimType: Prefix = 'Tone'
-    if 'Thunder' in StimType: Prefix = 'Thunder'
+    Prefix = []
+    if 'Tone' in StimType: Prefix.append('Tone')
+    if 'Thunder' in StimType: Prefix.append('Thunder')
     
-    Stimulation[Prefix] = SigGen.SoundStim(
-            DataInfo['Audio']['Rate'], 
-            DataInfo['Audio'][Prefix+'PulseDur'], 
-            DataInfo['Audio'][Prefix+'AmpF'], 
-            DataInfo['Audio'][Prefix+'Frequency'], 
-            DataInfo['Audio']['TTLAmpF'], 
-            DataInfo['Audio']['System'], 
-            DataInfo['Audio'][Prefix+'PauseBeforePulseDur'], 
-            DataInfo['Audio'][Prefix+'PauseAfterPulseDur'], 
-            True, 
-            [1,2])
-    
-    Stimulation[Prefix+'Pause'] = np.zeros(
-            (DataInfo['Audio'][Prefix+'PauseBetweenIntensities']*Rate,2), dtype='float32')
+    for P in Prefix:
+        Stimulation[P] = SigGen.SoundStim(
+                DataInfo['Audio']['Rate'], 
+                DataInfo['Audio'][P+'PulseDur'], 
+                DataInfo['Audio'][P+'AmpF'], 
+                DataInfo['Audio'][P+'Frequency'], 
+                DataInfo['Audio']['TTLAmpF'], 
+                DataInfo['Audio']['System'], 
+                DataInfo['Audio'][P+'PauseBeforePulseDur'], 
+                DataInfo['Audio'][P+'PauseAfterPulseDur'], 
+                True, 
+                [1,2])
+        
+        Stimulation[P+'Pause'] = np.zeros(
+                (DataInfo['Audio'][P+'PauseBetweenIntensities']*Rate,2), dtype='float32')
 
     return(Stimulation, InfoFile)
 
 
-def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='None'):
+def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='None', Ramp=False):
     DataInfo = Txt.DictRead(InfoFile)
     
     FKeys = list(Sound.keys())
     FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
+    
+    if 'Tone' in StimType: Prefix = 'Tone'
+    elif 'Thunder' in StimType: Prefix = 'Thunder'
+    else:
+        print(""" StimType should contain 'Tone' or 'Thunder', otherwise, 
+                  this function is useless :)""")
     
     Stim.start()
     while True:
@@ -130,14 +148,21 @@ def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='None'):
         
         AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
         for AmpF, AKey in enumerate(AKeys):
-            SS = np.concatenate([Sound[FKey][AKey] for _ in range(DataInfo['Audio']['SoundPulseNo'])])
+            # SS = np.concatenate([Sound[FKey][AKey] for _ in range(DataInfo['Audio'][Prefix+'PulseNo'])])
             
-            print('Playing', FKey, 'at', str(DataInfo['Audio']['Intensities'][AmpF]), 'dB')
-            ArduinoObj.write(b'd')
-            Stim.write(SS)
-            ArduinoObj.write(b'w')
+            if Ramp:
+                NoOfSamples = int(0.003*DataInfo['Audio']['Rate'])
+                Sound[FKey][AKey][:NoOfSamples,1] *= np.linspace(0, 1, NoOfSamples)
+                Sound[FKey][AKey][-NoOfSamples:,1] *= np.linspace(1, 0, NoOfSamples)
+                
+            print('Playing', FKey, 'at', str(DataInfo['Audio'][Prefix+'Intensities'][AmpF]), 'dB')
+            for Pulse in range(DataInfo['Audio'][Prefix+'PulseNo']):
+                ArduinoObj.write(b'D')
+                Stim.write(Sound[FKey][AKey])
+                # ArduinoObj.write(b'w')
+            
             Stim.write(Pause)
-            del(SS)
+            
         
         Rec = "{0:02d}".format(len(DataInfo['ExpInfo']))
         DataInfo['ExpInfo'][Rec] = {'DV': DV, 'StimType': StimType, 'Hz': FKey}
@@ -171,7 +196,7 @@ def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='None'):
 #     return(None)
 
 
-def Play(Stimulation, InfoFile, StimType, DV):
+def Play(Stimulation, InfoFile, StimType, DV, Ramp=False):
     if 'Tone' in StimType: Prefix = 'Tone'
     elif 'Thunder' in StimType: Prefix = 'Thunder'
     else:
@@ -180,6 +205,6 @@ def Play(Stimulation, InfoFile, StimType, DV):
     
     PlaySound(Stimulation[Prefix], Stimulation[Prefix+'Pause'], 
               Stimulation['Stim'], Stimulation['ArduinoObj'], InfoFile, 
-              StimType, DV)
+              StimType, DV, Ramp)
     
     return(None)

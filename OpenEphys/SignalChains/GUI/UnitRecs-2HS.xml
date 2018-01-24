@@ -3,12 +3,12 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>23 Jan 2018 9:07:12</DATE>
+    <DATE>24 Jan 2018 8:37:37</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
   <SIGNALCHAIN>
-    <PROCESSOR name="Sources/Rhythm FPGA" insertionPoint="1" NodeId="100">
+    <PROCESSOR name="Sources/Rhythm FPGA" insertionPoint="1" NodeId="101">
       <CHANNEL_INFO>
         <CHANNEL name="CH1" number="0" gain="0.19499999284744262695"/>
         <CHANNEL name="CH2" number="1" gain="0.19499999284744262695"/>
@@ -109,13 +109,13 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="17" number="17">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="18" number="18">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="19" number="19">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="20" number="20">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -214,13 +214,2268 @@
       <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1"
               HighCut="7500" ADCsOn="1" AudioOutputL="-1" AudioOutputR="-1"
               NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0" DAC_HPF="1" DSPOffset="1"
-              DSPCutoffFreq="1.3906499419328771327e-309" save_impedance_measurements="0"
-              auto_measure_impedances="0" LEDs="1" ClockDivideRatio="1"/>
+              DSPCutoffFreq="0" save_impedance_measurements="0" auto_measure_impedances="0"
+              LEDs="1" ClockDivideRatio="1"/>
+    </PROCESSOR>
+    <PROCESSOR name="Utilities/Record Control" insertionPoint="1" NodeId="103">
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EDITOR isCollapsed="0" displayName="Record Control">
+        <PARAMETERS Type="RecordControlEditor" Channel="5" Mode="1" Edge="1"/>
+      </EDITOR>
+    </PROCESSOR>
+    <PROCESSOR name="Utilities/Splitter" insertionPoint="1" NodeId="102">
+      <EDITOR isCollapsed="0" displayName="Splitter"/>
+    </PROCESSOR>
+    <PROCESSOR name="Filters/Bandpass Filter" insertionPoint="1" NodeId="104">
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="35" lowcut="1" shouldFilter="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EDITOR isCollapsed="0" displayName="Bandpass Filter" Type="FilterEditor">
+        <VALUES HighCut="35" LowCut="1" ApplyToADC="0"/>
+      </EDITOR>
+    </PROCESSOR>
+    <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" NodeId="105">
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="46" number="46">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
+        <TAB Active="0"/>
+        <WINDOW Active="1" x="661" y="20" width="454" height="710"/>
+        <LFPDISPLAY Range="1000,2000,10.0" Timebase="1.0" Spread="50" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="1111111111111111111111111111111111111111111111"
+                    ScrollX="0" ScrollY="0"/>
+      </EDITOR>
+    </PROCESSOR>
+    <SWITCH number="2"/>
+    <PROCESSOR name="Filters/Bandpass Filter" insertionPoint="1" NodeId="106">
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EDITOR isCollapsed="0" displayName="Bandpass Filter" Type="FilterEditor">
+        <VALUES HighCut="6000" LowCut="300" ApplyToADC="0"/>
+      </EDITOR>
+    </PROCESSOR>
+    <PROCESSOR name="Utilities/Splitter" insertionPoint="1" NodeId="109">
+      <EDITOR isCollapsed="0" displayName="Splitter"/>
+    </PROCESSOR>
+    <PROCESSOR name="Filters/Spike Sorter" insertionPoint="1" NodeId="107">
+      <SpikeSorter numElectrodes="16" activeElectrode="15" numPreSamples="8" numPostSamples="32"
+                   autoDACassignment="0" syncThresholds="0" uniqueID="16" flipSignal="0">
+        <ELECTRODE_COUNTER numElectrodeTypes="1">
+          <ELECTRODE_TYPE type="Single Electrode" count="17"/>
+        </ELECTRODE_COUNTER>
+        <ELECTRODE name="Single Electrode 1" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="1">
+          <SUBCHANNEL ch="0" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454642144624929509e-16" pc2="1.9454790375390699012e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454642144624929509e-16" pc2="1.9454790375390699012e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="134.0000152587890625"/>
+            <PCA_DIM pc1="-2.8356863233997885167e+38" pc2="-1.7014118346046923173e+38"/>
+            <PCA_DIM pc1="0" pc2="2"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.1210387714598536567e-43" pc2="100001"/>
+            <PCA_DIM pc1="0" pc2="25.502729415893554688"/>
+            <PCA_DIM pc1="1" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="121.83281707763671875"/>
+            <PCA_DIM pc1="0" pc2="100001"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="1" pc2="1"/>
+            <PCA_DIM pc1="1.5942880905317285104e-34" pc2="1.5942880905317285104e-34"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="2.0178697886277365821e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="2.5201717260866727455e-34" pc2="1.5992619010036453144e-34"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="6.699329376220703125" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="100001" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="6.8663624751916036475e-44" pc2="2.2560905275629554842e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 2" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="2">
+          <SUBCHANNEL ch="1" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9455065661098556659e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="2.4991083366878758812e-34"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="0" pc2="-1.7014118346046923173e+38"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="-2.5287649911375860157e+38" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="-2.5421093968881165592e+38" pc2="0"/>
+            <PCA_DIM pc1="1.5617076115597579683e-34" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.383081584288594449e-42" pc2="0"/>
+            <PCA_DIM pc1="1.1182361745312040226e-42" pc2="0"/>
+            <PCA_DIM pc1="2.2560905275629554842e-43" pc2="1"/>
+            <PCA_DIM pc1="1.2891945871788317052e-43" pc2="0"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="4.4981680704826627977e-43"/>
+            <PCA_DIM pc1="-2.5787542347913221417e+38" pc2="0"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="1.2331426486058390224e-43" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="1.5942880905317285104e-34"/>
+            <PCA_DIM pc1="-2.5954870198902387333e+38" pc2="0"/>
+            <PCA_DIM pc1="1.6065132317802803005e-34" pc2="3.1423272799250342086e-37"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="3.3019093911198872963e-37"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.6023677774837085772e-34" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.1210387714598536567e-44" pc2="5.1707913333585749917e-43"/>
+            <PCA_DIM pc1="-2.6355202371418303639e+38" pc2="0"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 3" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="3">
+          <SUBCHANNEL ch="2" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9455065661098556659e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9455065661098556659e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="1" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="-nan"/>
+            <PCA_DIM pc1="-1.7014118346046923173e+38" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="1" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="1" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="-nan"/>
+            <PCA_DIM pc1="1" pc2="-nan"/>
+            <PCA_DIM pc1="1.5942880905317285104e-34" pc2="3.1529215447308384096e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="3.0563678205915269659e-37" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="0" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.5992619010036453144e-34" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="0" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="5.1707913333585749917e-43" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 4" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="4">
+          <SUBCHANNEL ch="3" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454599792977566794e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454599792977566794e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="114.45470428466796875"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="7.7354574203491210938"/>
+            <PCA_DIM pc1="-nan" pc2="112.1671905517578125"/>
+            <PCA_DIM pc1="-nan" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="1.9531634307390738291e-38"/>
+            <PCA_DIM pc1="7.7354574203491210938" pc2="0"/>
+            <PCA_DIM pc1="1.5834672646870432901e-43" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="0"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="0"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="0"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="0"/>
+            <PCA_DIM pc1="108.73546600341796875" pc2="100000"/>
+            <PCA_DIM pc1="100001" pc2="16"/>
+            <PCA_DIM pc1="13.454702377319335938" pc2="0"/>
+            <PCA_DIM pc1="107.763641357421875" pc2="0"/>
+            <PCA_DIM pc1="100001" pc2="0"/>
+            <PCA_DIM pc1="16" pc2="16.052042007446289062"/>
+            <PCA_DIM pc1="107.4972686767578125" pc2="0"/>
+            <PCA_DIM pc1="100005" pc2="100001"/>
+            <PCA_DIM pc1="100002" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="16.052042007446289062" pc2="2.8025969286496341418e-45"/>
+            <PCA_DIM pc1="108.497283935546875" pc2="4.2038953929744512128e-45"/>
+            <PCA_DIM pc1="100001" pc2="5.6051938572992682837e-45"/>
+            <PCA_DIM pc1="13.633291244506835938" pc2="4.9325705944233560897e-43"/>
+            <PCA_DIM pc1="108.7504119873046875" pc2="0"/>
+            <PCA_DIM pc1="100001" pc2="1.5694542800437951194e-43"/>
+            <PCA_DIM pc1="13.77675628662109375" pc2="0"/>
+            <PCA_DIM pc1="108.71331787109375" pc2="0"/>
+            <PCA_DIM pc1="100001" pc2="0"/>
+            <PCA_DIM pc1="11.625194549560546875" pc2="2.8025969286496341418e-45"/>
+            <PCA_DIM pc1="109.62738037109375" pc2="0"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 5" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="5">
+          <SUBCHANNEL ch="4" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.6063497645971190761e-34" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="14" pc2="112.0500030517578125"/>
+            <PCA_DIM pc1="1" pc2="11.049999237060546875"/>
+            <PCA_DIM pc1="0" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="0" pc2="1"/>
+            <PCA_DIM pc1="112.166015625" pc2="1.5942880905317285104e-34"/>
+            <PCA_DIM pc1="90" pc2="0"/>
+            <PCA_DIM pc1="1.1210387714598536567e-43" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="0" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="8.7581154020301066933e-43" pc2="2.5201717260866727455e-34"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="2.4374536579872469014e-34" pc2="3.3970452254210563171e-37"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="3.3291730540417909373e-37" pc2="1.9454409210564434576e-16"/>
+            <PCA_DIM pc1="0" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="2.4374573314070932211e-34" pc2="2.4662852972116780448e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="8.3096998934461652306e-43" pc2="2.0178697886277365821e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.9455150364393282089e-16" pc2="2.6904930515036487762e-43"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="1.3452465257518243881e-43"/>
+            <PCA_DIM pc1="1.9455150364393282089e-16" pc2="0"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="2.8025969286496341418e-45"/>
+            <PCA_DIM pc1="0" pc2="1.2857770403940094184e-14"/>
+            <PCA_DIM pc1="0" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="4.484155085839414627e-44"/>
+            <PCA_DIM pc1="25" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="4.484155085839414627e-44"/>
+            <PCA_DIM pc1="0" pc2="3.3631163143795609702e-44"/>
+            <PCA_DIM pc1="25.000001907348632812" pc2="1.0761972206014595105e-42"/>
+            <PCA_DIM pc1="-2.8356863233997885167e+38" pc2="4.484155085839414627e-44"/>
+            <PCA_DIM pc1="20.950000762939453125" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="2.3418051520287758948e-38"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 6" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="6">
+          <SUBCHANNEL ch="5" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9455679759985316027e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9455679759985316027e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="20.950000762939453125" pc2="4.2038953929744512128e-45"/>
+            <PCA_DIM pc1="108" pc2="-nan"/>
+            <PCA_DIM pc1="25" pc2="-nan"/>
+            <PCA_DIM pc1="112.0500030517578125" pc2="-nan"/>
+            <PCA_DIM pc1="25" pc2="-2.8356863233997885167e+38"/>
+            <PCA_DIM pc1="117" pc2="0"/>
+            <PCA_DIM pc1="100004" pc2="0"/>
+            <PCA_DIM pc1="25" pc2="0"/>
+            <PCA_DIM pc1="121.9499969482421875" pc2="0"/>
+            <PCA_DIM pc1="20.950000762939453125" pc2="0"/>
+            <PCA_DIM pc1="126" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="16" pc2="0"/>
+            <PCA_DIM pc1="126" pc2="1"/>
+            <PCA_DIM pc1="100004" pc2="0"/>
+            <PCA_DIM pc1="11.049999237060546875" pc2="0"/>
+            <PCA_DIM pc1="126" pc2="0"/>
+            <PCA_DIM pc1="7" pc2="1"/>
+            <PCA_DIM pc1="121.9499969482421875" pc2="0"/>
+            <PCA_DIM pc1="7" pc2="-nan"/>
+            <PCA_DIM pc1="117" pc2="-nan"/>
+            <PCA_DIM pc1="100004" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="7" pc2="1"/>
+            <PCA_DIM pc1="112.0500030517578125" pc2="1.5942880905317285104e-34"/>
+            <PCA_DIM pc1="11.049999237060546875" pc2="0"/>
+            <PCA_DIM pc1="108" pc2="0"/>
+            <PCA_DIM pc1="16" pc2="0"/>
+            <PCA_DIM pc1="108" pc2="1.5992619010036453144e-34"/>
+            <PCA_DIM pc1="100005" pc2="0"/>
+            <PCA_DIM pc1="3.3291766413658596088e-37" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="5.6051938572992682837e-45"/>
+            <PCA_DIM pc1="2.2420775429197073135e-43" pc2="2.4662852972116780448e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="2.4662852972116780448e-43" pc2="9.206530910614048156e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 7" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="7">
+          <SUBCHANNEL ch="6" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9455700935808997384e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9455700935808997384e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="18.545297622680664062" pc2="100001"/>
+            <PCA_DIM pc1="107.763641357421875" pc2="7.7354574203491210938"/>
+            <PCA_DIM pc1="100001" pc2="121.8328094482421875"/>
+            <PCA_DIM pc1="20.832822799682617188" pc2="100001"/>
+            <PCA_DIM pc1="108.73546600341796875" pc2="6.7636380195617675781"/>
+            <PCA_DIM pc1="100001" pc2="119.54529571533203125"/>
+            <PCA_DIM pc1="22.7113800048828125" pc2="100001"/>
+            <PCA_DIM pc1="110.288604736328125" pc2="6.4972696304321289062"/>
+            <PCA_DIM pc1="100001" pc2="117"/>
+            <PCA_DIM pc1="24.2645416259765625" pc2="100001"/>
+            <PCA_DIM pc1="112.16718292236328125" pc2="6.7636380195617675781"/>
+            <PCA_DIM pc1="100001" pc2="114.45470428466796875"/>
+            <PCA_DIM pc1="25.236362457275390625" pc2="100001"/>
+            <PCA_DIM pc1="114.45470428466796875" pc2="7.7354574203491210938"/>
+            <PCA_DIM pc1="100001" pc2="112.1671905517578125"/>
+            <PCA_DIM pc1="25.502729415893554688" pc2="100001"/>
+            <PCA_DIM pc1="117" pc2="9.2886199951171875"/>
+            <PCA_DIM pc1="100001" pc2="110.288604736328125"/>
+            <PCA_DIM pc1="25.236362457275390625" pc2="100001"/>
+            <PCA_DIM pc1="119.54529571533203125" pc2="11.167176246643066406"/>
+            <PCA_DIM pc1="100001" pc2="108.73546600341796875"/>
+            <PCA_DIM pc1="24.2645416259765625" pc2="100001"/>
+            <PCA_DIM pc1="121.83281707763671875" pc2="13.454702377319335938"/>
+            <PCA_DIM pc1="100001" pc2="107.763641357421875"/>
+            <PCA_DIM pc1="22.7113800048828125" pc2="100001"/>
+            <PCA_DIM pc1="123.711395263671875" pc2="16"/>
+            <PCA_DIM pc1="100001" pc2="107.4972686767578125"/>
+            <PCA_DIM pc1="20.832822799682617188" pc2="100005"/>
+            <PCA_DIM pc1="125.26453399658203125" pc2="100002"/>
+            <PCA_DIM pc1="100001" pc2="16.052042007446289062"/>
+            <PCA_DIM pc1="18.545297622680664062" pc2="108.497283935546875"/>
+            <PCA_DIM pc1="126.236358642578125" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="13.633291244506835938"/>
+            <PCA_DIM pc1="16" pc2="108.7504119873046875"/>
+            <PCA_DIM pc1="126.5027313232421875" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="13.77675628662109375"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 8" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="8">
+          <SUBCHANNEL ch="7" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454620968801248151e-16" pc2="1.9455722111632678742e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454620968801248151e-16" pc2="1.9455722111632678742e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="100001" pc2="2.508986162654629416e-34"/>
+            <PCA_DIM pc1="20.374805450439453125" pc2="0"/>
+            <PCA_DIM pc1="109.62738037109375" pc2="2.508986162654629416e-34"/>
+            <PCA_DIM pc1="100001" pc2="0"/>
+            <PCA_DIM pc1="18.22324371337890625" pc2="108.73546600341796875"/>
+            <PCA_DIM pc1="108.71331787109375" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="22.7113800048828125"/>
+            <PCA_DIM pc1="18.366708755493164062" pc2="110.288604736328125"/>
+            <PCA_DIM pc1="108.7504119873046875" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="24.2645416259765625"/>
+            <PCA_DIM pc1="15.947957992553710938" pc2="112.16718292236328125"/>
+            <PCA_DIM pc1="108.497283935546875" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="25.236362457275390625"/>
+            <PCA_DIM pc1="16.052042007446289062" pc2="114.45470428466796875"/>
+            <PCA_DIM pc1="108.497283935546875" pc2="100001"/>
+            <PCA_DIM pc1="100005" pc2="25.502729415893554688"/>
+            <PCA_DIM pc1="-nan" pc2="117"/>
+            <PCA_DIM pc1="-nan" pc2="100001"/>
+            <PCA_DIM pc1="1.3592595103950725588e-43" pc2="25.236362457275390625"/>
+            <PCA_DIM pc1="0" pc2="119.54529571533203125"/>
+            <PCA_DIM pc1="1.9454493913859160006e-16" pc2="100001"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="24.2645416259765625"/>
+            <PCA_DIM pc1="1.9454493913859160006e-16" pc2="121.83281707763671875"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="100001"/>
+            <PCA_DIM pc1="1" pc2="22.7113800048828125"/>
+            <PCA_DIM pc1="0" pc2="123.711395263671875"/>
+            <PCA_DIM pc1="9.108440018111310961e-44" pc2="100001"/>
+            <PCA_DIM pc1="0" pc2="20.832822799682617188"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="125.26453399658203125"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="100001"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="18.545297622680664062"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="126.236358642578125"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="100001"/>
+            <PCA_DIM pc1="1" pc2="16"/>
+            <PCA_DIM pc1="1.5942880905317285104e-34" pc2="126.5027313232421875"/>
+            <PCA_DIM pc1="0" pc2="100001"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 9" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="9">
+          <SUBCHANNEL ch="8" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9455743287456360099e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9455743287456360099e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="100001" pc2="3.3801417544094760597e-37"/>
+            <PCA_DIM pc1="20.374805450439453125" pc2="0"/>
+            <PCA_DIM pc1="109.62738037109375" pc2="3.3801417544094760597e-37"/>
+            <PCA_DIM pc1="100001" pc2="0"/>
+            <PCA_DIM pc1="18.22324371337890625" pc2="56.242649078369140625"/>
+            <PCA_DIM pc1="108.71331787109375" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="13.827056884765625"/>
+            <PCA_DIM pc1="18.366708755493164062" pc2="55.3379364013671875"/>
+            <PCA_DIM pc1="108.7504119873046875" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="12.708972930908203125"/>
+            <PCA_DIM pc1="15.947957992553710938" pc2="54.376132965087890625"/>
+            <PCA_DIM pc1="108.497283935546875" pc2="100001"/>
+            <PCA_DIM pc1="100001" pc2="11.640356063842773438"/>
+            <PCA_DIM pc1="16.052042007446289062" pc2="53.35965728759765625"/>
+            <PCA_DIM pc1="108.497283935546875" pc2="100001"/>
+            <PCA_DIM pc1="100005" pc2="10.62387847900390625"/>
+            <PCA_DIM pc1="1.2779841994642331687e-42" pc2="52.291042327880859375"/>
+            <PCA_DIM pc1="0" pc2="100001"/>
+            <PCA_DIM pc1="1.8076750189790140215e-43" pc2="9.662078857421875"/>
+            <PCA_DIM pc1="0" pc2="51.1729583740234375"/>
+            <PCA_DIM pc1="1.9454536265506522721e-16" pc2="100001"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="8.757358551025390625"/>
+            <PCA_DIM pc1="1.9454536265506522721e-16" pc2="50.0081939697265625"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="100001"/>
+            <PCA_DIM pc1="1.9582361311799296669e-38" pc2="7.9119815826416015625"/>
+            <PCA_DIM pc1="0" pc2="48.79967498779296875"/>
+            <PCA_DIM pc1="2.7688365357435887089e-34" pc2="100001"/>
+            <PCA_DIM pc1="0" pc2="7.128063201904296875"/>
+            <PCA_DIM pc1="-20" pc2="47.550411224365234375"/>
+            <PCA_DIM pc1="-2" pc2="100001"/>
+            <PCA_DIM pc1="0" pc2="6.407562255859375"/>
+            <PCA_DIM pc1="0" pc2="46.26352691650390625"/>
+            <PCA_DIM pc1="0" pc2="100001"/>
+            <PCA_DIM pc1="-2" pc2="5.7522792816162109375"/>
+            <PCA_DIM pc1="0" pc2="44.9422454833984375"/>
+            <PCA_DIM pc1="18" pc2="100001"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 10" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="10">
+          <SUBCHANNEL ch="9" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454620968801248151e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454620968801248151e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.6022171672700094716e-34" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="5.92749250409397621e-43"/>
+            <PCA_DIM pc1="1" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="1" pc2="-1.7014118346046923173e+38"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="7.7500004768371582031" pc2="0"/>
+            <PCA_DIM pc1="-1.7014118346046923173e+38" pc2="0"/>
+            <PCA_DIM pc1="1" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="1.5834672646870432901e-43"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="2.579949287245832385e-34" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1" pc2="1"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="2.579949287245832385e-34"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1" pc2="1.4012984643248170709e-45"/>
+            <PCA_DIM pc1="0" pc2="1"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.5942880905317285104e-34"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="0"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="1.5992710845532611135e-34"/>
+            <PCA_DIM pc1="1" pc2="0"/>
+            <PCA_DIM pc1="1.5942880905317285104e-34" pc2="3.265042461666149965e-37"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="1.5617048564948732285e-34"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="3.265042461666149965e-37" pc2="4.624284932271896334e-44"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 11" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="11">
+          <SUBCHANNEL ch="10" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 12" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="12">
+          <SUBCHANNEL ch="11" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.2743634595377510988e-40"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="2.5541747368941305715e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.5577620609628021032e-40"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="5.6051938572992682837e-45" pc2="-nan"/>
+            <PCA_DIM pc1="2.2707761354690795671e-40" pc2="-nan"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="-nan"/>
+            <PCA_DIM pc1="2.2743634595377510988e-40" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="2.5541747368941305715e-40" pc2="-nan"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="-nan"/>
+            <PCA_DIM pc1="2.5577620609628021032e-40" pc2="5.6051938572992682837e-45"/>
+            <PCA_DIM pc1="0" pc2="2.2707761354690795671e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.2743634595377510988e-40"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="2.5541747368941305715e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.5577620609628021032e-40"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="-nan"/>
+            <PCA_DIM pc1="5.6051938572992682837e-45" pc2="-nan"/>
+            <PCA_DIM pc1="2.2707761354690795671e-40" pc2="-nan"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="-nan"/>
+            <PCA_DIM pc1="2.2743634595377510988e-40" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="2.5541747368941305715e-40" pc2="-nan"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="-nan"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 13" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="13">
+          <SUBCHANNEL ch="12" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="2.5541747368941305715e-40" pc2="-nan"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="-nan"/>
+            <PCA_DIM pc1="2.5577620609628021032e-40" pc2="5.6051938572992682837e-45"/>
+            <PCA_DIM pc1="0" pc2="2.2707761354690795671e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.2743634595377510988e-40"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="2.5541747368941305715e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.5577620609628021032e-40"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="1.7936620343357658508e-42"/>
+            <PCA_DIM pc1="5.6051938572992682837e-45" pc2="-nan"/>
+            <PCA_DIM pc1="2.2707761354690795671e-40" pc2="1.7936620343357658508e-42"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="0"/>
+            <PCA_DIM pc1="2.2743634595377510988e-40" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="2.5541747368941305715e-40" pc2="-nan"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="-nan"/>
+            <PCA_DIM pc1="2.5577620609628021032e-40" pc2="5.6051938572992682837e-45"/>
+            <PCA_DIM pc1="0" pc2="2.2707761354690795671e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.2743634595377510988e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.5541747368941305715e-40"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="-nan" pc2="2.5577620609628021032e-40"/>
+            <PCA_DIM pc1="-nan" pc2="0"/>
+            <PCA_DIM pc1="-nan" pc2="2.5577620609628021032e-40"/>
+            <PCA_DIM pc1="5.6051938572992682837e-45" pc2="-nan"/>
+            <PCA_DIM pc1="2.2707761354690795671e-40" pc2="2.5577620609628021032e-40"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="0"/>
+            <PCA_DIM pc1="2.2743634595377510988e-40" pc2="-nan"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="2.5541747368941305715e-40" pc2="-nan"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="-nan"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 14" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="14">
+          <SUBCHANNEL ch="13" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="4.3047888824058380419e-42" pc2="2.5111268480700721911e-42"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.9618178500547438993e-44" pc2="2.1523944412029190209e-42"/>
+            <PCA_DIM pc1="0" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="2.8025969286496341418e-45" pc2="2.5111268480700721911e-42"/>
+            <PCA_DIM pc1="1.7346113170491180594e-40" pc2="0"/>
+            <PCA_DIM pc1="3.0127916982983567025e-43" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="1.7381986411177895911e-40" pc2="4.3047888824058380419e-42"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.4664588429159210647e-40" pc2="-nan"/>
+            <PCA_DIM pc1="2.7325320054333932883e-43" pc2="1.9618178500547438993e-44"/>
+            <PCA_DIM pc1="1.4707328032321117568e-40" pc2="1.1210387714598536567e-43"/>
+            <PCA_DIM pc1="0" pc2="4.624284932271896334e-44"/>
+            <PCA_DIM pc1="2.1355788596310212161e-42" pc2="-nan"/>
+            <PCA_DIM pc1="-nan" pc2="2.8025969286496341418e-45"/>
+            <PCA_DIM pc1="1.9309892838395979237e-42" pc2="2.1523944412029190209e-42"/>
+            <PCA_DIM pc1="-nan" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="3.3769050912685171702e-40" pc2="2.5111268480700721911e-42"/>
+            <PCA_DIM pc1="1.97583083469799207e-43" pc2="0"/>
+            <PCA_DIM pc1="3.3817255579857945409e-40" pc2="2.1523944412029190209e-42"/>
+            <PCA_DIM pc1="2.0879347118439774357e-43" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="3.3827625188493949056e-40" pc2="2.5111268480700721911e-42"/>
+            <PCA_DIM pc1="2.4382593279251817034e-43" pc2="0"/>
+            <PCA_DIM pc1="3.3833790901736978251e-40" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="3.0968696061578457267e-43" pc2="4.3047888824058380419e-42"/>
+            <PCA_DIM pc1="3.3836032979279897958e-40" pc2="0"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="2.3747805074912674901e-41"/>
+            <PCA_DIM pc1="3.3857893235323365104e-40" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="3.4752201915255463359e-43" pc2="2.4222845254318787888e-41"/>
+            <PCA_DIM pc1="3.3863638559027096854e-40" pc2="0"/>
+            <PCA_DIM pc1="2.073921727200729265e-43" pc2="1.4664588429159210647e-40"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 15" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="15">
+          <SUBCHANNEL ch="14" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="2.2420775429197073135e-44"/>
+            <PCA_DIM pc1="2.5111268480700721911e-42" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="0" pc2="2.5111268480700721911e-42"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="0"/>
+            <PCA_DIM pc1="4.3047888824058380419e-42" pc2="2.5111268480700721911e-42"/>
+            <PCA_DIM pc1="0" pc2="-nan"/>
+            <PCA_DIM pc1="2.2420775429197073135e-44" pc2="0"/>
+            <PCA_DIM pc1="9.8090892502737194965e-45" pc2="4.3047888824058380419e-42"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="9.8090892502737194965e-45" pc2="2.9427267750821158489e-44"/>
+            <PCA_DIM pc1="2.2420775429197073135e-44" pc2="2.2420775429197073135e-44"/>
+            <PCA_DIM pc1="2.8025969286496341418e-45" pc2="1.9618178500547438993e-44"/>
+            <PCA_DIM pc1="0" pc2="8.9683101716788292539e-44"/>
+            <PCA_DIM pc1="2.8025969286496341418e-45" pc2="2.9427267750821158489e-44"/>
+            <PCA_DIM pc1="4.2739603161906920663e-43" pc2="2.2420775429197073135e-44"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="1.9618178500547438993e-44"/>
+            <PCA_DIM pc1="1.7081828280119520095e-42" pc2="1.1210387714598536567e-43"/>
+            <PCA_DIM pc1="0" pc2="2.9427267750821158489e-44"/>
+            <PCA_DIM pc1="1.4664588429159210647e-40" pc2="2.2420775429197073135e-44"/>
+            <PCA_DIM pc1="3.5733110840282835309e-43" pc2="1.9618178500547438993e-44"/>
+            <PCA_DIM pc1="1.4707328032321117568e-40" pc2="1.3452465257518243881e-43"/>
+            <PCA_DIM pc1="0" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="3.3756439226506248348e-40" pc2="4.3047888824058380419e-42"/>
+            <PCA_DIM pc1="3.517259145455290848e-43" pc2="0"/>
+            <PCA_DIM pc1="3.3756999745891978275e-40" pc2="4.3047888824058380419e-42"/>
+            <PCA_DIM pc1="3.1389085600875902389e-43" pc2="0"/>
+            <PCA_DIM pc1="3.376722922468154944e-40" pc2="1.1210387714598536567e-43"/>
+            <PCA_DIM pc1="3.0127916982983567025e-43" pc2="1.9618178500547438993e-44"/>
+            <PCA_DIM pc1="3.3817115450011512927e-40" pc2="0"/>
+            <PCA_DIM pc1="3.1389085600875902389e-43" pc2="4.9045446251368597482e-44"/>
+            <PCA_DIM pc1="3.382468246171886694e-40" pc2="2.2420775429197073135e-44"/>
+            <PCA_DIM pc1="2.8586488672226268247e-43" pc2="1.9618178500547438993e-44"/>
+            <PCA_DIM pc1="3.3826924539261786647e-40" pc2="2.2420775429197073135e-44"/>
+            <PCA_DIM pc1="3.2229864679470792631e-43" pc2="4.9045446251368597482e-44"/>
+            <PCA_DIM pc1="3.3831408694347626062e-40" pc2="7.4128688762782823052e-43"/>
+            <PCA_DIM pc1="3.3070643758065682874e-43" pc2="0"/>
+          </PCA>
+        </ELECTRODE>
+        <ELECTRODE name="Single Electrode 16" numChannels="1" prePeakSamples="8"
+                   postPeakSamples="32" advancerID="-1" depthOffsetMM="0" electrodeID="16">
+          <SUBCHANNEL ch="15" thresh="-20" isActive="1"/>
+          <SPIKESORTING numBoxUnits="0" numPCAUnits="0" selectedUnit="-1" selectedBox="-1"/>
+          <PCA numChannels="1" waveformLength="40" pc1min="-1" pc2min="-1" pc1max="1"
+               pc2max="1" PCAjobFinished="0" PCAcomputed="0">
+            <PCA_DIM pc1="1.9454599792977566794e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="1.9454599792977566794e-16" pc2="1.9454388034740753219e-16"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="4.5650100072309565719e-41"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1" pc2="0"/>
+            <PCA_DIM pc1="0" pc2="0"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="100001"/>
+            <PCA_DIM pc1="6.3478820433914213313e-43" pc2="3.0184783935546875"/>
+            <PCA_DIM pc1="4.2038953929744512128e-44" pc2="33.54396820068359375"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="100001"/>
+            <PCA_DIM pc1="0" pc2="3.0031452178955078125"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="2.1019476964872256064e-44"/>
+            <PCA_DIM pc1="0" pc2="2.3299389566328733438e-40"/>
+            <PCA_DIM pc1="0" pc2="1.7376100957627731679e-43"/>
+            <PCA_DIM pc1="0" pc2="2.3300790864793058255e-40"/>
+            <PCA_DIM pc1="0" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="1.9454515089682841364e-16" pc2="2.3329517483311717005e-40"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="2.3962203739954371913e-43"/>
+            <PCA_DIM pc1="1" pc2="2.3330078002697446932e-40"/>
+            <PCA_DIM pc1="0" pc2="1.4012984643248170709e-43"/>
+            <PCA_DIM pc1="0" pc2="2.3332600339933231603e-40"/>
+            <PCA_DIM pc1="0" pc2="7.4268818609215304759e-44"/>
+            <PCA_DIM pc1="1" pc2="2.3338205533790530871e-40"/>
+            <PCA_DIM pc1="0" pc2="3.9236357001094877986e-44"/>
+            <PCA_DIM pc1="1.9454472738035478649e-16" pc2="2.3347313973808642182e-40"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="2.6624670822171524348e-44"/>
+            <PCA_DIM pc1="1.4012984643248170709e-45" pc2="2.3398321237910065523e-40"/>
+            <PCA_DIM pc1="1" pc2="3.9236357001094877986e-44"/>
+            <PCA_DIM pc1="1.5942880905317285104e-34" pc2="2.3408270457006771725e-40"/>
+            <PCA_DIM pc1="0" pc2="7.4268818609215304759e-44"/>
+            <PCA_DIM pc1="1.3452465257518243881e-43" pc2="2.3413455261324773548e-40"/>
+            <PCA_DIM pc1="1.2611686178923353638e-44" pc2="1.4012984643248170709e-43"/>
+            <PCA_DIM pc1="2.4592554047751540151e-34" pc2="2.3415837468714125737e-40"/>
+            <PCA_DIM pc1="0" pc2="2.3962203739954371913e-43"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="2.3416538117946288145e-40"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="3.5733110840282835309e-43"/>
+            <PCA_DIM pc1="1.9454388034740753219e-16" pc2="2.3437277335218295438e-40"/>
+            <PCA_DIM pc1="4.5650100072309565719e-41" pc2="3.082856621514597556e-43"/>
+          </PCA>
+        </ELECTRODE>
+      </SpikeSorter>
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EVENTCHANNEL name="16" number="16"/>
+      <EVENTCHANNEL name="17" number="17"/>
+      <EVENTCHANNEL name="18" number="18"/>
+      <EVENTCHANNEL name="19" number="19"/>
+      <EVENTCHANNEL name="20" number="20"/>
+      <EVENTCHANNEL name="21" number="21"/>
+      <EVENTCHANNEL name="22" number="22"/>
+      <EVENTCHANNEL name="23" number="23"/>
+      <EVENTCHANNEL name="24" number="24"/>
+      <EVENTCHANNEL name="25" number="25"/>
+      <EVENTCHANNEL name="26" number="26"/>
+      <EVENTCHANNEL name="27" number="27"/>
+      <EVENTCHANNEL name="28" number="28"/>
+      <EVENTCHANNEL name="29" number="29"/>
+      <EVENTCHANNEL name="30" number="30"/>
+      <EVENTCHANNEL name="31" number="31"/>
+      <EDITOR isCollapsed="0" displayName="Spike Sorter" Type="Visualizer">
+        <TAB Active="0"/>
+        <WINDOW Active="1" x="1" y="20" width="658" height="480"/>
+      </EDITOR>
+    </PROCESSOR>
+    <PROCESSOR name="Sinks/Spike Viewer" insertionPoint="1" NodeId="108">
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EVENTCHANNEL name="16" number="16"/>
+      <EVENTCHANNEL name="17" number="17"/>
+      <EVENTCHANNEL name="18" number="18"/>
+      <EVENTCHANNEL name="19" number="19"/>
+      <EVENTCHANNEL name="20" number="20"/>
+      <EVENTCHANNEL name="21" number="21"/>
+      <EVENTCHANNEL name="22" number="22"/>
+      <EVENTCHANNEL name="23" number="23"/>
+      <EVENTCHANNEL name="24" number="24"/>
+      <EVENTCHANNEL name="25" number="25"/>
+      <EVENTCHANNEL name="26" number="26"/>
+      <EVENTCHANNEL name="27" number="27"/>
+      <EVENTCHANNEL name="28" number="28"/>
+      <EVENTCHANNEL name="29" number="29"/>
+      <EVENTCHANNEL name="30" number="30"/>
+      <EVENTCHANNEL name="31" number="31"/>
+      <EDITOR isCollapsed="0" displayName="Spike Viewer" Type="Visualizer">
+        <TAB Active="0"/>
+        <WINDOW Active="1" x="1" y="522" width="658" height="517"/>
+        <SPIKEDISPLAY LockThresholds="0" InvertSpikes="0">
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+          <PLOT>
+            <AXIS thresh="0" range="250"/>
+          </PLOT>
+        </SPIKEDISPLAY>
+      </EDITOR>
+    </PROCESSOR>
+    <SWITCH number="6"/>
+    <PROCESSOR name="Utilities/Splitter" insertionPoint="1" NodeId="112">
+      <EDITOR isCollapsed="0" displayName="Splitter"/>
+    </PROCESSOR>
+    <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" NodeId="110">
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="46" number="46">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
+        <TAB Active="0"/>
+        <WINDOW Active="1" x="661" y="751" width="1258" height="288"/>
+        <LFPDISPLAY Range="400,2000,10.0" Timebase="2.0" Spread="100" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="1111111111111110010011111111111111111111111111"
+                    ScrollX="0" ScrollY="1628"/>
+      </EDITOR>
+    </PROCESSOR>
+    <SWITCH number="9"/>
+    <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" NodeId="113">
+      <CHANNEL name="0" number="0">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="1" number="1">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="2" number="2">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="3" number="3">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="4" number="4">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="5" number="5">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="6" number="6">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="7" number="7">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="8" number="8">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="9" number="9">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="10" number="10">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="11" number="11">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="12" number="12">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="13" number="13">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="14" number="14">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="15" number="15">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="16" number="16">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="17" number="17">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="18" number="18">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="19" number="19">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="20" number="20">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="21" number="21">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="22" number="22">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="23" number="23">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="24" number="24">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="25" number="25">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="26" number="26">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="27" number="27">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="28" number="28">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="29" number="29">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="30" number="30">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="31" number="31">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="32" number="32">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="33" number="33">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="34" number="34">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="35" number="35">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="36" number="36">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="37" number="37">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="38" number="38">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="39" number="39">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="40" number="40">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="41" number="41">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="42" number="42">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="43" number="43">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="44" number="44">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="45" number="45">
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
+      </CHANNEL>
+      <CHANNEL name="46" number="46">
+        <SELECTIONSTATE param="0" record="0" audio="0"/>
+      </CHANNEL>
+      <EVENTCHANNEL name="0" number="0"/>
+      <EVENTCHANNEL name="1" number="1"/>
+      <EVENTCHANNEL name="2" number="2"/>
+      <EVENTCHANNEL name="3" number="3"/>
+      <EVENTCHANNEL name="4" number="4"/>
+      <EVENTCHANNEL name="5" number="5"/>
+      <EVENTCHANNEL name="6" number="6"/>
+      <EVENTCHANNEL name="7" number="7"/>
+      <EVENTCHANNEL name="8" number="8"/>
+      <EVENTCHANNEL name="9" number="9"/>
+      <EVENTCHANNEL name="10" number="10"/>
+      <EVENTCHANNEL name="11" number="11"/>
+      <EVENTCHANNEL name="12" number="12"/>
+      <EVENTCHANNEL name="13" number="13"/>
+      <EVENTCHANNEL name="14" number="14"/>
+      <EVENTCHANNEL name="15" number="15"/>
+      <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
+        <TAB Active="0"/>
+        <WINDOW Active="1" x="1117" y="20" width="802" height="710"/>
+        <LFPDISPLAY Range="1000,2000,10.0" Timebase="2.0" Spread="50" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="1111111111111111111111111111111111111111111111"
+                    ScrollX="0" ScrollY="0"/>
+      </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>
   <AUDIO bufferSize="1024"/>
-  <CONTROLPANEL isOpen="0" recordPath="/home/cerebro/Software/Git/OpenEphysRHA/Builds/Linux/build"
-                prependText="" appendText="" recordEngine="1"/>
+  <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
+                appendText="PreventionControl_03-08_10" recordEngine="2"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">
@@ -237,6 +2492,6 @@
     <COLOR ID="803" R="0" G="166" B="81"/>
     <COLOR ID="805" R="147" G="149" B="152"/>
   </PROCESSORLIST>
-  <MESSAGECENTER sourceNodeId="100"/>
+  <MESSAGECENTER sourceNodeId="101"/>
   <UICOMPONENT isProcessorListOpen="1" isEditorViewportOpen="1"/>
 </SETTINGS>

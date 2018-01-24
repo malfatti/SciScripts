@@ -28,7 +28,7 @@
 const int inPin = A0;
 const int PinNo = 8;
 const int Pins[PinNo] = {39, 41, 43, 45, 47, 49, 51, 53};
-const int Delay = 20;
+const int Delay = 75;
 
 void setup() {
   Serial.begin(115200);

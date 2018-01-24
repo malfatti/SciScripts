@@ -27,7 +27,6 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
     SoundUnit = {}
     
     for FKey in SoundPulseFiltered:
-#    for Freq in range(len(NoiseFrequency)):
         SoundUnit[FKey] = {}
         
         for AmpF in range(len(SoundAmpF[FKey])):       
@@ -315,10 +314,19 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
         TTLAmpF = 1/SBOutAmpF
     
-    SoundPulse = Noise(Rate, SoundPulseDur)
-    print('   ', end='')
-    SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
-    print('   ', end='')
+    if type(NoiseFrequency[0]) == list:
+        SoundPulse = Noise(Rate, SoundPulseDur)
+        print('   ', end='')
+        SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
+        print('   ', end='')
+    else:
+        print('Generating tones... ', end='')
+        SoundPulseFiltered = {}
+        for Freq in NoiseFrequency:
+            FKey = str(Freq)
+            SoundPulseFiltered[FKey] = SineWave(Rate, Freq, 1, SoundPulseDur)
+        print('Done.')
+        
     SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
                                NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
                                SoundPauseAfterPulseDur)
@@ -327,7 +335,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
                               SBOutAmpF, SoundPauseBeforePulseDur, 
                               SoundPauseAfterPulseDur)
     else:
-        SoundTTLUnit = np.zeros((SoundPulse.size), dtype='float32')
+        SoundTTLUnit = np.zeros((Rate*SoundPulseDur), dtype='float32')
     
     Sound = {}
     for FKey in SoundUnit:

@@ -11,6 +11,7 @@ import numpy as np
 from DataAnalysis import DataAnalysis
 from glob import glob
 from IO import Hdf5
+from IO import Intan
 from IO.Txt import DictPrint
 
 
@@ -85,8 +86,9 @@ def DatLoad(Folder, Unit='uV', ChannelMap=[]):
 
 def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
     Kwds = glob(Folder+'/*.kwd')
-    XMLFile = glob(Folder+'/setting*.xml')[0]
-    if Unit.lower() == 'uv': RecChs = SettingsXML.GetRecChs(XMLFile)[0]
+    if Unit.lower() == 'uv': 
+        XMLFile = glob(Folder+'/setting*.xml')[0]
+        RecChs = SettingsXML.GetRecChs(XMLFile)[0]
     
     for Kwd in Kwds:
         Proc = Kwd[-11:-8]

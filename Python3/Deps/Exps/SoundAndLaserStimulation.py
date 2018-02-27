@@ -35,12 +35,13 @@ def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, Soun
               LaserStimBlockNo, LaserPulseNo, LaserPauseBeforePulseDur, 
               LaserPulseDur, LaserPauseAfterPulseDur, LaserPauseBetweenStimBlocksDur,
               LaserType, LaserDur, LaserFreq, ABRCh, AnalogTTLs, Rate, BlockSize, 
-              Channels, BaudRate, InfoFile):
+              Channels, BaudRate, Probe, Adaptor, Remapped, InfoFile):
     
     CalibrationFile = SigGen.CalibrationFile
     
     DataInfo = {'InfoFile': InfoFile}
-    for K in ['Animal', 'DAqs', 'Audio', 'Laser', 'ExpInfo']: DataInfo[K] = {}
+    for K in ['Animal', 'DAqs', 'Audio', 'Laser', 'Probe', 'ExpInfo']: 
+        DataInfo[K] = {}
     
     for K in ['AnimalName', 'StimType']: DataInfo['Animal'][K] = locals()[K]
     
@@ -59,6 +60,9 @@ def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, Soun
               'LaserFreq']:
         DataInfo['Laser'][K] = locals()[K]
     
+    for K in ['Probe', 'Adaptor', 'Remapped']:
+        DataInfo['Probe'][K] = locals()[K]
+    
     DataInfo['Audio']['SoundAmpF'] = SoundAmpF
     
     Txt.DictWrite(InfoFile, DataInfo)
@@ -73,7 +77,7 @@ def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo,
             LaserPulseDur, LaserPauseAfterPulseDur, 
             LaserPauseBetweenStimBlocksDur, LaserType, LaserDur, LaserFreq, 
             ABRCh=[], AnalogTTLs=True, Rate=192000, BlockSize=384, Channels=2, 
-            BaudRate=115200):
+            BaudRate=115200, Probe=None, Adaptor=None, Remapped=False):
     Kws = {**locals()}
     SoundAmpF = SigGen.dBToAmpF(Intensities, System+'/'+Setup)
     

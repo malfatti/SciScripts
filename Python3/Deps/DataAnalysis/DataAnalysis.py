@@ -317,9 +317,14 @@ def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3, EventsDict={}, TTLCh=None,
     print('Get TTL timestamps... ', end='')
     if AnalogTTLs:
         Threshold = GetTTLThreshold(Data, StdNo); print('TTL threshold:', Threshold)
-        TTLs = np.where((Data[:-1] < Threshold)*(Data[1:] > Threshold))[0]
-        # TTLs = [_ for _ in range(1, len(Data)) if Data[_] > Threshold and Data[_-1] < Threshold]
-        # TTLs = np.array(TTLs, dtype='int')
+        
+        if Edge == 'rise':
+            TTLs = np.where((Data[:-1] < Threshold)*(Data[1:] > Threshold))[0]
+        elif Edge == 'fall':
+            TTLs = np.where((Data[:-1] > Threshold)*(Data[1:] < Threshold))[0]
+        else:
+            print('"Edge" should be "rise" of "fall".')
+            return(None)
         
         print('Done.')
         return(TTLs)
@@ -341,6 +346,30 @@ def QuantifyTTLsPerRec(AnalogTTLs, Data=[], StdNo=3, EventsDict={}, TTLCh=None,
         
         print('Done.')
         return(TTLs)
+
+
+def RemapCh(Probe, Adaptor):
+    Probes = {
+        'A16': {'Tip': [9, 8, 10, 7, 13, 4, 12, 5, 15, 2, 16, 1, 14, 3, 11, 6],
+                'Head': [8, 7, 6, 5, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16]}
+    }
+    
+    Adaptors = {
+        'CustomAdaptor': [5, 6, 7, 8, 9, 10 ,11, 12, 13, 14, 15, 16, 1, 2, 3, 4],
+        'RHAHeadstage': [16, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 5, 6, 7, 8],
+        'A16OM16': [13, 12, 14, 11, 15, 10, 16, 9, 5, 4, 6, 3, 7, 2, 8, 1]
+    }
+    
+    if Probe not in Probes or Adaptor not in Adaptors:
+        print('Unknown probe and/or adaptor.')
+        print('Known probes:')
+        for P in Probes.keys(): print('    ' + P)
+        print('Known adaptors:')
+        for A in Adaptors.keys(): print('    ' + A)
+        return(None)
+    
+    Map = RemapChannels(Probes[Probe]['Tip'], Probes[Probe]['Head'], Adaptors[Adaptor])
+    return(Map)
 
 
 def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=4096):

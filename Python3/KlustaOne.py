@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct 10 11:03:23 2017
-
-@author: malfatti
+@author: T. Malfatti <malfatti@disroot.org>
+@date: 2017-10-10
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 #%%
 import os, subprocess
@@ -12,21 +13,6 @@ from glob import glob
 from imp import load_source
 from itertools import tee
 from klusta.kwik import KwikModel
-
-
-DataFolder = '/home/malfatti/NotSynced/Tmp/SergioData/juj006d03'
-ExpName = DataFolder.split(os.sep)[-1]
-KlustaFolder = os.sep.join([DataFolder, 'KlustaFiles'])
-SpkTSFile = glob(os.sep.join([DataFolder, '*.spike']))[0]
-SpkWFFile = glob(os.sep.join([DataFolder, '*.swave']))[0]
-InfoFile = glob(os.sep.join([DataFolder, '*-info.txt']))[0]
-
-# To parse from InfoFile
-SpkChNo = 3
-TrialNo = 40
-SpkWFLen = 38
-Rate = 32000
-
 
 def DictPrint(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n', indent=0):
     ''' Modified from y.petremann's code.
@@ -90,7 +76,8 @@ def PrbWrite(File, Channels=list(range(3)), Spacing=100):
     Prb['0']['geometry'] = {str(Ch):(0,Pos[C]) 
                             for C,Ch in enumerate(Prb['0']['channels'])}
     
-    UserFile = os.sep.join(File.split(os.sep)[:-2]) + os.sep + ExpName + '-Klusta.prb'
+    Prefix = os.sep.join(File.split(os.sep)[:-2]+[File.split(os.sep)[-1]])[:-4]
+    UserFile = Prefix + '-Klusta.prb'
     if os.path.isfile(UserFile):
         with open(UserFile, 'r') as F: UserPrb = load_source('UserPrb', '', F)
         Prb = {**Prb, **UserPrb.channel_groups}
@@ -110,7 +97,7 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
     }
     
     spikedetekt = {
-        'filter_low': 300,
+        'filter_low': 100,
         'filter_high_factor': 0.5,  # will be multiplied by the sample rate
         'filter_butter_order': 3,
     
@@ -122,8 +109,8 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
         'n_excerpts': 50,
         'excerpt_size_seconds': 1.,
         'use_single_threshold': True,
-        'threshold_strong_std_factor': 3.,
-        'threshold_weak_std_factor': 2.,
+        'threshold_strong_std_factor': 1.5,
+        'threshold_weak_std_factor': 0.7,
         'detect_spikes': 'negative',
     
         # Connected components.
@@ -135,7 +122,7 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
         'weight_power': 2,
     
         # Features.
-        'n_features_per_channel': 3,
+        'n_features_per_channel': 5,
         'pca_n_waveforms_max': 10000,
     
     }
@@ -168,7 +155,8 @@ def PrmWrite(File, experiment_name, prb_file, raw_data_files, sample_rate,
          'num_cpus': 8,
     }
     
-    UserFile = os.sep.join(File.split(os.sep)[:-2]) + os.sep + ExpName + '-Klusta.prm'
+    Prefix = os.sep.join(File.split(os.sep)[:-2]+[File.split(os.sep)[-1]])[:-4]
+    UserFile = Prefix + '-Klusta.prm'
     if os.path.isfile(UserFile):
         with open(UserFile, 'r') as F: Prm = load_source('Prm', '', F)
         if 'experiment_name' in dir(Prm): experiment_name = Prm.experiment_name
@@ -234,7 +222,20 @@ def Run(PrmFile, Path, Overwrite=False, KlustaPath=''):
     return(None)
 
 
-#%% 
+#%%
+DataFolder = '/home/malfatti/NotSynced/Tmp/SergioData/juj006d01'
+ExpName = DataFolder.split(os.sep)[-1]
+KlustaFolder = os.sep.join([DataFolder, 'KlustaFiles'])
+SpkTSFile = glob(os.sep.join([DataFolder, '*[0-9].spike']))[0]
+SpkWFFile = glob(os.sep.join([DataFolder, '*[0-9].swave']))[0]
+InfoFile = glob(os.sep.join([DataFolder, '*-info.txt']))[0]
+
+# To parse from InfoFile
+SpkChNo = 3
+TrialNo = 40
+SpkWFLen = 38
+Rate = 32000
+
 
 SpkTSRaw = np.fromfile(SpkTSFile, dtype='>i4')
 SpkTS = abs(np.diff(SpkTSRaw))
@@ -253,13 +254,17 @@ for S in range(TrialNo*SpkChNo):
 SpkWF = [S[1:] for S in np.split(SpkWFRaw, SpkWF)]
 SpkWF = [S for S in SpkWF if len(S) > SpkWFLen]
 SpkWF = [SpkWF[S:S+SpkChNo] for S in range(0, TrialNo*SpkChNo, SpkChNo)]
-SpkWF = [[np.split(Ch[:-(len(Ch)%SpkWFLen)], (len(Ch)-len(Ch)%SpkWFLen)/SpkWFLen) for Ch in Trial] for Trial in SpkWF]
+SpkWF = [[np.split(Ch[:-(len(Ch)%SpkWFLen)], (len(Ch)-len(Ch)%SpkWFLen)/SpkWFLen) for Ch in Trial ] for Trial in SpkWF]
 
 DataLen = [max(Trial)+(2*SpkWFLen) for Trial in SpkTS]
-#SpkWFArrays = [np.random.randint(-3, 4, size=(DataLen[T],SpkChNo)).astype(np.int16) for T in range(TrialNo)]
 SpkWFArrays = [np.zeros((DataLen[T],SpkChNo), dtype=np.int16) for T in range(TrialNo)]
 for T, Trial in enumerate(SpkTimestamps):
     for C, Ch in enumerate(Trial):
+        # Std = np.std(SpkWF[T][C])
+        # Top = int(round(np.mean(SpkWF[T][C]) + (Std/10)))
+        # Bot = int(round(np.mean(SpkWF[T][C]) - (Std/10)))
+        # SpkWFArrays[T][:, C] = np.random.randint(Bot, Top, size=(len(SpkWFArrays[T][:, C]))).astype(np.int16)
+        
         for S, Spk in enumerate(Ch):
             Start = int(Spk - (SpkWFLen/2))
             End = int(Spk + (SpkWFLen/2))
@@ -287,7 +292,9 @@ Clusters = KwikModel(KwikFile)
 Offsets = Clusters.all_traces.offsets
 
 Good = [Id for Id in Clusters.cluster_groups]
-SpkClass = [[[[] for S in C] for C in R] for R in SpkWF]
+SpkClass = [[[] for C in R] for R in SpkWF]
+SpkSample = [[[] for C in R] for R in SpkWF]
+SpkWFK = [[[] for C in R] for R in SpkWF]
 
 for rec, Rec in enumerate(Clusters.recordings):
     for I, Id in enumerate(Good):
@@ -308,18 +315,28 @@ for rec, Rec in enumerate(Clusters.recordings):
         
         BestCh = RMSs.index(max(RMSs))
         
-        for Spk in range(Waveforms.shape[0]):
-            XCorr = [np.corrcoef(Waveforms[0,:,BestCh], S)[0,1] for S in SpkWF[Rec][BestCh]]
-            BestMatch = XCorr.index(max(XCorr))
-            
-            SpkClass[Rec][BestCh][BestMatch] = int(Id)
+        SpkClass[Rec][BestCh] = Clusters.spike_clusters[SpksId]
+        SpkSample[Rec][BestCh] = Clusters.spike_samples[SpksId]
+        SpkWFK[Rec][BestCh] = Waveforms[:,:,BestCh]
+
+TotalSpk = 0
+for _ in SpkTS: TotalSpk += len(_)
+print('Total spikes in the original files:', TotalSpk)
+print('Total spikes detected:', Clusters.spike_clusters.shape[0])
 
 SpkClassRaw = np.array([], dtype='>i4')
+SpkSampleRaw = np.array([], dtype='>i4')
+SpkWFKRaw = np.array([], dtype='>i2')
 for R in range(40):
     for C in range(3):
+        if len(SpkClass[R][C]) == 0: SpkWFK[R][C] = np.array([])
         SpkClassRaw = np.concatenate((SpkClassRaw, [len(SpkClass[R][C])], SpkClass[R][C]))
+        SpkSampleRaw = np.concatenate((SpkSampleRaw, [len(SpkSample[R][C])], SpkSample[R][C]))
+        SpkWFKRaw = np.concatenate((SpkWFKRaw, [SpkWFK[R][C].shape[0]], SpkWFK[R][C].reshape((SpkWFK[R][C].size))))
 
-SpkClassRaw.tofile(DataFolder+'.KlustaOne')
+SpkClassRaw.astype('>i4').tofile(DataFolder + os.sep + ExpName + '-Klusta.ssort')
+SpkSampleRaw.astype('>i4').tofile(DataFolder + os.sep + ExpName + '-Klusta.spike')
+SpkWFKRaw.astype('>i2').tofile(DataFolder + os.sep + ExpName + '-Klusta.swave')
 
 #File = FilesPrefix+'.prm'
 #with open(File, 'r') as F: Prb = F.read()

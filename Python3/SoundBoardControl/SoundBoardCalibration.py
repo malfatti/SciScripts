@@ -1,19 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-    Copyright (C) 2015  T. Malfatti
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@author: T. Malfatti <malfatti@disroot.org>
+@year: 2015
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 
 This script can be used to calibrate the sound board in and out amplification 
 factor.
@@ -35,7 +25,7 @@ frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 192000; Freq = 10000; WaveDur = 10
-SoundSystem = 'Jack-Speaker-Mic'
+SoundSystem = 'Jack-IntelOut-IntelIn'
 
 from IO import SoundCard
 import os, h5py
@@ -48,14 +38,14 @@ FileName = Folder + '/' + 'SoundMeasurements.hdf5'
 
 SoundCard.SoundCalOut(Rate, Freq, WaveDur, Ch=1)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1/20
+SBOutAmpF = 1/1.8
 
 #%% Input
 Repetitions = 4
 
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
-    Rec = SoundCard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF, Ch=1)
+    Rec = SoundCard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF, Ch=2)
     SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
     print(SBInAmpF[aa])
 

@@ -20,13 +20,30 @@ elif [ "${1,,}" == jack ]; then
     killall jackd &> /dev/null
     cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/Jack-ALSA ~/.asoundrc
     cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/PCHVol.sh ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/VolControl.sh
-    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --path "$JackPath" --rt r --card PCH --rate 48000 --periodsize 1024 --periods 3 --priority 19 --bridge true
+    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --path "$JackPath" --rt r --card PCH --rate 48000 --periodsize 1024 --periods 2 --priority 19 --bridge true
+
+elif [ "${1,,}" == jackonly ]; then
+    killall jackd &> /dev/null
+    cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/Jack-ALSA ~/.asoundrc
+    cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/PCHVol.sh ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/VolControl.sh
+    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --path "$JackPath" --rt r --card PCH --rate 96000 --periodsize 1024 --periods 2 --priority 19 --bridge false
 
 elif [ "${1,,}" == jackrt ]; then
     killall jackd &> /dev/null
     cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/Jack-ALSA ~/.asoundrc
     cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/PCHVol.sh ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/VolControl.sh
     bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --path "$JackPath" --rt R --card PCH --rate 192000 --periodsize 384 --periods 3 --priority 89 --bridge true
+
+elif [ "${1,,}" == jackonlyrt ]; then
+    killall jackd &> /dev/null
+    cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/Jack-ALSA ~/.asoundrc
+    cp ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/PCHVol.sh ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/VolControl.sh
+    bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --path "$JackPath" --rt R --card PCH --rate 192000 --periodsize 512 --periods 4 --priority 89 --bridge false
+
+elif [ "${1,,}" == jackonlyrtsu ]; then
+    sudo killall jackd &> /dev/null
+    sudo cp /home/malfatti/Software/Git/Malfatti/SciScripts/Bash/ALSA/Jack-ALSA /root/.asoundrc
+    sudo bash /home/malfatti/Software/Git/Malfatti/SciScripts/Bash/ALSA/JackCtl.sh --path "$JackPath" --rt R --card PCH --rate 192000 --periodsize 512 --periods 4 --priority 89 --bridge false
 
 elif [ "${1,,}" == jackusbpre2 ]; then
     killall jackd &> /dev/null

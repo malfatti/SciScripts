@@ -56,6 +56,12 @@ Parameters = dict(
     LaserPauseBetweenStimBlocksDur  = 10,
     
     
+    ## === Probe === ##
+    Probe       = None,     # None | 'A16'
+    Adaptor     = None,     # None | 'CustomAdaptor' | 'RHAHeadstage' | 'A16OM16'
+    Remapped    = False,
+    
+    
     ## === Hardware === ##
     ABRCh           = [1],
     SoundCh         = 26,
@@ -63,7 +69,7 @@ Parameters = dict(
     AnalogTTLs      = True,
     
     System          = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn',
-    Setup           = 'GPIAS',
+    Setup           = 'UnitRec',
 )
 
 

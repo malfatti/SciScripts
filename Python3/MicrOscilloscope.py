@@ -1,34 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct 13 08:50:31 2016
-
-@author: malfatti
+@author: T. Malfatti <malfatti@disroot.org>
+@date: 2016-10-13
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 #%%
-from IO import Hdf5
-import sounddevice as SD
-from queue import Queue, Empty
+import os
 import numpy as np
-from scipy import signal
-import math, os
+import sounddevice as SD
+
+from DataAnalysis.DataAnalysis import PSD, SignalIntensity
+from IO import Hdf5
+from queue import Queue, Empty
+
 
 SBAmpFsFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
-
-SoundBoard = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
-Device = 'default'
-Rate = 192000
-Window = 200
-Interval = 30
-YLim = [0, 5.5**-14]
-FreqBand = [20, 20000]
-MicSens_dB = -47.46
-MicSens_VPa = 10**(MicSens_dB/20)
-
-SD.default.device = 'system'
-SD.default.samplerate = Rate
-SD.default.channels = 1
-SD.default.blocksize = 384  
 
 def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim, 
                      FreqBand):
@@ -60,17 +48,28 @@ def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim,
         while True:
             try:
                 Data = SoundQueue.get(block=Block)
-                Data = Data * SBInAmpF
+                Data = Data * SBInAmpF *0.01
                 
-#                HWindow = signal.hanning(len(Data)//(Rate/1000))
-                F, PxxSp = signal.welch(Data, Rate, nperseg=64, noverlap=0, 
-                                        scaling='density')
+# #                HWindow = signal.hanning(len(Data)//(Rate/1000))
+#                 F, PxxSp = signal.welch(Data, Rate, nperseg=64, noverlap=0, 
+#                                         scaling='density')
                 
-#                Start = np.where(F > FreqBand[0])[0][0]-1
-#                End = np.where(F > FreqBand[1])[0][0]-1
-                BinSize = F[1] - F[0]
-                RMS = sum(PxxSp * BinSize)**0.5
-                dB = 20*(math.log(RMS/MicSens_VPa, 10)) + 94
+# #                Start = np.where(F > FreqBand[0])[0][0]-1
+# #                End = np.where(F > FreqBand[1])[0][0]-1
+#                 BinSize = F[1] - F[0]
+#                 RMS = sum(PxxSp * BinSize)**0.5
+#                 dB = 20*(math.log(RMS/MicSens_VPa, 10)) + 94
+                
+                # F, PxxSp = PSD(Data, Rate)
+                # Range = (F > FreqBand[0])*(F < FreqBand[1])
+                # BinSize = F[1] - F[0]
+                # RMS = (sum(PxxSp[Range]) * BinSize)**0.5
+                # dB = 20*(np.log10((RMS/MicSens_VPa)/0.00002))
+                
+                SI = SignalIntensity(Data, Rate, FreqBand, MicSens_VPa, WindowSize=Window)
+                F = SI['PSD'][0]
+                PxxSp = SI['PSD'][1]
+                dB = SI['dB']
                 
                 
             except Empty:
@@ -104,7 +103,7 @@ def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim,
     Ax.set_ylim(YLim)
     Fig.tight_layout(pad=0)
     
-    Stream = SD.Stream(samplerate=Rate,callback=audio_callback)#, never_drop_input=True)
+    Stream = SD.Stream(samplerate=Rate,callback=audio_callback, never_drop_input=False)
     Anim = FuncAnimation(Fig, PltUp, interval=Interval, blit=True)
     
     with Stream:
@@ -113,6 +112,22 @@ def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim,
     return(None)
 
 #%%
+SoundBoard = 'Jack-IntelOut-IntelIn'
+Device = 'default'
+Rate = 192000
+Window = 200
+Interval = 30
+Y = 5*10e-11
+YLim = [-Y*0.1, Y]
+FreqBand = [200, 4000]
+MicSens_dB = -47.46
+MicSens_VPa = 10**(MicSens_dB/20)
+
+SD.default.device = Device
+SD.default.samplerate = Rate
+SD.default.channels = 1
+SD.default.blocksize = 384
+
 MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim, FreqBand)
 
 #%%

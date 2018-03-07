@@ -9,7 +9,7 @@ import os
 
 from DataAnalysis.DataAnalysis import Pairwise
 from IO.IO import RunProcess
-from IO.Txt import DictPrint, DictWrite
+from IO.Txt import DictPrint
 
 
 def PrbWrite(File, Channels=list(range(15,-1,-1)), Spacing=25):
@@ -18,7 +18,7 @@ def PrbWrite(File, Channels=list(range(15,-1,-1)), Spacing=25):
     Prb['0']['graph'] = list(Pairwise(Prb['0']['channels']))
     Pos = list(range(0, len(Prb['0']['channels'])*Spacing, Spacing))
     Prb['0']['geometry'] = {str(Ch):(0,Pos[C]) for C,Ch in enumerate(Prb['0']['channels'])}
-    DictWrite(File, 'channel_groups = '+DictPrint(Prb))
+    with open(File, 'w') as F: F.write('channel_groups = '+DictPrint(Prb))
     
     return(None)
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 26 19:33:26 2018
-
-@author: malfatti
+@author: T. Malfatti <malfatti@disroot.org>
+@date: 2018-02-26
+@license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
+@homepage: https://github.com/Malfatti/SciScripts
 """
 #%% Reanalysis again
 from DataAnalysis import DataAnalysis

@@ -38,9 +38,9 @@ FileName = Folder + '/' + 'SoundMeasurements.hdf5'
 
 #%% Output
 Pulse = SineWave(Rate, Freq, 1, WaveDur)
-SoundCard.SoundCalOut(Pulse, Ch=1)
+SoundCard.SoundCalOut(Pulse, Ch=2)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1
+SBOutAmpF = 1/2
 
 #%% Input
 Repetitions = 4
@@ -49,7 +49,8 @@ Pulse = SineWave(Rate, Freq, SBOutAmpF, WaveDur)
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
     Rec = SoundCard.SoundCalIn(Pulse, Ch=2)
-    SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
+    #SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
+    SBInAmpF[aa] = (max(Rec[2000:])-(min(Rec[2000:])))/2
     print(SBInAmpF[aa])
 
 # SBInAmpF is the real amplitude divided by the measured amplitude

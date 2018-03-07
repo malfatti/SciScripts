@@ -28,6 +28,8 @@ Rate = 192000; Freq = 10000; WaveDur = 10
 SoundSystem = 'Jack-IntelOut-IntelIn'
 
 from IO import SoundCard
+from IO.SigGen import SineWave
+
 import os, h5py
 import numpy as np
 
@@ -35,17 +37,18 @@ Folder = os.environ['DATAPATH']+'/Tests/SoundMeasurements'
 FileName = Folder + '/' + 'SoundMeasurements.hdf5'
 
 #%% Output
-
-SoundCard.SoundCalOut(Rate, Freq, WaveDur, Ch=1)
+Pulse = SineWave(Rate, Freq, 1, WaveDur)
+SoundCard.SoundCalOut(Pulse, Ch=1)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1/1.8
+SBOutAmpF = 1
 
 #%% Input
 Repetitions = 4
+Pulse = SineWave(Rate, Freq, SBOutAmpF, WaveDur)
 
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
-    Rec = SoundCard.SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF, Ch=2)
+    Rec = SoundCard.SoundCalIn(Pulse, Ch=2)
     SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
     print(SBInAmpF[aa])
 

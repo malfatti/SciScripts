@@ -24,7 +24,6 @@ import sounddevice as SD
 
 from queue import Queue, Empty
 from IO import Hdf5
-from IO.SigGen import SineWave
 
 
 def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=False):
@@ -185,12 +184,10 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
 #    return(None)
 
 
-def SoundCalOut(Rate, Freq, WaveDur, Ch=2):
+def SoundCalOut(Pulse, Ch=2):
     """ Generate a sine wave from 1 to -1 """
-    Pulse = SineWave(Rate, Freq, 1, WaveDur)
-    
     SD.default.device = 'system'
-    SD.default.samplerate = Rate
+    SD.default.samplerate = 192000
     SD.default.channels = 1
     SD.default.blocksize = 384    
 #    SD.default.latency = 'low'
@@ -209,12 +206,10 @@ def SoundCalOut(Rate, Freq, WaveDur, Ch=2):
     return(None)
 
 
-def SoundCalIn(Rate, Freq, WaveDur, SBOutAmpF, Ch=2):
+def SoundCalIn(Pulse, Ch=2):
     """ Generate sine wave (1V to -1V) and read 1s of it. """
-    Pulse = SineWave(Rate, Freq, SBOutAmpF, WaveDur)
-    
     SD.default.device = 'system'
-    SD.default.samplerate = Rate
+    SD.default.samplerate = 192000
     SD.default.channels = 1
     SD.default.blocksize = 384
 #    SD.default.latency = 'low'

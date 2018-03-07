@@ -98,6 +98,7 @@ for Freq in NoiseFrequency:
     for AKey in Sound[FKey]:
         print(FKey, AKey)
         SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey], blocking=True)
+        SoundRec[FKey][AKey] = SoundRec[FKey][AKey][2000:] # Temp override
     
     print('Done playing/recording', FKey + '.')
     Hdf5.SoundMeasurementWrite(SoundRec, DataInfo, Group, FileName)

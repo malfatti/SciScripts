@@ -11,8 +11,8 @@ from Exps import GPIAS
 
 Parameters = dict(
     # array([4, 1, 3, 2, 5])
-    AnimalName  = 'RecoveryControl_05',
-    StimType    = ['Sound', 'CNO'],
+    AnimalName  = 'Prevention_06_07_08',
+    StimType    = ['Sound'],
     
     # Number of trials per freq. tested 
     # 1 trial is composed by 1 stim w/ gap and 1 stim w/o gap
@@ -27,24 +27,26 @@ Parameters = dict(
     SoundLoudPulseDur       = 0.05,
     SoundBGAfterPulseDur    = 0.51,
     SoundBetweenStimDur     = [10, 20],
-    NoiseFrequency          = [[8000, 10000], 
-                               [9000, 11000], 
-                               [10000, 12000], 
-                               [12000, 14000], 
-                               [14000, 16000]],
+    NoiseFrequency          = [[8000, 10000]],
+    # NoiseFrequency          = [[8000, 10000], 
+    #                            [9000, 11000], 
+    #                            [10000, 12000], 
+    #                            [12000, 14000], 
+    #                            [14000, 16000],
+    #                            [8000, 18000]],
     
     # Background and pulse intensities in dB
-    BGIntensity     = [65],
-    PulseIntensity  = [105],
+    BGIntensity     = [60],
+    PulseIntensity  = [60],
     
     
     ## === Hardware  === ##
-    SoundCh         = 3,
-    TTLCh           = 2,
-    PiezoCh         = [1],
+    SoundCh         = 2,
+    TTLCh           = 1,
+    PiezoCh         = [8],
     AnalogTTLs      = True,
     
-    SoundSystem     = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn',
+    SoundSystem     = 'Jack-IntelOut-Marantz-IntelIn',
     Setup           = 'GPIAS',
 )
 

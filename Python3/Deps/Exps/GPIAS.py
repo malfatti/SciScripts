@@ -154,7 +154,7 @@ def Run(AnimalName, StimType, BGIntensity, PulseIntensity,
         NoiseFrequency, SoundBGDur, SoundGapDur, 
         SoundBGPrePulseDur, SoundLoudPulseDur, 
         SoundBGAfterPulseDur, SoundBetweenStimDur, NoOfTrials, 
-        SoundSystem, Setup, SoundCh, TTLCh, PiezoCh, AnalogTTLs = True, 
+        SoundSystem, Setup, SoundCh, TTLCh, PiezoCh, AnalogTTLs=True, 
         Rate=192000, BlockSize=384, Channels=2, BaudRate=115200):
     
     SoundBGAmpF = SigGen.dBToAmpF(BGIntensity, SoundSystem+'/'+Setup)

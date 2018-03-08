@@ -340,7 +340,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
                               SBOutAmpF, SoundPauseBeforePulseDur, 
                               SoundPauseAfterPulseDur)
     else:
-        SoundTTLUnit = np.zeros((Rate*SoundPulseDur), dtype='float32')
+        SoundTTLUnit = np.zeros((round(Rate*SoundPulseDur)), dtype='float32')
     
     Sound = {}
     for FKey in SoundUnit:

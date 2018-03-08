@@ -41,7 +41,7 @@ if [[ " $Branches " =~ " $Branch " ]]; then
     
     cd ../../
     cp Resources/DLLs/Linux-USB3/x64/libokFrontPanel.so Resources/Bitfiles/rhd2000_usb3.bit Builds/Linux/build/
-    mv Builds/Linux/build/ $OEInstallPath
+    cp Builds/Linux/build/ $OEInstallPath
     
     echo ""
     echo "GUI installed at $OEInstallPath"

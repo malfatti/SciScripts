@@ -25,7 +25,7 @@ frequency filter is being applied.
 """
 #%% Set calibration
 Rate = 192000; Freq = 10000; WaveDur = 10
-SoundSystem = 'Jack-IntelOut-IntelIn'
+SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
 
 from IO import SoundCard
 from IO.SigGen import SineWave
@@ -38,23 +38,24 @@ FileName = Folder + '/' + 'SoundMeasurements.hdf5'
 
 #%% Output
 Pulse = SineWave(Rate, Freq, 1, WaveDur)
-SoundCard.SoundCalOut(Pulse, Ch=2)
+SoundCard.SoundCalOut(Pulse, Ch=1)
 # SBOutAmpF is the generated signal divided by the measured signal
-SBOutAmpF = 1/2
+SBOutAmpF = 1/1
 
 #%% Input
 Repetitions = 4
-Pulse = SineWave(Rate, Freq, SBOutAmpF, WaveDur)
+TestAmp = 0.1*SBOutAmpF
+Pulse = SineWave(Rate, Freq, TestAmp, WaveDur)
 
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)
 for aa in range(Repetitions):
-    Rec = SoundCard.SoundCalIn(Pulse, Ch=2)
+    Rec = SoundCard.SoundCalIn(Pulse, Ch=1)
     #SBInAmpF[aa] = (max(Rec)-(min(Rec)))/2
     SBInAmpF[aa] = (max(Rec[2000:])-(min(Rec[2000:])))/2
     print(SBInAmpF[aa])
 
 # SBInAmpF is the real amplitude divided by the measured amplitude
-SBInAmpF = 1/SBInAmpF.mean()
+SBInAmpF = TestAmp/SBInAmpF.mean()
 
 print('SBInAmpF = ', str(SBInAmpF))
 
@@ -65,6 +66,7 @@ SD.default.samplerate = Rate
 SD.default.channels = 1
 SD.default.blocksize = 384
 MicNoise = SD.rec(Rate*10, Rate, 1, blocking=True)
+NoiseLevel = (np.mean(MicNoise**2)**0.5)*SBInAmpF
 
 
 #%% Save
@@ -73,10 +75,10 @@ with h5py.File(FileName, 'w') as F:
     
     F[SoundSystem]['SBOutAmpF'] = SBOutAmpF
     F[SoundSystem]['SBInAmpF'] = SBInAmpF
-    F[SoundSystem]['MicNoise'] = MicNoise
+    F[SoundSystem]['NoiseLevel'] = NoiseLevel
 
 with h5py.File(FileName, 'r') as F:
     a = F[SoundSystem]['SBOutAmpF'][()]
     b = F[SoundSystem]['SBInAmpF'][()]
-    c = F[SoundSystem]['MicNoise'][()]
+    c = F[SoundSystem]['NoiseLevel'][()]
 

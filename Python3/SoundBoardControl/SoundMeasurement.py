@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 
 
 ## Set parameters of the experiment
-SoundSystem = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn'
+SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
 Setup = 'GPIAS'
 SBOutAmpF = Hdf5.DataLoad(SoundSystem+'/SBOutAmpF', SigGen.CalibrationFile)[0]
 OutMax = 1/SBOutAmpF
@@ -35,9 +35,9 @@ OutMax = 1/SBOutAmpF
 ## Sound (Durations in sec)
 Rate = 192000
 SoundPulseDur = 2
+# NoiseFrequency = [[8000, 10000], [9000, 11000]] # Override
 NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
                   [14000, 16000], [16000, 18000], [8000, 18000]]
-# NoiseFrequency = [[8000, 10000], [9000, 11000]]
 
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa or in V/Pa
@@ -51,7 +51,7 @@ Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-# SoundAmpF = [OutMax, 1.0, 0.0]
+# SoundAmpF = [OutMax, 0.5, 0.0] # Override
 SoundAmpF = np.hstack((
                 np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
                 np.array(0.0)
@@ -83,7 +83,7 @@ print('Current time: ', datetime.now().strftime("%H:%M:%S"))
 input('Press any key to start... ')
 print('This can be loud - cover your ears!!')
 print('')
-for i in range(10, 0, -1): print(i, end=' '); sleep(1)
+for i in range(5, 0, -1): print(i, end=' '); sleep(1)
 print('')
 
 print('Sound measurement running...')
@@ -110,8 +110,8 @@ print('Finished recording \O/')
 #%% Analysis
 SoundRec = Hdf5.DataLoad(Group + '/SoundRec', FileName)[0]
 SBInAmpF = Hdf5.DataLoad(SoundSystem+'/SBInAmpF', SigGen.CalibrationFile)[0]
-Noise = Hdf5.DataLoad(SoundSystem+'/MicNoise', SigGen.CalibrationFile)[0]
-#Noise *= SBInAmpF
+# NoiseRMS = Hdf5.DataLoad(SoundSystem+'/NoiseLevel', SigGen.CalibrationFile)[0]
+# Noise *= SBInAmpF
 
 if 'MicSens_dB' in DataInfo:
     DataInfo['MicSens_VPa'] = 10**(DataInfo['MicSens_dB']/20)
@@ -127,15 +127,15 @@ for FKey in SoundRec:
     SoundIntensity[FKey] = {}
     FreqBand = [int(_) for _ in FKey.split('-')]
     
-    NoiseRMS = SignalIntensity(Noise, DataInfo['Rate'], FreqBand, DataInfo['MicSens_VPa'])
-    NoiseRMS = NoiseRMS['RMS']
+    # NoiseRMS = SignalIntensity(Noise, DataInfo['Rate'], FreqBand, DataInfo['MicSens_VPa'])
+    # NoiseRMS = NoiseRMS['RMS']
     
     for AKey in SoundRec[FKey]:
         SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * SBInAmpF
         SoundIntensity[FKey][AKey] = SignalIntensity(SoundRec[FKey][AKey], 
                                                      DataInfo['Rate'], FreqBand, 
-                                                     DataInfo['MicSens_VPa'],
-                                                     NoiseRMS)
+                                                     DataInfo['MicSens_VPa'])#,
+                                                     # NoiseRMS)
 
 del(SoundRec)
 

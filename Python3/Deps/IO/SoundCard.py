@@ -24,6 +24,7 @@ import sounddevice as SD
 
 from queue import Queue, Empty
 from IO import Hdf5
+from IO.SigGen import CalibrationFile
 
 
 def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=False):
@@ -43,8 +44,6 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
     Window = 200
     Interval = 30
     SoundQueue = Queue()
-    XLim=[0, 2000]
-    YLim=[-0.05, 0.05]
     
     SD.default.device = 'system'
     SD.default.samplerate = Rate
@@ -76,8 +75,7 @@ def MicrOscilloscope(Rate, XLim, YLim, SoundBoard, FramesPerBuffer=512, Rec=Fals
         
         return(Lines)
     
-    
-    SBInAmpF = Hdf5.SoundCalibration(SBAmpFsFile, SoundBoard, 'SBInAmpF')
+    SBInAmpF = Hdf5.DataLoad(SoundBoard+'/SBInAmpF', CalibrationFile)[0]
     
     DataLength = int(Window * Rate / (1000 * DownSample))
     DataPlot = np.zeros((DataLength, len(Channels)))

@@ -372,9 +372,10 @@ def RemapCh(Probe, Adaptor):
     return(Map)
 
 
-def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=4096):
+def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=None):
     Intensity = {}
     
+    if not WindowSize: WindowSize = len(Data)
     if Data.shape[-1] == 2: F, PxxSp = PSD(Data[:,0], Rate)
     else: F, PxxSp = PSD(Data, Rate, WindowSize=WindowSize)
     

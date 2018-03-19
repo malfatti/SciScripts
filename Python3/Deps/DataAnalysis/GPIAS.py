@@ -93,7 +93,7 @@ def PreallocateDict(DataInfo, PrePostFreq):
     Dict = {}
     for Key in ['Trace', 'Index']:
         Dict[Key] = {''.join([str(Freq[0]), '-', str(Freq[1])]): {}
-                     for Freq in DataInfo['NoiseFrequency']}
+                     for Freq in DataInfo['Audio']['NoiseFrequency']}
     
     if PrePostFreq:
         Dict['Trace'][PrePostFreq]['Pre'] = []
@@ -115,8 +115,8 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
         Freq = DataInfo['FreqOrder'][int(R)][0]; 
         Trial = DataInfo['FreqOrder'][int(R)][1];
         
-        SFreq = ''.join([str(DataInfo['NoiseFrequency'][Freq][0]), '-', 
-                         str(DataInfo['NoiseFrequency'][Freq][1])])
+        SFreq = ''.join([str(DataInfo['Audio']['NoiseFrequency'][Freq][0]), '-', 
+                         str(DataInfo['Audio']['NoiseFrequency'][Freq][1])])
         
         if Trial == -1: STrial = 'Pre'
         elif Trial == -2: STrial = 'Post'
@@ -124,17 +124,17 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
         else: STrial = 'Gap'
         
         if AnalogTTLs:
-            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Rec[:,DataInfo['TTLCh']-1], StdNo=2)
-            if len(TTLs) > 1: TTLs = [np.argmax(Rec[:,DataInfo['TTLCh']-1])]
+            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Rec[:,DataInfo['DAqs']['TTLCh']-1], StdNo=2)
+            if len(TTLs) > 1: TTLs = [np.argmax(Rec[:,DataInfo['DAqs']['TTLCh']-1])]
             print(TTLs)
             
             if not TTLs: print('No TTL detected. Skipping trial...'); continue
         
         else:
             TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, 
-                                      TTLCh=DataInfo['TTLCh'], Proc=Proc, Rec=R)
+                                      TTLCh=DataInfo['DAqs']['TTLCh'], Proc=Proc, Rec=R)
         
-        GD = DataAnalysis.SliceData(Rec[:,DataInfo['PiezoCh'][0]-1], TTLs, 
+        GD = DataAnalysis.SliceData(Rec[:,DataInfo['DAqs']['PiezoCh'][0]-1], TTLs, 
                        NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
                        AnalogTTLs)
         
@@ -158,8 +158,8 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                /Rate)*10**3
     
     PrePostFreq = DataInfo['FreqOrder'][0][0]
-    PrePostFreq = '-'.join([str(DataInfo['NoiseFrequency'][PrePostFreq][0]),
-                            str(DataInfo['NoiseFrequency'][PrePostFreq][1])])
+    PrePostFreq = '-'.join([str(DataInfo['Audio']['NoiseFrequency'][PrePostFreq][0]),
+                            str(DataInfo['Audio']['NoiseFrequency'][PrePostFreq][1])])
     
     # Temporary override
     if AnalysisFile.split('/')[0] == 'Recovery': PrePostFreq = []

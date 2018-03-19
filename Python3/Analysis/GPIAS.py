@@ -159,6 +159,40 @@ for Exp in Exps:
         del(GPIASRec, XValues)
 
 
+#%% Single
+GPIASTimeBeforeTTL = 200   # in ms
+GPIASTimeAfterTTL = 200    # in ms
+FilterFreq = [100, 300]     # frequency for filter
+FilterOrder = 3       # butter order
+Filter = 'butter'
+Stim = 'Sound'
+
+Ext=['svg']; Save = False; Show = True
+
+Folder = '/home/cerebro/Malfatti/Data/2018-03-13_08-29-36_A5'
+InfoFile = '/home/cerebro/Data/20180313082918-A5-GPIAS.dict'
+AnalysisFile = 'Test.hdf5'
+AnalysisKey = 'Test'
+FigPrefix = 'Test'
+FigName = 'Test'
+RecFolder = Folder.split('/')[-1]
+
+Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
+if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
+
+DataInfo = Txt.DictRead(InfoFile)
+
+ExpStim = '_'.join(DataInfo['Animal']['StimType'])
+
+GPIASRec, XValues = GPIAS.Analysis(
+                     Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
+                     AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+                     FilterFreq, FilterOrder, Filter, Return=True, Overwrite=True)
+
+PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['Audio']['SoundLoudPulseDur'], 
+                 FigName, Ext, Save, Show)
+
+
 #%% convert hdf5 to dict
 Files = glob('Prevention/*GPIAS/2*.hdf5'); Files.sort()
 

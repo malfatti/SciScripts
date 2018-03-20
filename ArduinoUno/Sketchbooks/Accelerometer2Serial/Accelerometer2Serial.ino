@@ -17,7 +17,7 @@ MMA8453_n0m1 accel;
 void setup()
 {
   Serial.begin(115200);
-  accel.setI2CAddr(0x1D); //change your device address if necessary, default is 0x1C
+  accel.setI2CAddr(0x1C); //change your device address if necessary, default is 0x1C
   accel.dataMode(true, 2); //enable highRes 10bit, 2g range [2g,4g,8g]
   Serial.println("MMA8453_n0m1 library");
   Serial.println("XYZ Data Example");

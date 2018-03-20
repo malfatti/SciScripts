@@ -65,7 +65,7 @@ def IndexCalcOld(Data, Keys, PulseSampleStart, SliceSize):
     return(Index)
 
 
-def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
+def IndexCalc(Data, Keys, PulseSampleStart, SliceSize, BGNormalize=True):
     Index = {}
     for Key in Keys:
         BGStart = 0; BGEnd = SliceSize
@@ -76,13 +76,17 @@ def IndexCalc(Data, Keys, PulseSampleStart, SliceSize):
                 print('Key', Key[0], 'is empty. Skipping...')
                 continue
         
-        ResRMSBG = (np.mean(Data[Key[0]][BGStart:BGEnd]**2))**0.5
         ResRMSPulse = (np.mean(Data[Key[0]][PulseStart:PulseEnd]**2))**0.5
-        ResRMS = ResRMSPulse/ResRMSBG
-        
-        RefRMSBG = (np.mean(Data[Key[1]][BGStart:BGEnd]**2))**0.5
         RefRMSPulse = (np.mean(Data[Key[1]][PulseStart:PulseEnd]**2))**0.5
-        RefRMS = RefRMSPulse/RefRMSBG
+        
+        if BGNormalize: 
+            ResRMSBG = (np.mean(Data[Key[0]][BGStart:BGEnd]**2))**0.5
+            RefRMSBG = (np.mean(Data[Key[1]][BGStart:BGEnd]**2))**0.5
+            ResRMS = ResRMSPulse/ResRMSBG
+            RefRMS = RefRMSPulse/RefRMSBG
+        else: 
+            RefRMS = RefRMSPulse
+            ResRMS = ResRMSPulse
         
         Index[Key[2]] = ((ResRMS/RefRMS)-1)*100
     
@@ -108,7 +112,7 @@ def PreallocateDict(DataInfo, PrePostFreq):
     return(Dict)
 
 
-def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore, 
+def OrganizeRecs(Dict, Data, Rate, DataInfo, AnalogTTLs, NoOfSamplesBefore, 
                  NoOfSamplesAfter, NoOfSamples, Proc=None, Events=None):
     for R, Rec in Data.items():
         print('Slicing and filtering Rec ', R, '...')
@@ -134,9 +138,30 @@ def OrganizeRecs(Dict, Data, DataInfo, AnalogTTLs, NoOfSamplesBefore,
             TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, 
                                       TTLCh=DataInfo['DAqs']['TTLCh'], Proc=Proc, Rec=R)
         
-        GD = DataAnalysis.SliceData(Rec[:,DataInfo['DAqs']['PiezoCh'][0]-1], TTLs, 
-                       NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
-                       AnalogTTLs)
+        if len(DataInfo['DAqs']['PiezoCh']) == 1:
+            GD = DataAnalysis.SliceData(
+                Rec[:,DataInfo['DAqs']['PiezoCh'][0]-1], TTLs, 
+                NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
+            
+        elif len(DataInfo['DAqs']['PiezoCh']) == 3:
+            X = DataAnalysis.FilterSignal(Rec[:,DataInfo['DAqs']['PiezoCh'][0]-1], 
+                                          Rate, [100], 3, 'butter', 'lowpass')
+            Y = DataAnalysis.FilterSignal(Rec[:,DataInfo['DAqs']['PiezoCh'][1]-1], 
+                                          Rate, [100], 3, 'butter', 'lowpass')
+            Z = DataAnalysis.FilterSignal(Rec[:,DataInfo['DAqs']['PiezoCh'][2]-1], 
+                                          Rate, [100], 3, 'butter', 'lowpass')
+            GD = np.mean([
+                np.abs(X-X.mean()),
+                np.abs(Y-Y.mean()),
+                np.abs(Z-Z.mean())], axis=0)
+            
+            # GD = np.abs(X-X.mean()) + \
+            #      np.abs(Y-Y.mean()) + \
+            #      np.abs(Z-Z.mean())
+            
+            GD = DataAnalysis.SliceData(
+                GD, TTLs, NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
+                AnalogTTLs)
         
         Dict['Index'][SFreq][STrial].append(GD[0])
         Dict['Trace'][SFreq][STrial].append(GD[0])
@@ -166,7 +191,7 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
     SliceSize = int(SliceSize * (Rate/1000))
     
     GPIASData = PreallocateDict(DataInfo, PrePostFreq)
-    GPIASData = OrganizeRecs(GPIASData, Data, DataInfo, AnalogTTLs,
+    GPIASData = OrganizeRecs(GPIASData, Data, Rate, DataInfo, AnalogTTLs,
                                    NoOfSamplesBefore, NoOfSamplesAfter, 
                                    NoOfSamples)
     
@@ -179,17 +204,20 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                 continue
             
             # Bandpass filter
-            GPIASData['Trace'][Freq][Key] = DataAnalysis.FilterSignal(GPIASData['Trace'][Freq][Key], 
-                                                       Rate, FilterFreq, FilterOrder, 
-                                                       Filter, 'bandpass')
+            if Filter:
+                GPIASData['Trace'][Freq][Key] = DataAnalysis.FilterSignal(GPIASData['Trace'][Freq][Key], 
+                                                           Rate, FilterFreq, FilterOrder, 
+                                                           Filter, 'bandpass')
             
             for Tr in range(len(GPIASData['Index'][Freq][Key])):
                 # Bandpass filter
 #                    TR = FilterSignal(GPIASData['Trace'][Freq][Key][Tr], Rate, 
 #                                      FilterFreq, FilterOrder, Filter, 'bandpass')
-                
-                AE = DataAnalysis.FilterSignal(GPIASData['Index'][Freq][Key][Tr], Rate, 
-                                     FilterFreq, FilterOrder, Filter, 'bandpass')
+                if Filter:
+                    AE = DataAnalysis.FilterSignal(GPIASData['Index'][Freq][Key][Tr], Rate, 
+                                         FilterFreq, FilterOrder, Filter, 'bandpass')
+                else:
+                    AE = GPIASData['Index'][Freq][Key][Tr]
                 
                 # Amplitude envelope
                 AE = abs(signal.hilbert(AE))
@@ -205,9 +233,14 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                                         ['Post', 'Pre', 'PrePost']]
         else: Keys = [['Gap', 'NoGap', 'GPIASIndex']]
         
-        GPIASData['Index'][Freq] = IndexCalc(
-                                       GPIASData['Index'][Freq], Keys, 
-                                       NoOfSamplesBefore, SliceSize)
+        if len(DataInfo['DAqs']['PiezoCh']) == 1:
+            GPIASData['Index'][Freq] = IndexCalc(
+                                           GPIASData['Index'][Freq], Keys, 
+                                           NoOfSamplesBefore, SliceSize)
+        elif len(DataInfo['DAqs']['PiezoCh']) == 3:
+            GPIASData['Index'][Freq] = IndexCalc(
+                                           GPIASData['Index'][Freq], Keys, 
+                                           NoOfSamplesBefore, SliceSize, False)
     
     # Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFile, Overwrite)
     Asdf.Write({'GPIAS': GPIASData, 'XValues': XValues}, '/', AnalysisKey+'.asdf')

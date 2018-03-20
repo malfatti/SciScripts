@@ -118,13 +118,14 @@ GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
-Filter = 'butter'
+# Filter = 'butter'
+Filter = None
 Stim = 'Sound'
 
 Ext=['svg']; Save = False; Show = True
 
-Folder = '/home/cerebro/Malfatti/Data/2018-03-13_08-29-36_A5'
-InfoFile = '/home/cerebro/Data/20180313082918-A5-GPIAS.dict'
+Folder = '/home/cerebro/Malfatti/Data/2018-03-20_16-06-19_D3'
+InfoFile = '/home/cerebro/Data/20180320160602-D3-GPIAS.dict'
 AnalysisFile = 'Test.hdf5'
 AnalysisKey = 'Test'
 FigPrefix = 'Test'
@@ -135,7 +136,7 @@ Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
 if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
 
 DataInfo = Txt.DictRead(InfoFile)
-
+# DataInfo['DAqs']['PiezoCh'] = [3]
 ExpStim = '_'.join(DataInfo['Animal']['StimType'])
 
 GPIASRec, XValues = GPIAS.Analysis(

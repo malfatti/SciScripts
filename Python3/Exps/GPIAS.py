@@ -11,7 +11,7 @@ from Exps import GPIAS
 
 Parameters = dict(
     # array([1, 3, 2, 4])
-    AnimalName  = 'D4',
+    AnimalName  = 'D3',
     StimType    = ['Sound'],
     
     # Number of trials per freq. tested 
@@ -44,7 +44,7 @@ Parameters = dict(
     ## === Hardware  === ##
     SoundCh         = 2,
     TTLCh           = 1,
-    PiezoCh         = [3],
+    PiezoCh         = [4,5,6],
     AnalogTTLs      = True,
     
     SoundSystem     = 'Jack-IntelOut-Marantz-IntelIn',

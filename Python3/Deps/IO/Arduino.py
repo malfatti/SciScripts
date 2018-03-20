@@ -19,52 +19,46 @@
 This is a script to define functions allowing Arduino/Python integration.
 """
 
-import serial
-import serial.tools.list_ports
+import numpy as np
+import os
+import time
+
+from datetime import datetime
+from serial import Serial
+from serial.tools.list_ports import comports
 
 
+## Level 0
 def CreateObj(BaudRate):
-    Port = serial.tools.list_ports.comports()
-    Arduino = serial.Serial(Port[-1][0], BaudRate)
+    Port = comports()
+    Arduino = Serial(Port[-1][0], BaudRate)
     
     return(Arduino)
 
-def Oscilloscope(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028), 
-                       FramesPerBuf=128):
-    
-    import matplotlib.animation as animation
-    import matplotlib.pyplot as plt
-    
-    Port = serial.tools.list_ports.comports()
-    Arduino = serial.Serial(Port[-1][0], BaudRate)
-    
-    Fig = plt.figure()
-    Ax = plt.axes(xlim=XLim, ylim=YLim)
-    Plot = Ax.plot([float('nan')]*FramesPerBuf, lw=1)[0]
-    
-    def AnimInit():
-        Data = []
-        Plot.set_ydata(Data)
-        return Plot,
-    
-    def PltUp(n):
-        Data = []
-        for Frame in range(FramesPerBuf):
-            Data.append(Arduino.readline())
-        Plot.set_ydata(Data)
-        return Plot,
-    
-    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)
+
+def GetSerialData(FramesPerBuf, ArduinoObj):
+    Data = np.zeros((FramesPerBuf, 2), dtype='float32')
+
+    for F in range(FramesPerBuf):
+        Line = ArduinoObj.readline()
+        while Line in [b'\r\n', b'\n']:
+            Line = ArduinoObj.readline()
+
+        Data[F,0] = float(Line)
+        Data[F,1] = time.clock()
+        time.sleep(0.001)
+
+    return(Data)
 
 
+## Level 1
 def CheckPiezoAndTTL(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028), 
                      FramesPerBuf=128):
     
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
     
-    Port = serial.tools.list_ports.comports()
-    Arduino = serial.Serial(Port[-1][0], BaudRate)
+    Arduino = CreateObj(BaudRate)
     
     Fig = plt.figure()
     Ax = plt.axes(xlim=XLim, ylim=YLim)
@@ -92,3 +86,56 @@ def CheckPiezoAndTTL(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028),
         return tuple(Plots)
     
     Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)
+
+
+def WriteSerialData(FramesPerBuf, FileName='', Plot=False):
+    """
+    Grab serial data and continuously write to a .dat file. The shape will be 
+    in the filename.
+    """
+    #if Plot: PlotThread()
+
+    ArduinoObj = Arduino.CreateObj(115200)
+    Date = datetime.now().strftime("%Y%m%d%H%M%S")
+    DataLen = 0
+
+    try:
+        while True:
+            Data = Arduino.GetSerialData(FramesPerBuf, ArduinoObj)
+            with open(Date+'.dat', 'ab') as File: File.write(Data.tobytes())
+            DataLen += Data.shape[0]
+
+    except KeyboardInterrupt:
+        pass
+
+    os.rename(Date+'.dat', FileName+'_'+str(DataLen)+'x2.dat')
+    return(None)
+
+
+def Oscilloscope(BaudRate=115200, XLim=(0, 128), YLim=(-5, 1028), 
+                       FramesPerBuf=128):
+    
+    import matplotlib.animation as animation
+    import matplotlib.pyplot as plt
+    
+    Arduino = CreateObj(BaudRate)
+    
+    Fig = plt.figure()
+    Ax = plt.axes(xlim=XLim, ylim=YLim)
+    Plot = Ax.plot([float('nan')]*FramesPerBuf, lw=1)[0]
+    
+    def AnimInit():
+        Data = []
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    def PltUp(n):
+        Data = []
+        for Frame in range(FramesPerBuf):
+            Data.append(Arduino.readline())
+        Plot.set_ydata(Data)
+        return Plot,
+    
+    Anim = animation.FuncAnimation(Fig, PltUp, frames=FramesPerBuf, interval=10, blit=False)
+
+

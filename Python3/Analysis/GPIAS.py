@@ -124,8 +124,8 @@ Stim = 'Sound'
 
 Ext=['svg']; Save = False; Show = True
 
-Folder = '/home/cerebro/Malfatti/Data/2018-03-20_16-06-19_D3'
-InfoFile = '/home/cerebro/Data/20180320160602-D3-GPIAS.dict'
+Folder = '/home/cerebro/Malfatti/Data/2018-03-22_13-00-18_C1'
+InfoFile = '/home/cerebro/Data/20180322125959-C1-GPIAS.dict'
 AnalysisFile = 'Test.hdf5'
 AnalysisKey = 'Test'
 FigPrefix = 'Test'
@@ -148,6 +148,38 @@ PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['Audio']['SoundLoudPulseDur'],
                  FigName, Ext, Save, Show)
 
 
+
+#%% Plot single freq
+
+from DataAnalysis.Plot import Plot
+
+Params = Plot.Set(Params=True)
+from matplotlib import rcParams; rcParams.update(Params)
+from matplotlib import pyplot as plt
+
+SoundPulseDur = DataInfo['Audio']['SoundLoudPulseDur']
+
+Ind1 = list(XValues).index(0)
+Ind2 = list(XValues).index(int(SoundPulseDur*1000))
+
+GPIASData = GPIASRec
+Freq = list(GPIASData['Trace'].keys())[0]
+
+SubTitle = Freq + ' Hz' + ' Index = ' + str(round(GPIASData['Index'][Freq]['GPIASIndex'], 4))
+LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
+SpanLabel = 'Sound Pulse'
+XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
+
+Fig, Axes = plt.subplots(1, 1, figsize=(7, 12), sharex=True)
+Axes.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, lw=0, label=SpanLabel)
+Axes.plot(XValues, GPIASData['Trace'][Freq]['NoGap'], color='r', label=LineNoGapLabel, lw=2)
+Axes.plot(XValues, GPIASData['Trace'][Freq]['Gap'], color='b', label=LineGapLabel, lw=2)
+
+AxArgs = {'title': SubTitle, 'ylabel': YLabel, 'xlabel': XLabel}
+Plot.Set(Ax=Axes, AxArgs=AxArgs)
+Axes.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), prop={'size':6})
+
+plt.show()
 #%% Olds
 Animals = ['CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 ExpList = ['Before', 'After1', 'After2', 'After3', 'NaCl', 'CNO']

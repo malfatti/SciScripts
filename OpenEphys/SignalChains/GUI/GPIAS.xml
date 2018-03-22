@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>20 Mar 2018 14:57:28</DATE>
+    <DATE>22 Mar 2018 9:25:38</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -105,7 +105,7 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="22" number="22">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="23" number="23">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -477,15 +477,15 @@
       <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
         <TAB Active="1"/>
         <WINDOW Active="0"/>
-        <LFPDISPLAY Range="1000,2000,0.1" Timebase="2.0" Spread="100" colorGrouping="1"
-                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="000000000000000000011010111"
-                    ScrollX="0" ScrollY="2067"/>
+        <LFPDISPLAY Range="1000,2000,0.1" Timebase="4.0" Spread="100" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="000000000000000000011000111"
+                    ScrollX="0" ScrollY="2065"/>
       </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>
   <AUDIO bufferSize="1024"/>
   <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
-                appendText="ToDelete" recordEngine="2"/>
+                appendText="D4" recordEngine="2"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">

@@ -10,8 +10,7 @@
 from Exps import GPIAS
 
 Parameters = dict(
-    # array([1, 3, 2, 4])
-    AnimalName  = 'D3',
+    AnimalName  = 'C1',
     StimType    = ['Sound'],
     
     # Number of trials per freq. tested 
@@ -28,7 +27,8 @@ Parameters = dict(
     SoundBGAfterPulseDur    = 0.51,
     SoundBetweenStimDur     = [10, 20],
     
-    # NoiseFrequency          = [[8000, 10000]],
+    # NoiseFrequency          = [[9000, 11000],
+    #                            [12000, 14000]],
     NoiseFrequency          = [[8000, 10000], 
                                [9000, 11000], 
                                [10000, 12000], 
@@ -44,7 +44,7 @@ Parameters = dict(
     ## === Hardware  === ##
     SoundCh         = 2,
     TTLCh           = 1,
-    PiezoCh         = [4,5,6],
+    PiezoCh         = [3,4,5],
     AnalogTTLs      = True,
     
     SoundSystem     = 'Jack-IntelOut-Marantz-IntelIn',
@@ -52,4 +52,4 @@ Parameters = dict(
 )
 
 GPIAS.Run(**Parameters)
-
+# array([2, 4, 3, 1])

@@ -21,7 +21,8 @@ def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext=['svg'],
     Ind2 = list(XValues).index(int(SoundPulseDur*1000))
     
     PlotNo = len(GPIASData['Trace'].keys())
-    Fig, Axes = plt.subplots(PlotNo, 1, figsize=(7, 12), sharex=True)
+    Fig = plt.figure(figsize=(7, 12))
+    Axes = [plt.subplot(PlotNo,1,_+1) for _ in range(PlotNo)]
 #        
     for FInd, Freq in enumerate(GPIASData['Trace'].keys()):
         SubTitle = Freq + ' Hz' + ' Index = ' + str(round(GPIASData['Index'][Freq]['GPIASIndex'], 4))

@@ -20,8 +20,8 @@ Parameters = dict(
     
     # Fill all durations in SECONDS!
     TonePauseBeforePulseDur    = 0,
-    TonePulseDur               = 0.05,
-    TonePauseAfterPulseDur     = 4.95,
+    TonePulseDur               = 5,
+    TonePauseAfterPulseDur     = 0,
     TonePulseNo                = 30,
     TonePauseBetweenIntensities     = 10,
     
@@ -32,8 +32,8 @@ Parameters = dict(
     
     # Fill all durations in SECONDS!
     ThunderPauseBeforePulseDur    = 0,
-    ThunderPulseDur               = 0.05,
-    ThunderPauseAfterPulseDur     = 4.95,
+    ThunderPulseDur               = 5,
+    ThunderPauseAfterPulseDur     = 0,
     ThunderPulseNo                = 30,
     ThunderPauseBetweenIntensities     = 10,
     
@@ -43,7 +43,7 @@ Parameters = dict(
     TTLCh           = 0,
     AnalogTTLs      = True,
     
-    System          = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn',
+    System          = 'Jack-IntelOut-Marantz-IntelIn',
     Setup           = 'GPIAS',
 )
 

@@ -25,12 +25,14 @@ GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
+# Filter = None
 Filter = 'butter'
 Stim = 'Sound'
 
 Ext=['svg']; Save = False; Show = True
 
 Exps = sorted(glob(Group+'/2*IAS'))#[2:]
+Exps = [Exps[0]] # Just the last folder
 
 for Exp in Exps:
 #    Exp = Group + '/20170721-Prevention-GPIAS'
@@ -124,8 +126,8 @@ Stim = 'Sound'
 
 Ext=['svg']; Save = False; Show = True
 
-Folder = '/home/cerebro/Malfatti/Data/2018-03-22_13-00-18_C1'
-InfoFile = '/home/cerebro/Data/20180322125959-C1-GPIAS.dict'
+Folder = '/home/cerebro/Malfatti/Data/2018-03-26_13-46-24_A2'
+InfoFile = '/home/cerebro/Data/20180326134604-A2-GPIAS.dict'
 AnalysisFile = 'Test.hdf5'
 AnalysisKey = 'Test'
 FigPrefix = 'Test'
@@ -146,7 +148,6 @@ GPIASRec, XValues = GPIAS.Analysis(
 
 PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['Audio']['SoundLoudPulseDur'], 
                  FigName, Ext, Save, Show)
-
 
 
 #%% Plot single freq

@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>22 Mar 2018 9:25:38</DATE>
+    <DATE>23 Mar 2018 13:27:13</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -479,13 +479,13 @@
         <WINDOW Active="0"/>
         <LFPDISPLAY Range="1000,2000,0.1" Timebase="4.0" Spread="100" colorGrouping="1"
                     isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="000000000000000000011000111"
-                    ScrollX="0" ScrollY="2065"/>
+                    ScrollX="0" ScrollY="1496"/>
       </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>
   <AUDIO bufferSize="1024"/>
   <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
-                appendText="D4" recordEngine="2"/>
+                appendText="B4" recordEngine="2"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">

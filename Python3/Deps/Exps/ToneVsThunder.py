@@ -114,8 +114,9 @@ def Prepare(AnimalName, StimType, ToneIntensities, ToneFrequency, TonePulseNo,
 def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='None', Ramp=False):
     DataInfo = Txt.DictRead(InfoFile)
     
-    FKeys = list(Sound.keys())
-    FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
+    # FKeys = list(Sound.keys())
+    # FKeys.sort(key=lambda x: [int(y) for y in x.split('-')])
+    FKey = list(Sound.keys())[0]
     
     if 'Tone' in StimType: Prefix = 'Tone'
     elif 'Thunder' in StimType: Prefix = 'Thunder'
@@ -125,26 +126,26 @@ def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='None', Ram
     
     Stim.start()
     while True:
-        print('Remember to change folder name in OE!')
-        print('Choose frequency:')
-        print('-1)', 'Baseline (No stimulus)')
-        for Ind, K in enumerate(FKeys): print(str(Ind) + ')' , K)
-        print(str(len(FKeys)) + ')', 'Cancel')
-        FKey = input(': ')
+        # print('Remember to change folder name in OE!')
+        # print('Choose frequency:')
+        # print('-1)', 'Baseline (No stimulus)')
+        # for Ind, K in enumerate(FKeys): print(str(Ind) + ')' , K)
+        # print(str(len(FKeys)) + ')', 'Cancel')
+        # FKey = input(': ')
         
-        if FKey == str(len(FKeys)): break
-        if FKey == str(-1):
-            Rec = "{0:02d}".format(len(DataInfo['ExpInfo']))
-            DataInfo['ExpInfo'][Rec] = {'DV': DV, 'StimType': StimType, 'Hz': 'Baseline'}
-            Txt.DictWrite(InfoFile, DataInfo)
-            continue
+        # if FKey == str(len(FKeys)): break
+        # if FKey == str(-1):
+        #     Rec = "{0:02d}".format(len(DataInfo['ExpInfo']))
+        #     DataInfo['ExpInfo'][Rec] = {'DV': DV, 'StimType': StimType, 'Hz': 'Baseline'}
+        #     Txt.DictWrite(InfoFile, DataInfo)
+        #     continue
         
-        try:
-            FKey = FKeys[int(FKey)]
-        except IndexError:
-            print('=== Wrong Freq index. Stopping... ===')
-            print('')
-            break
+        # try:
+        #     FKey = FKeys[int(FKey)]
+        # except IndexError:
+        #     print('=== Wrong Freq index. Stopping... ===')
+        #     print('')
+        #     break
         
         AKeys = list(Sound[FKey].keys()); AKeys = sorted(AKeys, reverse=True)
         for AmpF, AKey in enumerate(AKeys):
@@ -159,7 +160,6 @@ def PlaySound(Sound, Pause, Stim, ArduinoObj, InfoFile, StimType, DV='None', Ram
             for Pulse in range(DataInfo['Audio'][Prefix+'PulseNo']):
                 ArduinoObj.write(b'D')
                 Stim.write(Sound[FKey][AKey])
-                # ArduinoObj.write(b'w')
             
             Stim.write(Pause)
             

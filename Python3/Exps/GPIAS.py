@@ -10,7 +10,7 @@
 from Exps import GPIAS
 
 Parameters = dict(
-    AnimalName  = 'C1',
+    AnimalName  = 'A2',
     StimType    = ['Sound'],
     
     # Number of trials per freq. tested 
@@ -25,16 +25,16 @@ Parameters = dict(
     SoundBGPrePulseDur      = 0.1,
     SoundLoudPulseDur       = 0.05,
     SoundBGAfterPulseDur    = 0.51,
-    SoundBetweenStimDur     = [10, 20],
+    SoundBetweenStimDur     = [10, 20],                                                                                                                                                                                                                                                                                             
     
     # NoiseFrequency          = [[9000, 11000],
-    #                            [12000, 14000]],
+    #                             [12000, 14000]],
     NoiseFrequency          = [[8000, 10000], 
-                               [9000, 11000], 
-                               [10000, 12000], 
-                               [12000, 14000], 
-                               [14000, 16000],
-                               [8000, 18000]],
+                                [9000, 11000], 
+                                [10000, 12000], 
+                                [12000, 14000], 
+                                [14000, 16000],
+                                [8000, 18000]],
     
     # Background and pulse intensities in dB
     BGIntensity     = [60],
@@ -52,4 +52,4 @@ Parameters = dict(
 )
 
 GPIAS.Run(**Parameters)
-# array([2, 4, 3, 1])
+# array([3, 1, 4, 5, 2])

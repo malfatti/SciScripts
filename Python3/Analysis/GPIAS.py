@@ -25,14 +25,14 @@ GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
-# Filter = None
-Filter = 'butter'
+Filter = None
+# Filter = 'butter'
 Stim = 'Sound'
 
 Ext=['svg']; Save = False; Show = True
 
 Exps = sorted(glob(Group+'/2*IAS'))#[2:]
-Exps = [Exps[0]] # Just the last folder
+Exps = [Exps[-1]] # Just the last folder
 
 for Exp in Exps:
 #    Exp = Group + '/20170721-Prevention-GPIAS'
@@ -126,8 +126,8 @@ Stim = 'Sound'
 
 Ext=['svg']; Save = False; Show = True
 
-Folder = '/home/cerebro/Malfatti/Data/2018-03-26_13-46-24_A2'
-InfoFile = '/home/cerebro/Data/20180326134604-A2-GPIAS.dict'
+Folder = '/home/cerebro/Malfatti/Data/2018-04-04_11-21-10_A1'
+InfoFile = '/home/cerebro/Data/20180404112049-A1-GPIAS.dict'
 AnalysisFile = 'Test.hdf5'
 AnalysisKey = 'Test'
 FigPrefix = 'Test'
@@ -150,37 +150,6 @@ PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['Audio']['SoundLoudPulseDur'],
                  FigName, Ext, Save, Show)
 
 
-#%% Plot single freq
-
-from DataAnalysis.Plot import Plot
-
-Params = Plot.Set(Params=True)
-from matplotlib import rcParams; rcParams.update(Params)
-from matplotlib import pyplot as plt
-
-SoundPulseDur = DataInfo['Audio']['SoundLoudPulseDur']
-
-Ind1 = list(XValues).index(0)
-Ind2 = list(XValues).index(int(SoundPulseDur*1000))
-
-GPIASData = GPIASRec
-Freq = list(GPIASData['Trace'].keys())[0]
-
-SubTitle = Freq + ' Hz' + ' Index = ' + str(round(GPIASData['Index'][Freq]['GPIASIndex'], 4))
-LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
-SpanLabel = 'Sound Pulse'
-XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
-
-Fig, Axes = plt.subplots(1, 1, figsize=(7, 12), sharex=True)
-Axes.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, lw=0, label=SpanLabel)
-Axes.plot(XValues, GPIASData['Trace'][Freq]['NoGap'], color='r', label=LineNoGapLabel, lw=2)
-Axes.plot(XValues, GPIASData['Trace'][Freq]['Gap'], color='b', label=LineGapLabel, lw=2)
-
-AxArgs = {'title': SubTitle, 'ylabel': YLabel, 'xlabel': XLabel}
-Plot.Set(Ax=Axes, AxArgs=AxArgs)
-Axes.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), prop={'size':6})
-
-plt.show()
 #%% Olds
 Animals = ['CaMKIIahM4Dn08', 'CaMKIIahM4Dn09']
 ExpList = ['Before', 'After1', 'After2', 'After3', 'NaCl', 'CNO']
@@ -227,6 +196,35 @@ Index_Exp_BP(IndexPerExp, ExpList, PVals, Invalid, Save=Save)
 
 IndexPerExp = GPIAS.GroupData.GetMAF(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr, Invalid, InvalidThr)
 GPIAS.GroupData.Index_Exp_BP(IndexPerExp, ExpList)
+
+
+#%% MatFiles
+from IO import Asdf, Mat
+
+AnalysisFolder = 'Recovery/Analysis'
+Folders = sorted(glob('Recovery/2*IAS/*00-00-00*'))
+InfoFiles = sorted(glob('Recovery/2*IAS/*.mat'))
+
+GPIASTimeBeforeTTL = 200   # in ms
+GPIASTimeAfterTTL = 200    # in ms
+FilterFreq = [100, 300]     # frequency for filter
+FilterOrder = 3       # butter order
+Filter = 'butter'
+
+Mat.GPIASAnalysis(Folders, InfoFiles, AnalysisFolder, GPIASTimeBeforeTTL, 
+                  GPIASTimeAfterTTL, FilterFreq, FilterOrder, Filter)
+
+for F, Folder in enumerate(Folders):
+    AnalysisKey = InfoFiles[F].split('/')[1].split('-')
+    AnalysisKey[0] = AnalysisKey[0]+'000000'
+    AnalysisKey[1] = Folder.split('_')[-1]
+    AnalysisKey = '-'.join(AnalysisKey) + '-Sound-Recovery_' + 'GPIAS'
+    
+#    Data = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+    Data = Asdf.Load('/', AnalysisFolder+'/'+AnalysisKey+'.asdf')
+    FigName = 'Recovery/Figs/'+AnalysisKey.replace('/', '_')+'_Traces'
+    
+    PlotGPIAS.Traces(Data['GPIAS'], Data['XValues'], 0.05, FigName, Save=True, Show=False)
 
 
 #%% convert hdf5 to dict
@@ -350,140 +348,138 @@ for Ind, DataPath in enumerate(Paths):
     del(GPIASRec, XValues)
 
 
-#%% New
-Animal = 'Prevention/PreventionB'
-Exp = '2017-05-22_16-40-10_Prevention_B4'
-InfoFile = '20170522163944-Prevention_B4-GPIAS.hdf5'
+# #%% Plot single freq
+
+# from DataAnalysis.Plot import Plot
+
+# Params = Plot.Set(Params=True)
+# from matplotlib import rcParams; rcParams.update(Params)
+# from matplotlib import pyplot as plt
+
+# SoundPulseDur = DataInfo['Audio']['SoundLoudPulseDur']
+
+# Ind1 = list(XValues).index(0)
+# Ind2 = list(XValues).index(int(SoundPulseDur*1000))
+
+# GPIASData = GPIASRec
+# Freq = list(GPIASData['Trace'].keys())[0]
+
+# SubTitle = Freq + ' Hz' + ' Index = ' + str(round(GPIASData['Index'][Freq]['GPIASIndex'], 4))
+# LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
+# SpanLabel = 'Sound Pulse'
+# XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
+
+# Fig, Axes = plt.subplots(1, 1, figsize=(7, 12), sharex=True)
+# Axes.axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, lw=0, label=SpanLabel)
+# Axes.plot(XValues, GPIASData['Trace'][Freq]['NoGap'], color='r', label=LineNoGapLabel, lw=2)
+# Axes.plot(XValues, GPIASData['Trace'][Freq]['Gap'], color='b', label=LineGapLabel, lw=2)
+
+# AxArgs = {'title': SubTitle, 'ylabel': YLabel, 'xlabel': XLabel}
+# Plot.Set(Ax=Axes, AxArgs=AxArgs)
+# Axes.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), prop={'size':6})
+
+# plt.show()
+
+# #%% Individual
+
+# Animal = 'Prevention'
+# Exp = 'PreventionA'
+# RecFolder = '2017-05-21_11-18-08_Prevention_A2'
+# ExpFile = '20170521111251-Prevention_A2-GPIAS.hdf5'
+
+# GPIASTimeBeforeTTL = 200   # in ms
+# GPIASTimeAfterTTL = 200    # in ms
+# FilterFreq = [100, 300]     # frequency for filter
+# FilterOrder = 3       # filter order
+# Filter = 'butter'
+# PiezoCh = [8]
+# TTLCh = 6
+
+# DataPath = Animal + '/' + Exp + '/' + RecFolder
+# AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
+# AnalysisKey = Exp + '/' + RecFolder.split('/')[-1]
+# FigName = '/'.join([Animal, Exp, 'Figs', RecFolder+'-GPIAS'])
+# FigPath = '/'.join(FigName.split('/')[:-1])
+# makedirs(FigPath, exist_ok=True)
+
+# Data = Hdf5F.LoadOEKwik(DataPath, AnalogTTLs=True, Unit='Bits')[0]
+# DataInfo = Hdf5F.LoadDict('/DataInfo', Animal + '/' + Exp + '/' + ExpFile)
+# Proc = Hdf5F.GetProc(Data, 'OE')
+# Rate = Data[Proc]['info']['0']['sample_rate']
+
+# for Rec in Data[Proc]['data'].keys():
+#     BitVolts = 10000/(2**16)
+#     Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
+
+# DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
+# #DataInfo['PiezoCh'] = PiezoCh
+# #DataInfo['TTLCh'] = TTLCh
+# #
+# #for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
+# #    DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Animal + '/' + Exp + '/' + ExpFile)
+# #
+# #DataInfo['FreqOrder'][-3:][:,1] = -2
+
+# ## Fix stupid breaks in recs
+# #import numpy as np
+# #SOAB = DataAnalysis.GPIAS.CheckGPIASRecs(Data[Proc]['data'], [65000, 100000]); SOAB.sort()
+# #Params = {'backend': 'TkAgg'}
+# #from matplotlib import rcParams; rcParams.update(Params)
+# #from matplotlib import pyplot as plt
+# #R = {}
+# #for r in ['1', '3', '4', '5'] + \
+# #         [str(_) for _ in range(10, 23)] + \
+# #         [str(_) for _ in range(32, 39)] + \
+# #         [str(_) for _ in range(47, 58)] + \
+# #         [str(_) for _ in range(68, 73)] + \
+# #         [str(_) for _ in range(78, 82)] + \
+# #         [str(_) for _ in range(85, 90)]: 
+# #    print(r)
+# #    R[r] = DataAnalysis.PSD(Data[Proc]['data'][r][:,2], Rate)
+# #    plt.figure(); plt.semilogy(R[r][0], R[r][1])
+# #    plt.figure(); plt.plot(Data[Proc]['data'][r][:,2])
+# #    plt.show()
+
+# # 20170411141734-GPIAZon_NaCln01-GPIAS.hdf5
+# #DataInfo['FreqOrder'] = np.delete(DataInfo['FreqOrder'], [60], 0)
+# #for Key in Data[Proc].keys(): del(Data[Proc][Key]['59'])
+
+# # 20170411160111-GPIAZon_NaCln03-GPIAS.hdf5
+# #for Key in Data[Proc].keys(): del(Data[Proc][Key]['110'])
+
+# # 20170411165239-GPIAZon_NaCln04-GPIAS.hdf5
+# #for Key in Data[Proc].keys(): del(Data[Proc][Key]['15'])
+
+# # 20170413124748-GPIAZon_SSaln01-GPIAS.hdf5
+# #SOAB = ['51', '46', '36', '54', '38', '58', '23', '63', '70', '48', '34']
+# #ToDel = [_ for _ in range(35,40)] + \
+# #        [_ for _ in range(42,45)] + \
+# #        [_ for _ in range(47,55)]
+# #DataInfo['FreqOrder'] = np.delete(DataInfo['FreqOrder'], ToDel, 0)
+# #for Key in Data[Proc].keys(): 
+# #    for r in SOAB: del(Data[Proc][Key][r])
+
+# # 20170415142722-GPIAZon_SSaln04-GPIAS.hdf5
+# #SOAB = ['13', '14', '16', '2', '20', '33', '37', '49', '50', '54', '55', '56', '70', '71', '80', '87']
+# #for Key in Data[Proc].keys(): 
+# #    for r in SOAB: del(Data[Proc][Key][r])
+
+# # 20170521102604-Prevention_B1-GPIAS.hdf5
+# #for r in ['50', '51', '90']: del(Data[Proc][r])
+# #DataInfo['ExpInfo']['FreqOrder'] = np.concatenate((
+# #        DataInfo['ExpInfo']['FreqOrder'][:51], 
+# #        np.array([[-99, -99]]), 
+# #        DataInfo['ExpInfo']['FreqOrder'][51:] ))
+
+# # 20170521111251-Prevention_B2-GPIAS.hdf5
+# #del(Data[Proc]['85'])
+
+# ## Run Analysis
+# GPIASRec, XValues = GPIAS.Analysis(
+#                      Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
+#                      AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
+#                      FilterFreq, FilterOrder, Filter, Return=True)
 
 
-#%% Individual
-
-Animal = 'Prevention'
-Exp = 'PreventionA'
-RecFolder = '2017-05-21_11-18-08_Prevention_A2'
-ExpFile = '20170521111251-Prevention_A2-GPIAS.hdf5'
-
-GPIASTimeBeforeTTL = 200   # in ms
-GPIASTimeAfterTTL = 200    # in ms
-FilterFreq = [100, 300]     # frequency for filter
-FilterOrder = 3       # filter order
-Filter = 'butter'
-PiezoCh = [8]
-TTLCh = 6
-
-DataPath = Animal + '/' + Exp + '/' + RecFolder
-AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
-AnalysisKey = Exp + '/' + RecFolder.split('/')[-1]
-FigName = '/'.join([Animal, Exp, 'Figs', RecFolder+'-GPIAS'])
-FigPath = '/'.join(FigName.split('/')[:-1])
-makedirs(FigPath, exist_ok=True)
-
-Data = Hdf5F.LoadOEKwik(DataPath, AnalogTTLs=True, Unit='Bits')[0]
-DataInfo = Hdf5F.LoadDict('/DataInfo', Animal + '/' + Exp + '/' + ExpFile)
-Proc = Hdf5F.GetProc(Data, 'OE')
-Rate = Data[Proc]['info']['0']['sample_rate']
-
-for Rec in Data[Proc]['data'].keys():
-    BitVolts = 10000/(2**16)
-    Data[Proc]['data'][Rec] = Data[Proc]['data'][Rec] * BitVolts
-
-DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
-#DataInfo['PiezoCh'] = PiezoCh
-#DataInfo['TTLCh'] = TTLCh
-#
-#for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-#    DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Animal + '/' + Exp + '/' + ExpFile)
-#
-#DataInfo['FreqOrder'][-3:][:,1] = -2
-
-## Fix stupid breaks in recs
-#import numpy as np
-#SOAB = DataAnalysis.GPIAS.CheckGPIASRecs(Data[Proc]['data'], [65000, 100000]); SOAB.sort()
-#Params = {'backend': 'TkAgg'}
-#from matplotlib import rcParams; rcParams.update(Params)
-#from matplotlib import pyplot as plt
-#R = {}
-#for r in ['1', '3', '4', '5'] + \
-#         [str(_) for _ in range(10, 23)] + \
-#         [str(_) for _ in range(32, 39)] + \
-#         [str(_) for _ in range(47, 58)] + \
-#         [str(_) for _ in range(68, 73)] + \
-#         [str(_) for _ in range(78, 82)] + \
-#         [str(_) for _ in range(85, 90)]: 
-#    print(r)
-#    R[r] = DataAnalysis.PSD(Data[Proc]['data'][r][:,2], Rate)
-#    plt.figure(); plt.semilogy(R[r][0], R[r][1])
-#    plt.figure(); plt.plot(Data[Proc]['data'][r][:,2])
-#    plt.show()
-
-# 20170411141734-GPIAZon_NaCln01-GPIAS.hdf5
-#DataInfo['FreqOrder'] = np.delete(DataInfo['FreqOrder'], [60], 0)
-#for Key in Data[Proc].keys(): del(Data[Proc][Key]['59'])
-
-# 20170411160111-GPIAZon_NaCln03-GPIAS.hdf5
-#for Key in Data[Proc].keys(): del(Data[Proc][Key]['110'])
-
-# 20170411165239-GPIAZon_NaCln04-GPIAS.hdf5
-#for Key in Data[Proc].keys(): del(Data[Proc][Key]['15'])
-
-# 20170413124748-GPIAZon_SSaln01-GPIAS.hdf5
-#SOAB = ['51', '46', '36', '54', '38', '58', '23', '63', '70', '48', '34']
-#ToDel = [_ for _ in range(35,40)] + \
-#        [_ for _ in range(42,45)] + \
-#        [_ for _ in range(47,55)]
-#DataInfo['FreqOrder'] = np.delete(DataInfo['FreqOrder'], ToDel, 0)
-#for Key in Data[Proc].keys(): 
-#    for r in SOAB: del(Data[Proc][Key][r])
-
-# 20170415142722-GPIAZon_SSaln04-GPIAS.hdf5
-#SOAB = ['13', '14', '16', '2', '20', '33', '37', '49', '50', '54', '55', '56', '70', '71', '80', '87']
-#for Key in Data[Proc].keys(): 
-#    for r in SOAB: del(Data[Proc][Key][r])
-
-# 20170521102604-Prevention_B1-GPIAS.hdf5
-#for r in ['50', '51', '90']: del(Data[Proc][r])
-#DataInfo['ExpInfo']['FreqOrder'] = np.concatenate((
-#        DataInfo['ExpInfo']['FreqOrder'][:51], 
-#        np.array([[-99, -99]]), 
-#        DataInfo['ExpInfo']['FreqOrder'][51:] ))
-
-# 20170521111251-Prevention_B2-GPIAS.hdf5
-#del(Data[Proc]['85'])
-
-## Run Analysis
-GPIASRec, XValues = GPIAS.Analysis(
-                     Data[Proc]['data'], DataInfo, Rate, AnalysisFile, 
-                     AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                     FilterFreq, FilterOrder, Filter, Return=True)
-
-
-Plot.GPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
-                        FigName, Save=True, Visible=True)
-
-#%% MatFiles
-from IO import Asdf, Mat
-
-AnalysisFolder = 'Recovery/Analysis'
-Folders = sorted(glob('Recovery/2*IAS/*00-00-00*'))
-InfoFiles = sorted(glob('Recovery/2*IAS/*.mat'))
-
-GPIASTimeBeforeTTL = 200   # in ms
-GPIASTimeAfterTTL = 200    # in ms
-FilterFreq = [100, 300]     # frequency for filter
-FilterOrder = 3       # butter order
-Filter = 'butter'
-
-Mat.GPIASAnalysis(Folders, InfoFiles, AnalysisFolder, GPIASTimeBeforeTTL, 
-                  GPIASTimeAfterTTL, FilterFreq, FilterOrder, Filter)
-
-for F, Folder in enumerate(Folders):
-    AnalysisKey = InfoFiles[F].split('/')[1].split('-')
-    AnalysisKey[0] = AnalysisKey[0]+'000000'
-    AnalysisKey[1] = Folder.split('_')[-1]
-    AnalysisKey = '-'.join(AnalysisKey) + '-Sound-Recovery_' + 'GPIAS'
-    
-#    Data = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
-    Data = Asdf.Load('/', AnalysisFolder+'/'+AnalysisKey+'.asdf')
-    FigName = 'Recovery/Figs/'+AnalysisKey.replace('/', '_')+'_Traces'
-    
-    PlotGPIAS.Traces(Data['GPIAS'], Data['XValues'], 0.05, FigName, Save=True, Show=False)
+# Plot.GPIAS.Traces(GPIASRec, XValues, DataInfo['SoundLoudPulseDur'], 
+#                         FigName, Save=True, Visible=True)

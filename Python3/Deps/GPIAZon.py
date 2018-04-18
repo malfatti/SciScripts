@@ -41,13 +41,13 @@ def ClearPairs(Pairs):
     return(Pairs)
 
 
-def GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder):
+def GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder, InvalidThr=10):
     Index = {}
+    
     for A, Animal in enumerate(Animals):
-        Index[Animal] = {}
-        
         Done = []
-        for Exp in Exps:
+        
+        for E,Exp in enumerate(Exps):
             AnalysisKey = [AK for AK in glob(AnalysisFolder+'/*') 
                            if Animal in AK 
                            and Exp.split('/')[-1][:8] in AK]
@@ -58,15 +58,30 @@ def GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder):
 #            print(Animal, Exp)
             Ei = len(Done); Done.append(Exp)
             GPIAS = Asdf.Load('/', AnalysisKey)
-            Index[Animal][ExpList[Ei]] = {}
-#            Freqs = list(GPIAS['Index'].keys())
-#            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
+            Freqs = list(GPIAS[list(GPIAS.keys())[0]]['Index'].keys())
+            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
             
-            for F, Freq in GPIAS[list(GPIAS.keys())[0]]['Index'].items(): 
-                if F == '9000-11000': continue
-                Index[Animal][ExpList[Ei]][F] = Freq['GPIASIndex']
+            TotalLen = len(Animals)*len(Exps)*len(Freqs)
+            if not 'Animal' in Index: Index['Animal'] = np.empty((TotalLen), dtype='<U'+len(max(Animals)))
+            if not 'Exp' in Index: Index['Exp'] = np.empty((TotalLen), dtype='<U'+len(max(Exps)))
+            if not 'Freq' in Index: Index['Freq'] = np.empty((TotalLen), dtype='<U'+len(max(Freqs)))
+            if not 'GPIASIndex' in Index: Index['GPIASIndex'] = np.empty((TotalLen), dtype='float32')
+            if not 'Valid' in Index: Index['Valid'] = np.empty((TotalLen), dtype='bool')
+            
+            for F, (FKey, Freq) in enumerate(GPIAS[list(GPIAS.keys())[0]]['Index'].items()): 
+                # if F == '9000-11000': continue
+                I = (A*len(Exps)*len(Freqs))+(E*len(Freqs))+F
+                Index['Animal'][I] = Animal
+                Index['Exp'][I] = ExpList[Ei]
+                Index['Freq'][I] = FKey
+                Index['GPIASIndex'][I] = Freq['GPIASIndex']
+                
                 
             del(GPIAS)
+    
+    Invalid = np.where((Index['GPIASIndex'] < InvalidThr) * 
+                       (Index['GPIASIndex'] > -InvalidThr))
+    Index['Valid'][Invalid] = 0
     
     return(Index)
 #STD = []
@@ -93,109 +108,125 @@ def GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder):
 
 
 ## Level 1
-def GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
+# def GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder, InvalidThr=10):
+#     Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder, InvalidThr)
     
-    FreqPerExp = {}
-    for A, Animal in Index.items():
-        for E, Exp in Animal.items():
-            if E not in FreqPerExp: FreqPerExp[E] = {}
+#     FreqPerExp = {}
+#     for A, Animal in Index.items():
+#         for E, Exp in Animal.items():
+#             if E not in FreqPerExp: FreqPerExp[E] = {}
             
-            for F, Freq in Exp.items():
-                if F not in FreqPerExp[E]: FreqPerExp[E][F] = []
+#             for F, Freq in Exp.items():
+#                 if F not in FreqPerExp[E]: FreqPerExp[E][F] = []
                 
-                FreqPerExp[E][F].append(Freq)
+#                 FreqPerExp[E][F].append(Freq)
     
-#    for E, Exp in FreqPerExp.items():
-#        for F, Freq in Exp.items():
-#            if len(Freq) < len(Index.keys()): 
-#                Miss = len(Index.keys()) - len(Freq)
-#                FreqPerExp[E][F] = FreqPerExp[E][F] + [np.mean(FreqPerExp[E][F])]*Miss
+# #    for E, Exp in FreqPerExp.items():
+# #        for F, Freq in Exp.items():
+# #            if len(Freq) < len(Index.keys()): 
+# #                Miss = len(Index.keys()) - len(Freq)
+# #                FreqPerExp[E][F] = FreqPerExp[E][F] + [np.mean(FreqPerExp[E][F])]*Miss
     
     
-    return(FreqPerExp)
+#     return(FreqPerExp)
 
 
-def GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid=False, InvalidThr=10):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
-    FreqPerAnimal = {}
+# def GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid=False, InvalidThr=10):
+#     Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder, InvalidThr)
+#     FreqPerAnimal = {}
     
-    for A, Animal in Index.items():
-        if A not in FreqPerAnimal: FreqPerAnimal[A] = []
+#     for A, Animal in Index.items():
+#         if A not in FreqPerAnimal: FreqPerAnimal[A] = []
         
-        for E, Exp in enumerate(ExpList):
-            if Exp not in Animal: continue
+#         for E, Exp in enumerate(ExpList):
+#             if Exp not in Animal: continue
             
-            Freqs = list(Animal[Exp].keys())
-            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
-#            Freqs = [Freqs[0]] + Freqs[2:]# + [Freqs[1]]
+#             Freqs = list(Animal[Exp].keys())
+#             Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
+# #            Freqs = [Freqs[0]] + Freqs[2:]# + [Freqs[1]]
             
-            Y = [Animal[Exp][Freq] for Freq in Freqs]
-            FreqPerAnimal[A].append(np.array(Y))
+#             Y = [Animal[Exp][Freq] for Freq in Freqs]
+#             FreqPerAnimal[A].append(np.array(Y))
         
-        if not Invalid: 
-            for F, Freq in enumerate(FreqPerAnimal[A]):
-                inv = np.where((Freq < InvalidThr)*
-                               (Freq > -InvalidThr))
-    #            Diff[A][0] = np.delete(Diff[A][0], inv)
-    #            Diff[A][1] = np.delete(Diff[A][1], inv)
-                FreqPerAnimal[A][F][inv] = 1
+#         if not Invalid: 
+#             for F, Freq in enumerate(FreqPerAnimal[A]):
+#                 inv = np.where((Freq < InvalidThr)*
+#                                 (Freq > -InvalidThr))
+#     #            Diff[A][0] = np.delete(Diff[A][0], inv)
+#     #            Diff[A][1] = np.delete(Diff[A][1], inv)
+#                 FreqPerAnimal[A][F][inv] = 1
     
-    return(FreqPerAnimal)
+#     return(FreqPerAnimal)
 
 
 ## Level 2
-def GetValid(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid=True, InvalidThr=10):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
-    Valid = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid, InvalidThr)
+# def GetValid(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid=True, InvalidThr=10):
+#     Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
+#     Valid = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid, InvalidThr)
     
-    for A, Animal in Index.items():
-        for E, Exp in enumerate(ExpList):
-            if Exp not in Animal: continue
+#     for A, Animal in enumerate(Animals):
+#         for E, Exp in enumerate(ExpList):
+#             AnimalExp = np.where((Index['Animal'] == Animal) * 
+#                                  (Index['Exp'] == Exp))
             
-            Freqs = list(Animal[Exp].keys())
-            Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
-#            Freqs = [Freqs[0]] + Freqs[2:] + [Freqs[1]]
+#             if not AnimalExp[0]: continue
             
-            if max(Valid[A][E]) < InvalidThr and min(Valid[A][E]) > -InvalidThr: 
-                del(Valid[A][E])
-            else:
-                F = np.where((Valid[A][E] > InvalidThr)*(Valid[A][E] > -InvalidThr))[0]
-                freqs = [Freqs[f] for f in F]
-                Valid[A][E] = [freqs, Valid[A][E][F]]
+#             Freqs = np.unique(Index['Freqs']).tolist()
+#             Freqs.sort(key=lambda x: [int(y) for y in x.split('-')[-1]])
+# #            Freqs = [Freqs[0]] + Freqs[2:] + [Freqs[1]]
+            
+#             if max(Valid[A][E]) < InvalidThr and min(Valid[A][E]) > -InvalidThr: 
+#                 del(Valid[A][E])
+#             else:
+#                 F = np.where((Valid[A][E] > InvalidThr)*(Valid[A][E] > -InvalidThr))[0]
+#                 freqs = [Freqs[f] for f in F]
+#                 Valid[A][E] = [freqs, Valid[A][E][F]]
                 
-                if len(Valid[A][E]) == 0: del(Valid[A][E])
+#                 if len(Valid[A][E]) == 0: del(Valid[A][E])
     
-    return(Valid)
+#     return(Valid)
 
 
-def GetMeans(Group, Animals, Exps, ExpList, AnalysisFolder):
-    FreqPerExp = GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder)
+def GetMeans(Group, Animals, Exps, ExpList, AnalysisFolder, InvalidThr=10):
+    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder, InvalidThr)
+    Freqs = np.unique(Index['Freqs'])
     
-    SEMs = {}; Means = {}
-    for E, Exp in FreqPerExp.items():
-        SEMs[E] = {Freq: np.std(Val)/len(Val) for Freq, Val in Exp.items()}
-        Means[E] = {Freq: np.nanmean(Val) for Freq, Val in Exp.items()}
+    GPIASStats = {}
+    TotalLen = len(ExpList) * Freqs.shape[0]
+    GPIASStats['Exp'] = np.empty((TotalLen), dtype='<U'+len(max(ExpList)))
+    GPIASStats['Freq'] = np.empty((TotalLen), dtype='<U'+len(max(Freqs)))
+    GPIASStats['SEM'] = np.empty((TotalLen), dtype='float32')
+    GPIASStats['Mean'] = np.empty((TotalLen), dtype='float32')
     
-    return(Means, SEMs)
+    if not 'Freq' in Index: Index['Freq'] = np.empy((TotalLen), dtype='<U'+len(max(Freqs)))
+    for E, Exp in enumerate(ExpList):
+        for F, Freq in enumerate(Freqs):
+            ExpFreq = np.where((Index['Freq'] == Freq) * 
+                               (Index['Exp'] == Exp))
+            I = (E*Freqs.shape[0]) + F
+            
+            GPIASStats['Exp'][I] = Exp
+            GPIASStats['Freq'][I] = Freq
+            GPIASStats['SEM'][I] = np.std(Index['GPIASIndex'][ExpFreq])/len(Index['GPIASIndex'][ExpFreq])
+            GPIASStats['Mean'][I] = np.nanmean(Index['GPIASIndex'][ExpFreq])
+        
+    return(GPIASStats)
 
 
 def GetDiff(Group, Animals, Exps, ExpList, AnalysisFolder, DiffThr=60, Invalid=True, InvalidThr=10):
-    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder)
-    FreqPerAnimal = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid, InvalidThr)
-    FreqPerExp = GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder)
+    Index = GetIndex(Group, Animals, Exps, ExpList, AnalysisFolder, InvalidThr)
+    # FreqPerAnimal = GetFreqPerAnimal(Group, Animals, Exps, ExpList, AnalysisFolder, Invalid, InvalidThr)
+    # FreqPerExp = GetFreqPerExp(Group, Animals, Exps, ExpList, AnalysisFolder)
     
-    PairList = list(combinations(FreqPerExp.keys(), 2))
+    PairList = list(combinations(ExpList, 2))
     Diff = {}
     
-    for A, Animal in FreqPerAnimal.items():
-        Diff[A] = {}
-        
-        for Pair in PairList:
+    for A, Animal in enumerate(Animals):
+        for P, Pair in enumerate(PairList):
             PKey = '_'.join(Pair)
             E0 = ExpList.index(Pair[0]); E1 = ExpList.index(Pair[1])
             
-            if ExpList[E0] not in Index[A] or ExpList[E1] not in Index[A]:
+            if not np.where(Index['Animal'] == ExpList[E0] not in Index[A] or ExpList[E1] not in Index[A]:
                 continue
             
             Freqs = list(Index[A][ExpList[E0]].keys())

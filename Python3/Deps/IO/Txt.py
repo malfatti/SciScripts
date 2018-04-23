@@ -10,6 +10,18 @@ import numpy as np
 from ast import literal_eval
 
 
+
+def DictFlat(Var, UpKey='', KeySep='_', Flat={}):
+    if type(Var) == dict:
+        for K, V in Var.items():
+            NewKey = UpKey + KeySep + K if UpKey else K
+            Flat = {**Flat, **DictFlat(Var[K], NewKey, KeySep, Flat)}
+        return(Flat)
+    else:
+        Flat[UpKey] = Var
+        return(Flat)
+
+
 def DictPrint(value, htchar='    ', itemchar=' ', breaklineat='auto', lfchar='\n', indent=0):
     ''' Modified from y.petremann's code.
         Added options to set item separator for list or tuple and to set a number

@@ -2,43 +2,18 @@
 
 ## Remove some special characters and change <> {} [] () to _
 for i in *; do 
-	new=`echo "$i" | \
-		 tr -d '\"' | \
-		 tr -d '\!' | \
-		 tr -d '\@' | \
-		 tr -d '\#' | \
-		 tr -d '\$' | \
-		 tr -d '\%' | \
-		 tr -d '\&' | \
-		 tr -d '\*' | \
-		 tr -d '\+' | \
-		 tr -d '\=' | \
-		 tr -d '\,' | \
-		 tr -d '\;' | \
-		 tr -d '\:' | \
-		 tr -d '\\' | \
-		 tr -d '\/' | \
-		 tr -d '\?' | \
-		 tr -d '\€' | \
-		 tr -d '\§' | \
-		 tr -d '\¢' | \
-		 tr -d '\£' | \
-		 tr 'ç' c | \
-		 tr 'Ç' C | \
-		 tr '(' _ | \
-		 tr ')' _ | \
-		 tr '[' _ | \
-		 tr ']' _ | \
-		 tr '{' _ | \
-		 tr '}' _ | \
-		 tr '<' _ | \
-		 tr '>' _`
-	mv "$i" "$new"
-done
-
-## Remove single quotes and brackets
-for i in "$(find . -type f -name "*'*")"; do 
-	new=`echo "$i" | sed 's/\x27//g'`
+	new=`echo ${i} | \
+            sed -e "s/[\"\!\@\#\$\%\&\*\+\=\,\;\:\?\[{\']//g" | \
+		    tr 'ç' c | \
+		    tr 'Ç' C | \
+		    tr '(' _ | \
+		    tr ')' _ | \
+		    tr '[' _ | \
+		    tr ']' _ | \
+		    tr '{' _ | \
+		    tr '}' _ | \
+		    tr '<' _ | \
+		    tr '>' _`
 	mv "$i" "$new"
 done
 
@@ -54,7 +29,7 @@ for i in *; do
 done
 
 ## Remove spaces on filenames
-for i in *; do 
+for i in *; do
 	new=`echo "$i" | sed 's/ //g'`
 	mv "$i" "$new"
 done

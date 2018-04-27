@@ -376,8 +376,9 @@ def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=None):
     Intensity = {}
     
     if not WindowSize: WindowSize = len(Data)
-    if Data.shape[-1] == 2: F, PxxSp = PSD(Data[:,0], Rate)
-    else: F, PxxSp = PSD(Data, Rate, WindowSize=WindowSize)
+    if Data.shape[-1] == 2: Data = Data[:,0]
+    
+    F, PxxSp = PSD(Data, Rate, WindowSize=WindowSize)
     
     Range = (F > FreqBand[0])*(F < FreqBand[1])
     BinSize = F[1] - F[0]

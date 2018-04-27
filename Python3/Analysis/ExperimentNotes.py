@@ -6,7 +6,6 @@
 @license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
 """
-# import numpy as np
 import os
 
 from glob import glob
@@ -35,7 +34,7 @@ def TimeKey(Key):
 def Note2Text(Note):
     Info = Txt.DictRead(Note)
     
-    Text = ['~~~ ' + Info['Animal']['Name'] + ' ~~~', '', '']
+    Text = ['~~~ ' + Info['Animal']['Name'], '', '']
     
     Text += ['### Animal info', '']
     for K,V in Info['Animal'].items():
@@ -49,12 +48,12 @@ def Note2Text(Note):
         
         for EB, ExpBlock in Exp.items():
             if EB in ['Animal', 'Setup']:
-                Text.append('* '+EB)
+                Text.append('# '+EB)
                 for K,V in ExpBlock.items(): Text.append(K+': '+str(V))
                 Text.append('')
             
             elif EB == 'Injections':
-                Text.append('* '+EB)
+                Text.append('# '+EB)
                 for I,Inj in ExpBlock.items():
                     Text.append(I+':')
                     
@@ -63,7 +62,7 @@ def Note2Text(Note):
                     elif type(Inj['Location']) == dict:
                         Loc = 'AP: '+str(Inj['Location']['AP']) + '\n              ' + \
                               'ML: '+str(Inj['Location']['ML']) + '\n              ' + \
-                              'DV: '+str(Inj['Location']['AP']) + '\n              '
+                              'DV: '+str(Inj['Location']['AP']) + '\n'
                         
                     Text.append('    Location: '+Loc)
                     
@@ -79,9 +78,18 @@ def Note2Text(Note):
                     
                     Text += ThisDrug+['']
         
+        ## These are in separate loops to enforce order
         for EB, ExpBlock in Exp.items():
             if EB == 'Comments':
-                Text.append('* '+EB)
+                Text.append('# '+EB)
+                for K,V in ExpBlock.items(): 
+                    KK = TimeKey(K) if len(K) == 6 else K
+                    Text.append(KK+': '+str(V))
+                Text.append('')
+        
+        for EB, ExpBlock in Exp.items():
+            if EB not in ['Animal', 'Setup', 'Injections', 'Comments']:
+                Text.append('# '+EB)
                 for K,V in ExpBlock.items(): 
                     KK = TimeKey(K) if len(K) == 6 else K
                     Text.append(KK+': '+str(V))
@@ -93,14 +101,30 @@ def Note2Text(Note):
     return(Text)
 
 
-def Note2Tex(Note):
-    Text = Note2Text(Note)
-    Replace = [('%', '\\%'), ('µl', '\\si{\\ul}'), ('###', '\\section'), 
-               ('##', '\\subsection'), ('#')]
+def Text2Tex(Text):
+    # Fix sections
+    Replace = {
+        '~~~ ': '{\\LARGE \\bfseries \centering{}', 
+        '### ': '\\section{',
+        '## ': '\\subsection{', 
+        '# ': '\\subsubsection{'
+    }
     
-    for R in Replace:
-        Text = Text.replace(R)
+    Text = Text.split('\n')
+    for L,Line in enumerate(Text):
+        Start = Line.split(' ')[0]+' '
+        if Start in Replace: Text[L] = Line.replace(Start, Replace[Start]) + '}'
     
+    # Fix symbols and empty lines
+    Text = '\n'.join(Text)
+    Replace = [('%', '\\%'), ('µl', '\\si{\\ul}'), ('~', '$\\approx$'), 
+               ('_', '\\textunderscore '), ('\n', '\n\n')]
+    
+    for R in Replace: Text = Text.replace(R[0], R[1])
+    
+    # Fix "Location" alignment
+    Text = Text.replace('              ', '~~~~~~~~~~~~~~~')
+    Text = Text.replace('    ', '~~~~')
     return(Text)
 
 
@@ -108,16 +132,17 @@ def NoteTexHead():
     return(
     r'''%% Expnotes
 \documentclass[11pt,a4paper,notitlepage]{article}
-\usepackage[utf8]{inputenc} % Allow accents
-\usepackage{siunitx} % Allow SI units
-\usepackage[version=3]{mhchem} % Allow chemical formulas
-\usepackage{enumitem} % Enhanced itemize
+\usepackage[utf8]{inputenc}
+\usepackage{siunitx}
+\usepackage[version=3]{mhchem}
+\renewcommand{\familydefault}{\ttdefault}
 ''')
 
 
 def NoteWrite(Note, Format='txt'):
+    Text = Note2Text(Note)
+    
     if Format == 'txt':
-        Text = Note2Text(Note)
         with open(Note.split('.')[0]+'.txt', 'w') as F: F.write(Text)
     
     elif Format in ['tex', 'pdf']:
@@ -126,20 +151,23 @@ def NoteWrite(Note, Format='txt'):
         os.makedirs(Path, exist_ok=True)
         
         Head = NoteTexHead()
-        Text = Note2Tex(Note)
+        Text = Text2Tex(Text)
         with open(Path+'/'+File+'.tex', 'w') as F:
             F.write(Head)
-            F.write('\\begin{document}')
+            F.write('\\begin{document}\n')
+            F.write('\\setlength{\parindent}{0pt}\n')
             F.write(Text)
-            F.write('\\end{document}')
+            F.write('\\end{document}\n')
         
         if Format == 'pdf':
-            Cmd = ['pdflatex', Path+'/'+File+'.tex']
-            ReturnCode = RunProcess(Cmd, Path+'/'+File+'.log')
+            Here = os.getcwd(); os.chdir(Path)
+            Cmd = ['pdflatex', File+'.tex']
+            ReturnCode = RunProcess(Cmd, File+'.log'); os.chdir(Here)
             
             if ReturnCode: print('An error ocurred: no pdf generated.')
             else:
                 os.rename(Path+'/'+File+'.pdf', Path+'/../'+File+'.pdf')
+                for f in glob(Path+'/*'): os.remove(f)
                 os.rmdir(Path)
         
         elif Format == 'tex':
@@ -150,24 +178,8 @@ def NoteWrite(Note, Format='txt'):
 NotesPath = os.environ['HOME']+'/Nebula/Documents/PhD/Notes/Experiments/Animals'
 Notes = [N for N in glob(NotesPath+'/*.dict')]
 Notes.sort()
-
-for Note in Notes:
-    Text = NotesWrite(Note)
-    
-    with open(Note.split('.')[0]+'.tex', 'w') as NoteFile: 
-        NoteFile.write('\n'.join(Text))
-
-
-
-
-
-
-
-
-
-
-
-
+Note = Notes[0]
+Format = 'pdf'
 
 #%% Report animals that died during surgeries
 Notes = [N for N in glob(NotesPath+'/*.py') if 'Prevention' in N or

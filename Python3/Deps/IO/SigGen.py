@@ -67,8 +67,7 @@ def BandpassFilterSound(SoundPulse, Rate, NoiseFrequency):
 
 def dBToAmpF(Intensities, Path):
     print('Converting dB to AmpF...')
-    SoundIntensity = Hdf5.SoundMeasurementLoad(CalibrationFile, Path, 
-                                                'SoundIntensity')
+    SoundIntensity = Hdf5.DataLoad(Path+'/SoundIntensity', CalibrationFile)
     
     SoundAmpF = {Hz: [float(min(SoundIntensity[Hz].keys(), 
                                 key=lambda i: abs(SoundIntensity[Hz][i]['dB']-dB))) 

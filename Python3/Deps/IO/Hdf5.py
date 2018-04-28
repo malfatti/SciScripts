@@ -630,7 +630,11 @@ def SoundMeasurementLoad(FileName, Path, Var='SoundIntensity'):
                     SoundIntensity[F][A] = {}
                     
                     for K, Key in AmpF.items():
-                        SoundIntensity[F][A][K] = ReturnCopy(Key)
+                        if K == 'PSD':
+                            print(list(Key.keys()))
+                            SoundIntensity[F][A][K] = [ReturnCopy(Key['F']), ReturnCopy(Key['PxxSp'])]
+                        else:
+                            SoundIntensity[F][A][K] = ReturnCopy(Key)
             
             return(SoundIntensity)
         

@@ -5,10 +5,10 @@
 @license: GNU GPLv3 <https://raw.githubusercontent.com/malfatti/SciScripts/master/LICENSE>
 @homepage: https://github.com/Malfatti/SciScripts
 
-This is a script to generate a sound white noise at several frequencies and
-intensities, play and record them at the same time, for testing purposes.
+This is a script to generate a white noise sound at several frequencies and
+intensities, play and record them at the same time.
 Next, it calculates the intensity in RMS and dB for each frequency at each
-amplification factor. In our setup, we use this to calibrate the audio
+amplification factor. In our setup, we use this script to calibrate the audio
 equipment.
 """
 #%% Import
@@ -21,14 +21,14 @@ from IO import Hdf5, SigGen
 from datetime import datetime
 from time import sleep
 
-Params = {'backend': 'TkAgg'}
+Params = {'backend': 'Qt5Agg'}
 from matplotlib import rcParams; rcParams.update(Params)
 import matplotlib.pyplot as plt
 
 
 ## Set parameters of the experiment
 SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
-Setup = 'GPIAS'
+Setup = 'UnitRec'
 SBOutAmpF = Hdf5.DataLoad(SoundSystem+'/SBOutAmpF', SigGen.CalibrationFile)[0]
 OutMax = 1/SBOutAmpF
 
@@ -51,11 +51,15 @@ Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-# SoundAmpF = [OutMax, 0.5, 0.0] # Override
+# SoundAmpF = [OutMax, 0.4, 0.3] # Override
 SoundAmpF = np.hstack((
                 np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
                 np.array(0.0)
             ))
+# SoundAmpF = np.hstack((
+#                 np.flipud(np.logspace(np.log10(1e-6), np.log10(1e-4), 20)),
+#                 np.array(0.0)
+#             ))
 SoundAmpF = np.array([round(_,6) for _ in SoundAmpF])
 
 ## Prepare dict w/ experimental setup
@@ -93,7 +97,7 @@ for Freq in NoiseFrequency:
     SoundRec[FKey] = {}
     Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
                                         [Freq], TTLAmpF, SoundSystem, 
-                                        TTLs=False, Map=[2,1])
+                                        TTLs=False, Map=[1,2])
     
     for AKey in Sound[FKey]:
         print(FKey, AKey)
@@ -101,14 +105,14 @@ for Freq in NoiseFrequency:
         SoundRec[FKey][AKey] = SoundRec[FKey][AKey][2000:] # Temp override
     
     print('Done playing/recording', FKey + '.')
-    Hdf5.SoundMeasurementWrite(SoundRec, DataInfo, Group, FileName)
+    Hdf5.DataWrite(SoundRec, Group+'/SoundRec', FileName, Overwrite=True)
     del(Sound, SoundRec[FKey])
 
 print('Finished recording \O/')
 
 
-#%% Analysis
-SoundRec = Hdf5.DataLoad(Group + '/SoundRec', FileName)[0]
+## Analysis
+SoundRec = Hdf5.DataLoad(Group+'/SoundRec', FileName)[0]
 SBInAmpF = Hdf5.DataLoad(SoundSystem+'/SBInAmpF', SigGen.CalibrationFile)[0]
 # NoiseRMS = Hdf5.DataLoad(SoundSystem+'/NoiseLevel', SigGen.CalibrationFile)[0]
 # Noise *= SBInAmpF
@@ -142,7 +146,7 @@ del(SoundRec)
 ## Save analyzed data
 print('Saving analyzed data...')
 os.makedirs(Folder, exist_ok=True)
-Hdf5.SoundIntensityWrite(SoundIntensity, Group, FileName)
+Hdf5.DataWrite(SoundIntensity, Group+'/SoundIntensity', FileName, Overwrite=True)
 
 Freqs = list(SoundIntensity.keys())
 AmpFList = sorted(list(SoundIntensity[Freqs[0]].keys()), reverse=True)

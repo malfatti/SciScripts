@@ -27,17 +27,17 @@ import matplotlib.pyplot as plt
 
 
 ## Set parameters of the experiment
-SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
-Setup = 'UnitRec'
+SoundSystem = 'Jack-IntelOut-MarantzOut'
+Setup = 'Test'
 SBOutAmpF = Hdf5.DataLoad(SoundSystem+'/SBOutAmpF', SigGen.CalibrationFile)[0]
 OutMax = 1/SBOutAmpF
 
 ## Sound (Durations in sec)
-Rate = 192000
+Rate = 48000
 SoundPulseDur = 2
-# NoiseFrequency = [[8000, 10000], [9000, 11000]] # Override
-NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-                  [14000, 16000], [16000, 18000], [8000, 18000]]
+NoiseFrequency = [[8000, 10000], [9000, 11000]] # Override
+# NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
+#                   [14000, 16000], [16000, 18000], [8000, 18000]]
 
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa or in V/Pa
@@ -51,11 +51,11 @@ Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-# SoundAmpF = [OutMax, 0.4, 0.3] # Override
-SoundAmpF = np.hstack((
-                np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
-                np.array(0.0)
-            ))
+SoundAmpF = [OutMax, 0.4, 0.3] # Override
+# SoundAmpF = np.hstack((
+#                 np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
+#                 np.array(0.0)
+#             ))
 # SoundAmpF = np.hstack((
 #                 np.flipud(np.logspace(np.log10(1e-6), np.log10(1e-4), 20)),
 #                 np.array(0.0)

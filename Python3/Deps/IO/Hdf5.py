@@ -209,8 +209,9 @@ def Data2Hdf5(Data, Path, OpenedFile, Overwrite=False):
     return(None)
 
 
-def DataLoad(Path, FileName):
-    with h5py.File(FileName, 'r') as F: Data, Attrs = Hdf52Dict(Path, F)
+def DataLoad(Path, FileName, StructureOnly=False):
+    with h5py.File(FileName, 'r') as F: 
+        Data, Attrs = Hdf52Dict(Path, F, StructureOnly)
     
     return(Data, Attrs)
 
@@ -480,7 +481,7 @@ def GPIASWrite(GPIAS, Path, FileName, XValues=[]):
     return(None)
 
 
-def Hdf52Dict(Path, F):
+def Hdf52Dict(Path, F, StructureOnly=False):
 #    print(Path)
     Dict = {}; Attrs = {}
     if type(F[Path]) == h5py._hl.group.Group:
@@ -508,11 +509,20 @@ def Hdf52Dict(Path, F):
         if list(F[Path].attrs):
             for Att in F[Path].attrs.keys(): Attrs[Att] = Hdf52Dict(Att, F[Path].attrs)
             
-        return(ReturnCopy(F[Path]), Attrs)
+        if StructureOnly: return(None)
+        else: return(ReturnCopy(F[Path]), Attrs)
     
-    elif 'numpy' in str(type(F[Path])): return(F[Path])
-    elif type(F[Path]) in [str, list, tuple, dict]: return(F[Path])
-    else: return(None)
+    # elif 'numpy' in str(type(F[Path])) or type(F[Path]) in [str, list, tuple, dict]: 
+    #     if StructureOnly: return(None)
+    #     else: return(F[Path])
+        
+    # elif type(F[Path]) in [str, list, tuple, dict]: 
+    #     if StructureOnly: return(None)
+    #     else: return(F[Path])
+        
+    else:
+        print('Type', type(F[Path]), 'not supported.')
+        return(None)
 
 
 #def OEKwikLoad(RecFolder, AnalogTTLs=True, Unit='uV', ChannelMap=[]):

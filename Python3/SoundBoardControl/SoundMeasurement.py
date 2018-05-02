@@ -27,8 +27,8 @@ import matplotlib.pyplot as plt
 
 
 ## Set parameters of the experiment
-SoundSystem = 'Jack-IntelOut-MarantzOut'
-Setup = 'Test'
+SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
+Setup = 'UnitRec'
 SBOutAmpF = Hdf5.DataLoad(SoundSystem+'/SBOutAmpF', SigGen.CalibrationFile)[0]
 OutMax = 1/SBOutAmpF
 
@@ -140,6 +140,7 @@ for FKey in SoundRec:
                                                      DataInfo['Rate'], FreqBand, 
                                                      DataInfo['MicSens_VPa'])#,
                                                      # NoiseRMS)
+        SoundRec[FKey][AKey] = None
 
 del(SoundRec)
 

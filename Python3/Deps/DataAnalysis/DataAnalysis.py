@@ -372,7 +372,7 @@ def RemapCh(Probe, Adaptor):
     return(Map)
 
 
-def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=None):
+def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=None, ReturnPSD=False):
     Intensity = {}
     
     if not WindowSize: WindowSize = len(Data)
@@ -388,7 +388,7 @@ def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=None):
     
     dB = 20*(np.log10((RMS/Ref)/0.00002))
     
-    Intensity['PSD'] = [F, PxxSp]
+    if ReturnPSD: Intensity['PSD'] = [F, PxxSp]
     Intensity['RMS'] = RMS
     Intensity['dB'] = dB
     

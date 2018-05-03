@@ -26,6 +26,142 @@ from matplotlib import rcParams; rcParams.update(Params)
 import matplotlib.pyplot as plt
 
 
+# \usepackage{setspace}
+# \usepackage{titlesec}
+# \titleformat{\chapter}{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
+# \cleardoublepage
+def WriteTexTable(SoundIntensity, Date, Folder):
+    Freqs = list(SoundIntensity.keys())
+    AmpFList = sorted(list(SoundIntensity[Freqs[0]].keys()), reverse=True)
+    TexTable = pandas.DataFrame([[float(AmpF)] + [SoundIntensity[Freq][AmpF]['dB'] 
+                                              for Freq in SoundIntensity]
+                             for AmpF in AmpFList])
+    
+    with open(Folder+'/'+'IntensityTable_'+Date+'.tex', 'w') as File:
+        File.write(
+        r"""%% Configs =====
+\documentclass[12pt,a4paper]{report}
+\usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
+\usepackage{longtable}
+% Document ======
+\begin{document}
+\section{Sound measurements}
+"""     )
+        File.write(TexTable.to_latex(longtable=True))
+        File.write(r"""
+\end{document}
+"""     )
+    
+    return(None)
+
+
+def Intensity_AmpF(SoundIntensity, Date, Folder='.', Ext=['svg'], Save=True, Show=True):
+    Colors = ['r', 'g', 'b', 'm', 'k', '#ffa500', '#00b2b2']
+    Freqs = list(SoundIntensity.keys())
+    Freqs.sort(key=lambda x: [int(y) for y in x.split('-')])
+    
+    plt.figure(figsize=(6, 6))
+    for FKey in SoundIntensity:
+        FInd = Freqs.index(FKey)
+        AmpFList = sorted(list(SoundIntensity[FKey].keys()), reverse=True)
+       
+        FigTitle = 'Intensity curve per Freq per AmpF'
+        YLabel = 'Intensity [dBSPL]'
+        XLabel = 'Sound amplification factor'
+        LineLabel = FKey + ' Hz'
+        
+        plt.semilogx(AmpFList, [SoundIntensity[FKey][AmpF]['dB'] for AmpF in AmpFList], 
+                     label=LineLabel, color=Colors[FInd])
+    
+    plt.ylabel(YLabel); plt.xlabel(XLabel)
+    plt.legend(loc='upper left')
+    plt.locator_params(tight=True)
+    plt.tick_params(direction='out')
+    plt.axes().spines['right'].set_visible(False)
+    plt.axes().spines['top'].set_visible(False)
+    plt.axes().yaxis.set_ticks_position('left')
+    plt.axes().xaxis.set_ticks_position('bottom')
+    plt.title(FigTitle)
+    
+    if Save:
+        for E in Ext:
+            plt.savefig(Folder+'/'+'SoundMeasurement_'+Date+'.'+E, format=E)
+    
+    if Show: plt.show()
+    else: plt.close()
+    
+    return(None)
+
+
+def PxxSp_Freq(SoundIntensity, PSD, Date, Group, FileName, Folder='.', Ext=['svg'], Save=True, Show=True):
+    Colormaps = [plt.get_cmap(Map) for Map in ['Reds', 'Greens', 'Blues', 
+                                               'Purples', 'Greys', 'Oranges', 'GnBu']]
+    
+    Freqs = list(SoundIntensity.keys())
+    Freqs.sort(key=lambda x: [int(y) for y in x.split('-')[-1]])
+    
+    Intensities = [80, 70, 60, 50, 40, 30, 0]
+    AmpFList = SigGen.dBToAmpF(Intensities, Group, FileName)
+    for AFKey in AmpFList:
+        AmpFList[AFKey] = [str(_) for _ in AmpFList[AFKey]]
+    
+    Fig, Axes = plt.subplots(len(Freqs), sharex=True, figsize=(6, 12))
+    for FKey in Freqs:
+        Freq = Freqs.index(FKey)
+        
+        FigTitle = 'Power spectral density'
+        AxTitle = FKey + ' Hz'
+        YLabel = 'PSD [V²/Hz]'
+        XLabel = 'Frequency [Hz]'
+        
+        # AmpFList = {FKey: sorted(list(SoundIntensity[FKey].keys()), reverse=True)} ## Override to delete
+        for AKey in AmpFList[FKey]:
+            AmpF = AmpFList[FKey].index(AKey)
+            
+            Colors = [Colormaps[Freq](255-(AmpF*255//len(AmpFList)))]
+            LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
+            # try:
+            #     LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
+            # except KeyError:
+            #     AKey = '0.0'
+            #     LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
+            
+            for IAmpF in SoundIntensity[FKey]:
+                IdB = SoundIntensity[FKey][IAmpF]['dB']
+                
+                if SoundIntensity[FKey][AKey]['dB'] == IdB:
+    #                print(IAmpF)
+                    Axes[Freq].semilogy(PSD[FKey][IAmpF][0], 
+                                        PSD[FKey][IAmpF][1], 
+                                        label=LineLabel, color=Colors[0])
+                else: continue
+            
+        Axes[Freq].set_xlim(left=5000, right=20000)
+        Axes[Freq].set_ylabel(YLabel)
+        Axes[Freq].spines['right'].set_visible(False)
+        Axes[Freq].spines['top'].set_visible(False)
+        Axes[Freq].yaxis.set_ticks_position('left')
+        Axes[Freq].xaxis.set_ticks_position('bottom')
+        Axes[Freq].set_title(AxTitle)
+    #    if Freq < 2:
+    #        Axes[Freq].legend(loc='lower right')
+    #    else:
+    #        Axes[Freq].legend(loc='lower left')
+    Axes[-1].set_xlabel(XLabel)
+    Fig.suptitle(FigTitle)
+    Fig.tight_layout()
+    Fig.subplots_adjust(top=0.93)
+    
+    if Save:
+        for E in Ext:
+            Fig.savefig(Folder+'/'+'PowerSpectrumDensity_'+Date+'.'+E, format=E)
+    
+    if Show: plt.show()
+    else: plt.close()
+    
+    return(None)
+
+
 ## Set parameters of the experiment
 SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
 Setup = 'UnitRec'
@@ -33,7 +169,7 @@ SBOutAmpF = Hdf5.DataLoad(SoundSystem+'/SBOutAmpF', SigGen.CalibrationFile)[0]
 OutMax = 1/SBOutAmpF
 
 ## Sound (Durations in sec)
-Rate = 48000
+Rate = 192000
 SoundPulseDur = 2
 NoiseFrequency = [[8000, 10000], [9000, 11000]] # Override
 # NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
@@ -101,11 +237,11 @@ for Freq in NoiseFrequency:
     
     for AKey in Sound[FKey]:
         print(FKey, AKey)
-        SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey], blocking=True, input_mapping=[1])
+        SoundRec[FKey][AKey] = SD.playrec(Sound[FKey][AKey], blocking=True, channels=1)
         SoundRec[FKey][AKey] = SoundRec[FKey][AKey][2000:] # Temp override
     
     print('Done playing/recording', FKey + '.')
-    Hdf5.DataWrite(SoundRec, Group+'/SoundRec', FileName, Overwrite=True)
+    Hdf5.DataWrite(SoundRec[FKey], Group+'/SoundRec/'+FKey, FileName, Overwrite=True)
     del(Sound, SoundRec[FKey])
 
 print('Finished recording \O/')
@@ -125,22 +261,22 @@ if 'MicSens_dB' in DataInfo:
 #    dB = False
 
 print('Calculating PSD, RMS and dBSLP...')
-SoundIntensity = {}
-
-for FKey in SoundRec:
-    SoundIntensity[FKey] = {}
-    FreqBand = [int(_) for _ in FKey.split('-')]
+SoundIntensity = {}; PSD = {}
+for F, Freq in SoundRec.items():
+    SoundIntensity[F] = {}; PSD[F] = {}
+    FreqBand = [int(_) for _ in F.split('-')]
     
     # NoiseRMS = SignalIntensity(Noise, DataInfo['Rate'], FreqBand, DataInfo['MicSens_VPa'])
     # NoiseRMS = NoiseRMS['RMS']
     
-    for AKey in SoundRec[FKey]:
-        SoundRec[FKey][AKey] = SoundRec[FKey][AKey] * SBInAmpF
-        SoundIntensity[FKey][AKey] = SignalIntensity(SoundRec[FKey][AKey], 
-                                                     DataInfo['Rate'], FreqBand, 
-                                                     DataInfo['MicSens_VPa'])#,
+    for A, AmpF in Freq.items():
+        AmpF = AmpF * SBInAmpF
+        SoundIntensity[F][A], PSD[F][A] = SignalIntensity(AmpF[:,0], 
+                                                          DataInfo['Rate'], 
+                                                          FreqBand, 
+                                                          DataInfo['MicSens_VPa'])#,
                                                      # NoiseRMS)
-        SoundRec[FKey][AKey] = None
+        SoundRec[F][A] = None
 
 del(SoundRec)
 
@@ -148,131 +284,9 @@ del(SoundRec)
 print('Saving analyzed data...')
 os.makedirs(Folder, exist_ok=True)
 Hdf5.DataWrite(SoundIntensity, Group+'/SoundIntensity', FileName, Overwrite=True)
+Hdf5.DataWrite(PSD, Group+'/PSD', FileName, Overwrite=True)
 
-Freqs = list(SoundIntensity.keys())
-AmpFList = sorted(list(SoundIntensity[Freqs[0]].keys()), reverse=True)
-#ToAppend = AmpFList[:4] + [AmpFList[-1]]
-#AmpFList = AmpFList[4:-1] + ToAppend
-
-TexTable = pandas.DataFrame([[float(AmpF)] + [SoundIntensity[Freq][AmpF]['dB'] 
-                                              for Freq in SoundIntensity]
-                             for AmpF in AmpFList])
-
-File = open(Folder+'/'+'IntensityTable_'+DataInfo['Date']+'.tex', 'w')
-File.write(r"""%% Configs =====
-\documentclass[12pt,a4paper]{report}
-
-\usepackage[left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
-\usepackage{longtable}
-\usepackage{setspace}
-\usepackage{titlesec}
-\titleformat{\chapter}{\normalfont\LARGE\bfseries}{\thechapter.}{1em}{}
-
-% Document ======
-\begin{document}
-
-\cleardoublepage
-\chapter{Sound measurements}
-\input{IntensityTable-Contents""" +'_'+DataInfo['Date']+'.tex}')
-File.write(r"""
-\end{document}
-""")
-File.close()
-del(File)
-
-File = open(Folder+'/'+'IntensityTable-Contents_'+DataInfo['Date']+'.tex', 'w')
-File.write(TexTable.to_latex(longtable=True))
-File.close()
-del(File)
-
-Colors = ['r', 'g', 'b', 'm', 'k', '#ffa500', '#00b2b2']
-FreqList = list(SoundIntensity.keys()); FreqList.sort(); ToPrepend = []
-for FF in ['8000-10000', '9000-11000']:
-    if FF in FreqList:
-        del(FreqList[FreqList.index(FF)]); ToPrepend.append(FF)
-
-ToPrepend.sort(); FreqList = ToPrepend + FreqList
-
-plt.figure(figsize=(6, 6))
-for FKey in SoundIntensity:
-    FInd = FreqList.index(FKey)
-   
-    FigTitle = 'Intensity curve per Freq per AmpF'
-    YLabel = 'Intensity [dBSPL]'
-    XLabel = 'Sound amplification factor'
-    LineLabel = FKey + ' Hz'
-    
-    plt.semilogx(AmpFList, [SoundIntensity[FKey][AmpF]['dB'] for AmpF in AmpFList], 
-                 label=LineLabel, color=Colors[FInd])
-
-plt.ylabel(YLabel); plt.xlabel(XLabel)
-plt.legend(loc='upper left')
-plt.locator_params(tight=True)
-plt.tick_params(direction='out')
-plt.axes().spines['right'].set_visible(False)
-plt.axes().spines['top'].set_visible(False)
-plt.axes().yaxis.set_ticks_position('left')
-plt.axes().xaxis.set_ticks_position('bottom')
-plt.title(FigTitle)
-plt.savefig(Folder+'/'+'SoundMeasurement_'+DataInfo['Date']+'.svg', format='svg')
-
-
-Colormaps = [plt.get_cmap(Map) for Map in ['Reds', 'Greens', 'Blues', 
-                                           'Purples', 'Greys', 'Oranges', 'GnBu']]
-
-Fig, Axes = plt.subplots(len(DataInfo['NoiseFrequency']), 
-                         sharex=True, figsize=(6, 12))
-
-for FKey in FreqList:
-    Freq = FreqList.index(FKey)
-    
-    FigTitle = 'Power spectral density'
-    AxTitle = FKey + ' Hz'
-    YLabel = 'PSD [V²/Hz]'
-    XLabel = 'Frequency [Hz]'
-    
-    Intensities = [80, 70, 60, 50, 40, 30, 0]
-    AmpFList = SigGen.dBToAmpF(Intensities, Group)
-    for AFKey in AmpFList:
-        AmpFList[AFKey] = [str(_) for _ in AmpFList[AFKey]]
-    
-    # AmpFList = {FKey: sorted(list(SoundIntensity[FKey].keys()), reverse=True)} ## Override to delete
-    for AKey in AmpFList[FKey]:
-        AmpF = AmpFList[FKey].index(AKey)
-        
-        Colors = [Colormaps[Freq](255-(AmpF*255//len(AmpFList)))]
-        LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
-        # try:
-        #     LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
-        # except KeyError:
-        #     AKey = '0.0'
-        #     LineLabel = str(round(SoundIntensity[FKey][AKey]['dB'])) + ' dB'
-        
-        for IAmpF in SoundIntensity[FKey]:
-            IdB = SoundIntensity[FKey][IAmpF]['dB']
-            
-            if SoundIntensity[FKey][AKey]['dB'] == IdB:
-#                print(IAmpF)
-                Axes[Freq].semilogy(SoundIntensity[FKey][IAmpF]['PSD'][0], 
-                                    SoundIntensity[FKey][IAmpF]['PSD'][1], 
-                                    label=LineLabel, color=Colors[0])
-            else: continue
-        
-    Axes[Freq].set_xlim(left=5000, right=20000)
-    Axes[Freq].set_ylabel(YLabel)
-    Axes[Freq].spines['right'].set_visible(False)
-    Axes[Freq].spines['top'].set_visible(False)
-    Axes[Freq].yaxis.set_ticks_position('left')
-    Axes[Freq].xaxis.set_ticks_position('bottom')
-    Axes[Freq].set_title(AxTitle)
-#    if Freq < 2:
-#        Axes[Freq].legend(loc='lower right')
-#    else:
-#        Axes[Freq].legend(loc='lower left')
-
-Fig.suptitle(FigTitle)
-Fig.tight_layout()
-Fig.subplots_adjust(top=0.93)
-Fig.savefig(Folder+'/'+'PowerSpectrumDensity_'+DataInfo['Date']+'.svg', format='svg')
-plt.show()
+WriteTexTable(SoundIntensity, DataInfo['Date'], Folder)
+Intensity_AmpF(SoundIntensity, DataInfo['Date'], Folder)
+PxxSp_Freq(SoundIntensity, PSD, DataInfo['Date'], Group, FileName, Folder)
 print('Done.')

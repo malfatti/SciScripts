@@ -66,9 +66,9 @@ def MicrOscilloscope(SoundBoard, Device, Rate, Window, Interval, YLim,
                 # RMS = (sum(PxxSp[Range]) * BinSize)**0.5
                 # dB = 20*(np.log10((RMS/MicSens_VPa)/0.00002))
                 
-                SI = SignalIntensity(Data, Rate, FreqBand, MicSens_VPa, WindowSize=Window)
-                F = SI['PSD'][0]
-                PxxSp = SI['PSD'][1]
+                SI, SIPSD = SignalIntensity(Data, Rate, FreqBand, MicSens_VPa, WindowSize=Window)
+                F = SIPSD[0]
+                PxxSp = SIPSD[1]
                 dB = SI['dB']
                 
                 

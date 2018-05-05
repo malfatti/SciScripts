@@ -13,7 +13,7 @@ import os
 from DataAnalysis import DataAnalysis, Stats
 from DataAnalysis.Plot import Plot
 from glob import glob
-from IO import Asdf, Bin, Hdf5, Klusta, OpenEphys, Txt
+from IO import Asdf, Bin, Hdf5, IO, Klusta, OpenEphys, Txt
 from itertools import combinations
 from klusta.kwik import KwikModel
 
@@ -118,7 +118,7 @@ def ClusterizeSpks(Board, Folders, ProbeSpacing, Probe=None, Log=None):
         
         for Es, Exps in enumerate(ExpGroups):
             for E, Exp in enumerate(Exps):
-                Data, Rate = OpenEphys.DataLoader(Exp, 'Bits')
+                Data, Rate = IO.DataLoader(Exp, 'Bits')
                 if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
                 else: Proc = Hdf5.GetProc(Data, Board)
                 
@@ -743,7 +743,7 @@ def GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs=True,
     
     KlustaRecs = []; ExpFolders = sorted(glob(DataFolder+'/*'))
     for f, F in enumerate(ExpFolders):
-        # Data = OpenEphys.DataLoader(F, 'Bits')[0]
+        # Data = IO.DataLoader(F, 'Bits')[0]
         # Proc = list(Data.keys())[0]
         # Recs = sorted(Data[Proc].keys())
         ExpInfo = DataInfo['ExpInfo']["{0:02d}".format(f)]
@@ -792,7 +792,7 @@ def GetAllUnits(Folder, TTLCh, ProbeChSpacing, HistX, Clusters, AnalogTTLs=True,
         R = KlustaRecs[Rec][5]
         
         if AnalogTTLs:
-            TTLs = OpenEphys.DataLoader(RecFolder, 'Bits')[0]
+            TTLs = IO.DataLoader(RecFolder, 'Bits')[0]
             Proc = list(TTLs.keys())[0]
             TTLs = TTLs[Proc][KlustaRecs[Rec][-1]][:, TTLCh-1]
             TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, TTLs)

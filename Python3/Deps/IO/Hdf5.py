@@ -512,9 +512,9 @@ def Hdf52Dict(Path, F, StructureOnly=False):
         if StructureOnly: return(None)
         else: return(ReturnCopy(F[Path]), Attrs)
     
-    # elif 'numpy' in str(type(F[Path])) or type(F[Path]) in [str, list, tuple, dict]: 
-    #     if StructureOnly: return(None)
-    #     else: return(F[Path])
+    elif 'numpy' in str(type(F[Path])) or type(F[Path]) in [str, list, tuple, dict]: 
+        if StructureOnly: return(None)
+        else: return(F[Path])
         
     # elif type(F[Path]) in [str, list, tuple, dict]: 
     #     if StructureOnly: return(None)

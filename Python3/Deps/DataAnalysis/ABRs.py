@@ -10,7 +10,7 @@ import numpy as np
 import os
 
 from DataAnalysis import DataAnalysis
-from IO import Hdf5, OpenEphys, Txt
+from IO import Hdf5, IO, OpenEphys, Txt
 
 NoTTLsFile = os.environ['NEBULAPATH']+'/Documents/PhD/Notes/Experiments/NoTTLRecs.dict'
 
@@ -32,43 +32,48 @@ def _PrintOptions():
     return(None)
 
 
-def ABRPerCh(Rec, R, Rate, ABRCh, TTLCh, Info, DataInfo, NoOfSamples, NoOfSamplesBefore, NoOfSamplesAfter, FilterFreq, FilterOrder, AnalogTTLs=True, Proc=None, Events=None):
-    ABR = np.zeros((NoOfSamples, len(ABRCh)))
-    for C, Ch in enumerate(ABRCh):
-        if AnalogTTLs:
-            # Temporary override
+def GetTTLs(Data, Rate, ABRCh, TTLCh, DataInfo, AnalogTTLs=True, Proc=None, Events=None, R=None, Info=None):
+    if AnalogTTLs:
+        # Temporary override
 #                if 4.5 < np.mean(Rec[:,TTLCh-1]) < 5.5: TTLCh = 21
-            if TTLCh > Rec.shape[1]:
-                print('TTLCh > ChNo; replaced by -1.')
-                TTLCh = 0
-            
-            print('TTL mean and max:', np.mean(Rec[:,TTLCh-1]), np.max(Rec[:,TTLCh-1]))
-            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Rec[:,TTLCh-1])
-            if len(TTLs) > DataInfo['Audio']['SoundPulseNo']+4 or len(TTLs) < 100:
-                TTLs = []
-            
-            print(len(TTLs), 'TTLs')
-            if max(ABRCh) > Rec.shape[1]:
-                print(''); print('Wrong ABR Channels!'); print('')
-                TTLs = FixTTLs(Rec, ABRCh, TTLCh, Rate, DataInfo, Info, R, AnalogTTLs)
-            
-            # if type(TTLs) == dict: return(TTLs)
-            
-            while len(TTLs) == 0:
-                TTLs = FixTTLs(Rec, ABRCh, TTLCh, Rate, DataInfo, Info, R, AnalogTTLs)
-            
-            if type(TTLs) == dict: return(TTLs)
+        if TTLCh > Data.shape[1]:
+            print('TTLCh > ChNo; replaced by -1.')
+            TTLCh = 0
         
-        else:
-            TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, TTLCh=TTLCh, 
-                                      Proc=Proc, Rec=R)
+        print('TTL mean and max:', np.mean(Data[:,TTLCh-1]), np.max(Data[:,TTLCh-1]))
+        TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, Data[:,TTLCh-1])
+        if len(TTLs) > DataInfo['Audio']['SoundPulseNo']+4 or len(TTLs) < 100:
+            TTLs = []
         
-        ABRData = DataAnalysis.SliceData(Rec[:, Ch-1], TTLs, NoOfSamplesBefore, 
-                        NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
+        print(len(TTLs), 'TTLs')
+        if max(ABRCh) > Data.shape[1]:
+            print(''); print('Wrong ABR Channels!'); print('')
+            TTLs = FixTTLs(Data, ABRCh, TTLCh, Rate, DataInfo, Info, R, AnalogTTLs)
         
-        ABR[:,C] = np.mean(ABRData, axis=0)
-        ABR[:,C] = DataAnalysis.FilterSignal(ABR[:,C], Rate, FilterFreq, FilterOrder,  
-                                'butter', 'bandpass')
+        while len(TTLs) == 0:
+            TTLs = FixTTLs(Data, ABRCh, TTLCh, Rate, DataInfo, Info, R, AnalogTTLs)
+        
+        if type(TTLs) == dict: return(TTLs)
+    
+    else:
+        TTLs = DataAnalysis.QuantifyTTLsPerRec(AnalogTTLs, EventsDict=Events, TTLCh=TTLCh, 
+                                  Proc=Proc, Rec=R)
+    
+    return(TTLs)
+        
+
+
+def ABRPerCh(Data, TTLs, Rate, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter, FilterFreq, FilterOrder, AnalogTTLs=True):
+    NoOfSamples = NoOfSamplesBefore + NoOfSamplesAfter
+    ABR = np.zeros((NoOfSamples, len(ABRCh)))
+    
+    for C, Ch in enumerate(ABRCh):
+        ABRData = DataAnalysis.SliceData(Data[:, Ch-1], TTLs, NoOfSamplesBefore, 
+                        NoOfSamplesAfter, AnalogTTLs)
+        
+        ABR[:,C] = DataAnalysis.FilterSignal(ABRData.mean(axis=1), Rate, 
+                                             FilterFreq, FilterOrder,  
+                                             'butter', 'bandpass')
     
     return(ABR)
 
@@ -241,34 +246,18 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
         End = np.where(Rec[:,0] != 0)[0][-1]
         Rec = Rec[Start:End,:]
         
-        ABR = {'ABRCh': ABRCh, 'TTLCh': TTLCh}
-        while type(ABR) == dict:
-            ABR = ABRPerCh(Rec, R, Rate, ABR['ABRCh'], ABR['TTLCh'], Info, DataInfo, NoOfSamples, NoOfSamplesBefore, NoOfSamplesAfter, FilterFreq, FilterOrder, AnalogTTLs)
+        TTLs = {}
+        while type(TTLs) == dict:
+            TTLs = GetTTLs(Rec, Rate, ABRCh, TTLCh, DataInfo, AnalogTTLs, R=R, Info=Info)
+        
+        ABR = ABRPerCh(Rec, TTLs, Rate, ABRCh, NoOfSamplesBefore, NoOfSamplesAfter, FilterFreq, FilterOrder, AnalogTTLs)
         
         RealR = len(Done)
         dB = str(DataInfo['Audio']['Intensities'][int(RealR)]) + 'dB'
         
-#        if len(DataInfo['Audio']['Intensities'])-1 < int(R): R = Broken[0]; del(Broken[0])
-#        if Broken: R = str(len(Good))
-#        print(R)
-#         try:
-#             dB = str(DataInfo['Audio']['Intensities'][int(R)]) + 'dB'
-#         except IndexError:
-#             print('Recs and Intensities indexes do not match.')
-#             print('Intensities are:')
-#             for I, Int in enumerate(DataInfo['Audio']['Intensities']): print(str(I) + ')' , Int)
-#             print('')
-#             print('Recs are:')
-#             for Ri, Rk in enumerate(sorted(list(Data.keys()))): print(str(Ri) + ')' , Rk)
-#             print('')
-#             print('Current Rec is', R)
-#             R = input('Choose intensity (using above intensity index): ')
-#             dB = str(DataInfo['Audio']['Intensities'][int(R)]) + 'dB'
-        ABRs[dB] = ABR[:]#; del(ABR, ABRData)
+        ABRs[dB] = ABR[:]
         Done.append(R)
-#        Good.append(R)
-        
-#    if Broken: print("There were broken recs, intensities may be wrong!")
+    
     Info['Path'] = Stim+'/'+ExpInfo['DV']+'/'+Info['Frequency']
     
     print('')
@@ -276,7 +265,7 @@ def Calc(Data, Rate, ExpInfo, DataInfo, Stim='', ABRCh=[1], TTLCh=0,
 
 
 ## Level 1
-def Analysis(Exp, Folders, InfoFile, AnalysisFile='', TimeBeforeTTL=3, 
+def Analysis(Folders, InfoFile, AnalysisFile='', TimeBeforeTTL=3, 
              TimeAfterTTL=12, FilterFreq=[300, 3000], FilterOrder=4, 
              StimType=['Sound'], AnalogTTLs=True, Proc='100'):
     InfoType = InfoFile[-4:]
@@ -299,7 +288,7 @@ def Analysis(Exp, Folders, InfoFile, AnalysisFile='', TimeBeforeTTL=3,
         Freqs = []; Trial = 0
         for F, Folder in enumerate(Exps):
             print(''); print(Folder); print('')
-            Data, Rate = OpenEphys.DataLoader(Folder, 'uV', [], AnalogTTLs)
+            Data, Rate = IO.DataLoader(Folder, 'uV', [], AnalogTTLs)
             if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
             
             if InfoType == 'hdf5': ExpInfo = Hdf5.ExpExpInfo(Folder, F, InfoFile); R = ''

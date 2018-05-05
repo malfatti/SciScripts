@@ -11,7 +11,6 @@ import numpy as np
 from DataAnalysis import DataAnalysis
 from glob import glob
 from IO import Hdf5
-from IO import Intan
 from IO.Txt import DictPrint
 
 
@@ -85,28 +84,32 @@ def DatLoad(Folder, Unit='uV', ChannelMap=[]):
 
 
 def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
-    Kwds = glob(Folder+'/*.kwd')
+    Kwds = sorted(glob(Folder+'/*.kwd'))
     if Unit.lower() == 'uv': 
-        XMLFile = glob(Folder+'/setting*.xml')[0]
+        XMLFile = sorted(glob(Folder+'/setting*.xml'))[0]
         RecChs = SettingsXML.GetRecChs(XMLFile)[0]
     
+    Data = {}; Rate = {}
     for Kwd in Kwds:
         Proc = Kwd[-11:-8]
         
-        Data = {}; Rate = {}
         Data[Proc], Attrs = Hdf5.DataLoad('/recordings', Kwd)
         Data[Proc] = {R: Rec['data'] for R, Rec in Data[Proc].items()}
         Rate[Proc] = [np.array(Rec['sample_rate']) for Rec in Attrs.values()]
         if len(np.unique(Rate[Proc])) == 1: Rate[Proc] = Rate[Proc][0]
         
-        if Unit.lower() == 'uv': Data[Proc] = DataTouV(Data[Proc], RecChs[Proc])
+        try:
+            if Unit.lower() == 'uv': Data[Proc] = DataTouV(Data[Proc], RecChs[Proc])
+        except KeyError:
+            print('No gain info on file, units are in bits.')
+            
         if ChannelMap: Data[Proc] = ApplyChannelMap(Data[Proc], ChannelMap)
     
     print('Done.')
     return(Data, Rate)
 
 
-def OpenEphysLoad(Folder, Unit='uV', ChannelMap=[]):
+def OELoad(Folder, Unit='uV', ChannelMap=[]):
     OEs = glob(Folder+'/*continuous')
     XMLFile = glob(Folder+'/setting*.xml')[0]
     
@@ -183,27 +186,3 @@ def GetRecs(Folder):
             Recs[Proc] = str(int(R))
     
     return(Recs)
-
-
-def DataLoader(Folder, Unit='uV', ChannelMap=[], AnalogTTLs=True):
-    FilesExt = [F[-3:] for F in glob(Folder+'/*.*')]
-    
-    if 'kwd' in FilesExt: Data, Rate = KwikLoad(Folder, Unit, ChannelMap)
-    elif 'dat' in FilesExt: Data, Rate = DatLoad(Folder, Unit, ChannelMap)
-    elif 'ous' in FilesExt: Data, Rate = OpenEphysLoad(Folder, Unit, ChannelMap)
-    else: print('Data format not supported.'); return(None)
-    
-    if not AnalogTTLs:
-        if 'kwd' in FilesExt: 
-            Kwds = glob(Folder+'/*.events')
-            if len(Kwds) > 1: print('Multiple sessions not supported yet.'); return(None)
-            
-            EventsDict = 'ToBeContinued'
-        else:
-            EventsDict = EventsLoad(Folder)
-        
-        return(Data, Rate, EventsDict)
-    else:
-        return(Data, Rate)
-        
-

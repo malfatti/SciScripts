@@ -14,7 +14,7 @@ import os
 from DataAnalysis import GPIAS
 from DataAnalysis.Plot import GPIAS as PlotGPIAS
 from glob import glob
-from IO import Hdf5, OpenEphys, Txt
+from IO import Hdf5, IO, OpenEphys, Txt
 
 
 #%% Batch
@@ -58,7 +58,7 @@ for Exp in Exps:
         if Folder == 'Recovery/20160702-Recovery-GPIAS/2016-07-02_13-05-52_CaMKIIahM4Dn09': continue
         RecFolder = Folder.split('/')[-1]
         
-        Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
+        Data, Rate = IO.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
         if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
         
         if Files[F][-4:] == 'hdf5': 
@@ -134,7 +134,7 @@ FigPrefix = 'Test'
 FigName = 'Test'
 RecFolder = Folder.split('/')[-1]
 
-Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
+Data, Rate = IO.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
 if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
 
 DataInfo = Txt.DictRead(InfoFile)
@@ -238,7 +238,7 @@ for File in Files:
     DataInfo.update(StimInfo)
     
     Folder = sorted(glob('/'.join(File.split('/')[:-1])+'/2*'+DataInfo['AnimalName']))[0]
-    Data, Rate = OpenEphys.DataLoader(Folder, AnalogTTLs=True, Unit='Bits')
+    Data, Rate = IO.DataLoader(Folder, AnalogTTLs=True, Unit='Bits')
     if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
     
     Chs = [Data[Proc]['0'][:,Ch] for Ch in range(Data[Proc]['0'].shape[1])]

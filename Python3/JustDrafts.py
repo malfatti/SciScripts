@@ -523,7 +523,7 @@ for Folder in Folders:
     else: DataInfo = Txt.DictRead(InfoFile)
     
     ExpFolder = sorted(glob(DataFolder+'/*'))[0]
-    Data, Rate = OpenEphys.DataLoader(ExpFolder, True, 'Bits')
+    Data, Rate = IO.DataLoader(ExpFolder, True, 'Bits')
     Proc = list(Data.keys())[0]
     Rec = Data[Proc]['0']; Rate = Rate[Proc]
     

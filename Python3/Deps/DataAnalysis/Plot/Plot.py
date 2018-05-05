@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 ## Level 0
-def Set(Backend='TkAgg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False, 
+def Set(Backend='Qt5Agg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False, 
         HideControls=False, Tight=True):
     if Params:
         Params = {

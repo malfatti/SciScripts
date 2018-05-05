@@ -394,12 +394,11 @@ def SignalIntensity(Data, Rate, FreqBand, Ref, NoiseRMS=None, WindowSize=None):
     return(Intensity, IntensityPSD)
 
 
-def SliceData(Data, TTLs, NoOfSamplesBefore, 
-              NoOfSamplesAfter, NoOfSamples, AnalogTTLs, RawTime=[]):
-    print('Slicing data around TTL...')
-#    Array = [[0 for _ in range(NoOfSamples)] for _ in range(len(TTLs))]
-    Array = np.zeros((len(TTLs), NoOfSamples))
-#    TTLsToFix = []
+def SliceData(Data, TTLs, NoOfSamplesBefore, NoOfSamplesAfter, 
+              AnalogTTLs, RawTime=[]):
+    # print('Slicing data around TTL...')
+    NoOfSamples = NoOfSamplesBefore+NoOfSamplesAfter
+    Array = np.zeros((NoOfSamples, len(TTLs)))
     
     for TTL in range(len(TTLs)):
         if AnalogTTLs: TTLLoc = int(TTLs[TTL])
@@ -408,17 +407,12 @@ def SliceData(Data, TTLs, NoOfSamplesBefore,
         Start = TTLLoc-NoOfSamplesBefore
         End = TTLLoc+NoOfSamplesAfter
         
-#        if Start < 0: Start = 0; End = End+(Start*-1); TTLsToFix.append(TTL)
         if Start < 0 or End > len(Data):
             print('TTL too close to the edge. Skipping...')
             continue
         
-        Array[TTL,:] = Data[Start:End]
+        Array[:,TTL] = Data[Start:End]
         
-#        if len(Array[TTL]) != End-Start: TTLsToFix.append(TTL)
-            
-#    if TTLsToFix: Array = FixTTLs(Array, TTLsToFix)
-    
     print('Done.')
     return(Array)
 

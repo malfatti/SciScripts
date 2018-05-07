@@ -16,7 +16,7 @@ def Set(Backend='Qt5Agg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         HideControls=False, Tight=True):
     if Params:
         Params = {
-          'backend'             : 'TkAgg',
+          'backend'             : Backend,
           'image.cmap'          : 'cubehelix',
           'savefig.dpi'         : 300,
           'savefig.format'      : 'svg',

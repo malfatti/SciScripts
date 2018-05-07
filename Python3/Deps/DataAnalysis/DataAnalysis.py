@@ -413,7 +413,7 @@ def SliceData(Data, TTLs, NoOfSamplesBefore, NoOfSamplesAfter,
         
         Array[:,TTL] = Data[Start:End]
         
-    print('Done.')
+    # print('Done.')
     return(Array)
 
 

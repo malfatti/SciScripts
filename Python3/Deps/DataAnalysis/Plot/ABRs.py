@@ -12,7 +12,7 @@ from DataAnalysis.Plot import Plot
 from glob import glob
 from IO import Hdf5, Txt
 
-def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], Save=True, Visible=True):
+def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], Save=True, Show=True):
     Data = Hdf5.DataLoad(AnalysisPath, AnalysisFile)[0]
     ABRs, XValues = Data['ABRs'], Data['XValues']
     
@@ -31,9 +31,13 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
             for F, Freq in DVCoord.items():
                 for T, Trial in Freq.items():
                     YLim = []
-                    
                     for ABR in Trial.values():
-                        YLim.append(max(ABR)); YLim.append(min(ABR))
+                        BestCh = [np.mean(ABR[:,Ch]**2)**0.5 
+                              for Ch in range(ABR.shape[1])]
+                        BestCh = BestCh.index(max(BestCh))
+                        
+                        YLim.append(max(ABR[:,BestCh])); 
+                        YLim.append(min(ABR[:,BestCh]))
                     
                     Intensities = list(Trial.keys())
                     Intensities.sort(reverse=True)
@@ -47,6 +51,10 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                               'ylim': (min(YLim), max(YLim))}
                         
                     for dB, ABR in Trial.items():
+                        BestCh = [np.mean(ABR[:,Ch]**2)**0.5 
+                              for Ch in range(ABR.shape[1])]
+                        BestCh = BestCh.index(max(BestCh))
+                        
                         FigTitle = ' '.join([S, F+'Hz,', DV, 'DV, Trial', T])
                         LineLabel = dB
                         SpanLabel = 'Sound pulse'
@@ -63,7 +71,7 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                                            color='k', alpha=0.3, lw=0, 
                                            label=SpanLabel)
                         
-                        Axes[dBInd].plot(TXValues, ABR, color=Colors[0], 
+                        Axes[dBInd].plot(TXValues, ABR[:,BestCh], color=Colors[0], 
                                          label=LineLabel)
                         
                         Plot.Set(Ax=Axes[dBInd], AxArgs=AxArgs)
@@ -87,11 +95,11 @@ def Traces(AnalysisPath, AnalysisFile, InfoFile, FigPath='./Figs', Ext=['svg'], 
                         for E in Ext: Fig.savefig(FigName+'.'+E, format=E)
                         
     
-    if Visible: plt.show()
+    if Show: plt.show()
     return(None)
 
 
-def Triang3D(AnalysisFile, FileName, Azimuth=-110, Elevation=50, Visible=True):
+def Triang3D(AnalysisFile, FileName, Azimuth=-110, Elevation=50, Show=True):
     """ 
     This function will plot the data from ../*Analysis.hdf5. Make sure 
     FileName is a string with the path to only one file.
@@ -157,7 +165,7 @@ def Triang3D(AnalysisFile, FileName, Azimuth=-110, Elevation=50, Visible=True):
                                        '.svg'])
                     Fig.savefig(FigName, format='svg')
     
-    if Visible: plt.show()
+    if Show: plt.show()
     
     return(None)
 

@@ -6,8 +6,6 @@ Created on Sat Jul  8 16:40:55 2017
 @author: malfatti
 """
 #%% ABRs
-import numpy as np
-
 from DataAnalysis import ABRs, DataAnalysis
 from DataAnalysis.Plot import ABRs as ABRPlot
 from copy import deepcopy
@@ -33,7 +31,7 @@ for Exp in Exps:
     AnalysisPath = '-'.join(InfoFile.split('/')[-1].split('-')[:2]) + '-ABRs'
     
     ABRs.Analysis(Folders, InfoFile, AnalysisFile, StimType=StimType)
-    ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Group+'/Figs', Save=True, Visible=True)
+    ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Group+'/Figs', Save=False, Visible=True)
 
 
 

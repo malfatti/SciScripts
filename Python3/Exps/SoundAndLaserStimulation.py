@@ -17,7 +17,7 @@ from Exps import SoundAndLaserStimulation
 #        [12000, 14000],
 #        [10000, 12000]])
 Parameters = dict(
-    AnimalName          = 'RecoveryControl_02',
+    AnimalName          = 'ToDelete',
     StimType            = ['Sound'],
     # StimType            = ['Sound', 'Laser', 'SoundLaser'],
     
@@ -68,7 +68,7 @@ Parameters = dict(
     TTLCh           = 27,
     AnalogTTLs      = True,
     
-    System          = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn',
+    System          = 'Jack-IntelOut-Marantz-IntelIn',
     Setup           = 'UnitRec',
 )
 

@@ -3,7 +3,7 @@
 <SETTINGS>
   <INFO>
     <VERSION>0.3.6</VERSION>
-    <DATE>3 Jul 2017 14:40:56</DATE>
+    <DATE>7 May 2018 16:13:36</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -87,19 +87,19 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="16" number="16">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="17" number="17">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="18" number="18">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="19" number="19">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="20" number="20">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="21" number="21">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -108,7 +108,7 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="23" number="23">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="24" number="24">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -117,7 +117,7 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="26" number="26">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
       <EVENTCHANNEL name="1" number="1"/>
@@ -135,7 +135,7 @@
       <EVENTCHANNEL name="13" number="13"/>
       <EVENTCHANNEL name="14" number="14"/>
       <EVENTCHANNEL name="15" number="15"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.7116550693042453801"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.8392965460350640949"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="3309.53400228977398"
@@ -247,67 +247,67 @@
     <PROCESSOR name="Filters/Bandpass Filter" insertionPoint="1" NodeId="116">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="1" number="1">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="4" number="4">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="5" number="5">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="6" number="6">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="7" number="7">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="3000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="8" number="8">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="9" number="9">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="10" number="10">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="11" number="11">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="12" number="12">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="13" number="13">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="14" number="14">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="15" number="15">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
       </CHANNEL>
       <CHANNEL name="16" number="16">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -479,10 +479,10 @@
       <EVENTCHANNEL name="15" number="15"/>
       <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
         <TAB Active="0"/>
-        <WINDOW Active="1" x="1925" y="340" width="1916" height="320"/>
-        <LFPDISPLAY Range="100,2000,10.0" Timebase="2.0" Spread="336" colorGrouping="1"
+        <WINDOW Active="1" x="1" y="137" width="1916" height="320"/>
+        <LFPDISPLAY Range="100,2000,10.0" Timebase="2.0" Spread="100" colorGrouping="1"
                     isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="001000000000000000000000000"
-                    ScrollX="0" ScrollY="264"/>
+                    ScrollX="0" ScrollY="0"/>
       </EDITOR>
     </PROCESSOR>
     <SWITCH number="3"/>
@@ -589,10 +589,10 @@
       <EVENTCHANNEL name="15" number="15"/>
       <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
         <TAB Active="0"/>
-        <WINDOW Active="1" x="1925" y="681" width="1917" height="367"/>
+        <WINDOW Active="1" x="2" y="478" width="1917" height="367"/>
         <LFPDISPLAY Range="1000,2000,0.5" Timebase="2.0" Spread="50" colorGrouping="1"
-                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="000000000000000000010001001"
-                    ScrollX="0" ScrollY="1073"/>
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="000000000000000000011000000"
+                    ScrollX="0" ScrollY="809"/>
       </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>

@@ -14,15 +14,15 @@ from IO import Hdf5, IO, Txt
 
 # cd '/home/cerebro/Malfatti/Data'
 #%% 
-Group = 'Recovery'
+Group = 'ToDelete'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 AnalysisFile = 'Test.hdf5'
 
 
-Exps = sorted(glob(Group+'/*UnitRec'))
+Exps = sorted(glob(Group+'/*ABRs'))
 # del(Exps[5], Exps[3], Exps[2], Exps[1]) # Temp override
 
-StimType = ['Sound_NaCl', 'Sound_CNO']
+StimType = ['Sound']
 
 for Exp in Exps:
     Folders = glob(Exp + '/*' + Exp.split('/')[-1][:4] + '-*'); Folders.sort()
@@ -31,7 +31,7 @@ for Exp in Exps:
     AnalysisPath = '-'.join(InfoFile.split('/')[-1].split('-')[:2]) + '-ABRs'
     
     ABRs.Analysis(Folders, InfoFile, AnalysisFile, StimType=StimType)
-    ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Group+'/Figs', Save=False, Visible=True)
+    ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Group+'/Figs', Save=False, Show=True)
 
 
 

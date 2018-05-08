@@ -10,20 +10,22 @@
 from Exps import SoundAndLaserStimulation
 
 ## === Experiment parameters === ##
-# 3, 2, 4, 5, 1
-# array([[ 8000, 10000],
-#        [ 9000, 11000],
+# 'B4', 'A4', 'B1', 'C4', 'A1', 
+# 'D1', 'A3', 'A5', 'B2', 'B3', 
+# 'A2', 'C3', 'D2', 'C1', 'D4'
+# array([[ 9000, 11000],
+#        [ 8000, 10000],
 #        [14000, 16000],
-#        [12000, 14000],
-#        [10000, 12000]])
+#        [10000, 12000],
+#        [12000, 14000]])
 Parameters = dict(
-    AnimalName          = 'ToDelete',
+    AnimalName          = 'B1',
     StimType            = ['Sound'],
     # StimType            = ['Sound', 'Laser', 'SoundLaser'],
     
     
     ## === Sound === ##
-    Intensities         = [80, 70, 60, 50, 40],
+    Intensities         = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35],
     NoiseFrequency      = [[8000, 10000], 
                            [9000, 11000], 
                            [10000, 12000], 
@@ -64,8 +66,8 @@ Parameters = dict(
     
     ## === Hardware === ##
     ABRCh           = [1],
-    SoundCh         = 26,
-    TTLCh           = 27,
+    SoundCh         = 2,
+    TTLCh           = 3,
     AnalogTTLs      = True,
     
     System          = 'Jack-IntelOut-Marantz-IntelIn',

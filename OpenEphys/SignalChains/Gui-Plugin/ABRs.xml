@@ -2,9 +2,9 @@
 
 <SETTINGS>
   <INFO>
-    <VERSION>0.4.2</VERSION>
+    <VERSION>0.4.3</VERSION>
     <PLUGIN_API_VERSION>5</PLUGIN_API_VERSION>
-    <DATE>18 Jul 2017 11:43:29</DATE>
+    <DATE>8 May 2018 18:35:09</DATE>
     <OS>Linux</OS>
     <MACHINE>LeaoLabGentoo</MACHINE>
   </INFO>
@@ -48,7 +48,7 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -66,7 +66,7 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="8" number="8">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="9" number="9">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -99,10 +99,10 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="19" number="19">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="20" number="20">
-        <SELECTIONSTATE param="1" record="0" audio="0"/>
+        <SELECTIONSTATE param="1" record="1" audio="0"/>
       </CHANNEL>
       <CHANNEL name="21" number="21">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -111,7 +111,7 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="23" number="23">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="24" number="24">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -120,10 +120,10 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <CHANNEL name="26" number="26">
-        <SELECTIONSTATE param="1" record="1" audio="0"/>
+        <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
-      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.8392965460350640949"
+      <EDITOR isCollapsed="0" displayName="Rhythm FPGA" SampleRate="17" LowCut="1.0976697113114399773"
               HighCut="7603.7651218333703582" ADCsOn="1" AudioOutputL="-1"
               AudioOutputR="-1" NoiseSlicer="0" TTLFastSettle="1" DAC_TTL="0"
               DAC_HPF="1" DSPOffset="1" DSPCutoffFreq="0.14571292570770724706"
@@ -132,7 +132,7 @@
     </PROCESSOR>
     <PROCESSOR name="Utilities/Record Control" insertionPoint="1" pluginName="Record Control"
                pluginType="1" pluginIndex="11" libraryName="Record Control"
-               libraryVersion="1" isSource="0" isSink="0" NodeId="104">
+               libraryVersion="1" isSource="0" isSink="0" NodeId="101">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="0" record="0" audio="0"/>
       </CHANNEL>
@@ -216,80 +216,75 @@
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
       <EDITOR isCollapsed="0" displayName="Record Control">
-        <PARAMETERS Type="RecordControlEditor" Channel="5" Mode="1" Edge="2"/>
+        <PARAMETERS Type="RecordControlEditor" Channel="5" Mode="1" Edge="1"/>
       </EDITOR>
-    </PROCESSOR>
-    <PROCESSOR name="Utilities/Splitter" insertionPoint="1" pluginName="Splitter"
-               pluginType="-1" pluginIndex="2" libraryName="" libraryVersion="-1"
-               isSource="0" isSink="0" NodeId="102">
-      <EDITOR isCollapsed="0" displayName="Splitter"/>
     </PROCESSOR>
     <PROCESSOR name="Filters/Bandpass Filter" insertionPoint="1" pluginName="Bandpass Filter"
                pluginType="1" pluginIndex="10" libraryName="Bandpass Filter"
-               libraryVersion="1" isSource="0" isSink="0" NodeId="105">
+               libraryVersion="1" isSource="0" isSink="0" NodeId="107">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="1" number="1">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="2" number="2">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="3" number="3">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="4" number="4">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="5" number="5">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="6" number="6">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="7" number="7">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="8" number="8">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="9" number="9">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="10" number="10">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="11" number="11">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="12" number="12">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="13" number="13">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="14" number="14">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="15" number="15">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
-        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="1"/>
+        <PARAMETERS highcut="6000" lowcut="300" shouldFilter="0"/>
       </CHANNEL>
       <CHANNEL name="16" number="16">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
@@ -340,9 +335,14 @@
         <VALUES HighCut="6000" LowCut="300" ApplyToADC="0"/>
       </EDITOR>
     </PROCESSOR>
-    <PROCESSOR name="Sinks/LFP Viewer Beta" insertionPoint="1" pluginName="LFP Viewer Beta"
-               pluginType="1" pluginIndex="8" libraryName="LFP viewer Beta"
-               libraryVersion="1" isSource="0" isSink="1" NodeId="101">
+    <PROCESSOR name="Utilities/Splitter" insertionPoint="1" pluginName="Splitter"
+               pluginType="-1" pluginIndex="2" libraryName="" libraryVersion="-1"
+               isSource="0" isSink="0" NodeId="104">
+      <EDITOR isCollapsed="0" displayName="Splitter"/>
+    </PROCESSOR>
+    <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" pluginName="LFP Viewer"
+               pluginType="1" pluginIndex="15" libraryName="LFP viewer" libraryVersion="1"
+               isSource="0" isSink="1" NodeId="102">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
@@ -425,18 +425,18 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
-      <EDITOR isCollapsed="0" displayName="LFP Viewer Beta" Type="Visualizer">
-        <TAB Active="0"/>
-        <WINDOW Active="1" x="1921" y="305" width="1918" height="390"/>
-        <LFPDISPLAY Range="400,2000,10.0" Timebase="2.0" Spread="50" colorGrouping="1"
-                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="111111111111111111111111111"
-                    ScrollX="0" ScrollY="0"/>
+      <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
+        <TAB Active="1"/>
+        <WINDOW Active="0"/>
+        <LFPDISPLAY Range="400,2000,0.1" Timebase="2.0" Spread="100" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="000000000000000000011000000"
+                    ScrollX="0" ScrollY="1716"/>
       </EDITOR>
     </PROCESSOR>
-    <SWITCH number="2"/>
-    <PROCESSOR name="Sinks/LFP Viewer Beta" insertionPoint="1" pluginName="LFP Viewer Beta"
-               pluginType="1" pluginIndex="8" libraryName="LFP viewer Beta"
-               libraryVersion="1" isSource="0" isSink="1" NodeId="103">
+    <SWITCH number="3"/>
+    <PROCESSOR name="Sinks/LFP Viewer" insertionPoint="1" pluginName="LFP Viewer"
+               pluginType="1" pluginIndex="15" libraryName="LFP viewer" libraryVersion="1"
+               isSource="0" isSink="1" NodeId="105">
       <CHANNEL name="0" number="0">
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
@@ -519,19 +519,19 @@
         <SELECTIONSTATE param="1" record="0" audio="0"/>
       </CHANNEL>
       <EVENTCHANNEL name="0" number="0"/>
-      <EDITOR isCollapsed="0" displayName="LFP Viewer Beta" Type="Visualizer">
-        <TAB Active="0"/>
-        <WINDOW Active="1" x="1921" y="716" width="1918" height="300"/>
-        <LFPDISPLAY Range="1000,2000,0.5" Timebase="2.0" Spread="46" colorGrouping="1"
-                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="111111111111111111111111111"
-                    ScrollX="0" ScrollY="0"/>
+      <EDITOR isCollapsed="0" displayName="LFP Viewer" Type="Visualizer">
+        <TAB Active="1"/>
+        <WINDOW Active="0"/>
+        <LFPDISPLAY Range="1000,2000,0.1" Timebase="2.0" Spread="100" colorGrouping="1"
+                    isInverted="0" drawMethod="0" EventButtonState="255" ChannelDisplayState="000000001000000000011000000"
+                    ScrollX="0" ScrollY="5000"/>
       </EDITOR>
     </PROCESSOR>
   </SIGNALCHAIN>
-  <AUDIO bufferSize="384"/>
+  <AUDIO bufferSize="192"/>
   <GLOBAL_TIMESTAMP selected_index="0" selected_sub_index="0"/>
   <CONTROLPANEL isOpen="1" recordPath="/home/cerebro/Malfatti/Data" prependText=""
-                appendText="09-11" recordEngine="RAWBINARY"/>
+                appendText="12-14" recordEngine="RAWBINARY"/>
   <AUDIOEDITOR isMuted="0" volume="0" noiseGate="0"/>
   <RECORDENGINES>
     <ENGINE id="OPENEPHYS" name="Open Ephys">
@@ -542,7 +542,9 @@
     <ENGINE id="NWB" name="NWB">
       <PARAMETER id="0" type="string" value=""/>
     </ENGINE>
-    <ENGINE id="RAWBINARY" name="Binary"/>
+    <ENGINE id="RAWBINARY" name="Binary">
+      <PARAMETER id="0" type="bool" value="1"/>
+    </ENGINE>
     <ENGINE id="KWIK" name="Kwik"/>
   </RECORDENGINES>
   <PROCESSORLIST>
@@ -552,5 +554,5 @@
     <COLOR ID="803" R="0" G="166" B="81"/>
     <COLOR ID="805" R="147" G="149" B="152"/>
   </PROCESSORLIST>
-  <UICOMPONENT isProcessorListOpen="1" isEditorViewportOpen="1"/>
+  <UICOMPONENT isProcessorListOpen="0" isEditorViewportOpen="1"/>
 </SETTINGS>

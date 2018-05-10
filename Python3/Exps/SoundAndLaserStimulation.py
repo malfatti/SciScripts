@@ -10,16 +10,18 @@
 from Exps import SoundAndLaserStimulation
 
 ## === Experiment parameters === ##
-# 'B4', 'A4', 'B1', 'C4', 'A1', 
-# 'D1', 'A3', 'A5', 'B2', 'B3', 
-# 'A2', 'C3', 'D2', 'C1', 'D4'
-# array([[ 9000, 11000],
+# 'B4', 'A4', 'B1', 
+# 'A1', 'D1', 'A3', 
+# 'A5', 'B2', 'B3', 
+# 'A2', 'C3', 'D2', 
+# 'C1', 'D4', 'C4'
+# array([[14000, 16000],
 #        [ 8000, 10000],
-#        [14000, 16000],
+#        [12000, 14000],
 #        [10000, 12000],
-#        [12000, 14000]])
+#        [ 9000, 11000]])
 Parameters = dict(
-    AnimalName          = 'B1',
+    AnimalName          = 'A3',
     StimType            = ['Sound'],
     # StimType            = ['Sound', 'Laser', 'SoundLaser'],
     
@@ -59,16 +61,16 @@ Parameters = dict(
     
     
     ## === Probe === ##
-    Probe       = None,     # None | 'A16'
-    Adaptor     = None,     # None | 'CustomAdaptor' | 'RHAHeadstage' | 'A16OM16'
     Remapped    = False,
+    Probe       = None,     # None | 'A16'
+    Adaptor     = 'A16OM16',     # None | 'CustomAdaptor' | 'RHAHeadstage' | 'A16OM16'
     
     
     ## === Hardware === ##
     ABRCh           = [1],
     SoundCh         = 2,
     TTLCh           = 3,
-    AnalogTTLs      = True,
+    AnalogTTLs      = True, 
     
     System          = 'Jack-IntelOut-Marantz-IntelIn',
     Setup           = 'UnitRec',

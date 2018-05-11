@@ -13,7 +13,7 @@ from glob import glob
 from IO import Hdf5, IO, Txt
 
 # cd '/home/cerebro/Malfatti/Data'
-#%% 
+#%% All sessions from a group
 Group = 'ToDelete'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
 AnalysisFile = 'Test.hdf5'
@@ -34,17 +34,30 @@ for Exp in Exps:
     ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Group+'/Figs', Save=False, Show=True)
 
 
+#%% Single ABR session
+Folder = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1'
+InfoFile = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/20180510095719-A1-Sound.dict'
+AnalysisFile = 'Test.hdf5'
+ABRCh = [1]
+TTLCh = 0
+StimType = ['Sound']
+
+Folders = glob(Folder + '/????-*'); Folders.sort()
+AnalysisPath = '-'.join(InfoFile.split('/')[-1].split('-')[:2]) + '-ABRs'
+ABRs.Analysis(Folders, InfoFile, AnalysisFile, StimType=StimType)
+ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Folder+'/Figs', Save=False, Show=True)
+
 
 #%% Single folder
-Folder = '/home/malfatti/Documents/PhD/Data/Recovery/20160703-CaMKIIahM4Dn08-UnitRec/KwikFiles/2016-07-03_19-03-56_NaCl'
-InfoFile = '/home/malfatti/Documents/PhD/Data/Recovery/20160703-CaMKIIahM4Dn08-UnitRec/20160703185210-CaMKIIahM4Dn08-SoundStim.dict'
+Folder = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/2018-05-10_09-57-27_A1-1012'
+InfoFile = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/20180510095719-A1-Sound.dict'
 AnalysisFile = 'Test.hdf5'
 ABRCh = [1]
 TTLCh = 0
 
 Data, Rate = IO.DataLoader(Folder, Unit='uV', ChannelMap=[])
-TTLs = DataAnalysis.QuantifyTTLsPerRec(True, Data['100']['0'][:,-1])
-ABR = DataAnalysis.SliceData(Data['100']['0'][:,ABRCh[0]], TTLs, 0, 
+TTLs = DataAnalysis.QuantifyTTLsPerRec(True, Data['100']['0'][:,TTLCh-1])
+ABR = DataAnalysis.SliceData(Data['100']['0'][:,ABRCh[0]-1], TTLs, 0, 
                              int(0.01*Rate['100']), AnalogTTLs=True)
 
 if 'plt' not in globals():
@@ -55,6 +68,7 @@ if 'plt' not in globals():
 for T in range(len(TTLs)): plt.plot(DataAnalysis.FilterSignal(ABR[:,T], Rate['100'], [300,3000]))
 plt.plot(DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [300,3000]), 'k', lw=3)
 plt.show()
+
 
 #%% Convert hdf5 info to dict
 from DataAnalysis.Plot import Plot

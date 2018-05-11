@@ -83,6 +83,36 @@ def DatLoad(Folder, Unit='uV', ChannelMap=[]):
     return(Data, Rate)
 
 
+def DatLoad2(Folder, Unit='uV', ChannelMap=[]):
+    Files = glob(Folder+'/**/*.dat', recursive=True); Files.sort()
+    RecChs = SettingsXML.GetRecChs(Folder+'/settings.xml')[0]
+    
+    Data = {Proc: {} for Proc in RecChs.keys()}
+    Rate = {Proc: [] for Proc in RecChs.keys()}
+    for File in Files:
+        Exp, Rec, _, Proc = File.split('/')[-5:-1]
+        Exp = str(int(Exp[10:])-1)
+        Rec = str(int(Rec[9:])-1)
+        Proc = Proc.split('.')[0].split('-')[-1]
+        
+        with open(File, 'rb') as F: Raw = F.read()
+        
+        Data[Proc][Rec] = np.fromstring(Raw, 'int16')
+        ChNo = len(RecChs[Proc])
+        SamplesPerCh = Data[Proc][Rec].shape[0]//ChNo
+        
+        Data[Proc][Rec] = Data[Proc][Rec].reshape((SamplesPerCh, ChNo))        
+        # Still to be parsed. Assuming 30000.
+        Rate[Proc].append(np.array(30000))
+    
+    for Proc in Data.keys():
+        if Unit.lower() == 'uv': Data[Proc] = DataTouV(Data[Proc], RecChs[Proc])
+        if ChannelMap: Data[Proc] = ApplyChannelMap(Data[Proc], ChannelMap)
+        if len(np.unique(Rate[Proc])) == 1: Rate[Proc] = Rate[Proc][0]
+    
+    return(Data, Rate)
+
+
 def KwikLoad(Folder, Unit='uV', ChannelMap=[]):
     Kwds = sorted(glob(Folder+'/*.kwd'))
     if Unit.lower() == 'uv': 

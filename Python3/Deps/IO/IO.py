@@ -12,12 +12,13 @@ from IO import Intan, OpenEphys
 
 
 def DataLoader(Folder, Unit='uV', ChannelMap=[], AnalogTTLs=True):
-    FilesExt = [F[-3:] for F in glob(Folder+'/*.*')]
+    FilesExt = [F.split('.')[-1] for F in glob(Folder+'/*.*')]
     
     if 'kwd' in FilesExt: Data, Rate = OpenEphys.KwikLoad(Folder, Unit, ChannelMap)
     elif 'dat' in FilesExt: Data, Rate = OpenEphys.DatLoad(Folder, Unit, ChannelMap)
-    elif 'ous' in FilesExt: Data, Rate = OpenEphys.OELoad(Folder, Unit, ChannelMap)
+    elif 'continuous' in FilesExt: Data, Rate = OpenEphys.OELoad(Folder, Unit, ChannelMap)
     elif 'int' in FilesExt: Data, Rate = Intan.Load(Folder, ChannelMap)
+    elif FilesExt == ['xml']: Data, Rate = OpenEphys.DatLoad2(Folder, Unit, ChannelMap)
     else: print('Data format not supported.'); return(None)
     
     if not AnalogTTLs:
@@ -26,8 +27,8 @@ def DataLoader(Folder, Unit='uV', ChannelMap=[], AnalogTTLs=True):
             if len(Kwds) > 1: print('Multiple sessions not supported yet.'); return(None)
             
             EventsDict = 'ToBeContinued'
-        else:
-            EventsDict = EventsLoad(Folder)
+        elif 'events' in FilesExt:
+            EventsDict = OpenEphys.EventsLoad(Folder)
         
         return(Data, Rate, EventsDict)
     else:

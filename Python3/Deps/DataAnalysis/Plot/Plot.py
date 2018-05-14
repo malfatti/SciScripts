@@ -62,8 +62,8 @@ def Set(Backend='Qt5Agg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         Ax.set_xlim(XLim[0], XLim[1])
         Ax.set_ylim(YLim[0], YLim[1])
         
-        Ax.spines['bottom'].set_bounds(Ax.get_xlim()[0], Ax.get_xlim()[-1])
-        Ax.spines['left'].set_bounds(Ax.get_ylim()[0], Ax.get_ylim()[-1])
+        Ax.spines['bottom'].set_bounds(Ax.get_xticks()[1], Ax.get_xticks()[-2])
+        Ax.spines['left'].set_bounds(Ax.get_yticks()[1], Ax.get_yticks()[-2])
         Ax.spines['bottom'].set_position(('outward', 5))
         Ax.spines['left'].set_position(('outward', 5))
         

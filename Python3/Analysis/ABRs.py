@@ -6,8 +6,10 @@ Created on Sat Jul  8 16:40:55 2017
 @author: malfatti
 """
 #%% ABRs
+import numpy as np
 from DataAnalysis import ABRs, DataAnalysis
 from DataAnalysis.Plot import ABRs as ABRPlot
+from DataAnalysis.Plot import Plot
 from copy import deepcopy
 from glob import glob
 from IO import Hdf5, IO, Txt
@@ -49,24 +51,30 @@ ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Folder+'/Figs', Save=False,
 
 
 #%% Single folder
-Folder = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/2018-05-10_09-57-27_A1-1012'
-InfoFile = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/20180510095719-A1-Sound.dict'
-AnalysisFile = 'Test.hdf5'
+Folder = '/home/cerebro/Malfatti/Data/2018-05-14_14-22-46_B3-1012'
 ABRCh = [1]
 TTLCh = 0
+Before = 0.003; After = 0.012
+Rec='8'
 
 Data, Rate = IO.DataLoader(Folder, Unit='uV', ChannelMap=[])
-TTLs = DataAnalysis.QuantifyTTLsPerRec(True, Data['100']['0'][:,TTLCh-1])
-ABR = DataAnalysis.SliceData(Data['100']['0'][:,ABRCh[0]-1], TTLs, 0, 
-                             int(0.01*Rate['100']), AnalogTTLs=True)
+TTLs = DataAnalysis.QuantifyTTLsPerRec(True, Data['100'][Rec][:,TTLCh-1])
+ABR = DataAnalysis.SliceData(Data['100'][Rec][:,ABRCh[0]-1], TTLs, int(Before*Rate['100']), 
+                             int(After*Rate['100']), AnalogTTLs=True)
+X = np.arange(-int(Before*Rate['100']), int(After*Rate['100']))*1000/Rate['100']
 
 if 'plt' not in globals():
-    Params = {'backend': 'Qt5Agg'}
+    Params = Plot.Set(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
     from matplotlib import pyplot as plt
-    
-for T in range(len(TTLs)): plt.plot(DataAnalysis.FilterSignal(ABR[:,T], Rate['100'], [300,3000]))
-plt.plot(DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [300,3000]), 'k', lw=3)
+
+Fig, Ax = plt.subplots()
+for T in range(len(TTLs)): 
+    Ax.plot(X, DataAnalysis.FilterSignal(ABR[:,T], Rate['100'], [300,3000]), 
+            'r', alpha=0.1)
+Ax.plot(X, DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [300,3000]), 
+        'k', lw=2)
+Plot.Set(Ax=Ax, Fig=Fig)
 plt.show()
 
 

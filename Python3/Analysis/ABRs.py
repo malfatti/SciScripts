@@ -51,17 +51,19 @@ ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Folder+'/Figs', Save=False,
 
 
 #%% Single folder
-Folder = '/home/cerebro/Malfatti/Data/2018-05-14_14-22-46_B3-1012'
+Folder = '/home/cerebro/Malfatti/Data/2018-05-15_16-27-44_C1-0911'
 ABRCh = [1]
 TTLCh = 0
 Before = 0.003; After = 0.012
-Rec='8'
+Rec='0'
 
 Data, Rate = IO.DataLoader(Folder, Unit='uV', ChannelMap=[])
 TTLs = DataAnalysis.QuantifyTTLsPerRec(True, Data['100'][Rec][:,TTLCh-1])
-ABR = DataAnalysis.SliceData(Data['100'][Rec][:,ABRCh[0]-1], TTLs, int(Before*Rate['100']), 
-                             int(After*Rate['100']), AnalogTTLs=True)
-X = np.arange(-int(Before*Rate['100']), int(After*Rate['100']))*1000/Rate['100']
+ABR = DataAnalysis.SliceData(Data['100'][Rec][:,ABRCh[0]-1], TTLs, 
+                             int(Before*Rate['100']), int(After*Rate['100']), 
+                             AnalogTTLs=True)
+X = np.arange(-int(Before*Rate['100']), 
+              int(After*Rate['100']))*1000/Rate['100']
 
 if 'plt' not in globals():
     Params = Plot.Set(Params=True)
@@ -69,18 +71,20 @@ if 'plt' not in globals():
     from matplotlib import pyplot as plt
 
 Fig, Ax = plt.subplots()
-for T in range(len(TTLs)): 
-    Ax.plot(X, DataAnalysis.FilterSignal(ABR[:,T], Rate['100'], [300,3000]), 
-            'r', alpha=0.1)
-Ax.plot(X, DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [300,3000]), 
+for T in range(ABR.shape[1]): 
+    Ax.plot(X, DataAnalysis.FilterSignal(ABR[:,T], Rate['100'], [600,1500]), 
+            'r', alpha=0.05)
+Ax.plot(X, DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [600,1500]), 
         'k', lw=2)
 Plot.Set(Ax=Ax, Fig=Fig)
 plt.show()
 
+# ABRPSD = DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [600,3000])
+# ABRPSD = DataAnalysis.PSD(ABRPSD, Rate['100'], WindowSize=ABRPSD.shape[0])
+# plt.plot(ABRPSD[0], ABRPSD[1]); plt.show()
+
 
 #%% Convert hdf5 info to dict
-from DataAnalysis.Plot import Plot
-from IO import OpenEphys
 Files = glob('Prevention/*ABRs/2*.hdf5'); Files.sort()
 
 for File in Files:
@@ -118,6 +122,7 @@ for File in Files:
     
     DataInfo.update({'ABRCh': ABRCh, 'TTLCh': TTLCh, 'FileName': File[:-4]+'dict'})
     Txt.DictWrite(File[:-4]+'dict', DataInfo)
+
 
 #%% Convert old dict to new dict
 DataInfo['InfoFile'] = DataInfo.pop('FileName')

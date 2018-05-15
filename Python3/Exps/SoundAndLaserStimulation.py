@@ -12,16 +12,16 @@ from Exps import SoundAndLaserStimulation
 ## === Experiment parameters === ##
 # 'B4', 'A4', 'B1', 
 # 'A1', 'D1', 'A3', 
-# 'A5', 'B2', 'B3', 
-# 'A2', 'C3', 'D2', 
-# 'C1', 'D4', 'C4'
-# array([[10000, 12000],
+# 'A5', 'B2', 'B3', 'A2', 
+# 'C3', 'D2', 'C1', 
+# 'D4', 'C4'
+# array([[14000, 16000],
 #        [ 8000, 10000],
-#        [ 9000, 11000],
 #        [12000, 14000],
-#        [14000, 16000]])
+#        [10000, 12000],
+#        [ 9000, 11000]])
 Parameters = dict(
-    AnimalName          = 'A2',
+    AnimalName          = 'C1',
     StimType            = ['Sound'],
     # StimType            = ['Sound', 'Laser', 'SoundLaser'],
     

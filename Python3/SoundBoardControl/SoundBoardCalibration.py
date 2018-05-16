@@ -24,8 +24,8 @@ It is very important to set the volume of the soundboard to unit level
 frequency filter is being applied.
 """
 #%% Set calibration
-Rate = 192000; Freq = 10000; WaveDur = 10
-SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
+Rate = 192000; Freq = 10000; WaveDur = 3
+SoundSystem = 'Jack-IntelOut-IntelIn'
 
 from IO import SoundCard
 from IO.SigGen import SineWave
@@ -43,8 +43,8 @@ SoundCard.SoundCalOut(Pulse, Ch=1)
 SBOutAmpF = 1/1
 
 #%% Input
-Repetitions = 4
-TestAmp = 0.1*SBOutAmpF
+Repetitions = 2
+TestAmp = 1*SBOutAmpF
 Pulse = SineWave(Rate, Freq, TestAmp, WaveDur)
 
 SBInAmpF = np.zeros(Repetitions, dtype=np.float32)

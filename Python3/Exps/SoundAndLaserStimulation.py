@@ -15,13 +15,13 @@ from Exps import SoundAndLaserStimulation
 # 'A5', 'B2', 'B3', 'A2', 
 # 'C3', 'D2', 'C1', 
 # 'D4', 'C4'
-# array([[14000, 16000],
-#        [ 8000, 10000],
-#        [12000, 14000],
+# array([[ 9000, 11000],
 #        [10000, 12000],
-#        [ 9000, 11000]])
+#        [14000, 16000],
+#        [12000, 14000],
+#        [ 8000, 10000]])
 Parameters = dict(
-    AnimalName          = 'C1',
+    AnimalName          = 'C4',
     StimType            = ['Sound'],
     # StimType            = ['Sound', 'Laser', 'SoundLaser'],
     

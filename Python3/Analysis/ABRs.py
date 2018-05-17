@@ -7,6 +7,7 @@ Created on Sat Jul  8 16:40:55 2017
 """
 #%% ABRs
 import numpy as np
+
 from DataAnalysis import ABRs, DataAnalysis
 from DataAnalysis.Plot import ABRs as ABRPlot
 from DataAnalysis.Plot import Plot
@@ -14,7 +15,89 @@ from copy import deepcopy
 from glob import glob
 from IO import Hdf5, IO, Txt
 
-# cd '/home/cerebro/Malfatti/Data'
+#%%
+def ABRSingle(Data, Rate, ABRCh, TTLCh, SecondsBefore, SecondsAfter, FilterFreq):
+    TTLs = DataAnalysis.QuantifyTTLsPerRec(True, Data[:,TTLCh-1])
+    ABR = DataAnalysis.SliceData(Data[:,ABRCh[0]-1], TTLs, 
+                                 int(SecondsBefore*Rate), 
+                                 int(SecondsAfter*Rate), 
+                                 AnalogTTLs=True)
+    X = np.arange(-int(SecondsBefore*Rate), 
+                  int(SecondsAfter*Rate))*1000/Rate
+    
+    return(ABR, X)
+
+
+def PlotCheck():
+    if 'plt' not in globals():
+        Params = Plot.Set(Params=True)
+        from matplotlib import rcParams; rcParams.update(Params)
+        from matplotlib import pyplot as plt
+    
+        return(plt)
+    else:
+        return(globals()['plt'])
+
+
+def ABRPSDPlot(ABR):
+    plt = PlotCheck()
+    
+    ABRPSD = DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [200,10000])
+    ABRPSD = DataAnalysis.PSD(ABRPSD, Rate['100'], WindowSize=ABRPSD.shape[0])
+    plt.plot(ABRPSD[0], ABRPSD[1]); plt.show()
+    
+    return(None)
+
+
+def ABRSinglePlot(ABR, X, Ax=None, Show=True):
+    if not Ax: 
+        plt = PlotCheck()
+        Fig, Ax = plt.subplots()
+    
+    for T in range(ABR.shape[1]): 
+        Ax.plot(X, DataAnalysis.FilterSignal(ABR[:,T], Rate['100'], FilterFreq), 
+                'r', alpha=0.05)
+    Ax.plot(X, DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], FilterFreq), 
+            'k', lw=2)
+    
+    if Ax: 
+        return(Ax)
+    else:
+        Plot.Set(Ax=Ax, Fig=Fig)
+        if Show: plt.show()
+        else: plt.close()
+        return(None)
+
+
+def ABRMultiplePlot(ABRs, X, AxArgs={}, Show=True):
+    Recs = sorted(list(ABRs.keys()))
+    YAmp = 0; YLim = None
+    for Rec in ABRs.values():
+        if max(Rec)-min(Rec) > YAmp:
+            YAmp = max(Rec)-min(Rec)
+            YLim = [min(Rec), max(Rec)]
+    AxArgs['ylim'] = YLim
+    
+    plt = PlotCheck()
+    Fig, Axes = plt.subplots(len(ABRs), 1, sharex=True)
+    for R,Rec in enumerate(Recs):
+        Axes[R].plot(X, ABRs[Rec], 'r', lw=2)
+        Plot.Set(Ax=Axes[R], Fig=Fig, AxArgs=AxArgs)
+        if R != len(Recs)-1:
+            Axes[R].tick_params(bottom='off')
+            Axes[R].spines['bottom'].set_visible(False)
+        
+        if R != len(Recs)//2:
+            Axes[R].tick_params(left='off')
+            Axes[R].spines['left'].set_visible(False)
+            Axes[R].set_yticklabels([])
+    
+    if Show: plt.show()
+    else: plt.close()
+    
+    return(None)
+
+
 #%% All sessions from a group
 Group = 'ToDelete'
 AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
@@ -36,7 +119,7 @@ for Exp in Exps:
     ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Group+'/Figs', Save=False, Show=True)
 
 
-#%% Single ABR session
+#%% Multiple folders - Single ABR session
 Folder = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1'
 InfoFile = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/20180510095719-A1-Sound.dict'
 AnalysisFile = 'Test.hdf5'
@@ -50,38 +133,43 @@ ABRs.Analysis(Folders, InfoFile, AnalysisFile, StimType=StimType)
 ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Folder+'/Figs', Save=False, Show=True)
 
 
-#%% Single folder
-Folder = '/home/cerebro/Malfatti/Data/2018-05-15_16-27-44_C1-0911'
+#%% Multiple recs - Single ABR frequency
+Folder = '/home/cerebro/Malfatti/Data/2018-05-17_16-25-15_C4-1416'
+Recs = 'all'
+Proc = '100'
+
 ABRCh = [1]
 TTLCh = 0
-Before = 0.003; After = 0.012
-Rec='0'
+SecondsBefore = 0.003; SecondsAfter = 0.012
+FilterFreq = [600, 1500]
 
 Data, Rate = IO.DataLoader(Folder, Unit='uV', ChannelMap=[])
-TTLs = DataAnalysis.QuantifyTTLsPerRec(True, Data['100'][Rec][:,TTLCh-1])
-ABR = DataAnalysis.SliceData(Data['100'][Rec][:,ABRCh[0]-1], TTLs, 
-                             int(Before*Rate['100']), int(After*Rate['100']), 
-                             AnalogTTLs=True)
-X = np.arange(-int(Before*Rate['100']), 
-              int(After*Rate['100']))*1000/Rate['100']
+if type(Recs) == str:
+    if Recs.lower() == 'all': Recs = sorted(list(Data[Proc].keys()))
 
-if 'plt' not in globals():
-    Params = Plot.Set(Params=True)
-    from matplotlib import rcParams; rcParams.update(Params)
-    from matplotlib import pyplot as plt
+ABRs = {}
+for Rec in Recs:
+    ABR, X = ABRSingle(Data[Proc][Rec], Rate[Proc], ABRCh, TTLCh, SecondsBefore, SecondsAfter, FilterFreq)
+    ABRs[Rec] = DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate[Proc], FilterFreq)
+    ABRs[Rec] *= 1000 # Convert to microvolt
 
-Fig, Ax = plt.subplots()
-for T in range(ABR.shape[1]): 
-    Ax.plot(X, DataAnalysis.FilterSignal(ABR[:,T], Rate['100'], [600,1500]), 
-            'r', alpha=0.05)
-Ax.plot(X, DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [600,1500]), 
-        'k', lw=2)
-Plot.Set(Ax=Ax, Fig=Fig)
-plt.show()
+ABRMultiplePlot(ABRs, X, AxArgs={'xlim': [(-SecondsBefore*1000)-1, SecondsAfter*1000+1]})
 
-# ABRPSD = DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], [600,3000])
-# ABRPSD = DataAnalysis.PSD(ABRPSD, Rate['100'], WindowSize=ABRPSD.shape[0])
-# plt.plot(ABRPSD[0], ABRPSD[1]); plt.show()
+
+#%% Single rec - Single ABR intensity
+Folder = '/home/cerebro/Malfatti/Data/2018-05-17_16-25-15_C4-1416'
+Rec = '0'
+Proc = '100'
+
+ABRCh = [1]
+TTLCh = 0
+SecondsBefore = 0.003; SecondsAfter = 0.012
+FilterFreq = [600, 1500]
+
+Data, Rate = IO.DataLoader(Folder, Unit='uV', ChannelMap=[])
+ABR, X = ABRSingle(Data[Proc][Rec], Rate[Proc], ABRCh, TTLCh, SecondsBefore, SecondsAfter, FilterFreq)
+ABRSinglePlot(ABR, X)
+# ABRPSDPlot(ABR)
 
 
 #%% Convert hdf5 info to dict

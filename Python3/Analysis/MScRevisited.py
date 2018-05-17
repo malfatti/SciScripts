@@ -167,10 +167,10 @@ Animals = dict(
     
     CaMKIIaArch3n04 = [
         ['/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-35S_190501.int',
-         '/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-35SL_190800.int',
-         '/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-43S_191146.int'],
-        ['/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-43SL_191426.int',
-         '/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-45S_191823.int',
+         '/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-35SL_190800.int'],
+        ['/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-43S_191146.int',
+         '/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-43SL_191426.int'],
+        ['/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-45S_191823.int',
          '/home/cerebro/Malfatti/MScData/20150604-CaMKIIaArch3n04-UnitRec/Intan/CaMKIIaArch3n4-45SL_192118.int']
     ],
     

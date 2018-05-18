@@ -50,7 +50,9 @@ def ABRPSDPlot(ABR):
 
 
 def ABRSinglePlot(ABR, X, Ax=None, Show=True):
-    if not Ax: 
+    ReturnAx = True
+    if not Ax:
+        ReturnAx = False
         plt = PlotCheck()
         Fig, Ax = plt.subplots()
     
@@ -60,7 +62,7 @@ def ABRSinglePlot(ABR, X, Ax=None, Show=True):
     Ax.plot(X, DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate['100'], FilterFreq), 
             'k', lw=2)
     
-    if Ax: 
+    if ReturnAx: 
         return(Ax)
     else:
         Plot.Set(Ax=Ax, Fig=Fig)
@@ -77,6 +79,7 @@ def ABRMultiplePlot(ABRs, X, AxArgs={}, Show=True):
             YAmp = max(Rec)-min(Rec)
             YLim = [min(Rec), max(Rec)]
     AxArgs['ylim'] = YLim
+    AxArgs['xtickspacing'] = 3
     
     plt = PlotCheck()
     Fig, Axes = plt.subplots(len(ABRs), 1, sharex=True)
@@ -134,7 +137,7 @@ ABRPlot.Traces(AnalysisPath, AnalysisFile, InfoFile, Folder+'/Figs', Save=False,
 
 
 #%% Multiple recs - Single ABR frequency
-Folder = '/home/cerebro/Malfatti/Data/2018-05-17_16-25-15_C4-1416'
+Folder = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/2018-05-10_09-57-27_A1-1012'
 Recs = 'all'
 Proc = '100'
 
@@ -153,11 +156,11 @@ for Rec in Recs:
     ABRs[Rec] = DataAnalysis.FilterSignal(ABR.mean(axis=1), Rate[Proc], FilterFreq)
     ABRs[Rec] *= 1000 # Convert to microvolt
 
-ABRMultiplePlot(ABRs, X, AxArgs={'xlim': [(-SecondsBefore*1000)-1, SecondsAfter*1000+1]})
+ABRMultiplePlot(ABRs, X, AxArgs={'xlim': [(-SecondsBefore*1000), SecondsAfter*1000]})
 
 
 #%% Single rec - Single ABR intensity
-Folder = '/home/cerebro/Malfatti/Data/2018-05-17_16-25-15_C4-1416'
+Folder = '/home/cerebro/Malfatti/Data/ToBeAssigned/A1/2018-05-10_09-57-27_A1-1012'
 Rec = '0'
 Proc = '100'
 
@@ -168,7 +171,7 @@ FilterFreq = [600, 1500]
 
 Data, Rate = IO.DataLoader(Folder, Unit='uV', ChannelMap=[])
 ABR, X = ABRSingle(Data[Proc][Rec], Rate[Proc], ABRCh, TTLCh, SecondsBefore, SecondsAfter, FilterFreq)
-ABRSinglePlot(ABR, X)
+ABRSinglePlot(ABR*1000, X)
 # ABRPSDPlot(ABR)
 
 

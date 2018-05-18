@@ -62,8 +62,24 @@ def Set(Backend='Qt5Agg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         Ax.set_xlim(XLim[0], XLim[1])
         Ax.set_ylim(YLim[0], YLim[1])
         
-        Ax.spines['bottom'].set_bounds(Ax.get_xticks()[1], Ax.get_xticks()[-2])
-        Ax.spines['left'].set_bounds(Ax.get_yticks()[1], Ax.get_yticks()[-2])
+        if 'xtickspacing' in AxArgs:
+            import matplotlib.ticker as ticker
+            Ax.xaxis.set_major_locator(ticker.MultipleLocator(AxArgs['xtickspacing']))
+        
+        if 'ytickspacing' in AxArgs:
+            import matplotlib.ticker as ticker
+            Ax.yaxis.set_major_locator(ticker.MultipleLocator(AxArgs['ytickspacing']))
+        
+        if 'ylim' in AxArgs:
+            Ax.spines['left'].set_bounds(Ax.get_yticks()[0], Ax.get_yticks()[-1])
+        else:
+            Ax.spines['left'].set_bounds(Ax.get_yticks()[1], Ax.get_yticks()[-2])
+        
+        if 'xlim' in AxArgs:
+            Ax.spines['bottom'].set_bounds(Ax.get_xticks()[0], Ax.get_xticks()[-1])
+        else:
+            Ax.spines['bottom'].set_bounds(Ax.get_xticks()[1], Ax.get_xticks()[-2])
+        
         Ax.spines['bottom'].set_position(('outward', 5))
         Ax.spines['left'].set_position(('outward', 5))
         

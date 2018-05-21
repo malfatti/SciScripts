@@ -49,7 +49,7 @@ def ABRPSDPlot(ABR):
     return(None)
 
 
-def ABRSinglePlot(ABR, X, Ax=None, Show=True):
+def ABRSinglePlot(ABR, X, Ax=None, AxArgs={}, Show=True):
     ReturnAx = True
     if not Ax:
         ReturnAx = False
@@ -65,7 +65,7 @@ def ABRSinglePlot(ABR, X, Ax=None, Show=True):
     if ReturnAx: 
         return(Ax)
     else:
-        Plot.Set(Ax=Ax, Fig=Fig)
+        Plot.Set(Ax=Ax, Fig=Fig, AxArgs=AxArgs)
         if Show: plt.show()
         else: plt.close()
         return(None)
@@ -171,7 +171,7 @@ FilterFreq = [600, 1500]
 
 Data, Rate = IO.DataLoader(Folder, Unit='uV', ChannelMap=[])
 ABR, X = ABRSingle(Data[Proc][Rec], Rate[Proc], ABRCh, TTLCh, SecondsBefore, SecondsAfter, FilterFreq)
-ABRSinglePlot(ABR*1000, X)
+ABRSinglePlot(ABR*1000, X, AxArgs={'xlim': [(-SecondsBefore*1000), SecondsAfter*1000]})
 # ABRPSDPlot(ABR)
 
 

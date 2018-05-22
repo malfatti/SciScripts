@@ -11,40 +11,35 @@
 import numpy as np
 import os
 
-from DataAnalysis import GPIAS
+from DataAnalysis import DataAnalysis, GPIAS
 from DataAnalysis.Plot import GPIAS as PlotGPIAS
 from glob import glob
 from IO import Hdf5, IO, OpenEphys, Txt
 
 
 #%% Batch
+DataFolder = '/home/cerebro/Malfatti/Data'
 Group = 'ToBeAssigned'
-AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
+AnalysisFolder = DataFolder + '/' + Group + '/' + Group + '-Analysis'
 
 GPIASTimeBeforeTTL = 200   # in ms
 GPIASTimeAfterTTL = 200    # in ms
 FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
-Filter = None
-# Filter = 'butter'
+# Filter = None
+Filter = 'butter'
 Stim = 'Sound'
 
-Ext=['svg']; Save = False; Show = True
+Ext=['svg']; Save = True; Show = False
 
-Exps = sorted(glob(Group+'/2*IAS'))#[2:]
-Exps = [Exps[-1]] # Just the last folder
+Exps = sorted(glob(DataFolder + '/' + Group+'/2*IAS'))
+# Exps = [Exps[0]] # Just the last folder
+
+GPIASIndexes = {}
 
 for Exp in Exps:
-#    Exp = Group + '/20170721-Prevention-GPIAS'
     Folders = sorted(glob(Exp + '/' + Exp.split('/')[-1][:4] + '-*'))
     Files = sorted(glob(Exp + '/' + Exp.split('/')[-1][:4] + '*dict'))
-    
-    # NaCl
-    #del(Paths[3], Paths[2], Paths[0]); del(Files[3], Files[2], Files[0])
-    # SSal
-    #del(Paths[-2:], Paths[5], Paths[0]); del(Files[-2:], Files[5], Files[0])
-#    20170521-Prevention_B-GPIAS
-#    del(Folders[:2]); del(Files[:2])
     
     StimExps = []
     for F, Folder in enumerate(Folders):
@@ -52,10 +47,11 @@ for Exp in Exps:
         
         if Stim in DataInfo['Animal']['StimType']: StimExps.append(Folder)
     
-#    if not StimExps: continue
-    
+    StimExps.sort()
     for F, Folder in enumerate(StimExps):
-        if Folder == 'Recovery/20160702-Recovery-GPIAS/2016-07-02_13-05-52_CaMKIIahM4Dn09': continue
+        Animal = Folder.split('_')[-1]
+        if Animal not in GPIASIndexes: GPIASIndexes[Animal] = {}
+        
         RecFolder = Folder.split('/')[-1]
         
         Data, Rate = IO.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
@@ -69,50 +65,66 @@ for Exp in Exps:
             
         else: DataInfo = Txt.DictRead(Files[F])
         
-        # Check channels | File = Files[F]
-#        from DataAnalysis.Plot import Plot
-#        Chs = [Data[Proc]['0'][:,Ch] for Ch in range(Data[Proc]['0'].shape[1])]
-#        Plot.RawCh(Chs, Lines=len(Chs), Cols=1, Save=False)
-        
-        # Test recs
-#        SOAB = GPIAS.CheckGPIASRecs(Data[Proc], [65000, 100000])
-#        if SOAB: 
-#            print(); print(Folder)
-#            print(); print(SOAB); print()
-#        else: print(); print(Folder, 'clear.'); print()
-        
-    #    for Rec in Data[Proc].keys():
-    #        BitVolts = 10000/(2**16)
-    #        Data[Proc][Rec] = Data[Proc][Rec] * BitVolts
-        
-    #    for Path in ['Freqs', 'FreqOrder', 'FreqSlot']:
-    #        DataInfo[Path] = Hdf5F.LoadDataset('/DataInfo/'+Path, Files[F])
-    #    
-    #    DataInfo['FreqOrder'][-3:][:,1] = -2
-    #    DataInfo['PiezoCh'] = [int(DataInfo['PiezoCh'])]
-    #    DataInfo['TTLCh'] = int(DataInfo['TTLCh'])
-        
-    #     DataInfo['PiezoCh'] = [3]; DataInfo['TTLCh'] = 1
         ExpStim = '_'.join(DataInfo['Animal']['StimType'])
         AnalysisKey = Files[F][:-5].split('/')[-1] + '-' + ExpStim + '-' + Group + '_' + 'GPIAS'
         FigPrefix = AnalysisKey.replace('/', '_')
-        FigName = '/'.join([Group, 'Figs', FigPrefix+'_Traces'])
+        FigName = '/'.join([AnalysisFolder, 'Plots', FigPrefix+'_Traces'])
+        AxArgs = {'xlim': [-50, 150]}
         
-        # if Save:
-        #     os.makedirs('/'.join(FigName.split('/')[:-1]), exist_ok=True)
+        if Save:
+            os.makedirs(AnalysisFolder, exist_ok=True)
+            os.makedirs('/'.join(FigName.split('/')[:-1]), exist_ok=True)
         
         GPIASRec, XValues = GPIAS.Analysis(
-                             Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
+                             Data[Proc], DataInfo, Rate[Proc], AnalysisFolder, 
                              AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                             FilterFreq, FilterOrder, Filter, Return=True, Overwrite=True)
+                             FilterFreq, FilterOrder, Filter, Return=True, Save=Save, Overwrite=True)
         
-#        GPIASData = Hdf5.DataLoad(AnalysisKey, AnalysisFile)[0]
+        GPIASIndexes[Animal].update({F: Freq['GPIASIndex'] 
+                                     for F, Freq in GPIASRec['Index'].items()})
+        
+#        GPIASData = Hdf5.DataLoad(AnalysisKey, AnalysisFolder+'.hdf5')[0]
 #        GPIASRec, XValues = GPIASData['GPIAS'], GPIASData['XValues']
         
         PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['Audio']['SoundLoudPulseDur'], 
-                         FigName, Ext, Save, Show)
+                          FigName, Ext, AxArgs, Save, Show)
         
         del(GPIASRec, XValues)
+
+
+Common = ''
+for C in range(len(Exps[0])):
+    CList = DataAnalysis.UniqueStr([E[C] for E in Exps])
+    if len(CList) == 1: Common += CList[0]
+    else: break
+
+Common += '_'.join(DataAnalysis.UniqueStr(sorted([E[len(Common)] for E in Exps])))
+Common = Common.split('/')[-1]
+
+if Show:
+    print(Txt.DictPrint(GPIASIndexes))
+    print(
+        Txt.DictPrint(
+            [(A, F, Freq) for A, Animal in GPIASIndexes.items() 
+                          for F, Freq in Animal.items() 
+                          if Freq == min(Animal.values())
+            ]
+        )
+    )
+
+if Save:
+    with open(AnalysisFolder + '/' + Common+'-GPIASIndex-AllAnimals.txt', 'w') as F:
+        F.write(Txt.DictPrint(GPIASIndexes))
+        F.write('\n\n')
+        F.write('     ' + 
+            Txt.DictPrint(
+                [(A, F, Freq) for A, Animal in GPIASIndexes.items() 
+                              for F, Freq in Animal.items() 
+                              if Freq == min(Animal.values())
+                ]
+            )
+        )
+        F.write('\n\n')
 
 
 #%% Single
@@ -122,17 +134,14 @@ FilterFreq = [100, 300]     # frequency for filter
 FilterOrder = 3       # butter order
 # Filter = 'butter'
 Filter = None
-Stim = 'Sound'
 
 Ext=['svg']; Save = False; Show = True
 
 Folder = '/home/cerebro/Malfatti/Data/2018-04-04_11-21-10_A1'
 InfoFile = '/home/cerebro/Data/20180404112049-A1-GPIAS.dict'
-AnalysisFile = 'Test.hdf5'
+AnalysisFolder = 'Test'
 AnalysisKey = 'Test'
-FigPrefix = 'Test'
 FigName = 'Test'
-RecFolder = Folder.split('/')[-1]
 
 Data, Rate = IO.DataLoader(Folder, AnalogTTLs=True, Unit='uV')
 if len(Data.keys()) == 1: Proc = list(Data.keys())[0]
@@ -142,9 +151,9 @@ DataInfo = Txt.DictRead(InfoFile)
 ExpStim = '_'.join(DataInfo['Animal']['StimType'])
 
 GPIASRec, XValues = GPIAS.Analysis(
-                     Data[Proc], DataInfo, Rate[Proc], AnalysisFile, 
+                     Data[Proc], DataInfo, Rate[Proc], AnalysisFolder, 
                      AnalysisKey, GPIASTimeBeforeTTL, GPIASTimeAfterTTL, 
-                     FilterFreq, FilterOrder, Filter, Return=True, Overwrite=True)
+                     FilterFreq, FilterOrder, Filter, Return=True, Save=Save, Overwrite=True)
 
 PlotGPIAS.Traces(GPIASRec, XValues, DataInfo['Audio']['SoundLoudPulseDur'], 
                  FigName, Ext, Save, Show)
@@ -159,8 +168,8 @@ Group = {Animal: {Exp: {} for Exp in ExpList} for Animal in Animals}
 
 
 for Animal in Animals:
-    AnalysisFile = Animal + '/' + Animal + '-Analysis.hdf5'
-    Exps = Hdf5.GetGroupKeys('/', AnalysisFile)
+    AnalysisFile = Animal + '/' + Animal + '-Analysis'
+    Exps = Hdf5.GetGroupKeys('/', AnalysisFolder+'.hdf5')
     Exps = [E for E in Exps if 'GPIAS' in E]
     
     for Exp in Exps:
@@ -183,7 +192,7 @@ Exps = glob(Group + '/*' + Group + '*GPIAS'); Exps.sort()
 Exps = [Exps[E] for E in [0,1,4,6]]# # Recovery override
 #Exps = [Exps[E] for E in [1,3,4]] # Prevention override
 
-AnalysisFile = Group + '/' + Group + '-Analysis.hdf5'
+AnalysisFile = Group + '/' + Group + '-Analysis'
 AnalysisFolder = Group + '/Analysis'
 #Dicts = sorted([E for A in Animals for E in glob(Group+'/2*IAS/*dict') if A in E])
 

@@ -10,8 +10,27 @@ import numpy as np
 
 from datetime import datetime
 
-
 ## Level 0
+def GetTicks(Ax, Lim):
+    # Override automatic tick formatter
+    Step = round((Ax.get_yticks()[1]-Ax.get_yticks()[0])-0.5)
+    Ticks = np.arange(min(Lim), max(Lim)+Step, Step)
+    
+    # Ticks = []
+    # while not 0 in Ticks:
+    #     Y = None
+    #     while not Y:
+    #         if not (max(Lim) - min(Lim))%MinTickNo: Y = MinTickNo
+    #         else: MinTickNo += 1
+    #     
+    #     MinTickNo = Y
+    #     Step = (max(Lim) - min(Lim))/Y
+    #     Ticks = np.arange(min(Lim), max(Lim)+Step, Step)
+    
+    return(Ticks)
+
+
+## Level 1
 def Set(Backend='Qt5Agg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False, 
         HideControls=False, Tight=True):
     if Params:
@@ -44,8 +63,7 @@ def Set(Backend='Qt5Agg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         return(Params)
     
     if Ax:
-        XLim = Ax.get_xlim()
-        YLim = Ax.get_ylim()
+        XLim = Ax.get_xlim(); YLim = Ax.get_ylim()
         
         if 'title' in AxArgs: Ax.set_title(AxArgs['title'])
         
@@ -59,27 +77,37 @@ def Set(Backend='Qt5Agg', Ax=(), Fig=(), AxArgs={}, FigTitle='', Params=False,
         if 'yticklabels' in AxArgs: Ax.set_yticklabels(AxArgs['yticklabels'])
         if 'ylim' in AxArgs: YLim = AxArgs['ylim']
         
-        Ax.set_xlim(XLim[0], XLim[1])
-        Ax.set_ylim(YLim[0], YLim[1])
+        Ax.set_xlim(min(XLim), max(XLim))
+        Ax.set_ylim(min(YLim), max(YLim))
         
-        if 'xtickspacing' in AxArgs:
-            import matplotlib.ticker as ticker
-            Ax.xaxis.set_major_locator(ticker.MultipleLocator(AxArgs['xtickspacing']))
+        if (max(XLim) - min(XLim)) % (Ax.get_xticks()[1]-Ax.get_xticks()[0]):
+            print('Fixing xticks...')
+            Ax.set_xticks(GetTicks(Ax, XLim))
         
-        if 'ytickspacing' in AxArgs:
-            import matplotlib.ticker as ticker
-            Ax.yaxis.set_major_locator(ticker.MultipleLocator(AxArgs['ytickspacing']))
+        if (max(YLim) - min(YLim)) % (Ax.get_yticks()[1]-Ax.get_yticks()[0]):
+            print('Fixing yticks...')
+            Ax.set_yticks(GetTicks(Ax, YLim))
         
-        if 'ylim' in AxArgs:
-            Ax.spines['left'].set_bounds(Ax.get_yticks()[0], Ax.get_yticks()[-1])
+        # if 'xtickspacing' in AxArgs:
+        #     import matplotlib.ticker as ticker
+        #     Ax.xaxis.set_major_locator(ticker.MultipleLocator(AxArgs['xtickspacing']))
+        
+        # if 'ytickspacing' in AxArgs:
+        #     import matplotlib.ticker as ticker
+        #     Ax.yaxis.set_major_locator(ticker.MultipleLocator(AxArgs['ytickspacing']))
+        
+        # if 'ylim' in AxArgs:
+        #     Ax.spines['left'].set_bounds(Ax.get_yticks()[0], Ax.get_yticks()[-1])
         # else:
-            # Ax.spines['left'].set_bounds(Ax.get_yticks()[1], Ax.get_yticks()[-2])
+        #     Ax.spines['left'].set_bounds(Ax.get_yticks()[1], Ax.get_yticks()[-2])
         
-        if 'xlim' in AxArgs:
-            Ax.spines['bottom'].set_bounds(Ax.get_xticks()[0], Ax.get_xticks()[-1])
+        # if 'xlim' in AxArgs:
+        #     Ax.spines['bottom'].set_bounds(Ax.get_xticks()[0], Ax.get_xticks()[-1])
         # else:
-            # Ax.spines['bottom'].set_bounds(Ax.get_xticks()[1], Ax.get_xticks()[-2])
+        #     Ax.spines['bottom'].set_bounds(Ax.get_xticks()[1], Ax.get_xticks()[-2])
         
+        Ax.spines['left'].set_bounds(min(YLim), max(YLim))
+        Ax.spines['bottom'].set_bounds(min(XLim), max(XLim))
         Ax.spines['bottom'].set_position(('outward', 5))
         Ax.spines['left'].set_position(('outward', 5))
         

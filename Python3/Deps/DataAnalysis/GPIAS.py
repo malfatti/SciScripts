@@ -113,7 +113,9 @@ def PreallocateDict(DataInfo, PrePostFreq):
 
 
 def OrganizeRecs(Dict, Data, Rate, DataInfo, AnalogTTLs, NoOfSamplesBefore, 
-                 NoOfSamplesAfter, NoOfSamples, Proc=None, Events=None):
+                 NoOfSamplesAfter, NoOfSamples, Proc=None, Events=None, 
+                 FilterFreq=[70, 400], FilterOrder=4, Filter='butter'):
+    
     for R, Rec in Data.items():
         print('Slicing and filtering Rec ', R, '...')
         Freq = DataInfo['FreqOrder'][int(R)][0]; 
@@ -139,9 +141,11 @@ def OrganizeRecs(Dict, Data, Rate, DataInfo, AnalogTTLs, NoOfSamplesBefore,
                                       TTLCh=DataInfo['DAqs']['TTLCh'], Proc=Proc, Rec=R)
         
         if len(DataInfo['DAqs']['PiezoCh']) == 1:
-            GD = DataAnalysis.SliceData(
-                Rec[:,DataInfo['DAqs']['PiezoCh'][0]-1], TTLs, 
-                NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, AnalogTTLs)
+            GD = DataAnalysis.FilterSignal(Rec[:,DataInfo['DAqs']['PiezoCh'][0]-1], 
+                                           Rate, FilterFreq, FilterOrder, Filter)
+            GD = DataAnalysis.SliceData(GD, TTLs, NoOfSamplesBefore, 
+                                        NoOfSamplesAfter, NoOfSamples, 
+                                        AnalogTTLs)
             
         elif len(DataInfo['DAqs']['PiezoCh']) == 3:
             X = DataAnalysis.FilterSignal(Rec[:,DataInfo['DAqs']['PiezoCh'][0]-1], 
@@ -163,17 +167,17 @@ def OrganizeRecs(Dict, Data, Rate, DataInfo, AnalogTTLs, NoOfSamplesBefore,
                 GD, TTLs, NoOfSamplesBefore, NoOfSamplesAfter, NoOfSamples, 
                 AnalogTTLs)
         
-        Dict['Index'][SFreq][STrial].append(GD[0])
-        Dict['Trace'][SFreq][STrial].append(GD[0])
+        Dict['Index'][SFreq][STrial].append(GD)
+        Dict['Trace'][SFreq][STrial].append(GD)
     
     return(Dict)
 
     
 ## Level 1    
-def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey, 
+def Analysis(Data, DataInfo, Rate, AnalysisFolder, AnalysisKey, 
              GPIASTimeBeforeTTL=100, GPIASTimeAfterTTL=150, 
              FilterFreq=[70, 400], FilterOrder=4, Filter='butter', 
-             SliceSize=100, AnalogTTLs=True, Return=False, Overwrite=False):
+             SliceSize=100, AnalogTTLs=True, Return=False, Save=True, Overwrite=False):
     
     NoOfSamplesBefore = int(round((GPIASTimeBeforeTTL*Rate)*10**-3))
     NoOfSamplesAfter = int(round((GPIASTimeAfterTTL*Rate)*10**-3))
@@ -187,13 +191,14 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                             str(DataInfo['Audio']['NoiseFrequency'][PrePostFreq][1])])
     
     # Temporary override
-    if AnalysisFile.split('/')[0] == 'Recovery': PrePostFreq = []
+    if AnalysisFolder.split('/')[0] == 'Recovery': PrePostFreq = []
     SliceSize = int(SliceSize * (Rate/1000))
     
     GPIASData = PreallocateDict(DataInfo, PrePostFreq)
     GPIASData = OrganizeRecs(GPIASData, Data, Rate, DataInfo, AnalogTTLs,
                                    NoOfSamplesBefore, NoOfSamplesAfter, 
-                                   NoOfSamples)
+                                   NoOfSamples, None, None, 
+                                   FilterFreq, FilterOrder, Filter)
     
     for Freq in GPIASData['Index'].keys():
         for Key in GPIASData['Index'][Freq].keys():
@@ -203,29 +208,11 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                 print('Freq', Freq, 'trial', Key, 'is empty. Skipping...')
                 continue
             
-            # Bandpass filter
-            if Filter:
-                GPIASData['Trace'][Freq][Key] = DataAnalysis.FilterSignal(GPIASData['Trace'][Freq][Key], 
-                                                           Rate, FilterFreq, FilterOrder, 
-                                                           Filter, 'bandpass')
-            
             for Tr in range(len(GPIASData['Index'][Freq][Key])):
-                # Bandpass filter
-#                    TR = FilterSignal(GPIASData['Trace'][Freq][Key][Tr], Rate, 
-#                                      FilterFreq, FilterOrder, Filter, 'bandpass')
-                if Filter:
-                    AE = DataAnalysis.FilterSignal(GPIASData['Index'][Freq][Key][Tr], Rate, 
-                                         FilterFreq, FilterOrder, Filter, 'bandpass')
-                else:
-                    AE = GPIASData['Index'][Freq][Key][Tr]
-                
-                # Amplitude envelope
-                AE = abs(signal.hilbert(AE))
-                
-#                    GPIASData['Trace'][Freq][Key][Tr] = TR
-                GPIASData['Index'][Freq][Key][Tr] = AE
+                GPIASData['Index'][Freq][Key][Tr] = abs(
+                        signal.hilbert(GPIASData['Index'][Freq][Key][Tr])
+                )
             
-#                GPIASData['Trace'][Freq][Key] = np.mean(GPIASData['Trace'][Freq][Key], axis=0)
             GPIASData['Index'][Freq][Key] = np.mean(GPIASData['Index'][Freq][Key], axis=0)
         
         # RMS
@@ -242,8 +229,9 @@ def Analysis(Data, DataInfo, Rate, AnalysisFile, AnalysisKey,
                                            GPIASData['Index'][Freq], Keys, 
                                            NoOfSamplesBefore, SliceSize, False)
     
-    # Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFile, Overwrite)
-    Asdf.Write({'GPIAS': GPIASData, 'XValues': XValues}, '/', AnalysisKey+'.asdf')
+    if Save:
+        # Hdf5.DataWrite({'GPIAS': GPIASData, 'XValues': XValues}, AnalysisKey, AnalysisFolder+'.hdf5', Overwrite)
+        Asdf.Write({'GPIAS': GPIASData, 'XValues': XValues}, '/', AnalysisFolder+'/'+AnalysisKey+'.asdf')
     
     if Return: return(GPIASData, XValues)
     else: return(None)

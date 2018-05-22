@@ -10,8 +10,7 @@ from DataAnalysis.Plot import Plot
 
 
 ## Level 0
-def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext=['svg'], 
-              Save=True, Show=True):
+def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext=['svg'], AxArgs={}, Save=True, Show=True):
     Params = Plot.Set(Params=True)
     from matplotlib import rcParams; rcParams.update(Params)
     from matplotlib import pyplot as plt
@@ -20,31 +19,54 @@ def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext=['svg'],
     Ind1 = list(XValues).index(0)
     Ind2 = list(XValues).index(int(SoundPulseDur*1000))
     
+    YLim = []
+    for F, Freq in GPIASData['Trace'].items():
+        for G in Freq.values(): YLim.append(max(G)); YLim.append(min(G))
+    
+    # YLim = [(min(YLim)*1000 + 0.5).round(), (max(YLim)*1000 + 0.5).round()]
+    YLim = [(min(YLim)*1000 - 0.5).round(), (max(YLim)*1000 + 0.5).round()]
+    XLim = [round(min(XValues)-0.5), round(max(XValues)+0.5)]
+    
     PlotNo = len(GPIASData['Trace'].keys())
-    Fig = plt.figure(figsize=(7, 12))
+    Fig = plt.figure(figsize=(6, 1.5*PlotNo))
     Axes = [plt.subplot(PlotNo,1,_+1) for _ in range(PlotNo)]
-#        
-    for FInd, Freq in enumerate(GPIASData['Trace'].keys()):
-        SubTitle = Freq + ' Hz' + ' Index = ' + str(round(GPIASData['Index'][Freq]['GPIASIndex'], 4))
+    
+    for F, Freq in enumerate(GPIASData['Trace'].keys()):
+        AxArgs['title'] = Freq + ' Hz' + ' Index = ' + str(round(GPIASData['Index'][Freq]['GPIASIndex'], 4))
         LineNoGapLabel = 'No Gap'; LineGapLabel = 'Gap'
         SpanLabel = 'Sound Pulse'
-        XLabel = 'time [ms]'; YLabel = 'voltage [mV]'
+        XLabel = 'time [ms]'; YLabel = 'voltage [µV]'
         
-        Axes[FInd].axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
+        Axes[F].axvspan(XValues[Ind1], XValues[Ind2], color='k', alpha=0.5, 
                     lw=0, label=SpanLabel)
-        Axes[FInd].plot(XValues, GPIASData['Trace'][Freq]['NoGap'], 
+        Axes[F].plot(XValues, GPIASData['Trace'][Freq]['NoGap']*1000, 
                  color='r', label=LineNoGapLabel, lw=2)
-        Axes[FInd].plot(XValues, GPIASData['Trace'][Freq]['Gap'], 
+        Axes[F].plot(XValues, GPIASData['Trace'][Freq]['Gap']*1000, 
                  color='b', label=LineGapLabel, lw=2)
         
-        AxArgs = {'title': SubTitle, 'ylabel': YLabel, 'xlabel': XLabel}
-        Plot.Set(Ax=Axes[FInd], AxArgs=AxArgs)
-        Axes[FInd].legend(loc='center left', bbox_to_anchor=(1.05, 0.5),
-                          prop={'size':6})
+        AxArgs = {**{'ylabel': YLabel, 'xlabel': XLabel, 
+                     'ylim': YLim, 'xlim': XLim}, **AxArgs}
+        Plot.Set(Ax=Axes[F], AxArgs=AxArgs)
+        
+        if F != len(GPIASData['Trace'].keys())-1:
+            Axes[F].tick_params(bottom='off')
+            Axes[F].spines['bottom'].set_visible(False)
+            Axes[F].set_xticklabels([])
+            Axes[F].set_xlabel('')
+        
+        if F != len(GPIASData['Trace'].keys())//2:
+            Axes[F].tick_params(left='off')
+            Axes[F].spines['left'].set_visible(False)
+            Axes[F].set_yticklabels([])
+            Axes[F].set_ylabel('')
+        else:
+            # Axes[F].legend(loc='center left', bbox_to_anchor=(1.05, 0.5),
+            #               prop={'size':6})
+            Axes[F].legend(loc='upper left', prop={'size':6})
     
     FigTitle = FigName.split('/')[-1]
     Plot.Set(Fig=Fig, FigTitle=FigTitle)
-    Fig.subplots_adjust(right=0.8)
+    # Fig.subplots_adjust(right=0.8)
     
     if Save: 
         for E in Ext: Fig.savefig(FigName+'.'+E, format=E)
@@ -53,4 +75,3 @@ def Traces(GPIASData, XValues, SoundPulseDur, FigName, Ext=['svg'],
     
     print('Done.')
     return(None)
-

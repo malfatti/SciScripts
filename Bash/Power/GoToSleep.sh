@@ -11,5 +11,5 @@ echo "Locking screen..."; slock &
 #echo "Starting Alsa..."; sudo /etc/init.d/alsasound start &> /dev/null
 #echo "Starting Bumblebee..."; sudo bumblebeed &>> ~/Software/Git/Malfatti/SciScripts/Bash/BumblebeeSession.log
 echo "Starting Jack...";
-bash ~/Software/Git/Malfatti/SciScripts/Bash/ALSA/SoundAutostart.sh &> /dev/null
+bash ~/Software/Git/Malfatti/SciScripts/Bash/Audio/ALSA/SoundAutostart.sh &> /dev/null
 echo "Awake."

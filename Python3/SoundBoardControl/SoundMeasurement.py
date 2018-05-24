@@ -161,19 +161,19 @@ def PxxSp_Freq(SoundIntensity, PSD, Date, Group, FileName, Folder='.', Ext=['svg
     
     return(None)
 
-
+#%%
 ## Set parameters of the experiment
 SoundSystem = 'Jack-IntelOut-Marantz-IntelIn'
-Setup = 'UnitRec'
+Setup = 'GPIAS'
 SBOutAmpF = Hdf5.DataLoad(SoundSystem+'/SBOutAmpF', SigGen.CalibrationFile)[0]
 OutMax = 1/SBOutAmpF
 
 ## Sound (Durations in sec)
 Rate = 192000
 SoundPulseDur = 2
-NoiseFrequency = [[8000, 10000], [9000, 11000]] # Override
-# NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
-#                   [14000, 16000], [16000, 18000], [8000, 18000]]
+# NoiseFrequency = [[8000, 10000], [9000, 11000]] # Override
+NoiseFrequency = [[8000, 10000], [9000, 11000], [10000, 12000], [12000, 14000], 
+                  [14000, 16000], [16000, 18000], [8000, 18000]]
 
 TTLAmpF = 0
 # Mic sensitivity, from mic datasheet, in dB re V/Pa or in V/Pa
@@ -187,11 +187,11 @@ Group = '/'.join([SoundSystem, Setup])
 
 os.makedirs(Folder, exist_ok=True)
 
-SoundAmpF = [OutMax, 0.4, 0.3] # Override
-# SoundAmpF = np.hstack((
-#                 np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
-#                 np.array(0.0)
-#             ))
+# SoundAmpF = [OutMax, 0.4, 0.3, 0] # Override
+SoundAmpF = np.hstack((
+                np.flipud(np.logspace(np.log10(1e-4), np.log10(OutMax), 299)),
+                np.array(0.0)
+            ))
 # SoundAmpF = np.hstack((
 #                 np.flipud(np.logspace(np.log10(1e-6), np.log10(1e-4), 20)),
 #                 np.array(0.0)
@@ -213,6 +213,7 @@ SD.default.device = 'system'
 SD.default.samplerate = Rate
 SD.default.blocksize = 384
 SD.default.channels = 2
+Map = [2,1] if Setup == 'GPIAS' else [1,2]
 
 # Warn user
 FullTime = (len(SoundAmpF[Freqs[0]])*len(NoiseFrequency)*(SoundPulseDur))/60
@@ -233,7 +234,7 @@ for Freq in NoiseFrequency:
     SoundRec[FKey] = {}
     Sound = SigGen.SoundStim(Rate, SoundPulseDur, SoundAmpF, 
                                         [Freq], TTLAmpF, SoundSystem, 
-                                        TTLs=False, Map=[1,2])
+                                        TTLs=False, Map=Map)
     
     for AKey in Sound[FKey]:
         print(FKey, AKey)

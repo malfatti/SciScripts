@@ -26,7 +26,7 @@ Parameters = dict(
     SoundPulseDur   = 60,                 # in MINUTES!
     
     ## === Hardware === ##
-    System  = 'Jack-IntelOut-MackieIn-MackieOut-IntelIn',
+    System  = 'Jack-IntelOut-Marantz-IntelIn',
     Setup   = 'GPIAS',
 )
 

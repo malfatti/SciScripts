@@ -18,7 +18,7 @@ from Exps import AcousticNoiseTrauma
 # 'B2', 'A5', 'A3'
 
 Parameters = dict(
-    AnimalName      = 'A1_C4_A4',
+    AnimalName      = 'C3_C1_D2',
     StimType        = ['Sound'],
     
     Intensities     = [90],

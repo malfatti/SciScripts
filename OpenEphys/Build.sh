@@ -3,7 +3,7 @@
 Branch=${1,,}; Branch=${Branch^}
 Branches="Development Testing Master"
 Here=$(pwd)
-OEPath=~/Software/Git/Malfatti/OpenEphys
+OEPath=~/Software/Git/OpenEphys
 OEInstallPath="$OEPath"${Branch:0:1}
 CPUs=$(cat /proc/cpuinfo | grep processor | wc -l)
 

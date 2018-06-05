@@ -33,7 +33,7 @@ if [ -e $BATPath ]; then
                 xbacklight -set 30
             fi
             
-			feh -xF $SCRIPTSPATH/Bash/Power/BatteryLow.jpg
+			feh -xF $SCRIPTSPATH/Bash/Power/BatteryLow.jpg &
 			sleep 90
             
 		elif [ $Current -ge $BATLow ]; then

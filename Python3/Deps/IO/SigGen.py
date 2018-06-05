@@ -11,6 +11,7 @@ import numpy as np
 
 from IO import Hdf5
 from DataAnalysis.DataAnalysis import FilterSignal
+from scipy import signal
 
 
 # Use one that was used in SoundBoardCalibration.py
@@ -74,7 +75,7 @@ def dBToAmpF(Intensities, Path, CalibrationFile=CalibrationFile):
                       for dB in Intensities]
                  for Hz in list(SoundIntensity)}
     
-    return(SoundAmpF)
+    return(SoundAmpF)     
 
 
 def InterleaveChannels(Right, Left, SoundAmpF, NoiseFrequency):
@@ -139,12 +140,40 @@ def Noise(Rate, SoundPulseDur):
     return(Noise)
 
 
-def SineWave(Rate, Freq, AmpF, SoundPulseDur):
+def SineWave(Rate, Freq, AmpF, Time):
     print('Generating sine wave...')
-    Pulse = [np.sin(2 * np.pi * Freq * (_/Rate)) * AmpF
-             for _ in range(round(Rate*SoundPulseDur))]
+    
+    if type(Freq) in [int, float]:
+        ## Ensure that there will be a sample at each peak
+        P = 1/(Freq*4)
+        TimeShift = (P*Rate) - int(P*Rate)
+        Shift = 2 * np.pi * Freq * TimeShift/Rate
+        
+        ## Fast way
+        Pulse = np.zeros(int(Rate*(1/Freq)), dtype=np.float32)
+        for s in range(int(Rate*(1/Freq))):
+            Pulse[s] = np.sin((2 * np.pi * Freq * (s/Rate)) - Shift) * AmpF
+        Pulse = np.tile(Pulse, int(Time/(1/Freq)))
+        Left = (Time%(1/Freq)) * (1/Freq)
+        if Left:
+            L = np.zeros(int(Rate*Left), dtype=np.float32)
+            for s in range(int(Rate*Left)):
+                L[s] = np.sin((2 * np.pi * Freq * (s/Rate)) - Shift) * AmpF
+            Pulse = np.concatenate((Pulse, L))
+        
+        ## Obvious way
+        # Pulse = [np.sin((2 * np.pi * Freq * (_/Rate)) - Shift) * AmpF
+        #          for _ in range(round(Rate*SoundPulseDur))]
+    
+    else:
+        # Example:
+        # Freq = [800, 1600]
+        # Freq = [(Freq[1] - Freq[0])/Time, Freq[0]]
+        # Time = np.linspace(0, Time, int(Rate*Time))
+        
+        Pulse = signal.sweep_poly(Time, Freq)
+    
     Pulse[-1] = 0
-    Pulse = np.array(Pulse, dtype=np.float32)
     
     return(Pulse)
 
@@ -292,6 +321,69 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
     
     print('Done generating sound and laser stimulus.')
     return(SoundLaser)
+
+
+def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 
+              System, SoundPauseBeforePulseDur=0, SoundPauseAfterPulseDur=0, TTLs=True,
+              Map=[1,2], **Kws):
+    """ Generate sound pulses in one channel and TTLs in the other channel.
+        
+        WARNING: The signal generated in the TTLs channel is composed of square 
+        WAVES, not pulses, meaning that it reaches positive AND NEGATIVE values. 
+        If your device  handles only positive voltage, use a diode on the input 
+        of your device.
+        
+        https://en.wikipedia.org/wiki/Diode
+    """
+    
+    SBOutAmpF = Hdf5.DataLoad('/'+System+'/SBOutAmpF', CalibrationFile)[0]
+    
+    if TTLAmpF > 1/SBOutAmpF:
+        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
+        TTLAmpF = 1/SBOutAmpF
+    
+    if type(NoiseFrequency[0]) == list:
+        SoundPulse = Noise(Rate, SoundPulseDur)
+        print('   ', end='')
+        SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
+        print('   ', end='')
+        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
+                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
+                                   SoundPauseAfterPulseDur)
+    else:
+        print('Generating tones... ', end='')
+        SoundPulseFiltered = {}
+        for Freq in NoiseFrequency:
+            FKey = str(Freq)
+            SoundPulseFiltered[FKey] = SineWave(Rate, Freq, 1, SoundPulseDur)
+        print('Done.')
+        
+        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
+                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
+                                   SoundPauseAfterPulseDur)
+        
+        
+    if TTLs:
+        SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
+                              SBOutAmpF, SoundPauseBeforePulseDur, 
+                              SoundPauseAfterPulseDur)
+    else:
+        SoundTTLUnit = np.zeros((round(Rate*SoundPulseDur)), dtype='float32')
+    
+    Sound = {}
+    for FKey in SoundUnit:
+        Sound[FKey] = {}
+        
+        for AKey in SoundUnit[FKey]:
+            if Map[0] == 2:
+                Sound[FKey][AKey] = np.vstack((SoundUnit[FKey][AKey], SoundTTLUnit)).T
+                Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
+            else:
+                Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey])).T
+                Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
+    
+    print('Done generating sound stimulus.')
+    return(Sound)
 
 
 def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 

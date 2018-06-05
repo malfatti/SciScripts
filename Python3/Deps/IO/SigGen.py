@@ -18,6 +18,13 @@ from scipy import signal
 CalibrationFile = os.environ['DATAPATH']+'/Tests/SoundMeasurements/SoundMeasurements.hdf5'
 SoundTTLVal = 0.6; LaserTTLVal = 0.3
 
+
+def FreqStr2Int(Freq):
+    Freq = Freq.split('-')
+    IntFreq = sum([float(_) for _ in Freq])/len(Freq)
+    return(IntFreq)
+
+
 ## Level 0
 def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency, 
                    SBOutAmpF, SoundPauseBeforePulseDur=0, SoundPauseAfterPulseDur=0):
@@ -33,10 +40,9 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
             IntFreq = [[F,F] for F in SoundAmpF.keys()]
             IntFreq = list(map(list, zip(*IntFreq)))
             
-            IntFreq[1] = [sum([float(_) for _ in Freq.split('-')])/len(Freq.split('-'))
-                        for Freq in IntFreq[1]]
+            IntFreq[1] = [FreqStr2Int(Freq) for Freq in IntFreq[1]]
             
-            RealFKey = sum([float(_) for _ in FKey.split('-')])/len(FKey.split('-'))
+            RealFKey = FreqStr2Int(FKey)
             RealFKey = min(IntFreq[1], key=lambda x:abs(x-RealFKey))
             RealFKey = IntFreq[0][IntFreq[1].index(RealFKey)]
             
@@ -165,78 +171,94 @@ def SineWave(Rate, Freq, AmpF, Time):
         TimeShift = (P*Rate) - int(P*Rate)
         Shift = 2 * np.pi * Freq * TimeShift/Rate
         
-        ## Fast way
-        Pulse = np.zeros(int(Rate*(1/Freq)), dtype=np.float32)
-        for s in range(int(Rate*(1/Freq))):
-            Pulse[s] = np.sin((2 * np.pi * Freq * (s/Rate)) - Shift) * AmpF
-        Pulse = np.tile(Pulse, int(Time/(1/Freq)))
-        Left = (Time%(1/Freq)) * (1/Freq)
-        if Left:
-            L = np.zeros(int(Rate*Left), dtype=np.float32)
-            for s in range(int(Rate*Left)):
-                L[s] = np.sin((2 * np.pi * Freq * (s/Rate)) - Shift) * AmpF
-            Pulse = np.concatenate((Pulse, L))
-        
-        ## Obvious way
-        # Pulse = [np.sin((2 * np.pi * Freq * (_/Rate)) - Shift) * AmpF
-        #          for _ in range(round(Rate*SoundPulseDur))]
+        Pulse = np.sin((2 * np.pi * Freq * np.arange(Time*Rate)/Rate) - Shift) * AmpF
     
     else:
-        # Example:
+        # Example of an ascending tone:
         # Freq = [800, 1600]
         # Freq = [(Freq[1] - Freq[0])/Time, Freq[0]]
         # Time = np.linspace(0, Time, int(Rate*Time))
         
         Pulse = signal.sweep_poly(Time, Freq)
+        Pulse = Pulse.astype('float32')
     
     Pulse[-1] = 0
     
     return(Pulse)
 
 
-def SqPulse(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PauseBeforePulseDur=0, 
+def TTLSqPulse(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PauseBeforePulseDur=0, 
            PauseAfterPulseDur=0):
     Pulse = np.concatenate([
                 np.zeros(PauseBeforePulseDur*Rate, dtype=np.float32),
-                np.ones(PulseDur*Rate, dtype=np.float32),
+                np.ones(PulseDur*Rate, dtype=np.float32) * TTLAmpF * TTLVal * SBOutAmpF,
                 np.zeros(PauseAfterPulseDur*Rate, dtype=np.float32)])
     
     return(Pulse)
 
 
-def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PauseBeforePulseDur=0, 
+# def SqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PauseBeforePulseDur=0, 
+#            PauseAfterPulseDur=0):
+    
+#     print('Generating Sound TTL...')
+#     TTLSpace = PulseDur + PauseAfterPulseDur
+#     if TTLSpace < 2*PulseDur:
+#         TTLPulse = np.concatenate([
+#                   np.array([TTLVal] * round(Rate*PulseDur/2), dtype=np.float32),
+#                   np.array([TTLVal*-1] * round(Rate*PulseDur/2), dtype=np.float32)
+#                   ])
+#     else:
+#         TTLPulse = np.concatenate([
+#                   np.array([TTLVal] * round(Rate*PulseDur), dtype=np.float32),
+#                   np.array([TTLVal*-1] * round(Rate*PulseDur), dtype=np.float32)
+#                   ])
+    
+#     TTLPulse[-1] = 0
+    
+#     if PauseBeforePulseDur == 0:
+#         if PauseAfterPulseDur == 0:
+#             TTLUnit = TTLPulse
+#         else:
+#             TTLPauseAfterPulse = np.zeros(round((PauseAfterPulseDur-PulseDur) * Rate), 
+#                             dtype=np.float32)
+#             TTLUnit = np.concatenate([TTLPulse, TTLPauseAfterPulse])
+#     else:
+#         TTLPauseBeforePulse = np.zeros(round(PauseBeforePulseDur * Rate), dtype=np.float32)
+#         if PauseAfterPulseDur == 0:
+#             TTLUnit = np.concatenate([TTLPauseBeforePulse, TTLPulse])
+#         else:
+#             TTLPauseAfterPulse = np.zeros(round((PauseAfterPulseDur-PulseDur) * Rate), 
+#                             dtype=np.float32)
+#             TTLUnit = np.concatenate([TTLPauseBeforePulse, TTLPulse, TTLPauseAfterPulse])
+    
+#     TTLUnit = (TTLUnit * TTLAmpF) * SBOutAmpF
+    
+#     return(TTLUnit)
+
+
+def TTLSqWave(Rate, PulseDur, TTLAmpF, TTLVal, SBOutAmpF, PauseBeforePulseDur=0, 
            PauseAfterPulseDur=0):
     
     print('Generating Sound TTL...')
-    TTLSpace = PulseDur + PauseAfterPulseDur
-    if TTLSpace < 2*PulseDur:
+    if PulseDur < 0.3:
         TTLPulse = np.concatenate([
-                  np.array([TTLVal] * round(Rate*PulseDur/2), dtype=np.float32),
-                  np.array([TTLVal*-1] * round(Rate*PulseDur/2), dtype=np.float32)
-                  ])
+            np.array([TTLVal] * round(Rate*PulseDur/2), dtype=np.float32),
+            np.array([TTLVal*-1] * round(Rate*PulseDur/2), dtype=np.float32)
+        ])
     else:
         TTLPulse = np.concatenate([
-                  np.array([TTLVal] * round(Rate*PulseDur), dtype=np.float32),
-                  np.array([TTLVal*-1] * round(Rate*PulseDur), dtype=np.float32)
-                  ])
-    
+            np.array([TTLVal] * round(Rate*0.01), dtype=np.float32),
+            np.zeros(int(Rate*(PulseDur-0.02)), dtype=np.float32),
+            np.array([TTLVal*-1] * round(Rate*0.01), dtype=np.float32)
+        ])
+   
     TTLPulse[-1] = 0
     
-    if PauseBeforePulseDur == 0:
-        if PauseAfterPulseDur == 0:
-            TTLUnit = TTLPulse
-        else:
-            TTLPauseAfterPulse = np.zeros(round((PauseAfterPulseDur-PulseDur) * Rate), 
-                            dtype=np.float32)
-            TTLUnit = np.concatenate([TTLPulse, TTLPauseAfterPulse])
-    else:
-        TTLPauseBeforePulse = np.zeros(round(PauseBeforePulseDur * Rate), dtype=np.float32)
-        if PauseAfterPulseDur == 0:
-            TTLUnit = np.concatenate([TTLPauseBeforePulse, TTLPulse])
-        else:
-            TTLPauseAfterPulse = np.zeros(round((PauseAfterPulseDur-PulseDur) * Rate), 
-                            dtype=np.float32)
-            TTLUnit = np.concatenate([TTLPauseBeforePulse, TTLPulse, TTLPauseAfterPulse])
+    TTLUnit = np.concatenate([
+        np.zeros(int(PauseBeforePulseDur*Rate), dtype=np.float32),
+        TTLPulse,
+        np.zeros(int(PauseAfterPulseDur*Rate), dtype=np.float32)
+    ])
     
     TTLUnit = (TTLUnit * TTLAmpF) * SBOutAmpF
     
@@ -271,7 +293,7 @@ def LaserStim(Rate, LaserPulseDur, LaserType, LaserDur, LaserFreq, TTLAmpF, Syst
         TTLAmpF = 1/SBOutAmpF
     
     if LaserType == 'Sq':
-        LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
+        LaserUnit = TTLSqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
                        LaserPauseBeforePulseDur, LaserPauseAfterPulseDur)
     
     elif LaserType == 'Sin':
@@ -312,12 +334,12 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
                                NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
                                SoundPauseAfterPulseDur)
     
-    SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
+    SoundTTLUnit = TTLSqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
                           SBOutAmpF, SoundPauseBeforePulseDur, 
                           SoundPauseAfterPulseDur)
     
     if LaserType == 'Sq':
-        LaserUnit = SqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
+        LaserUnit = TTLSqWave(Rate, LaserPulseDur, TTLAmpF, LaserTTLVal, SBOutAmpF, 
                        LaserPauseBeforePulseDur, LaserPauseAfterPulseDur)
     
     elif LaserType == 'Sin':
@@ -386,7 +408,7 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         
         
     if TTLs:
-        SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
+        SoundTTLUnit = TTLSqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
                               SBOutAmpF, SoundPauseBeforePulseDur, 
                               SoundPauseAfterPulseDur)
     else:

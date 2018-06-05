@@ -29,13 +29,14 @@ def AudioSet(Rate, BlockSize, Channels):
     
     return(Stim)
     
-def InfoWrite(AnimalName, StimType, SoundType, Intensities, SoundAmpF, 
+def InfoWrite(AnimalName, StimType, StimCh, TTLCh, System, Setup, RecCh, 
+              SoundType, Intensities, SoundAmpF, 
               NoiseFrequency, SoundPulseNo, SoundPauseBeforePulseDur, 
               SoundPulseDur, SoundPauseAfterPulseDur, PauseBetweenIntensities, 
-              System, Setup, SoundCh, TTLCh, LaserStimBlockNo, LaserPulseNo, 
+              LaserStimBlockNo, LaserPulseNo, 
               LaserPauseBeforePulseDur, LaserPulseDur, LaserPauseAfterPulseDur, 
               LaserPauseBetweenStimBlocksDur, LaserType, LaserDur, LaserFreq, 
-              ABRCh, AnalogTTLs, Rate, BlockSize, Channels, BaudRate, Probe, 
+              AnalogTTLs, Rate, BlockSize, Channels, BaudRate, Probe, 
               Adaptor, Remapped, InfoFile):
     
     CalibrationFile = SigGen.CalibrationFile
@@ -46,7 +47,7 @@ def InfoWrite(AnimalName, StimType, SoundType, Intensities, SoundAmpF,
     
     for K in ['AnimalName', 'StimType']: DataInfo['Animal'][K] = locals()[K]
     
-    for K in ['SoundCh', 'TTLCh', 'ABRCh', 'BaudRate', 'AnalogTTLs']: 
+    for K in ['StimCh', 'TTLCh', 'RecCh', 'BaudRate', 'AnalogTTLs']: 
         DataInfo['DAqs'][K] = locals()[K]
     
     for K in ['SoundType', 'Rate', 'Intensities', 'NoiseFrequency', 
@@ -71,13 +72,15 @@ def InfoWrite(AnimalName, StimType, SoundType, Intensities, SoundAmpF,
     return(DataInfo)
 
 
-def Prepare(AnimalName, StimType, SoundType, Intensities, NoiseFrequency, SoundPulseNo, 
-            SoundPauseBeforePulseDur, SoundPulseDur, SoundPauseAfterPulseDur, 
-            PauseBetweenIntensities, System, Setup, SoundCh, TTLCh, 
-            LaserStimBlockNo, LaserPulseNo, LaserPauseBeforePulseDur, 
-            LaserPulseDur, LaserPauseAfterPulseDur, 
-            LaserPauseBetweenStimBlocksDur, LaserType, LaserDur, LaserFreq, 
-            ABRCh=[], AnalogTTLs=True, Rate=192000, BlockSize=384, Channels=2, 
+def Prepare(AnimalName, StimType, StimCh, TTLCh, System, Setup, 
+            RecCh=None, SoundType=None, 
+            Intensities=None, NoiseFrequency=None, SoundPulseNo=None, 
+            SoundPauseBeforePulseDur=None, SoundPulseDur=None, SoundPauseAfterPulseDur=None, 
+            PauseBetweenIntensities=None, 
+            LaserStimBlockNo=None, LaserPulseNo=None, LaserPauseBeforePulseDur=None, 
+            LaserPulseDur=None, LaserPauseAfterPulseDur=None, 
+            LaserPauseBetweenStimBlocksDur=None, LaserType=None, LaserDur=None, LaserFreq=None, 
+            AnalogTTLs=True, Rate=192000, BlockSize=384, Channels=2, 
             BaudRate=115200, Probe=None, Adaptor=None, Remapped=False):
     Kws = {**locals()}
     SoundAmpF = SigGen.dBToAmpF(Intensities, System+'/'+Setup)

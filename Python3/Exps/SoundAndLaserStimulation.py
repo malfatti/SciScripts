@@ -21,14 +21,15 @@ from Exps import SoundAndLaserStimulation
 #        [12000, 14000],
 #        [ 8000, 10000]])
 Parameters = dict(
-    AnimalName          = 'C4',
+    AnimalName          = 'ToDelete',
     StimType            = ['Sound'],
     # StimType            = ['Sound', 'Laser', 'SoundLaser'],
     
     
     ## === Sound === ##
+    SoundType           = 'Tone',
     Intensities         = [80, 75, 70, 65, 60, 55, 50, 45, 40, 35],
-    NoiseFrequency      = [[8000, 10000], 
+    NoiseFrequency      = [[8000, 16000], 
                            [9000, 11000], 
                            [10000, 12000], 
                            [12000, 14000], 

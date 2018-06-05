@@ -29,13 +29,14 @@ def AudioSet(Rate, BlockSize, Channels):
     
     return(Stim)
     
-def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, SoundPulseNo, 
-              SoundPauseBeforePulseDur, SoundPulseDur, SoundPauseAfterPulseDur, 
-              PauseBetweenIntensities, System, Setup, SoundCh, TTLCh, 
-              LaserStimBlockNo, LaserPulseNo, LaserPauseBeforePulseDur, 
-              LaserPulseDur, LaserPauseAfterPulseDur, LaserPauseBetweenStimBlocksDur,
-              LaserType, LaserDur, LaserFreq, ABRCh, AnalogTTLs, Rate, BlockSize, 
-              Channels, BaudRate, Probe, Adaptor, Remapped, InfoFile):
+def InfoWrite(AnimalName, StimType, SoundType, Intensities, SoundAmpF, 
+              NoiseFrequency, SoundPulseNo, SoundPauseBeforePulseDur, 
+              SoundPulseDur, SoundPauseAfterPulseDur, PauseBetweenIntensities, 
+              System, Setup, SoundCh, TTLCh, LaserStimBlockNo, LaserPulseNo, 
+              LaserPauseBeforePulseDur, LaserPulseDur, LaserPauseAfterPulseDur, 
+              LaserPauseBetweenStimBlocksDur, LaserType, LaserDur, LaserFreq, 
+              ABRCh, AnalogTTLs, Rate, BlockSize, Channels, BaudRate, Probe, 
+              Adaptor, Remapped, InfoFile):
     
     CalibrationFile = SigGen.CalibrationFile
     
@@ -48,7 +49,7 @@ def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, Soun
     for K in ['SoundCh', 'TTLCh', 'ABRCh', 'BaudRate', 'AnalogTTLs']: 
         DataInfo['DAqs'][K] = locals()[K]
     
-    for K in ['Rate', 'Intensities', 'NoiseFrequency', 
+    for K in ['SoundType', 'Rate', 'Intensities', 'NoiseFrequency', 
               'SoundPulseNo', 'SoundPauseBeforePulseDur', 'SoundPulseDur', 
               'SoundPauseAfterPulseDur', 'PauseBetweenIntensities', 
               'System', 'Setup', 'CalibrationFile']:
@@ -70,7 +71,7 @@ def InfoWrite(AnimalName, StimType, Intensities, SoundAmpF, NoiseFrequency, Soun
     return(DataInfo)
 
 
-def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo, 
+def Prepare(AnimalName, StimType, SoundType, Intensities, NoiseFrequency, SoundPulseNo, 
             SoundPauseBeforePulseDur, SoundPulseDur, SoundPauseAfterPulseDur, 
             PauseBetweenIntensities, System, Setup, SoundCh, TTLCh, 
             LaserStimBlockNo, LaserPulseNo, LaserPauseBeforePulseDur, 
@@ -85,22 +86,11 @@ def Prepare(AnimalName, StimType, Intensities, NoiseFrequency, SoundPulseNo,
     InfoFile = '-'.join([Date, AnimalName, '_'.join(StimType)+'.dict'])
     
     DataInfo = InfoWrite(SoundAmpF=SoundAmpF, InfoFile=InfoFile, **Kws)
-    # DataInfo = InfoWrite(AnimalName, StimType, BGIntensity, PulseIntensity, 
-    #                      NoiseFrequency, SoundBGDur, SoundGapDur, 
-    #                      SoundBGPrePulseDur, SoundLoudPulseDur, 
-    #                      SoundBGAfterPulseDur, SoundBetweenStimDur, NoOfTrials, 
-    #                      System, Setup, SoundBGAmpF, SoundPulseAmpF, 
-    #                      SoundCh, TTLCh, PiezoCh, Rate, BlockSize, Channels, 
-    #                      BaudRate, InfoFile)
     
     # TTLs Amplification factor. DO NOT CHANGE unless you know what you're doing.
     DataInfo['Audio']['TTLAmpF'] = 0.6 # for analog TTLs only
     # DataInfo['Audio']['TTLAmpF'] = 6.8 # for analog and digital TTLs
     
-    
-    # Stimulation = {Key: [] for Key in ['Sound', 'SoundPause', 'Laser', 
-    #                                    'LaserPause', 'SoundLaser', 
-    #                                    'SoundLaserPause']}
     Stimulation = {}
     Stimulation['Stim'] = AudioSet(Rate, BlockSize, Channels)
     Stimulation['ArduinoObj'] = Arduino.CreateObj(BaudRate)

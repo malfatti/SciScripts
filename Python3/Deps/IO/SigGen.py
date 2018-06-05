@@ -29,6 +29,16 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
     
     for FKey in SoundPulseFiltered:
         SoundUnit[FKey] = {}
+        if FKey not in SoundAmpF: 
+            IntFreq = [[_ for _ in SoundPulseFiltered.keys()], 
+                       [_ for _ in SoundAmpF.keys()]]
+            
+            IntFreq = [[sum([float(_) for _ in Freq.split('-')])/len(Freq.split('-'))
+                        for F, Freq in enumerate(List)]
+                       for List in IntFreq]
+            
+            
+            RealFKey = [min(IntFreq[1], key=lambda x:abs(x-Freq)) for Freq in IntFreq[0]]
         
         for AmpF in range(len(SoundAmpF[FKey])):       
             if SoundAmpF[FKey][AmpF] > 1/SBOutAmpF:
@@ -325,7 +335,7 @@ def SoundLaserStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, LaserPulseDur
 
 def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 
               System, SoundPauseBeforePulseDur=0, SoundPauseAfterPulseDur=0, TTLs=True,
-              Map=[1,2], **Kws):
+              Map=[1,2], SoundType='Noise', **Kws):
     """ Generate sound pulses in one channel and TTLs in the other channel.
         
         WARNING: The signal generated in the TTLs channel is composed of square 
@@ -342,88 +352,31 @@ def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF,
         print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
         TTLAmpF = 1/SBOutAmpF
     
-    if type(NoiseFrequency[0]) == list:
+    # if type(NoiseFrequency[0]) == list:
+    if SoundType.lower() == 'noise':
         SoundPulse = Noise(Rate, SoundPulseDur)
         print('   ', end='')
         SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
-        print('   ', end='')
-        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
-                                   SoundPauseAfterPulseDur)
-    else:
+        print('')
+        
+    elif SoundType.lower() == 'tone':
         print('Generating tones... ', end='')
         SoundPulseFiltered = {}
         for Freq in NoiseFrequency:
-            FKey = str(Freq)
-            SoundPulseFiltered[FKey] = SineWave(Rate, Freq, 1, SoundPulseDur)
-        print('Done.')
-        
-        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
-                                   SoundPauseAfterPulseDur)
-        
-        
-    if TTLs:
-        SoundTTLUnit = SqWave(Rate, SoundPulseDur, TTLAmpF, SoundTTLVal, 
-                              SBOutAmpF, SoundPauseBeforePulseDur, 
-                              SoundPauseAfterPulseDur)
-    else:
-        SoundTTLUnit = np.zeros((round(Rate*SoundPulseDur)), dtype='float32')
-    
-    Sound = {}
-    for FKey in SoundUnit:
-        Sound[FKey] = {}
-        
-        for AKey in SoundUnit[FKey]:
-            if Map[0] == 2:
-                Sound[FKey][AKey] = np.vstack((SoundUnit[FKey][AKey], SoundTTLUnit)).T
-                Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
+            if type(Freq) in [int, float]:
+                FKey = str(Freq)
+                SoundPulseFiltered[FKey] = SineWave(Rate, Freq, 1, SoundPulseDur)
             else:
-                Sound[FKey][AKey] = np.vstack((SoundTTLUnit, SoundUnit[FKey][AKey])).T
-                Sound[FKey][AKey] = np.ascontiguousarray(Sound[FKey][AKey])
-    
-    print('Done generating sound stimulus.')
-    return(Sound)
-
-
-def SoundStim(Rate, SoundPulseDur, SoundAmpF, NoiseFrequency, TTLAmpF, 
-              System, SoundPauseBeforePulseDur=0, SoundPauseAfterPulseDur=0, TTLs=True,
-              Map=[1,2], **Kws):
-    """ Generate sound pulses in one channel and TTLs in the other channel.
+                FKey = '-'.join([str(_) for _ in Freq])
+                Freq = [(Freq[1] - Freq[0])/SoundPulseDur, Freq[0]]
+                Time = np.linspace(0, SoundPulseDur, int(Rate*SoundPulseDur))
+                SoundPulseFiltered[FKey] = SineWave(Rate, Freq, 1, Time)
         
-        WARNING: The signal generated in the TTLs channel is composed of square 
-        WAVES, not pulses, meaning that it reaches positive AND NEGATIVE values. 
-        If your device  handles only positive voltage, use a diode on the input 
-        of your device.
-        
-        https://en.wikipedia.org/wiki/Diode
-    """
-    
-    SBOutAmpF = Hdf5.DataLoad('/'+System+'/SBOutAmpF', CalibrationFile)[0]
-    
-    if TTLAmpF > 1/SBOutAmpF:
-        print('AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
-        TTLAmpF = 1/SBOutAmpF
-    
-    if type(NoiseFrequency[0]) == list:
-        SoundPulse = Noise(Rate, SoundPulseDur)
-        print('   ', end='')
-        SoundPulseFiltered = BandpassFilterSound(SoundPulse, Rate, NoiseFrequency)
-        print('   ', end='')
-        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
-                                   SoundPauseAfterPulseDur)
-    else:
-        print('Generating tones... ', end='')
-        SoundPulseFiltered = {}
-        for Freq in NoiseFrequency:
-            FKey = str(Freq)
-            SoundPulseFiltered[FKey] = SineWave(Rate, Freq, 1, SoundPulseDur)
         print('Done.')
         
-        SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
-                                   NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
-                                   SoundPauseAfterPulseDur)
+    SoundUnit = ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, 
+                               NoiseFrequency, SBOutAmpF, SoundPauseBeforePulseDur, 
+                               SoundPauseAfterPulseDur)
         
         
     if TTLs:

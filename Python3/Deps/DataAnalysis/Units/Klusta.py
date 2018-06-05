@@ -608,7 +608,7 @@ def FreqAnddBCurve(AllCells, FigPath='./FreqAnddBCurve', Ext=['svg'], Save=True,
     for m, M in enumerate(AllCells):
         IntFreq = np.zeros(M['Freqs'].shape, dtype=np.int16)
         for F, Freq in enumerate(M['Freqs']):
-            IntFreq[F] = sum([float(_) for _ in M['Freqs'][F].split('-')])/2
+            IntFreq[F] = sum([float(_) for _ in Freq[F].split('-')])/2
         
         for U in range(len(M['UnitId'])):
             plt.rc('font',size=8)

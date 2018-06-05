@@ -30,28 +30,34 @@ def ApplySoundAmpF(SoundPulseFiltered, Rate, SoundAmpF, NoiseFrequency,
     for FKey in SoundPulseFiltered:
         SoundUnit[FKey] = {}
         if FKey not in SoundAmpF: 
-            IntFreq = [[_ for _ in SoundPulseFiltered.keys()], 
-                       [_ for _ in SoundAmpF.keys()]]
+            IntFreq = [[F,F] for F in SoundAmpF.keys()]
+            IntFreq = list(map(list, zip(*IntFreq)))
             
-            IntFreq = [[sum([float(_) for _ in Freq.split('-')])/len(Freq.split('-'))
-                        for F, Freq in enumerate(List)]
-                       for List in IntFreq]
+            IntFreq[1] = [sum([float(_) for _ in Freq.split('-')])/len(Freq.split('-'))
+                        for Freq in IntFreq[1]]
             
+            RealFKey = sum([float(_) for _ in FKey.split('-')])/len(FKey.split('-'))
+            RealFKey = min(IntFreq[1], key=lambda x:abs(x-RealFKey))
+            RealFKey = IntFreq[0][IntFreq[1].index(RealFKey)]
             
-            RealFKey = [min(IntFreq[1], key=lambda x:abs(x-Freq)) for Freq in IntFreq[0]]
+            FAmpF = SoundAmpF[RealFKey]
+            print('FKey:', RealFKey)
+        else:
+            FAmpF = SoundAmpF[FKey]
+            print('FKey:', FKey)
         
-        for AmpF in range(len(SoundAmpF[FKey])):       
-            if SoundAmpF[FKey][AmpF] > 1/SBOutAmpF:
-                print(SoundAmpF[FKey][AmpF], 
+        for AmpF in range(len(FAmpF)):       
+            if FAmpF[AmpF] > 1/SBOutAmpF:
+                print(FAmpF[AmpF], 
                       'AmpF out of range. Decreasing to', 1/SBOutAmpF, '.')
-                SoundAmpF[FKey][AmpF] = 1/SBOutAmpF
+                FAmpF[AmpF] = 1/SBOutAmpF
             
-            AKey = str(SoundAmpF[FKey][AmpF])
+            AKey = str(FAmpF[AmpF])
             SoundUnit[FKey][AKey] = np.concatenate([SoundPauseBeforePulse, 
                                                     SoundPulseFiltered[FKey],
                                                     SoundPauseAfterPulse])
             SoundUnit[FKey][AKey] = (SoundUnit[FKey][AKey]
-                                     * SoundAmpF[FKey][AmpF]) * SBOutAmpF
+                                     * FAmpF[AmpF]) * SBOutAmpF
     return(SoundUnit)
 
 

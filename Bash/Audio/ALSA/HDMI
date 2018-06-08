@@ -1,7 +1,0 @@
-pcm.!hdmi{
-     type hw
-     card HDMI
-     device 3
-}
-
-pcm.!default "plug:hdmi"
